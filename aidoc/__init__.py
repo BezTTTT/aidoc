@@ -1,10 +1,15 @@
-from flask import Flask
+from flask import Flask, url_for
 import os
+
+import logging
+log = logging.getLogger('werkzeug')
+#log.setLevel(logging.ERROR)
+log.setLevel(logging.INFO)
 
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
-
+    
     if test_config is None:
         # load the instance config, if it exists, when not testing
         app.config.from_pyfile('config.py', silent=True)
@@ -30,5 +35,5 @@ def create_app(test_config=None):
     app.register_blueprint(patient_auth.bp)
 
     app.add_url_rule('/', endpoint='index')
-    
+
     return app
