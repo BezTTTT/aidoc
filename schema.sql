@@ -1,12 +1,14 @@
 CREATE TABLE `user` (
   `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `name` varchar(255) NOT NULL,
-  `surname` varchar(255) DEFAULT NULL,
+  `surname` varchar(255) NOT NULL,
   `national_id` varchar(255) DEFAULT NULL,
   `email` varchar(255) DEFAULT NULL,
   `phone` varchar(255) DEFAULT NULL,
+  `sex` varchar(255) DEFAULT NULL,
+  `birthdate` datetime DEFAULT NULL,
   `username` varchar(255) DEFAULT NULL,
-  `password` varchar(255) NOT NULL,
+  `password` varchar(255) DEFAULT NULL,
   `job` varchar(255) DEFAULT NULL,
   `hospital` varchar(255) DEFAULT NULL,
   `province` varchar(255) DEFAULT NULL,
@@ -18,7 +20,7 @@ CREATE TABLE `user` (
   `is_admin` boolean DEFAULT FALSE,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;
 
 CREATE TABLE `submission_records` (
   `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -41,4 +43,4 @@ CREATE TABLE `submission_records` (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `longitude` varchar(255) DEFAULT NULL,
   `latitude` varchar(255) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;

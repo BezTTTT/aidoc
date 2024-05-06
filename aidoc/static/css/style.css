@@ -1,0 +1,73 @@
+table.dataTable thead th {
+  background-color: #ffffff;
+  border-top: 1px solid #dddddd;
+  border-bottom: 1px solid #dddddd;
+}
+
+table.dataTable tbody tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+.dataTable label {
+  background-color: #f2f2f2; /* Change the background color */
+  border: 1px solid #ccc; /* Change the border */
+  border-radius: 5px; /* Add border radius for rounded corners */
+  padding: 5px; /* Add padding for better spacing */
+}
+
+.dataTable {
+  padding-top: 2rem;
+}
+
+#card {
+  padding: 10px;
+  border: 2px solid #7693be;
+  width: 23%;
+  height: 10rem;
+  border-radius: 5px;
+  box-shadow: 3px 5px #7693be;
+}
+
+#amount {
+  margin-left: 10px;
+  font-size: 60px;
+  /* color: #0d6efd; */
+}
+
+#text {
+  margin-right: 10px;
+  text-align: end;
+  font-size: larger;
+}
+
+/* Style for the thumbnail image */
+.thumbnail {
+  width: 100px;
+  height: 100px;
+  cursor: pointer;
+}
+
+/* Style for the container that holds the enlarged image */
+.image-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9999;
+  display: none;
+}
+
+/* Style for the enlarged image */
+.image-modal img {
+  max-width: 100%;
+  max-height: 100%;
+}
+/*add dot -> appling spans*/
+.dot {
+  display: inline-block;
+  width: 17px;
+  height: 17px;
+  border-radius: 100%;
+  margin-left: 5px;
+  vertical-align: middle;
+}

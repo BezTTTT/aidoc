@@ -1,0 +1,134 @@
+{% extends "./component/header.html"%}
+
+{% block content %}
+<div class="row d-flex align-items-center justify-content-center pt-4">
+    <div class="card mb-4" style="width: max-content;">
+        <div class="card-body">
+            <h5 class="card-title">กรุณากรอกข้อมูลส่วนตัวของคนไข้</h5>
+            <form class="my-4" action="{{ url_for('patient_auth.register') }}" method="post" enctype="multipart/form-data">
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">ชื่อ (ไม่ต้องใส่คำนำหน้าชื่อ) <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="ชื่อ..." name="name" value="{{data.name}}"required></input>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">นามสกุล <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="นามสกุล..." name="surname" value="{{data.surname}}" required>
+                    </input>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">เลขที่บัตรประจำตัวประชาชน <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="เลขที่บัตรประจำตัวประชาชน..." name="national_id" value="{{session['national_id'] or data.national_id}}" maxlength="13" required
+                        {% if data.valid_national_id is defined and not data.valid_national_id %} style="border-color: rgba(244, 92, 92, 1);" {% endif %} >
+                    </input>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">ยืนยันเลขที่บัตรประจำตัวประชาชน <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="ยืนยันเลขที่บัตรประจำตัวประชาชน..."
+                        name="cnational_id" value="{{data.cnational_id}}" maxlength="13" required
+                        {% if data.valid_national_id is defined and not data.valid_national_id %} style="border-color: rgba(244, 92, 92, 1);" {% endif %} >
+                    </input>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">อาชีพ <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="อาชีพ..." name="job" value="{{data.job}}" required>
+                    </input>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">เพศ <span style="color: red;">*</span></label>
+                    <select name="sex" id="filter" class="form-control" value="{{data.sex}}" required>
+                        <option value="" {% if data.sex is none %}selected{% endif %} hidden>เพศ...</option>
+                        <option value="M" {% if data.sex=='M' %}selected{% endif %}>ชาย</option>
+                        <option value="F" {% if data.sex=='F' %}selected{% endif %}>หญิง</option>
+                    </select>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">ที่อยู่ <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="ที่อยู่..." name="address"
+                        value="{{data.address}}" required></input>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">จังหวัด <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="จังหวัด..." name="province"
+                        value="{{data.province}}" required></input>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">อีเมล (ไม่บังคับ)</label>
+                    <input type="text" class="form-control" placeholder="อีเมล..." name="email"
+                        value="{{data.email}}"></input>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">เบอร์โทรศัพท์ (ไม่บังคับ)</label>
+                    <input type="text" class="form-control" placeholder="เบอร์โทรศัพท์..." name="phone"
+                        value="{{data.phone}}" maxlength="10"
+                        {% if data.phoneInvalid %} style="border-color: rgba(244, 92, 92, 1);" {% endif %}>
+                    </input>
+                </div>
+                <div class="form-group py-2">
+                    <label for="dob_day">วันเกิด <span style="color: red;">*</span></label>
+                    <div class="row">
+                        <div class="col-3">
+                            <select id="dob_day" name="dob_day" class="form-control">
+                                {% if data['dob_day'] %}
+                                    <option value="{{ data['dob_day'] }}" selected>{{ data['dob_day'] }}</option>
+                                {% endif %}
+                                {% for day in range(1, 32) %}
+                                    <option value="{{ day }}">{{ day }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-5">
+                            <select id="dob_month" name="dob_month" class="form-control">
+                                {% set month_list_th = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน','กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'] %}
+                                {% if data['dob_month'] %}
+                                    <option value="{{ data['dob_month'] }}" selected>{{ month_list_th[data['dob_month'] | int -1] }}</option>
+                                {% else %}
+                                    <option value="1" selected>มกราคม</option>
+                                {% endif %}
+                                <option value="1">มกราคม</option>
+                                <option value="2">กุมภาพันธ์</option>
+                                <option value="3">มีนาคม</option>
+                                <option value="4">เมษายน</option>
+                                <option value="5">พฤษภาคม</option>
+                                <option value="6">มิถุนายน</option>
+                                <option value="7">กรกฎาคม</option>
+                                <option value="8">สิงหาคม</option>
+                                <option value="9">กันยายน</option>
+                                <option value="10">ตุลาคม</option>
+                                <option value="11">พฤศจิกายน</option>
+                                <option value="12">ธันวาคม</option>
+                            </select>
+                        </div>
+                        <div class="col-4">
+                            <select id="dob_year" name="dob_year" class="form-control">
+                                {% set current_BE_year = data['current_year']+543 %}
+                                {% if data['dob_year'] %}
+                                    <option value="{{ data['dob_year'] }}" selected>{{ data['dob_year'] }}</option>
+                                    {% for year in range(current_BE_year, current_BE_year-101, -1) %}
+                                        <option value="{{ year }}">{{ year }}</option>
+                                    {% endfor %}
+                                {% else %}
+                                    {% for year in range(current_BE_year, current_BE_year-101, -1) %}
+                                        {% if year == current_BE_year - 40 %}
+                                            <option value="{{ year }}" selected>{{ year }}</option>
+                                        {% else %}
+                                            <option value="{{ year }}">{{ year }}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="row d-flex justify-content-center">
+                    <div class="col d-flex justify-content-center">
+                        <a class="btn btn-outline-primary" type="submit" href="{{ url_for('index') }}">ย้อนกลับ</a>
+                    </div>
+                    <div class="col d-flex justify-content-center">
+                        <input class="btn btn-outline-success" type="submit" value="ตกลง">
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
