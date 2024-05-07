@@ -74,7 +74,7 @@
     <div class="m-auto loginContainer border border-top-0 p-4 rounded-bottom-3">
       <div class="card-body">
 
-        <form id="form-patient" action="/" method="post" enctype="multipart/form-data"
+        <form id="form-patient" action="/login/patient" method="post" enctype="multipart/form-data"
         {% if session['sender_mode'] is not defined or session['sender_mode']=='patient' %}
           style="display: block;"
         {% else %}
@@ -83,8 +83,8 @@
           <h5 class="card-title fw-bold">การตรวจคัดกรองรอยโรคมะเร็งในช่องปากด้วยตนเอง</h5>
           <div class="my-4">
             <div class="form-group">
-              <label class="mr-sm-2 mb-2">เลขบัตรประจำตัวประชาชน (13 หลัก):</label>
-              <input type="text" class="form-control" placeholder="รหัสบัตรประชาชน..." name="national_id"
+              <label class="mr-sm-2 mb-2">เลขบัตรประจำตัวประชาชน: </label>
+              <input type="text" class="form-control" placeholder="เลขบัตรประจำตัวประชาชน (13 หลัก)..." name="national_id"
                 maxlength="13"></input>
             </div>
           </div>
@@ -104,8 +104,8 @@
           <h5 class="card-title fw-bold">ระบบการนำส่งภาพถ่ายช่องปากโดยเจ้าหน้าที่ผู้ตรวจคัดกรอง</h5>
           <div class="my-4">
             <div class="form-group">
-              <label class="mr-sm-2 mb-2">เลขบัตรประจำตัวประชาชน (13 หลัก):</label>
-              <input type="text" class="form-control" placeholder="เลขประจำตัวประชาชน..." name="osm_national_id"
+              <label class="mr-sm-2 mb-2">เลขบัตรประจำตัวประชาชน: </label>
+              <input type="text" class="form-control" placeholder="เลขบัตรประจำตัวประชาชน (13 หลัก)..." name="osm_national_id"
                 maxlength="13"></input>
             </div>
             <div class="form-group mt-3">

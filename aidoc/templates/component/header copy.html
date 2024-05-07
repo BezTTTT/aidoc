@@ -95,7 +95,7 @@
                 href="{{url_for('profile_blueprint.profile_page')}}">ข้อมูลผู้ใช้</a>
             </li>
             <li class="nav-item">
-            {% if data['work'] == 'อสม.'%}
+            {% if data['job_position'] == 'อสม.'%}
               <a class="nav-link active" aria-current="page"
                 href="{{url_for('sender_history_blueprint.sender_history_page')}}">ประวัติ</a>
             {%else%}
