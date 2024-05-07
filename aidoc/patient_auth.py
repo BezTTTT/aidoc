@@ -30,6 +30,7 @@ def load_logged_in_user():
 def index():
     if request.method == 'POST':
         session.clear()
+        session['sender_mode'] = 'patient'
         national_id = request.form['national_id']
         
         db, cursor = get_db()
@@ -71,7 +72,6 @@ def register():
         data["job"] = request.form["job"]
         data["province"] = request.form["province"]
         data['address'] = request.form['address']
-
 
         data["valid_national_id"] = True
         data["valid_phone"] = True
