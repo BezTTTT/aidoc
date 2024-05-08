@@ -63,7 +63,7 @@
           ประชาชน
         </span>
 
-        <span {% if session['sender_mode']=='osm' %} class="nav-item nav-link active" {% else %} class="nav-item nav-link"
+        <span {% if not session['sender_mode']=='patient' %} class="nav-item nav-link active" {% else %} class="nav-item nav-link"
           {% endif %} id="login-osm-tab" data-toggle="tab" role="button" aria-controls="nav-osm"
           onclick="toggleLoginMode('osm')">
           เจ้าหน้าที่ผู้ตรวจคัดกรอง
@@ -73,13 +73,13 @@
 
     <div class="m-auto loginContainer border border-top-0 p-4 rounded-bottom-3">
       <div class="card-body">
-
+    
         <form id="form-patient" action="/login/patient" method="post" enctype="multipart/form-data"
-        {% if session['sender_mode'] is not defined or session['sender_mode']=='patient' %}
-          style="display: block;"
-        {% else %}
-          style="display: none;"
-        {% endif %}>
+          {% if session['sender_mode'] is not defined or session['sender_mode']=='patient' %}
+            style="display: block;"
+          {% else %}
+            style="display: none;"
+          {% endif %}>
           <h5 class="card-title fw-bold">การตรวจคัดกรองรอยโรคมะเร็งในช่องปากด้วยตนเอง</h5>
           <div class="my-4">
             <div class="form-group">
@@ -94,9 +94,9 @@
             </div>
           </div>
         </form>
-
+    
         <form id="form-osm" action="/login/osm" method="post" enctype="multipart/form-data"
-        {% if session['sender_mode']=='osm' %}
+        {% if not session['sender_mode']=='patient' %}
           style="display: block;"
         {% else %}
           style="display: none;"
@@ -105,8 +105,8 @@
           <div class="my-4">
             <div class="form-group">
               <label class="mr-sm-2 mb-2">เลขบัตรประจำตัวประชาชน: </label>
-              <input type="text" class="form-control" placeholder="เลขบัตรประจำตัวประชาชน (13 หลัก)..." name="osm_national_id"
-                maxlength="13"></input>
+              <input type="text" class="form-control" placeholder="เลขบัตรประจำตัวประชาชน (13 หลัก)..."
+                name="osm_national_id" maxlength="13"></input>
             </div>
             <div class="form-group mt-3">
               <label class="mr-sm-2 mb-2">เบอร์โทรศัพท์:</label>
@@ -121,32 +121,27 @@
               <input class="btn btn-outline-success" style="width: 100%;" type="submit" value="ตกลง">
             </div>
             <div class="col-6 d-flex justify-content-center">
-              <a class="btn btn-outline-primary" style="width: 100%;" type="submit"
-                href="/">ลงทะเบียน</a>
+              <a class="btn btn-outline-primary" style="width: 100%;" type="submit" href="/">ลงทะเบียน</a>
             </div>
           </div>
         </form>
       </div>
-
+    
     </div>
-
-    {% for message in get_flashed_messages() %}
-    <div class="alert alert-danger" role="alert">{{ message }}</div>
-    {% endfor %}
 
     <div class="card my-4" style="width: 100%;">
       <div class="card-body d-flex justify-content-evenly">
         <div class="row d-flex justify-content-center">
           <div class="col-md-3 d-flex justify-content-evenly">
-            <img src="static/doh.png" class="card d-flex justify-content-center" style="width: 50%;height: auto;border:0;"
+            <img src="{{ url_for('static', filename='doh.png') }}" class="card d-flex justify-content-center" style="width: 50%;height: auto;border:0;"
               alt="">
           </div>
           <div class="col-md-3 d-flex justify-content-around">
-            <img src="static/cmu.png" class="card d-flex justify-content-center" style="width: 50%;height: auto;border:0;"
+            <img src="{{ url_for('static', filename='cmu.png') }}" class="card d-flex justify-content-center" style="width: 50%;height: auto;border:0;"
               alt="">
           </div>
           <div class="col-md-3 d-flex justify-content-around">
-            <img src="static/thammasat.png" class="card d-flex justify-content-center"
+            <img src="{{ url_for('static', filename='thammasat.png') }}" class="card d-flex justify-content-center"
               style="width: 50%;height: auto;border:0;" alt="">
           </div>
         </div>
@@ -198,5 +193,6 @@
       </div>
     </div>
   </div>
+  <br>
 {% endif %}
 {% endblock %}

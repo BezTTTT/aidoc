@@ -1,0 +1,107 @@
+{% extends "./component/header.html"%}
+
+{% block content %}
+<div class="row d-flex align-items-center justify-content-center pt-4">
+    <div class="card mb-4" style="width: max-content;">
+        <div class="card-body">
+            <h5 class="card-title">ลงทะเบียนผู้ใช้งานระบบ</h5><br>
+            <label class="mr-sm-2"> <i> ระบบนี้เปิดให้ลงทะเบียนใช้งานได้เฉพาะกับทันตบุคลากรที่ผ่านการอบรมกับ <br> ศูนย์ทันตสาธารณสุขระหว่างประเทศ กรมอนามัย เท่านั้น </i><br>
+                <span style="color: red;"> <b>บุคคลภายนอก ไม่อนุญาติให้ใช้งาน</b></span></label><br><br>
+            <form class="my-4" action="{{ url_for('auth.dentist_register') }}" method="post" enctype="multipart/form-data">
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">ชื่อ (ไม่ต้องใส่คำนำหน้าชื่อ) <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="ชื่อ..." name="name" value="{{data.name}}"required></input>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">นามสกุล <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="นามสกุล..." name="surname" value="{{data.surname}}" required>
+                    </input>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">ตำแหน่งในทางสาธารณสุข <span style="color: red;">*</span></label>
+                    <select name="job_position" id="filter" class="form-control" value="{{data.job_position}}" required>
+                        <option value="" {% if data.job_position is none %}selected{% endif %} hidden>ตำแหน่งในทางสาธารณสุข...</option>
+                        <option value="OSM" {% if data.job_position=='OSM' %}selected{% endif %}>อสม.</option> 
+                        <option value="Dental Nurse" {% if data.job_position=='Dental Nurse' %}selected{% endif %}>ทันตาภิบาล/เจ้าพนักงานทันตสาธารณสุข</option>
+                        <option value="Dentist" {% if data.job_position=='Dentist' %}selected{% endif %}>ทันตแพทย์</option>
+                        <option value="Oral Pathologist" {% if data.job_position=='Oral Pathologist' %}selected{% endif %}>ทันตแพทย์เฉพาะทาง วิทยาการวินิจฉัยโรคช่องปาก</option>
+                        <option value="Oral and Maxillofacial Surgeon" {% if data.job_position=='Oral and Maxillofacial Surgeon' %}selected{% endif %}>ทันตแพทย์เฉพาะทาง ศัลยศาสตร์ช่องปากและแม็กซิลโลเฟเชียล</option>
+                        <option value="Physician" {% if data.job_position=='Physician' %}selected{% endif %}>แพทย์</option>
+                        <option value="Public Health Technical Officer" {% if data.job_position=='Public Health Technical Officer' %}selected{% endif %}>นักวิชาการสาธารณสุข</option>
+                        <option value="Computer Technical Officer" {% if data.job_position=='Computer Technical Officer' %}selected{% endif %}>นักวิชาการคอมพิวเตอร์/นักวิจัย/ผู้พัฒนาระบบ</option>
+                        <option value="Other Public Health Officer" {% if data.job_position=='Other Public Health Officer' %}selected{% endif %}>ข้าราชการ/เจ้าพนักงานกระทรวงสาธารณสุข</option>
+                        <option value="Other Government Officer" {% if data.job_position=='Other Government Officer' %}selected{% endif %}>เจ้าหน้าที่รัฐอื่น</option>
+                        <option value="General Public" {% if data.job_position=='General Public' %}selected{% endif %}>บุคคลทั่วไป</option>
+                    </select>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">กรณีที่ท่านระบุตำแหน่งเป็น อสม. หรือ บุคคลทั่วไป กรุณาระบุอาชีพ <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="กรุณาระบุอาชีพ..." name="osm_job" value="{{data.osm_job}}">
+                    </input>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">กรณีที่ท่านระบุตำแหน่งเป็น ทันตแพทย์ หรือ แพทย์ กรุณาระบุเลขที่ใบอนุญาตฯ <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="กรุณาระบุเลขที่ใบอนุญาตฯ..." name="license" value="{{data.license}}">
+                    </input>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">โรงพยาบาลที่สังกัด <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="โรงพยาบาลที่สังกัด..." name="hospital" value="{{data.hospital}}" required>
+                    </input>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">จังหวัด <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="จังหวัด..." name="province" value="{{data.province}}" required>
+                    </input>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">เบอร์โทรศัพท์ <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="เบอร์โทรศัพท์..." name="phone" value="{{ data.phone}}" maxlength="10">
+                    </input>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">อีเมล <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="อีเมล..." name="email" value="{{ data.email}}" >
+                    </input>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 form-group py-2">
+                        <label class="mr-sm-2 mb-2">ชื่อผู้ใช้งาน (Username ควรใช้ภาษาอังกฤษ) <span style="color: red;">*</span></label>
+                        <input type="text" class="form-control" placeholder="ชื่่อผู้ใช้งาน..." name="username"
+                            value="{{data.username}}" required
+                            {% if data.usernameInvalid %} 
+                                style="border-color: rgba(244, 92, 92, 1);"
+                            {% endif %}
+                        ></input>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 form-group py-2">
+                        <label class="mr-sm-2 mb-2">รหัสผ่าน <span style="color: red;">*</span></label>
+                        <input type="password" class="form-control" placeholder="รหัสผ่าน..."
+                            name="password" required
+                            {% if data.validPass is defined and not data.valid_password %} 
+                                style="border-color: rgba(244, 92, 92, 1);"
+                            {% endif %}
+                        ></input>
+                    </div>
+                    <div class="col-md-6 form-group py-2">
+                        <label class="mr-sm-2 mb-2">ยืนยันรหัสผ่าน <span style="color: red;">*</span></label>
+                        <input type="password" class="form-control" placeholder="รหัสผ่าน..."
+                            name="cfpassword" required
+                            {% if data.validPass is defined and not data.valid_password %} 
+                                style="border-color: rgba(244, 92, 92, 1);"
+                            {% endif %}
+                        ></input>
+                    </div>
+
+                </div>
+                <div class="d-flex justify-content-center my-3">
+                    <input class="btn btn-outline-success" style="width: 60%;" type="submit" value="ตกลง">
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -69,7 +69,7 @@ def patient_login():
             data["email"] = ''
         return render_template("patient_register.html", data=data)
 
-@bp.route('/patient_register', methods=('GET', 'POST'))
+@bp.route('/register/patient', methods=('GET', 'POST'))
 def patient_register():
     data = {} # a data container to store submitted values from the form
     data['current_year'] = datetime.date.today().year # set the current Thai Year to the global variable
@@ -98,7 +98,7 @@ def patient_register():
         # Validation 1: National ID must follow the CheckSum rule (disable if international) [DISABLE in TEST]
         # Validation 2: National ID and Retyped National ID must match
         #if (data["national_id"] and not validate_national_id(data["national_id"]) or
-        if (data["national_id"] != request.form["cnational_id"]
+        if (data["national_id"] != request.form["cfnational_id"]
         ):
             error_msg = "กรุณากรอกรหัสบัตรประชาชนให้ถูกต้อง"
             data["national_id"] = None
@@ -206,7 +206,7 @@ def osm_login():
         data["province"] = user["province"]
         return render_template("osm_register.html", data=data)
 
-@bp.route('/osm_register', methods=('GET', 'POST'))
+@bp.route('/register/osm', methods=('GET', 'POST'))
 def osm_register():
     data = {} # a data container to store submitted values from the form
     if request.method == 'POST':
@@ -295,6 +295,130 @@ def osm_register():
         return redirect(url_for("index"))
 
     return render_template("osm_register.html", data=data)
+
+@bp.route('/dentist', methods=('GET', 'POST'))
+@bp.route('/login/dentist', methods=('GET', 'POST'))
+def dentist_login():
+
+    session['sender_mode'] = 'dentist'
+
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']      
+        error_msg = None
+        db, cursor = get_db()
+        cursor.execute(
+            'SELECT * FROM user WHERE username = %s', (username,)
+        )
+        user = cursor.fetchone()
+
+        if user is None:
+            error_msg = "ไม่พบรหัสผู้ใช้ โปรดลองอีกครั้งหนึ่งหรือสมัครบัญชีใหม่ ... หากลืมกรุณาติดต่อศูนย์ทันตสาธารณสุขระหว่างประเทศ"
+        elif not check_password_hash(user['password'], password):
+            error_msg = "รหัสผ่านไม่ถูกต้อง โปรดลองอีกครั้งหนึ่ง ... หากลืมกรุณากดเลือก ลืมรหัสผ่าน"
+
+        if error_msg is None:
+            session.clear()
+            session['user_id'] = user['id']
+            return redirect(url_for('dentist'))
+        
+        flash(error_msg)
+
+    return render_template("dentist_login.html")
+
+@bp.route('/register/dentist', methods=('GET', 'POST'))
+def dentist_register():
+    data = {} # a data container to store submitted values from the form
+    if request.method == 'POST':
+        # This section extract the submitted form to 
+        prefixList = ["นาย ", "นาง ", "นางสาว ", "น.ส.", "น.", "นส."]
+        #data["name"] = remove_prefix(request.form["name"], prefixList)
+        data["name"] = request.form["name"]
+        data["surname"] = request.form["surname"]
+        data["job_position"] = request.form["job_position"]
+        data["osm_job"] = request.form["osm_job"]
+        data["license"] = request.form["license"]
+        data["hospital"] = request.form["hospital"]
+        data["province"] = request.form["province"]
+        data["email"] = request.form["email"]
+        data["username"] = request.form["username"]
+        data["password"] = request.form["password"]
+        data["phone"] = request.form["phone"]
+
+        data["valid_password"] = True
+        data["valid_phone"] = True
+        
+        # this section validate the input data, if fails, redirect back to the form
+
+        # Validation 1: National ID must follow the CheckSum rule (disable if international) [DISABLE in TEST]
+        if (data["password"] != request.form["cfpassword"]
+        ):
+            error_msg = "กรุณากรอกรหัสผ่านให้ตรงกันทั้งสองครั้ง"
+            data["password"] = None
+            data["valid_password"] = False
+            flash(error_msg)
+            return (render_template("dentist_register.html", data=data))
+
+        '''
+        #Check license duplicate in patient and user
+        check_patient_license = check_if_duplicate(data,"license","patients")
+        check_user_license = check_if_duplicate(data,"license","users")
+        if check_patient_license == True or check_user_license== True:
+            data["status"] ,data["userId"],data['error'],data["licenseInvalid"] =  "รหัสบัตรประชาชนนี้ถูกใช้ไปแล้วกรุณาใช้รหัสบัตรประชาชนอื่น",None,True,True
+            return ( render_template("patients/register.html",data=data,),200,)
+        '''
+        data["name"] = request.form["name"]
+        data["surname"] = request.form["surname"]
+        data["job_position"] = request.form["job_position"]
+        data["osm_job"] = request.form["osm_job"]
+        data["license"] = request.form["license"]
+        data["hospital"] = request.form["hospital"]
+        data["province"] = request.form["province"]
+        data["email"] = request.form["email"]
+        data["username"] = request.form["username"]
+        data["password"] = request.form["password"]
+        data["phone"] = request.form["phone"]
+
+        # Pack data for SQL query
+        val = (
+                data["name"],
+                data["surname"],
+                data["email"],
+                data["phone"],
+                data["username"],
+                generate_password_hash(data["password"]),
+                data["job_position"],
+                data["osm_job"],
+                data["hospital"],
+                data["province"],
+                data["license"]
+            )
+
+        db, cursor = get_db()
+        if session.get('user_id'): # Check if the user is already registered (checked by auth.osm_login)
+            sql = "UPDATE user SET name=%s, surname=%s, email=%s, phone=%s, username=%s, password=%s, job_position=%s, osm_job=%s, hospital=%s, province=%s, license=%s WHERE id=%s"
+            val = val + (session['user_id'],)
+            cursor.execute(sql, val)
+        else:
+            sql = "INSERT INTO user (name, surname, email, phone, username, password, job_position, osm_job, hospital, province, license) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+            cursor.execute(sql, val)
+
+             # Load the newly registered user to the session
+            # db, cursor = get_db()
+            cursor.execute('SELECT id FROM user WHERE username=%s', (data["username"],))
+            new_user = cursor.fetchone()
+            session['user_id'] = new_user['id']
+            load_logged_in_user()       
+        
+        # session['national_id'] is used to carry out id from login to register
+        # After the registration is complete, this (sensitive) variable should be deleted
+        if 'national_id' in session:  
+            session.pop('national_id',None) 
+            session.pop('phone',None)  
+            
+        return redirect(url_for("dentist"))
+
+    return render_template("dentist_register.html", data=data)
 
 @bp.route('/logout')
 def logout():
