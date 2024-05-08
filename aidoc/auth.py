@@ -23,7 +23,11 @@ def load_logged_in_user():
         cursor.execute(
             'SELECT * FROM user WHERE id = %s', (user_id,)
         )
-        g.user = cursor.fetchone()
+        user = cursor.fetchone()
+        if user is None:
+            session.clear()
+        else:
+            g.user = user
 
 @bp.route('/')
 def index():
@@ -31,7 +35,6 @@ def index():
 
 @bp.route('/login/patient', methods=('Post', ))
 def patient_login():
-        
     session.clear()
     session['sender_mode'] = 'patient'
     national_id = request.form['national_id']
@@ -346,18 +349,48 @@ def dentist_register():
         data["phone"] = request.form["phone"]
 
         data["valid_password"] = True
-        data["valid_phone"] = True
+        data["valid_username"] = True
         
         # this section validate the input data, if fails, redirect back to the form
 
-        # Validation 1: National ID must follow the CheckSum rule (disable if international) [DISABLE in TEST]
-        if (data["password"] != request.form["cfpassword"]
-        ):
+        # Validation 1: Password must matched confirmed password
+        if (data["password"] != request.form["cfpassword"]):
             error_msg = "กรุณากรอกรหัสผ่านให้ตรงกันทั้งสองครั้ง"
-            data["password"] = None
+            data["password"] = ""
             data["valid_password"] = False
             flash(error_msg)
             return (render_template("dentist_register.html", data=data))
+
+        # Validation 2: Check if there is the username is already taken
+        '''
+        db, cursor = get_db()
+        cursor.execute('SELECT id FROM user WHERE username=%s', (data["username"], ))
+        duplicate_username = cursor.fetchall() # Result in list of dicts
+        if len(duplicate_username)>0:
+            error_msg = "รหัสผู้ใช้ (Username) นี้ มีผู้อื่นใช้ไปแล้ว กรุณาเลือกรหัสผู้ใช้ใหม่"
+            data["username"] = ""
+            data["valid_username"] = False
+            flash(error_msg)
+            return (render_template("dentist_register.html", data=data))
+        '''
+
+        # Validation 3: Check if there is a user with the same (name, surname) or email or phone
+        if request.form.get("create_new_account") is None and request.form.get("merge_account") is None:
+            db, cursor = get_db()
+            cursor.execute('SELECT id, name, surname, email, phone, is_patient FROM user WHERE username IS NULL AND name=%s AND surname=%s AND phone=%s',
+                        (data["name"], data["surname"], data["phone"]))
+            duplicate_user = cursor.fetchall() # Result in list of dicts
+            if len(duplicate_user)>0:
+                duplicate_user = duplicate_user[0] # Select only the first matched user
+                if duplicate_user['is_patient']:
+                    error_msg = "ตรวจพบข้อมูลของท่านใน [ระบบประชาชน] ... ท่านต้องการรวมบัญชีหรือไม่? กดปุ่มสีเขียวเพื่อรวมบัญชี กดปุ่มสีเหลืองเพื่อสร้างบัญชีใหม่แยก"
+                else:
+                    error_msg = "ตรวจพบข้อมูลของท่านใน [ระบบเจ้าหน้าที่ผู้ตรวจคัดกรอง] ... ท่านต้องการรวมบัญชีหรือไม่? กดปุ่มสีเขียวเพื่อรวมบัญชี กดปุ่มสีเหลืองเพื่อสร้างบัญชีใหม่แยก"
+                error_msg += f" [ ข้อมูลซ้ำ: คุณ {duplicate_user['name']} {duplicate_user['surname']} ]"
+                flash(error_msg)
+                data["dublicate_flag"] = True
+                session['user_id'] = duplicate_user['id']
+                return (render_template("dentist_register.html", data=data))
 
         '''
         #Check license duplicate in patient and user
@@ -393,9 +426,8 @@ def dentist_register():
                 data["province"],
                 data["license"]
             )
-
         db, cursor = get_db()
-        if session.get('user_id'): # Check if the user is already registered (checked by auth.osm_login)
+        if request.form.get("merge_account"): # Check if the user is already registered (checked by auth.osm_login)
             sql = "UPDATE user SET name=%s, surname=%s, email=%s, phone=%s, username=%s, password=%s, job_position=%s, osm_job=%s, hospital=%s, province=%s, license=%s WHERE id=%s"
             val = val + (session['user_id'],)
             cursor.execute(sql, val)
@@ -409,7 +441,6 @@ def dentist_register():
             new_user = cursor.fetchone()
             session['user_id'] = new_user['id']
             load_logged_in_user()       
-        
         # session['national_id'] is used to carry out id from login to register
         # After the registration is complete, this (sensitive) variable should be deleted
         if 'national_id' in session:  

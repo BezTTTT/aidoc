@@ -20,7 +20,7 @@
                 <div class="form-group py-2">
                     <label class="mr-sm-2">ตำแหน่งในทางสาธารณสุข <span style="color: red;">*</span></label>
                     <select name="job_position" id="filter" class="form-control" value="{{data.job_position}}" required>
-                        <option value="" {% if data.job_position is none %}selected{% endif %} hidden>ตำแหน่งในทางสาธารณสุข...</option>
+                        <option value="" {% if data.job_position is none %}selected{% endif %} hidden>เลือก...</option>
                         <option value="OSM" {% if data.job_position=='OSM' %}selected{% endif %}>อสม.</option> 
                         <option value="Dental Nurse" {% if data.job_position=='Dental Nurse' %}selected{% endif %}>ทันตาภิบาล/เจ้าพนักงานทันตสาธารณสุข</option>
                         <option value="Dentist" {% if data.job_position=='Dentist' %}selected{% endif %}>ทันตแพทย์</option>
@@ -45,8 +45,8 @@
                     </input>
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">โรงพยาบาลที่สังกัด <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="โรงพยาบาลที่สังกัด..." name="hospital" value="{{data.hospital}}" required>
+                    <label class="mr-sm-2">โรงพยาบาลหรือหน่วยงานที่สังกัด <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="โรงพยาบาลหรือหน่วยงานที่สังกัด..." name="hospital" value="{{data.hospital}}" required>
                     </input>
                 </div>
                 <div class="form-group py-2">
@@ -69,7 +69,7 @@
                         <label class="mr-sm-2 mb-2">ชื่อผู้ใช้งาน (Username ควรใช้ภาษาอังกฤษ) <span style="color: red;">*</span></label>
                         <input type="text" class="form-control" placeholder="ชื่่อผู้ใช้งาน..." name="username"
                             value="{{data.username}}" required
-                            {% if data.usernameInvalid %} 
+                            {% if data.valid_username is defined and not data.valid_username %} 
                                 style="border-color: rgba(244, 92, 92, 1);"
                             {% endif %}
                         ></input>
@@ -81,7 +81,7 @@
                         <label class="mr-sm-2 mb-2">รหัสผ่าน <span style="color: red;">*</span></label>
                         <input type="password" class="form-control" placeholder="รหัสผ่าน..."
                             name="password" required
-                            {% if data.validPass is defined and not data.valid_password %} 
+                            {% if data.valid_password is defined and not data.valid_password %} 
                                 style="border-color: rgba(244, 92, 92, 1);"
                             {% endif %}
                         ></input>
@@ -90,16 +90,36 @@
                         <label class="mr-sm-2 mb-2">ยืนยันรหัสผ่าน <span style="color: red;">*</span></label>
                         <input type="password" class="form-control" placeholder="รหัสผ่าน..."
                             name="cfpassword" required
-                            {% if data.validPass is defined and not data.valid_password %} 
+                            {% if data.valid_password is defined and not data.valid_password %} 
                                 style="border-color: rgba(244, 92, 92, 1);"
                             {% endif %}
                         ></input>
                     </div>
 
                 </div>
-                <div class="d-flex justify-content-center my-3">
-                    <input class="btn btn-outline-success" style="width: 60%;" type="submit" value="ตกลง">
-                </div>
+                {% if data.dublicate_flag is undefined %}
+                    <div class="row d-flex justify-content-center">
+                        <div class="col d-flex justify-content-center">
+                            <a class="btn btn-outline-primary" style="width: 100%;" type="submit" href="/logout">ยกเลิก</a>
+                        </div>
+                        <div class="col d-flex justify-content-center">
+                            <input class="btn btn-success" style="width: 100%;" type="submit" value="ลงทะเบียน">
+                        </div>
+                    </div>
+                {% else %}
+                    <br><br>
+                    <div class="row d-flex justify-content-center">
+                        <div class="col d-flex justify-content-center">
+                            <input name="create_new_account" class="btn btn-warning" style="width: 100%;" type="submit" value="สร้างบัญชีใหม่แยก">
+                        </div>
+                        <div class="col d-flex justify-content-center">
+                            <input name="merge_account" class="btn btn-success" style="width: 100%;" type="submit" value="รวมข้อมูลกับบัญชีเดิม">
+                        </div>
+                    </div>
+                    <div class="col d-flex justify-content-center">
+                        <a class="btn btn-outline-primary my-2" style="width: 50%;" type="submit" href="/dentist">ยกเลิก</a>
+                    </div>
+                {% endif %}
             </form>
         </div>
     </div>

@@ -53,19 +53,11 @@
 
     <nav class="m-auto loginContainer p-0">
       <div class="nav nav-tabs" id="nav-tab" role="tablist">
-        <span
-          {% if session['sender_mode'] is not defined or session['sender_mode']=='patient' %}
-            class="nav-item nav-link active"
-          {% else %}
-            class="nav-item nav-link"
-          {% endif %}
-          id="login-patient-tab" data-toggle="tab" role="button" aria-controls="nav-patient" onclick="toggleLoginMode('patient')">
+        <span class="nav-item nav-link active" id="login-patient-tab" data-toggle="tab" role="button" aria-controls="nav-patient" onclick="toggleLoginMode('patient')">
           ประชาชน
         </span>
 
-        <span {% if not session['sender_mode']=='patient' %} class="nav-item nav-link active" {% else %} class="nav-item nav-link"
-          {% endif %} id="login-osm-tab" data-toggle="tab" role="button" aria-controls="nav-osm"
-          onclick="toggleLoginMode('osm')">
+        <span class="nav-item nav-link" id="login-osm-tab" data-toggle="tab" role="button" aria-controls="nav-osm" onclick="toggleLoginMode('osm')">
           เจ้าหน้าที่ผู้ตรวจคัดกรอง
         </span>
       </div>
@@ -73,19 +65,12 @@
 
     <div class="m-auto loginContainer border border-top-0 p-4 rounded-bottom-3">
       <div class="card-body">
-    
-        <form id="form-patient" action="/login/patient" method="post" enctype="multipart/form-data"
-          {% if session['sender_mode'] is not defined or session['sender_mode']=='patient' %}
-            style="display: block;"
-          {% else %}
-            style="display: none;"
-          {% endif %}>
+        <form id="form-patient" action="/login/patient" method="post" enctype="multipart/form-data" style="display: block;">
           <h5 class="card-title fw-bold">การตรวจคัดกรองรอยโรคมะเร็งในช่องปากด้วยตนเอง</h5>
           <div class="my-4">
             <div class="form-group">
               <label class="mr-sm-2 mb-2">เลขบัตรประจำตัวประชาชน: </label>
-              <input type="text" class="form-control" placeholder="เลขบัตรประจำตัวประชาชน (13 หลัก)..." name="national_id"
-                maxlength="13"></input>
+              <input type="text" class="form-control" placeholder="เลขบัตรประจำตัวประชาชน (13 หลัก)..." name="national_id" maxlength="13" required></input>
             </div>
           </div>
           <div class="row">
@@ -95,24 +80,17 @@
           </div>
         </form>
     
-        <form id="form-osm" action="/login/osm" method="post" enctype="multipart/form-data"
-        {% if not session['sender_mode']=='patient' %}
-          style="display: block;"
-        {% else %}
-          style="display: none;"
-        {% endif %}>
+        <form id="form-osm" action="/login/osm" method="post" enctype="multipart/form-data" style="display: none;">
           <h5 class="card-title fw-bold">ระบบการนำส่งภาพถ่ายช่องปากโดยเจ้าหน้าที่ผู้ตรวจคัดกรอง</h5>
           <div class="my-4">
             <div class="form-group">
               <label class="mr-sm-2 mb-2">เลขบัตรประจำตัวประชาชน: </label>
-              <input type="text" class="form-control" placeholder="เลขบัตรประจำตัวประชาชน (13 หลัก)..."
-                name="osm_national_id" maxlength="13"></input>
+              <input type="text" class="form-control" placeholder="เลขบัตรประจำตัวประชาชน (13 หลัก)..." name="osm_national_id" maxlength="13" required></input>
             </div>
             <div class="form-group mt-3">
               <label class="mr-sm-2 mb-2">เบอร์โทรศัพท์:</label>
               <div class="d-flex">
-                <input type="text" class="form-control" placeholder="เบอร์โทรศัพท์..." name="osm_phone"
-                  maxlength="10"></input>
+                <input type="text" class="form-control" placeholder="เบอร์โทรศัพท์..." name="osm_phone" maxlength="10" required></input>
               </div>
             </div>
           </div>
@@ -121,7 +99,7 @@
               <input class="btn btn-outline-success" style="width: 100%;" type="submit" value="ตกลง">
             </div>
             <div class="col-6 d-flex justify-content-center">
-              <a class="btn btn-outline-primary" style="width: 100%;" type="submit" href="/">ลงทะเบียน</a>
+              <a class="btn btn-outline-primary" style="width: 100%;" type="submit" href="/register/osm">ลงทะเบียน</a>
             </div>
           </div>
         </form>

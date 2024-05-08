@@ -66,8 +66,13 @@
                         {% if data.phoneInvalid %} style="border-color: rgba(244, 92, 92, 1);" {% endif %}>
                     </input>
                 </div>
-                <div class="d-flex justify-content-center my-3">
-                    <input class="btn btn-outline-success" style="width: 60%;" type="submit" value="ตกลง">
+                <div class="row">
+                    <div class="col d-flex justify-content-center">
+                        <a class="btn btn-outline-primary" style="width: 100%;" type="submit" href="/logout">ยกเลิก</a>
+                    </div>
+                    <div class="col-6 d-flex justify-content-center">
+                        <input class="btn btn-success" style="width: 100%;" type="submit" value="ลงทะเบียน">
+                    </div>
                 </div>
             </form>
         </div>
