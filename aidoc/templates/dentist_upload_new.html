@@ -7,36 +7,50 @@
 </h2>
 
 <h4 class="text-center">
-    (Artificial Intelligent System for Detecting and Analyzing PMDs and Oral
-    Cancer)
+    (Artificial Intelligent System for Detecting and Analyzing PMDs and Oral Cancer)
 </h4>
 
-<div class="container-fluid">
-  <div style="width: auto"></div>
-  <div class="row d-flex justify-content-center align-items-center text-center">
-    <div class="col-8 col-xs-2 d-flex justify-content-center align-items-center">
-      <form class="p-3 text-center" action="/image/dentist" method="post" enctype="multipart/form-data">
-        <input id="file-upload1" type="file" name="imageList" onchange="form.submit()" multiple accept="image/*" hidden />
-        <div class="d-flex align-items-center" style="width: 100%">
-          <label for="file-upload1" class="card d-flex justify-content-center align-items-center" style="
-                border-style: dashed;
-                border-color: rgb(0, 229, 255); 
-                border-width: 2px;
-                width: 22rem;
-                height: 20  rem;
-                cursor: pointer;
-                padding: 10px;
-              ">
-            <div class="d-flex justify-content-center align-items-center img-responsive">
-              <img src="{{url_for('static', filename='upload_icon.png')}}" style="width: 30%;" class="card-img-top">
-            </div>
-            คลิกเพื่ออัพโหลดรูปภาพ<br />(กรุณาอัพโหลดรูปช่องปากที่ได้มาตรฐานเท่านั้น)
-          </label>
-        </div>
-      </form> 
+{% if data.get('imagePath') is none %}
+  <div class="container-fluid">
+    <div style="width: auto"></div>
+    <div class="row d-flex justify-content-center align-items-center text-center">
+      <div class="col-8 col-xs-2 d-flex justify-content-center align-items-center">
+        <form class="p-3 text-center" action="/upload/dentist" method="post" enctype="multipart/form-data">
+          <input id="file-upload1" type="file" name="imageList" onchange="form.submit()" accept="image/*" multiple hidden />
+          <div class="d-flex align-items-center" style="width: 100%">
+            <label for="file-upload1" class="card d-flex justify-content-center align-items-center" style="
+                  border-style: dashed;
+                  border-color: rgb(0, 229, 255); 
+                  border-width: 2px;
+                  width: 22rem;
+                  height: 20  rem;
+                  cursor: pointer;
+                  padding: 10px;
+                ">
+              <div class="d-flex justify-content-center align-items-center img-responsive">
+                <img src="{{url_for('static', filename='upload_icon.png')}}" style="width: 30%;" class="card-img-top">
+              </div>
+              คลิกเพื่ออัพโหลดรูปภาพ<br />(กรุณาอัพโหลดรูปช่องปากที่ได้มาตรฐานเท่านั้น)
+            </label>
+          </div>
+        </form> 
+      </div>
     </div>
   </div>
-</div>
+{% else %}
+  <div class="p-3 text-center d-flex justify-content-center">
+    <div class="col-md-4">
+      <img id="previewImage" src="{{ url_for('image.get_temp_thumbnail', imagename=data['imagePath']) }}" class="card d-flex mx-auto" alt="" />
+      <div class="my-3">
+        <a class="btn btn-outline-warning mb-2" href="/upload/dentist">เปลี่ยนรูป</a>
+        <form action="/upload/dentist" method="post" enctype="multipart/form-data">
+          <input name="imagePath" type="text" value="{{data['imagePath']}}" hidden />
+          <input name="rotation_submitted" type="submit" class="btn btn-outline-primary mb-2" value="คนไข้ควรหัวตั้งขึ้น หรือ กดปุ่มนี้เพื่อหมุนรูป"/>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endif %}
 {% include 'examples_footer.html' %}
 {% include 'terms_footer.html' %}
 {% endblock %}

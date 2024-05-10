@@ -25,17 +25,19 @@ def load_logged_in_user():
         )
         user = cursor.fetchone()
         if user is None:
-            session.clear()
+            session.pop('user_id', None)
         else:
             g.user = user
 
 @bp.route('/')
 def index():
-    return render_template("patient_login.html")
+    if session.get('sender_mode') is not None or session.get('sender_mode')=='dentist':
+        return render_template("dentist_login.html")
+    else:
+        return render_template("patient_login.html")
 
 @bp.route('/login/patient', methods=('Post', ))
 def patient_login():
-    session.clear()
     session['sender_mode'] = 'patient'
     national_id = request.form['national_id']
     
@@ -176,7 +178,6 @@ def patient_register():
 @bp.route('/login/osm', methods=('Post', ))
 def osm_login():
         
-    session.clear()
     session['sender_mode'] = 'osm'
     national_id = request.form['osm_national_id']
     phone = request.form['osm_phone']
@@ -321,13 +322,15 @@ def dentist_login():
             error_msg = "รหัสผ่านไม่ถูกต้อง โปรดลองอีกครั้งหนึ่ง ... หากลืมกรุณากดเลือก ลืมรหัสผ่าน"
 
         if error_msg is None:
-            session.clear()
             session['user_id'] = user['id']
             return redirect(url_for('image.dentist_upload'))
         
         flash(error_msg)
 
-    return render_template("dentist_login.html")
+    if g.user:
+        return redirect(url_for('image.dentist_upload'))
+    else:
+        return render_template("dentist_login.html")
 
 @bp.route('/register/dentist', methods=('GET', 'POST'))
 def dentist_register():
@@ -453,7 +456,7 @@ def dentist_register():
 
 @bp.route('/logout')
 def logout():
-    if session.get('sender_mode') is not None or session.get('sender_mode')=='dentist':
+    if session.get('sender_mode') is not None and session.get('sender_mode')=='dentist':
         session.clear()
         g.user = None
         return redirect(url_for('dentist'))
@@ -466,7 +469,10 @@ def login_required(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
         if g.user is None:
-            return redirect(url_for('auth.login'))
+            if session.get('sender_mode') is not None and session.get('sender_mode')=='dentist':
+                return redirect(url_for('auth.dentist_login'))
+            else:
+                return redirect(url_for('auth.patient_login'))
         return view(**kwargs)
     return wrapped_view
 
@@ -495,169 +501,3 @@ def validate_phone(phone_number):
     phone_pattern = r'^\d{9,10}$'
     return re.match(phone_pattern, phone_number) is not None
 
-'''
-def check_if_duplicate(data,attribute,table):
-    # Check if exists Email
-    sql = "SELECT "+attribute+" FROM "+table+";"
-    mycursor.execute(sql)
-    all_data = mycursor.fetchall()
-    mydb.commit()
-    lst_all = []
-    for i in range(len(all_data)):
-        lst_all.append(list(all_data[i].values())[0])
-    
-    if data[attribute] in lst_all:
-        return True
-'''
-
-'''
-@bp.route("/patient", methods=["GET"])
-def patients_login_page():
-    try:
-        
-        # data = get_cookies()
-        data = get_cookies()
-        mydb.reconnect(attempts=1, delay=0)  # reconnect to database if timeout
-        data['page'] = "patient"
-        print("trigger login page patient")
-        if(data['role']!='patient' and request.cookies.get('role')!=None):
-            #clear cookie
-            
-            respond = make_response(redirect(url_for("patients_auth_blueprint.patients_login_page")))
-            respond.set_cookie("userID", "", expires=0)
-            respond.set_cookie("username", "", expires=0)
-            respond.set_cookie("usersurname", "", expires=0)
-            respond.set_cookie("role", "", expires=0)
-            respond.set_cookie("work", "", expires=0)
-            
-            return respond
-        return render_template("patients/login.html", data=data), 200
-    except Exception as e:
-        traceback.print_exc()
-        print(e)
-        push_log(str(e)) # push error on logs file
-        return render_template("patients/login.html", data={"userId": None}), 200
-
-
-@patients_auth_blueprint.route("/patient", methods=["POST"])
-def patient_login_post():
-    mydb.reconnect(attempts=1, delay=0)  # reconnect to database if timeout
-    if request.method == "POST":
-        licenseId = request.form["license"]
-        current_year = int(datetime.datetime.now().year) +543 #Thai Year
-
-        if licenseId == "" :
-            return (
-                render_template(
-                    "/patients/login.html",
-                    data={
-                        "status": "กรุณาใส่รหัสประจำตัวประชาชน",
-                        "userId": None,
-                        "error": True,
-                        "page": 'patient',
-                    },
-                ),
-                200,
-            )
-        elif len(licenseId) != 13 :
-            return (
-                render_template(
-                    "/patients/login.html",
-                    data={
-                        "status": "กรุณาใส่รหัสประจำตัวประชาชนให้ครบ13หลัก",
-                        "userId": None,
-                        "error": True,
-                        "page": 'patient',
-                    },
-                ),
-                200,
-            )
-
-
-
-        sql = "SELECT * FROM patients WHERE license = %s" #Login by Patients license
-        val = (licenseId,)
-        mycursor.execute(sql, val)
-        patient_license_res = mycursor.fetchall()
-
-
-        #Check username or email to login and check if does not have username in out database
-        if len(patient_license_res) != 0:
-            res = patient_license_res
-        else:
-            return (
-                render_template(
-                    "/patients/register.html",
-                    data={
-                        "status": "กรุณาลงทะเบียน เลขบัตรประจำตัวประชาชนของท่านยังไม่ถูกลงทะเบียนในระบบ",
-                        "userId": None,
-                        "error": True,
-                        "page": 'patient',
-                        "current_year":current_year,
-                        "license":licenseId,
-                    },
-                ),
-                200,
-            )
-
-        try:
-            res = res[0]  # get json
-            print(res)
-
-            #Check return role user or patient
-            print("Role",res['role'])
-            if res['role'] == "user" or res['role'] == "admin":
-                respond = make_response(redirect("/history"))
-            elif res['role'] == "patient":
-                respond = make_response(redirect("/main"))
-                
-            expire_date = datetime.datetime.now()
-            expire_date = expire_date + datetime.timedelta(days=0.2)
-
-            respond.set_cookie("userID", str(res["id"]), expires=expire_date)
-            respond.set_cookie("username", res["fullname"], expires=expire_date)
-            respond.set_cookie("role", res["role"], expires=expire_date)
-            respond.set_cookie("work",res["work"], expires=expire_date) 
-            # add log
-            try:
-                add_login_log(
-                    res["id"], res["name"] + " " + res["surname"], res["role"], "login"
-                )
-            except:
-                add_login_log(
-                    res["id"], res['fullname'], res["role"], "login"
-                )
-            
-            client_ip = request.remote_addr
-            user_agent = request.headers.get('User-Agent', 'N/A')
-            print("user_agent : ", user_agent)
-            print("client_ip : ", client_ip)
-            # Counting user login
-            print("User : ", res['fullname'], " Login Succes!!!")  # print(username who login)
-            push_log("User : "+str(res['fullname'])+" Login Succes!!!")
-            # global user_login_count
-            # user_login_count += 1
-            # print("Now Login Users = ", user_login_count)
-            return respond
-
-        except Exception as e:
-            traceback.print_exc()
-            print(e)
-            push_log(str(e)) # push error on logs file
-            return (
-                render_template(
-                    "patients/login.html",
-                    data={
-                        "status": "Can not connect to database. Please try again after.",
-                        "userId": None,
-                        "error": True,
-                    },
-                ),
-                200,
-            )
-    return render_template("patients/login.html", data={"userId": None}), 200
-
-
-
-
-'''
