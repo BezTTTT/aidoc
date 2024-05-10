@@ -323,7 +323,7 @@ def dentist_login():
         if error_msg is None:
             session.clear()
             session['user_id'] = user['id']
-            return redirect(url_for('dentist'))
+            return redirect(url_for('image.dentist_upload'))
         
         flash(error_msg)
 
@@ -447,14 +447,20 @@ def dentist_register():
             session.pop('national_id',None) 
             session.pop('phone',None)  
             
-        return redirect(url_for("dentist"))
+        return redirect(url_for("/image/dentist"))
 
     return render_template("dentist_register.html", data=data)
 
 @bp.route('/logout')
 def logout():
-    session.clear()
-    return redirect(url_for('index'))
+    if session.get('sender_mode') is not None or session.get('sender_mode')=='dentist':
+        session.clear()
+        g.user = None
+        return redirect(url_for('dentist'))
+    else:
+        session.clear()
+        g.user = None
+        return redirect(url_for('index'))
 
 def login_required(view):
     @functools.wraps(view)

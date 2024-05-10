@@ -1,0 +1,42 @@
+{% extends "./base.html"%}
+
+{% block content %}
+
+<h2 class="text-center">
+    ระบบปัญญาประดิษฐ์ที่ช่วยในการค้นหาและวิเคราะห์รอยโรคก่อนมะเร็งและมะเร็งช่องปาก
+</h2>
+
+<h4 class="text-center">
+    (Artificial Intelligent System for Detecting and Analyzing PMDs and Oral
+    Cancer)
+</h4>
+
+<div class="container-fluid">
+  <div style="width: auto"></div>
+  <div class="row d-flex justify-content-center align-items-center text-center">
+    <div class="col-8 col-xs-2 d-flex justify-content-center align-items-center">
+      <form class="p-3 text-center" action="/image/dentist" method="post" enctype="multipart/form-data">
+        <input id="file-upload1" type="file" name="imageList" onchange="form.submit()" multiple accept="image/*" hidden />
+        <div class="d-flex align-items-center" style="width: 100%">
+          <label for="file-upload1" class="card d-flex justify-content-center align-items-center" style="
+                border-style: dashed;
+                border-color: rgb(0, 229, 255); 
+                border-width: 2px;
+                width: 22rem;
+                height: 20  rem;
+                cursor: pointer;
+                padding: 10px;
+              ">
+            <div class="d-flex justify-content-center align-items-center img-responsive">
+              <img src="{{url_for('static', filename='upload_icon.png')}}" style="width: 30%;" class="card-img-top">
+            </div>
+            คลิกเพื่ออัพโหลดรูปภาพ<br />(กรุณาอัพโหลดรูปช่องปากที่ได้มาตรฐานเท่านั้น)
+          </label>
+        </div>
+      </form> 
+    </div>
+  </div>
+</div>
+{% include 'examples_footer.html' %}
+{% include 'terms_footer.html' %}
+{% endblock %}
