@@ -36,23 +36,28 @@ def oral_lesion_prediction(imgPath):
             predictClass = 'OPMD'
         else:
             predictClass = 'OSCC'
+        
+        # Create an outlined_img if lesion is found
+        output = tf.keras.utils.array_to_img(predictionMask)
+        edge_img = output.filter(ImageFilter.FIND_EDGES)
+        dilation_img = edge_img.filter(ImageFilter.MaxFilter(3))
+
+        yellow_edge = Image.merge("RGB", (dilation_img, dilation_img, Image.new(mode="L", size=dilation_img.size)))
+        img = tf.squeeze(img, axis=0)
+        input_img = tf.keras.utils.array_to_img(img)    
+        outlined_img = input_img.copy()
+        outlined_img.paste(yellow_edge, dilation_img)
     else:
         backgroundIndexer = tf.math.logical_not(predictionIndexer)
         opmdScore = tf.reduce_mean(opmdChannel[backgroundIndexer])
         osccScore = tf.reduce_mean(osccChannel[backgroundIndexer])
         backgroundScore = tf.reduce_mean(backgroundChannel[backgroundIndexer])
         predictClass = 'NORMAL'
+        
+        # If the prediction is NORMAL, just return the original image
+        outlined_img  = tf.squeeze(img, axis=0)
     
-    output = tf.keras.utils.array_to_img(predictionMask)
-    edge_img = output.filter(ImageFilter.FIND_EDGES)
-    dilation_img = edge_img.filter(ImageFilter.MaxFilter(3))
 
-    yellow_edge = Image.merge("RGB", (dilation_img, dilation_img, Image.new(mode="L", size=dilation_img.size)))
-    img = tf.squeeze(img, axis=0)
-    input_img = tf.keras.utils.array_to_img(img)    
-    outlined_img = input_img.copy()
-    outlined_img.paste(yellow_edge, dilation_img)
-    
     scoreList = [backgroundScore, opmdScore, osccScore]
     scoreList = [x.numpy() for x in scoreList]
     return outlined_img, predictClass, scoreList

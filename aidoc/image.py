@@ -97,7 +97,7 @@ def submission():
     # Model prediction
     for filename in session['imageNameList']:
         imgPath = os.path.join(tempDir, filename)
-        outlined_img = oral_lesion_prediction(imgPath)
+        outlined_img, predictClass, scoreList = oral_lesion_prediction(imgPath)
         outlined_img.save(os.path.join(tempDir, 'outlined_'+filename))
 
     '''
@@ -163,27 +163,46 @@ def oral_lesion_prediction(imgPath):
     pred_mask = model.predict(img)
     output_mask = create_mask(pred_mask)
 
-    normalPixelCount = tf.reduce_sum(tf.cast(tf.math.equal(output_mask, 0), tf.int64))    
-    opmd_mask = tf.cast(tf.math.equal(output_mask, 1), tf.int64)
-    oscc_mask = tf.cast(tf.math.equal(output_mask, 2), tf.int64)
-    opmdPixelCount = tf.reduce_sum(opmd_mask)
-    osccPixelCount = tf.reduce_sum(oscc_mask)
-    if osccPixelCount > tf.maximum(opmdPixelCount, osccPixelCount):
-        return img
-    else:
-        if  opmdPixelCount > osccPixelCount:
-            output_mask = opmd_mask
-        else:
-            output_mask = oscc_mask
-    
-    output = tf.keras.utils.array_to_img(output_mask)
-    edge_img = output.filter(ImageFilter.FIND_EDGES)
-    dilation_img = edge_img.filter(ImageFilter.MaxFilter(3))
+    predictionMask = tf.math.not_equal(output_mask, 0)
 
-    yellow_edge = Image.merge("RGB", (dilation_img, dilation_img, Image.new(mode="L", size=dilation_img.size)))
-    img = tf.squeeze(img, axis=0)
-    input_img = tf.keras.utils.array_to_img(img)    
-    outlined_img = input_img.copy()
-    outlined_img.paste(yellow_edge, dilation_img)
+    pred_mask = tf.squeeze(pred_mask, axis=0)  # Remove batch dimension
+    backgroundChannel = pred_mask[:,:,0]
+    opmdChannel = pred_mask[:,:,1]
+    osccChannel = pred_mask[:,:,2]
     
-    return outlined_img
+    predictionMaskSum = tf.reduce_sum(tf.cast(predictionMask,  tf.int64)) # Count number of pixels in prediction mask
+    predictionIndexer = tf.squeeze(predictionMask, axis=-1) # Remove singleton dimension (last index)
+    print(predictionMaskSum)
+    if predictionMaskSum>200: # Threshold to cut noises are 200 pixels
+        opmdScore = tf.reduce_mean(opmdChannel[predictionIndexer])
+        osccScore = tf.reduce_mean(osccChannel[predictionIndexer])
+        backgroundScore = tf.reduce_mean(backgroundChannel[predictionIndexer])
+        if opmdScore>osccScore:
+            predictClass = 'OPMD'
+        else:
+            predictClass = 'OSCC'
+        
+        # Create an outlined_img if lesion is found
+        output = tf.keras.utils.array_to_img(predictionMask)
+        edge_img = output.filter(ImageFilter.FIND_EDGES)
+        dilation_img = edge_img.filter(ImageFilter.MaxFilter(3))
+
+        yellow_edge = Image.merge("RGB", (dilation_img, dilation_img, Image.new(mode="L", size=dilation_img.size)))
+        img = tf.squeeze(img, axis=0)
+        input_img = tf.keras.utils.array_to_img(img)    
+        outlined_img = input_img.copy()
+        outlined_img.paste(yellow_edge, dilation_img)
+    else:
+        backgroundIndexer = tf.math.logical_not(predictionIndexer)
+        opmdScore = tf.reduce_mean(opmdChannel[backgroundIndexer])
+        osccScore = tf.reduce_mean(osccChannel[backgroundIndexer])
+        backgroundScore = tf.reduce_mean(backgroundChannel[backgroundIndexer])
+        predictClass = 'NORMAL'
+        
+        # If the prediction is NORMAL, just return the original image
+        outlined_img  = tf.squeeze(img, axis=0)
+    
+
+    scoreList = [backgroundScore, opmdScore, osccScore]
+    scoreList = [x.numpy() for x in scoreList]
+    return outlined_img, predictClass, scoreList
