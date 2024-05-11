@@ -6,9 +6,6 @@ log = logging.getLogger('werkzeug')
 #log.setLevel(logging.ERROR)
 log.setLevel(logging.INFO)
 
-import oralLesionNet
-model = None # the model will be loaded inside the create_app()
-
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
@@ -50,8 +47,5 @@ def create_app(test_config=None):
     # Register the click command init-db
     from . import db
     db.init_app(app)
-
-    # Load the oralLesionNet model to the global variable
-    model = oralLesionNet.load_model()
 
     return app
