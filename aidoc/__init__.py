@@ -6,17 +6,18 @@ log = logging.getLogger('werkzeug')
 #log.setLevel(logging.ERROR)
 log.setLevel(logging.INFO)
 
+import oralLesionNet
+model = None # the model will be loaded inside the create_app()
+
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
     
+    # Setup the app configuration file (instance/config.py)
     if test_config is None:
-        # load the instance config, if it exists, when not testing
-        app.config.from_pyfile('config.py', silent=True)
+        app.config.from_pyfile('config.py', silent=True) # load the instance config, if it exists, when not testing
     else:
-        # load the test config if passed in
-        app.config.from_mapping(test_config)
-
+        app.config.from_mapping(test_config) # load the test config if passed in
     # Create Flask instance folder
     try:
         os.makedirs(app.instance_path)
@@ -35,16 +36,22 @@ def create_app(test_config=None):
         os.makedirs(os.path.join(IMAGE_DATA_DIR, 'thumbnail'))
     except OSError:
         pass
-
-    from . import db
-    db.init_app(app)
     
+    # Register blueprints
     from . import auth
     app.register_blueprint(auth.bp)
     from . import image
     app.register_blueprint(image.bp)
 
+    # Add special endpoints
     app.add_url_rule('/', endpoint='index')
     app.add_url_rule('/login/dentist', endpoint='dentist')
+
+    # Register the click command init-db
+    from . import db
+    db.init_app(app)
+
+    # Load the oralLesionNet model to the global variable
+    model = oralLesionNet.load_model()
 
     return app

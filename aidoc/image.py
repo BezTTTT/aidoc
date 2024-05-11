@@ -21,19 +21,15 @@ def dentist_upload():
     if request.method == 'POST':
 
         if request.form.get('rotation_submitted'):
-            imageName = request.form.get('imagePath')
+            imageName = request.form.get('uploadedImage')
             rotate_temp_image(imageName)
         else:
             imageName = None
             imageList = request.files.getlist("imageList")
             
             check_clear_temp()
-            
-            if len(imageList)>0:
-                session['imageList'] = imageList
-            else:
-                session.pop('imageList', None)
-                
+
+            imageNameList = []
             for imageFile in imageList: 
                 if imageFile and allowed_file(imageFile.filename):
                     imageName = secure_filename(imageFile.filename)
@@ -49,10 +45,18 @@ def dentist_upload():
                     thumbPath = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', 'thumb_' + imageName)
                     pil_img.save(thumbPath) 
 
+                    # Save the current filenames on session for the upcoming prediction
+                    imageNameList.append(imageName)
                 else:
                     flash('รับข้อมูลเฉพาะที่เป็นรูปภาพเท่านั้น')
+            
+            if len(imageList)>0:
+                # Save the current filenames on session for the upcoming prediction
+                session['imageNameList'] = imageNameList
+            else:
+                session.pop('imageNameList', None)
         if imageName:
-            data['imagePath'] = imageName # Send back path of the last submitted image (if sent for more than 1)
+            data['uploadedImage'] = imageName # Send back path of the last submitted image (if sent for more than 1)
         
     return render_template("dentist_upload_new.html", data=data)
 

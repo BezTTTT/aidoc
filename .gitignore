@@ -1,3 +1,4 @@
 instance/*
 aidoc/__pycache__/*
 imageData/temp/*
+oralLesionNet/*

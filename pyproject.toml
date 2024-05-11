@@ -1,9 +1,9 @@
 [project]
-name = "aidoc"
-version = "1.0.0"
-description = "Artificial Intelligent system for Detecting and analyzing pmds and Oral Cancer (AIDOC)."
+name = "oralLesionNet"
+version = "2.2.0"
+description = "Oral Lesion Segmentation Deep Learning Network."
 dependencies = [
-    "flask",
+    "tensorflow",
 ]
 
 [build-system]

@@ -10,7 +10,7 @@
     (Artificial Intelligent System for Detecting and Analyzing PMDs and Oral Cancer)
 </h4>
 
-{% if data.get('imagePath') is none %}
+{% if data.get('uploadedImage') is none %}
   <div class="container-fluid">
     <div style="width: auto"></div>
     <div class="row d-flex justify-content-center align-items-center text-center">
@@ -40,17 +40,27 @@
 {% else %}
   <div class="p-3 text-center d-flex justify-content-center">
     <div class="col-md-4">
-      <img id="previewImage" src="{{ url_for('image.get_temp_thumbnail', imagename=data['imagePath']) }}" class="card d-flex mx-auto" alt="" />
+      <img id="previewImage" src="{{ url_for('image.get_temp_thumbnail', imagename=data['uploadedImage']) }}" class="card d-flex mx-auto" alt="" />
       <div class="my-3">
         <a class="btn btn-outline-warning mb-2" href="/upload/dentist">เปลี่ยนรูป</a>
         <form action="/upload/dentist" method="post" enctype="multipart/form-data">
-          <input name="imagePath" type="text" value="{{data['imagePath']}}" hidden />
+          <input name="uploadedImage" type="text" value="{{data['uploadedImage']}}" hidden />
           <input name="rotation_submitted" type="submit" class="btn btn-outline-primary mb-2" value="คนไข้ควรหัวตั้งขึ้น หรือ กดปุ่มนี้เพื่อหมุนรูป"/>
         </form>
+        <form id="submitimgForm" action="/upload/dentist" method="post" enctype="multipart/form-data" >
+          <input type="text" name="fname" value="{{data['preview_image']}}" hidden />
+          <div id="submitbtn" onclick="disableButton()" class="btn btn-success mb-2">ยืนยัน</div>
       </div>
     </div>
   </div>
 {% endif %}
+<script>           
+  function disableButton() {
+    document.getElementById("submitbtn").disabled = true
+    document.getElementById("submitbtn").onclick = null
+    document.getElementById("submitimgForm").submit()
+  }
+</script>
 {% include 'examples_footer.html' %}
 {% include 'terms_footer.html' %}
 {% endblock %}
