@@ -23,7 +23,7 @@ CREATE TABLE `user` (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;
 
-CREATE TABLE `submission_records` (
+CREATE TABLE `submission_record` (
   `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `fname` varchar(255) NOT NULL,
   `sender_id` int DEFAULT NULL,
@@ -40,6 +40,8 @@ CREATE TABLE `submission_records` (
   `dentist_feedback_date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `biopsy_fname` varchar(255) DEFAULT NULL,
   `biopsy_comment` varchar(255) DEFAULT NULL,
+  `ai_prediction` int DEFAULT NULL,
+  `ai_scores` varchar(255) DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `longitude` varchar(255) DEFAULT NULL,

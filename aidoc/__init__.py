@@ -25,14 +25,10 @@ def create_app(test_config=None):
     projectDir = os.path.dirname(app.root_path)
     IMAGE_DATA_DIR = os.path.join(projectDir, 'imageData') 
     app.config['IMAGE_DATA_DIR'] = IMAGE_DATA_DIR
-    try:
-        os.makedirs(IMAGE_DATA_DIR)
-        os.makedirs(os.path.join(IMAGE_DATA_DIR, 'temp'))
-        os.makedirs(os.path.join(IMAGE_DATA_DIR, 'upload'))
-        os.makedirs(os.path.join(IMAGE_DATA_DIR, 'outline'))
-        os.makedirs(os.path.join(IMAGE_DATA_DIR, 'thumbnail'))
-    except OSError:
-        pass
+    os.makedirs(IMAGE_DATA_DIR, exist_ok=True)
+    os.makedirs(os.path.join(IMAGE_DATA_DIR, 'temp'), exist_ok=True)
+    os.makedirs(os.path.join(IMAGE_DATA_DIR, 'upload', 'thumbnail'), exist_ok=True)
+    os.makedirs(os.path.join(IMAGE_DATA_DIR, 'outlined', 'thumbnail'), exist_ok=True)
     
     # Register blueprints
     from . import auth

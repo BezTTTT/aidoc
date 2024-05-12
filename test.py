@@ -27,42 +27,36 @@ def oral_lesion_prediction(imgPath):
     
     predictionMaskSum = tf.reduce_sum(tf.cast(predictionMask,  tf.int64)) # Count number of pixels in prediction mask
     predictionIndexer = tf.squeeze(predictionMask, axis=-1) # Remove singleton dimension (last index)
-    print(predictionMaskSum)
     if predictionMaskSum>200: # Threshold to cut noises are 200 pixels
         opmdScore = tf.reduce_mean(opmdChannel[predictionIndexer])
         osccScore = tf.reduce_mean(osccChannel[predictionIndexer])
         backgroundScore = tf.reduce_mean(backgroundChannel[predictionIndexer])
         if opmdScore>osccScore:
-            predictClass = 'OPMD'
+            predictClass = 1
         else:
-            predictClass = 'OSCC'
-        
-        # Create an outlined_img if lesion is found
-        output = tf.keras.utils.array_to_img(predictionMask)
-        edge_img = output.filter(ImageFilter.FIND_EDGES)
-        dilation_img = edge_img.filter(ImageFilter.MaxFilter(3))
-
-        yellow_edge = Image.merge("RGB", (dilation_img, dilation_img, Image.new(mode="L", size=dilation_img.size)))
-        img = tf.squeeze(img, axis=0)
-        input_img = tf.keras.utils.array_to_img(img)    
-        outlined_img = input_img.copy()
-        outlined_img.paste(yellow_edge, dilation_img)
+            predictClass = 2
     else:
         backgroundIndexer = tf.math.logical_not(predictionIndexer)
         opmdScore = tf.reduce_mean(opmdChannel[backgroundIndexer])
         osccScore = tf.reduce_mean(osccChannel[backgroundIndexer])
         backgroundScore = tf.reduce_mean(backgroundChannel[backgroundIndexer])
-        predictClass = 'NORMAL'
-        
-        # If the prediction is NORMAL, just return the original image
-        outlined_img  = tf.squeeze(img, axis=0)
+        predictClass = 0
+
+    output = tf.keras.utils.array_to_img(predictionMask)
+    edge_img = output.filter(ImageFilter.FIND_EDGES)
+    dilation_img = edge_img.filter(ImageFilter.MaxFilter(3))
+
+    full_img = Image.open(imgPath)
+    full_dilation_img = dilation_img.resize(full_img.size, resample=Image.NEAREST)
+
+    yellow_edge = Image.merge("RGB", (full_dilation_img, full_dilation_img, Image.new(mode="L", size=full_dilation_img.size)))
+    outlined_img = full_img.copy()
+    outlined_img.paste(yellow_edge, full_dilation_img)
     
+    scores = [backgroundScore.numpy(), opmdScore.numpy(), osccScore.numpy()]
+    return outlined_img, predictClass, scores
 
-    scoreList = [backgroundScore, opmdScore, osccScore]
-    scoreList = [x.numpy() for x in scoreList]
-    return outlined_img, predictClass, scoreList
-
-outlined_img, pred_class, scores = oral_lesion_prediction('/home/patiwet/aidoc/imageData/temp/561000006469902.jpg')
+outlined_img, pred_class, scores = oral_lesion_prediction('/home/patiwet/aidoc/OLP_2 (2).jpg')
 print(pred_class)
 print(scores)
 outlined_img.save('output.png')
