@@ -14,6 +14,7 @@ from PIL import Image, ImageFilter
 import os
 import shutil
 import json
+import datetime
 
 from aidoc.db import get_db
 from aidoc.auth import login_required
@@ -126,6 +127,89 @@ def dentist_diagnosis():
     else:
         return redirect(url_for('dentist'))
     
+
+PER_PAGE = 12 #number images data show on history page per page
+@bp.route('/history/dentist', methods=('GET', 'POST'))
+@login_required
+def dentist_history():
+
+    # Reload the history every time the page is reloaded    
+    sql = "SELECT * FROM history WHERE userId = %s"
+    val = (data["userId"],)
+    mycursor.execute(sql, val)
+    res = mycursor.fetchall()
+    mydb.commit()
+    cls_name = ["NM", "OPMD", "OSCC"]
+    for i in range(len(res)):
+        res[i]["image_class"] = cls_name[
+            np.argmax(list(map(float, res[i]["score"].split())))
+        ]
+    data["history"] = res
+
+    # Filter data if search query is provided
+    search_query = request.args.get("search") 
+    filter = request.args.get("filter") 
+
+    if search_query is not None:
+        session['history_search'] = search_query
+    else:
+        search_query = session.get('history_search', '')
+
+    if filter is not None:
+        session['history_filter'] = filter
+    else:
+        filter = session.get('history_filter', '')
+
+    
+    # # Initialize an empty list to store filtered results
+    filtered_data = []
+
+    # Loop through the data and apply both search and filter criteria
+    for item in data["history"]:
+        item_comment = item.get("comment", "").lower()
+        item_fname = item.get("fname", "").lower()
+
+        # Check if search_query is present in comment or fname
+        search_match = (
+            search_query.lower() in item_comment or search_query.lower() in item_fname
+        )
+
+        # Check if filter matches the comment (split by "~" and compare the first part)
+        filter_match = filter.strip() == item_comment.split("~")[0].strip()
+
+        # If there's no search query or the item matches the search query, and there's no filter or the item matches the filter, include it in the filtered_data
+        if (not search_query or search_match) and (not filter or filter_match):
+            filtered_data.append(item)
+
+    # Sort the filtered data
+    filtered_data = sorted(filtered_data, key=lambda x: x["date"], reverse=True)
+
+    # Pagination
+    page = request.args.get("page", 1, type=int)
+    if request.method == "POST":
+        page = request.form.get("current_history_page")
+        page = int(page)
+        
+    total_pages = (len(filtered_data) - 1) // PER_PAGE + 1
+    start_idx = (page - 1) * PER_PAGE
+    end_idx = start_idx + PER_PAGE
+    paginated_data = filtered_data[start_idx:end_idx]
+    
+        # Format the date in the desired format
+    for item in paginated_data:
+        item["date"] = datetime.strptime(item["date"], "%Y-%m-%d %H:%M:%S").strftime("%d/%m/%Y %H.%M")
+
+    return render_template(
+            "history.html",
+            data=data,
+            pagination=paginated_data,
+            current_page=page,
+            total_pages=total_pages,
+            search_query=search_query,
+            filter = filter)
+
+
+
 
 # Helper functions
 

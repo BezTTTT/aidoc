@@ -1,0 +1,179 @@
+{% extends "./component/header.html" %}
+
+{% block content %}
+
+<div class="row">
+    <div class="col-12">
+        <h2>ระบบการวิเคราะห์รอยโรคด้วย AI</h2>
+        <p>{{ data['name'] }}</p>
+    </div>
+    <div class="col-12">
+        <a class="btn btn-outline-success" style="width: 100%" type="submit"
+            href="{{ url_for('prediction_blueprint.prediction_main') }}">คลิกเพื่อนำส่งภาพถ่ายช่องปากเพื่อวิเคราะห์รอยโรคใหม่</a>
+    </div>
+
+    <!-- Search Box -->
+    <div class="col-12 mt-5">
+        <p>ค้นหาผลลัพธ์ตามคำสำคัญ</p>
+    </div>
+    <form action="/history" method="get">
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" name="search" placeholder="Search" value="{{ search_query }}" />
+            <button class="btn btn-outline-primary" type="submit" value="{{ search_query }}"> Search </button>
+        </div>
+    </form>
+    <div class="d-flex justify-content-end">
+        <div class="mx-2">
+            <form action="/history" method="get" id="filterForm">
+                <select name="filter" id="filter" class="btn btn-light border border-1">
+                    <option value="">ทั้งหมด</option>
+                    <option value="เห็นด้วย">เห็นด้วย</option>
+                    <option value="ไม่เห็นด้วย">ไม่เห็นด้วย</option>
+                </select>
+            </form>
+        </div>
+        <div>
+            <form action="/download" method="GET" class="ml-2 mt-8">
+                <!-- Hidden input field to store the pagination value -->
+                <input type="hidden" name="pagination" value="{{ pagination }}" />
+                <input type="hidden" name="search" value="{{ search_query }}" />
+                <input type="hidden" name="filter" value="{{ filter }}" />
+                <button class="btn btn-primary" type="submit">Download</button>
+            </form>
+        </div>
+    </div>
+    <div class="col-12 mt-5">
+        <p>ประวัติผลลัพธ์การวิเคราะห์รอยโรคในภาพถ่ายช่องปากวิเคราะห์</p>
+    </div>
+    {% if pagination|length == 0 %}
+        <div class="col-12">
+            <p class="text-center text-danger">ไม่พบข้อมูล</p>
+        </div>
+    {% endif %}
+    <!-- Loop through paginated data -->
+    <div class="container">
+        <div class="row">
+            {% for item in pagination %}
+                <div class="col-md-3 mb-4">
+                    {% set mypath = './static/images/bordering_overlap/' %}
+                    {% set fullmage_path = './static/images/inputs/' %}
+                    {% set comment = item['comment'].split('~') %}
+                    <div class="card">
+                        <div style="height: 200px; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; ">
+                            <a href="{{ fullmage_path ~ item['encryptname'] }}" target="_blank">
+                                <img src="{{ mypath ~ item['encryptname'] }}" class="card-img-top" alt=""
+                                    style="height: 100%; max-width: 100%; width: auto" />
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="image-name">ชื่อไฟล์ : {{ item['fname'] }}</h6>
+                            <h6 class="">วันที่ : {{ item['date'] }} น.</h6>
+                            <h6 class="fs-6 card-subtitle text-muted mb-2">
+                                ผลการวินิจฉัยของ AI :
+                                    {% if 'NM' in item['image_class'] %}
+                                        Normal
+                                    {% elif 'OPMD' in item['image_class'] %}
+                                        OPMD
+                                    {% else %}
+                                        OSCC
+                                    {% endif %}
+                            </h6>
+                            <div class="btn-container">
+                                <div class="d-flex justify-content-center">
+                                    <form action="/" method="post" enctype="multipart/form-data">
+                                        <input name="history_fname" type="text" value="{{ item['encryptname'] }}" hidden />
+                                        <input class="btn btn-outline-success btn-block" type="submit" value="ดูผลการวิเคราะห์" />
+                                        <input name="current_history_page" type="text" value="{{ current_page }}" hidden />
+                                    </form>
+                                    <!-- Button trigger modal -->
+                                    <button type="button" class="btn btn-outline-danger mx-1" style="width: 100%"
+                                        data-bs-toggle="modal" data-bs-target="#exampleModal{{ item.id }}">
+                                        ลบข้อมูล
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <!-- Modal -->
+                            <div class="modal fade" id="exampleModal{{ item.id }}" tabindex="-1"
+                                aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h1 class="modal-title fs-5" id="exampleModalLabel"> ลบประวัติ </h1>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">คุณแน่ใจที่จะลบประวัติใช่หรือไม่</div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> ยกเลิก </button>
+                                            <form action="/history/history" method="post" enctype="multipart/form-data">
+                                                <input name="his_id" type="text" value="{{ item['id'] }}" hidden />
+                                                <input class="btn btn-outline-danger" style="width: 100%" type="submit" value="ลบข้อมูล" />
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination links -->
+        <div class="pagination d-flex justify-content-center align-items-center">
+            {% if current_page > 1 %}
+                <a href="?page=1" class="btn page-link m-2 text-secondary">&laquo; หน้าแรก</a>
+                <a href="?page={{ current_page - 1 }}" class="btn page-link m-2 text-secondary">&lsaquo; ก่อนหน้า</a>
+            {% endif %}
+            {% for page_num in range(1, total_pages + 1) %}
+                {% if page_num == current_page %}
+                    <span class="current-page page-link m-2 text-secondary">หน้าปัจจุบัน : {{ page_num }} จาก {{ total_pages }}</span>
+                {% endif %}
+            {% endfor %}
+            {% if current_page < total_pages %}
+                <a href="?page={{ current_page + 1 }}" class="btn page-link m-2 text-secondary">ถัดไป &rsaquo;</a>
+                <a href="?page={{ total_pages }}" class="btn page-link m-2 text-secondary">หลังสุด &raquo;</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    <script>
+        function confirmDelete() {
+            return confirm("คุณต้องการลบรูปนี้ใช่หรือไม่ ?");
+        }
+    </script>
+    <script>
+        document.getElementById("filter").addEventListener("change", function () {
+            document.getElementById("filterForm").submit();
+        });
+
+        // Get the filter element and set its value from Flask
+        const filter = document.getElementById("filter");
+        const filterValue = "{{ filter }}"; // Use the correct variable name
+
+        // Set the selected filter value if it exists
+        if (filterValue) {
+            filter.value = filterValue;
+        }
+
+
+    </script>
+    <style>
+        .image-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+
+        .truncate-text {
+            max-height: 3em;
+            /* Adjust this value to control the number of lines before truncation */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    </style>
+</div>
