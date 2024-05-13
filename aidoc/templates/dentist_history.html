@@ -1,44 +1,35 @@
-{% extends "./component/header.html" %}
+{% extends "./base.html" %}
 
 {% block content %}
 
 <div class="row">
     <div class="col-12">
         <h2>ระบบการวิเคราะห์รอยโรคด้วย AI</h2>
-        <p>{{ data['name'] }}</p>
+        <p>{{ g.user['name'] }} {{ g.user['surname'] }} {{ g.user['job_position'] }}</p>
     </div>
     <div class="col-12">
         <a class="btn btn-outline-success" style="width: 100%" type="submit"
-            href="{{ url_for('prediction_blueprint.prediction_main') }}">คลิกเพื่อนำส่งภาพถ่ายช่องปากเพื่อวิเคราะห์รอยโรคใหม่</a>
+            href="{{ url_for('image.dentist_upload') }}">คลิกเพื่อนำส่งภาพถ่ายช่องปากเพื่อวิเคราะห์รอยโรคใหม่</a>
     </div>
 
     <!-- Search Box -->
     <div class="col-12 mt-5">
         <p>ค้นหาผลลัพธ์ตามคำสำคัญ</p>
     </div>
-    <form action="/history" method="get">
+    <form action="/history/dentist" method="get">
         <div class="input-group mb-3">
-            <input type="text" class="form-control" name="search" placeholder="Search" value="{{ search_query }}" />
-            <button class="btn btn-outline-primary" type="submit" value="{{ search_query }}"> Search </button>
+            <input type="text" class="form-control" name="search" placeholder="Search" value="{{ data['search'] }}" />
+            <button class="btn btn-outline-primary" type="submit" value="{{ data['search'] }}"> Search </button>
         </div>
     </form>
     <div class="d-flex justify-content-end">
         <div class="mx-2">
-            <form action="/history" method="get" id="filterForm">
-                <select name="filter" id="filter" class="btn btn-light border border-1">
+            <form action="/history/dentist" method="get" id="agreeForm">
+                <select name="agree" id="agree" class="btn btn-light border border-1">
                     <option value="">ทั้งหมด</option>
-                    <option value="เห็นด้วย">เห็นด้วย</option>
-                    <option value="ไม่เห็นด้วย">ไม่เห็นด้วย</option>
+                    <option value="AGREE">เห็นด้วย</option>
+                    <option value="DISAGREE">ไม่เห็นด้วย</option>
                 </select>
-            </form>
-        </div>
-        <div>
-            <form action="/download" method="GET" class="ml-2 mt-8">
-                <!-- Hidden input field to store the pagination value -->
-                <input type="hidden" name="pagination" value="{{ pagination }}" />
-                <input type="hidden" name="search" value="{{ search_query }}" />
-                <input type="hidden" name="filter" value="{{ filter }}" />
-                <button class="btn btn-primary" type="submit">Download</button>
             </form>
         </div>
     </div>
@@ -55,24 +46,21 @@
         <div class="row">
             {% for item in pagination %}
                 <div class="col-md-3 mb-4">
-                    {% set mypath = './static/images/bordering_overlap/' %}
-                    {% set fullmage_path = './static/images/inputs/' %}
-                    {% set comment = item['comment'].split('~') %}
                     <div class="card">
                         <div style="height: 200px; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; ">
-                            <a href="{{ fullmage_path ~ item['encryptname'] }}" target="_blank">
-                                <img src="{{ mypath ~ item['encryptname'] }}" class="card-img-top" alt=""
+                            <a href="{{ url_for('image.load_image', folder='upload', user_id=session['user_id'], imagename=item['fname']) }}" target="_blank">
+                                <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=session['user_id'], imagename=item['fname']) }}" class="card-img-top" alt=""
                                     style="height: 100%; max-width: 100%; width: auto" />
                             </a>
                         </div>
                         <div class="card-body">
                             <h6 class="image-name">ชื่อไฟล์ : {{ item['fname'] }}</h6>
-                            <h6 class="">วันที่ : {{ item['date'] }} น.</h6>
+                            <h6 class="">วันที่ : {{ item['created_at'] }} น.</h6>
                             <h6 class="fs-6 card-subtitle text-muted mb-2">
                                 ผลการวินิจฉัยของ AI :
-                                    {% if 'NM' in item['image_class'] %}
+                                    {% if item['ai_prediction']==0 %}
                                         Normal
-                                    {% elif 'OPMD' in item['image_class'] %}
+                                    {% elif item['ai_prediction']==1 %}
                                         OPMD
                                     {% else %}
                                         OSCC
@@ -81,13 +69,13 @@
                             <div class="btn-container">
                                 <div class="d-flex justify-content-center">
                                     <form action="/" method="post" enctype="multipart/form-data">
-                                        <input name="history_fname" type="text" value="{{ item['encryptname'] }}" hidden />
+                                        <input name="history_fname" type="text" value="{{ item['fname'] }}" hidden />
                                         <input class="btn btn-outline-success btn-block" type="submit" value="ดูผลการวิเคราะห์" />
                                         <input name="current_history_page" type="text" value="{{ current_page }}" hidden />
                                     </form>
                                     <!-- Button trigger modal -->
                                     <button type="button" class="btn btn-outline-danger mx-1" style="width: 100%"
-                                        data-bs-toggle="modal" data-bs-target="#exampleModal{{ item.id }}">
+                                        data-bs-toggle="modal" data-bs-target="#exampleModal{{ item['id'] }}">
                                         ลบข้อมูล
                                     </button>
                                 </div>
@@ -96,7 +84,7 @@
 
                         <div>
                             <!-- Modal -->
-                            <div class="modal fade" id="exampleModal{{ item.id }}" tabindex="-1"
+                            <div class="modal fade" id="exampleModal{{ item['id'] }}" tabindex="-1"
                                 aria-labelledby="exampleModalLabel" aria-hidden="true">
                                 <div class="modal-dialog">
                                     <div class="modal-content">
@@ -138,24 +126,23 @@
             {% endif %}
         </div>
     </div>
-    {% endif %}
     <script>
         function confirmDelete() {
             return confirm("คุณต้องการลบรูปนี้ใช่หรือไม่ ?");
         }
     </script>
     <script>
-        document.getElementById("filter").addEventListener("change", function () {
-            document.getElementById("filterForm").submit();
+        document.getElementById("agree").addEventListener("change", function () {
+            document.getElementById("agreeForm").submit();
         });
 
-        // Get the filter element and set its value from Flask
-        const filter = document.getElementById("filter");
-        const filterValue = "{{ filter }}"; // Use the correct variable name
+        // Get the agree element and set its value from Flask
+        const agree = document.getElementById("agree");
+        const agreeValue = "{{ data['agree'] }}"; // Use the correct variable name
 
-        // Set the selected filter value if it exists
-        if (filterValue) {
-            filter.value = filterValue;
+        // Set the selected agree value if it exists
+        if (agreeValue) {
+            agree.value = agreeValue;
         }
 
 
@@ -177,3 +164,4 @@
         }
     </style>
 </div>
+{% endblock %}

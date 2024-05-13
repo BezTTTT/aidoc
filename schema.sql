@@ -23,6 +23,11 @@ CREATE TABLE `user` (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;
 
+/*
+  dentist_feedback_code (in dentist general system): AGREE, DISAGREE
+  general_comment (in dentist general system)
+*/
+
 CREATE TABLE `submission_record` (
   `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `fname` varchar(255) NOT NULL,
@@ -37,13 +42,13 @@ CREATE TABLE `submission_record` (
   `dentist_feedback_comment` varchar(255) NOT NULL DEFAULT '',
   `dentist_feedback_lesion` tinyint DEFAULT NULL,
   `dentist_feedback_location` tinyint DEFAULT NULL,
-  `dentist_feedback_date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `dentist_feedback_date` datetime DEFAULT NULL,
   `biopsy_fname` varchar(255) DEFAULT NULL,
   `biopsy_comment` varchar(255) DEFAULT NULL,
   `ai_prediction` int DEFAULT NULL,
   `ai_scores` varchar(255) DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime DEFAULT NULL,
   `longitude` varchar(255) DEFAULT NULL,
   `latitude` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;

@@ -77,6 +77,7 @@ def patient_login():
 def patient_register():
     data = {} # a data container to store submitted values from the form
     data['current_year'] = datetime.date.today().year # set the current Thai Year to the global variable
+    session['sender_mode'] = 'patient'
     if request.method == 'POST':
         # This section extract the submitted form to 
         prefixList = ["นาย ", "นาง ", "นางสาว ", "น.ส.", "น.", "นส."]
@@ -212,6 +213,7 @@ def osm_login():
 @bp.route('/register/osm', methods=('GET', 'POST'))
 def osm_register():
     data = {} # a data container to store submitted values from the form
+    session['sender_mode'] = 'osm'
     if request.method == 'POST':
         # This section extract the submitted form to 
         prefixList = ["นาย ", "นาง ", "นางสาว ", "น.ส.", "น.", "นส."]
@@ -334,6 +336,7 @@ def dentist_login():
 @bp.route('/register/dentist', methods=('GET', 'POST'))
 def dentist_register():
     data = {} # a data container to store submitted values from the form
+    session['sender_mode'] = 'dentist'
     if request.method == 'POST':
         # This section extract the submitted form to 
         prefixList = ["นาย ", "นาง ", "นางสาว ", "น.ส.", "น.", "นส."]

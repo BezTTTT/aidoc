@@ -14,7 +14,7 @@ from PIL import Image, ImageFilter
 import os
 import shutil
 import json
-import datetime
+from datetime import datetime
 
 from aidoc.db import get_db
 from aidoc.auth import login_required
@@ -113,7 +113,7 @@ def load_image(folder, user_id, imagename):
 @bp.route('/diagnosis/dentist', methods=('POST', ))
 @login_required
 def dentist_diagnosis():
-
+    
     # Check if submission list is in the queue (session), if so submit them to the Submission Module and the AI Prediction Engine
     # then render the dentist_diagnosis template
     if session.get('imageNameList') is not None:
@@ -133,56 +133,42 @@ PER_PAGE = 12 #number images data show on history page per page
 @login_required
 def dentist_history():
 
-    # Reload the history every time the page is reloaded    
-    sql = "SELECT * FROM history WHERE userId = %s"
-    val = (data["userId"],)
-    mycursor.execute(sql, val)
-    res = mycursor.fetchall()
-    mydb.commit()
-    cls_name = ["NM", "OPMD", "OSCC"]
-    for i in range(len(res)):
-        res[i]["image_class"] = cls_name[
-            np.argmax(list(map(float, res[i]["score"].split())))
-        ]
-    data["history"] = res
-
+    # Reload the history every time the page is reloaded
+    db, cursor = get_db()
+    sql = "SELECT * FROM submission_record WHERE sender_id = %s"
+    val = (session["user_id"],)
+    cursor.execute(sql, val)
+    db_query = cursor.fetchall()
+    
     # Filter data if search query is provided
     search_query = request.args.get("search") 
-    filter = request.args.get("filter") 
+    agree = request.args.get("agree") 
 
+    data = {}
     if search_query is not None:
-        session['history_search'] = search_query
+        data['search'] = search_query
     else:
-        search_query = session.get('history_search', '')
-
-    if filter is not None:
-        session['history_filter'] = filter
+        data['search'] = ""
+    if agree is not None:
+        data['agree'] = agree
     else:
-        filter = session.get('history_filter', '')
+        data['agree'] = ""
 
-    
     # # Initialize an empty list to store filtered results
     filtered_data = []
 
     # Loop through the data and apply both search and filter criteria
-    for item in data["history"]:
-        item_comment = item.get("comment", "").lower()
-        item_fname = item.get("fname", "").lower()
+    for record in db_query:
+        record_comment = record.get("general_comment").lower()
+        record_fname = record.get("fname").lower()
+        record_agree = record.get("dentist_feedback_code")
 
-        # Check if search_query is present in comment or fname
-        search_match = (
-            search_query.lower() in item_comment or search_query.lower() in item_fname
-        )
-
-        # Check if filter matches the comment (split by "~" and compare the first part)
-        filter_match = filter.strip() == item_comment.split("~")[0].strip()
-
-        # If there's no search query or the item matches the search query, and there's no filter or the item matches the filter, include it in the filtered_data
-        if (not search_query or search_match) and (not filter or filter_match):
-            filtered_data.append(item)
+        if (not search_query or search_query in record_comment or search_query in record_fname) and \
+            (not agree or agree==record_agree):
+            filtered_data.append(record)
 
     # Sort the filtered data
-    filtered_data = sorted(filtered_data, key=lambda x: x["date"], reverse=True)
+    filtered_data = sorted(filtered_data, key=lambda x: x["created_at"], reverse=True)
 
     # Pagination
     page = request.args.get("page", 1, type=int)
@@ -197,19 +183,14 @@ def dentist_history():
     
         # Format the date in the desired format
     for item in paginated_data:
-        item["date"] = datetime.strptime(item["date"], "%Y-%m-%d %H:%M:%S").strftime("%d/%m/%Y %H.%M")
+        item["created_at"] = item["created_at"].strftime("%d/%m/%Y %H:%M")
 
     return render_template(
-            "history.html",
+            "dentist_history.html",
             data=data,
             pagination=paginated_data,
             current_page=page,
-            total_pages=total_pages,
-            search_query=search_query,
-            filter = filter)
-
-
-
+            total_pages=total_pages)
 
 # Helper functions
 
