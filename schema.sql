@@ -26,10 +26,13 @@ CREATE TABLE `user` (
 /*
   dentist_feedback_code (in dentist general system): AGREE, DISAGREE
   general_comment (in dentist general system)
+
+  case_id is the running id only for the patient system (dentist system will be NULL)
 */
 
 CREATE TABLE `submission_record` (
   `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `case_id` int DEFAULT NULL,
   `fname` varchar(255) NOT NULL,
   `sender_id` int DEFAULT NULL,
   `sender_phone` varchar(255) DEFAULT NULL,
@@ -51,4 +54,9 @@ CREATE TABLE `submission_record` (
   `updated_at` datetime DEFAULT NULL,
   `longitude` varchar(255) DEFAULT NULL,
   `latitude` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;
+
+CREATE TABLE `patient_case_id` (
+  `case_id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `id` int DEFAULT NULL,
 ) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;

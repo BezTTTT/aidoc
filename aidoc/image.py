@@ -28,12 +28,14 @@ bp = Blueprint('image', __name__)
 @login_required
 def dentist_upload():
     data = {}
+    submission = request.args.get('submission', default='false', type=str)
     if request.method == 'POST':
-
         if request.form.get('rotation_submitted'):
+            print('rotated')
             imageName = request.form.get('uploadedImage')
             rotate_temp_image(imageName)
-        else:
+            data = {'uploadedImage': imageName}
+        elif submission=='false': # Load and show the image, wait for the confirmation
             imageName = None
             imageList = request.files.getlist("imageList")
 
@@ -60,9 +62,35 @@ def dentist_upload():
                 session['imageNameList'] = imageNameList
             else:
                 session.pop('imageNameList', None)
-        if imageName:
-            data['uploadedImage'] = imageName # Send back path of the last submitted image (if sent for more than 1)
+            
+            if imageName:
+                data['uploadedImage'] = imageName # Send back path of the last submitted image (if sent for more than 1)
         
+        elif submission=='true': # upload confirmation is submitted
+
+            # Check if submission list is in the queue (session), if so submit them to the Submission Module and the AI Prediction Engine
+            if session.get('imageNameList') is not None:
+                upload_submission_module()
+                lastImageName = list(session['imageNameList'])[-1]
+
+                db, cursor = get_db()
+                sql = "SELECT id FROM submission_record WHERE fname=%s"
+                val = (lastImageName, )
+                cursor.execute(sql, val)
+                result = cursor.fetchone()
+
+                #Clear submission queue in the session
+                session.pop('imageNameList', None)
+
+                '''
+                lastImageName, ai_prediction, ai_scores = submission()
+                data = {
+                    'imagename':  lastImageName,
+                    'ai_prediction': ai_prediction,
+                    'ai_scores': ai_scores,
+                }
+                '''
+                return redirect(url_for('image.diagnosis', id=result['id']))
     return render_template("dentist_upload.html", data=data)
 
 @bp.route('/load_image/<folder>/<user_id>/<imagename>')
@@ -110,20 +138,20 @@ def load_image(folder, user_id, imagename):
                 im.save(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', imagename_png))
                 return send_from_directory(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp'), imagename_png)
 
-@bp.route('/diagnosis/dentist', methods=('POST', ))
+@bp.route('/diagnosis/<int:id>', methods=('GET', 'POST'))
 @login_required
-def dentist_diagnosis():
-    
-    # Check if submission list is in the queue (session), if so submit them to the Submission Module and the AI Prediction Engine
-    # then render the dentist_diagnosis template
-    if session.get('imageNameList') is not None:
-        lastImageName, ai_prediction, ai_scores = submission()
-        data = {
-            'imagename':  lastImageName,
-            'ai_prediction': ai_prediction,
-            'ai_scores': ai_scores,
-        }
-        return render_template('dentist_diagnosis.html', data=data)
+def diagnosis(id):
+    if session['sender_mode']=='dentist' and (session.get('img_id') is None or session['img_id']!=id):
+        db, cursor = get_db()
+        sql = "SELECT * FROM submission_record WHERE id=%s"
+        val = (id, )
+        cursor.execute(sql, val)
+        result = cursor.fetchone()
+        session['img_id'] = result['id']
+        session['img_fname'] = result['fname']
+        session['img_ai_prediction'] = result['ai_prediction']
+        session['img_ai_scores'] = json.loads(result['ai_scores'])
+        return render_template('dentist_diagnosis.html')
     else:
         return redirect(url_for('dentist'))
     
@@ -173,7 +201,7 @@ def dentist_history():
     # Pagination
     page = request.args.get("page", 1, type=int)
     if request.method == "POST":
-        page = request.form.get("current_history_page")
+        page = request.form.get("current_history_page", 1, type=int)
         page = int(page)
         
     total_pages = (len(filtered_data) - 1) // PER_PAGE + 1
@@ -259,8 +287,8 @@ def oral_lesion_prediction(imgPath):
     scores = [backgroundScore.numpy(), opmdScore.numpy(), osccScore.numpy()]
     return outlined_img, predictClass, scores
 
-# Submission Module
-def submission():
+# Upload Submission Module
+def upload_submission_module():
     if session['imageNameList']:
         # Define the related directories
         tempDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp')
@@ -320,13 +348,16 @@ def submission():
             sql = "INSERT INTO submission_record (fname, sender_id, ai_prediction, ai_scores) VALUES (%s,%s,%s,%s)"
             val = (filename, session['user_id'], ai_predictions[i], ai_scores[i])
             cursor.execute(sql, val)
-              
+
+'''
         lastImageName = list(session['imageNameList'])[-1]
 
         #Clear submission queue in the session
         session.pop('imageNameList', None)
 
+
         # If submit multiple image, return only the last image for visualization
         return (lastImageName, ai_predictions[-1], json.loads(ai_scores[-1]))
     else:
-        return
+        return (None, None, None)
+''' 

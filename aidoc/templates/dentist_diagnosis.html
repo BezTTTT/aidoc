@@ -17,8 +17,8 @@
             justify-content: center; /* Center horizontally */
             overflow: hidden;
           ">
-                <a href="{{ url_for('image.load_image', folder='upload', user_id=session['user_id'], imagename=data['imagename']) }}" target="_blank">
-                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=session['user_id'], imagename=data['imagename']) }}" alt=""
+                <a href="{{ url_for('image.load_image', folder='upload', user_id=session['user_id'], imagename=session['img_fname']) }}" target="_blank">
+                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=session['user_id'], imagename=session['img_fname']) }}" alt=""
                         style="height: 100%; max-width: 100%; width: auto" />
                 </a>
             </div>
@@ -36,8 +36,8 @@
             justify-content: center; /* Center horizontally */
             overflow: hidden;
           ">
-                <a href="{{ url_for('image.load_image', folder='outlined', user_id=session['user_id'], imagename=data['imagename']) }}" target="_blank">
-                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=session['user_id'], imagename=data['imagename']) }}" alt=""
+                <a href="{{ url_for('image.load_image', folder='outlined', user_id=session['user_id'], imagename=session['img_fname']) }}" target="_blank">
+                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=session['user_id'], imagename=session['img_fname']) }}" alt=""
                         style="height: 100%; max-width: 100%; width: auto" />
                 </a>
             </div>
@@ -63,23 +63,23 @@
                 href="/upload/dentist">วิเคราะห์รูปภาพอื่นเพิ่มเติม</a>
         </div>
         <div class="col-md-2 text-center mt-2 px-1">
-            <form action="/diagnosis/dentist" method="post" enctype="multipart/form-data">
+            <form action="/history/dentist" method="post" enctype="multipart/form-data">
                 <input class="btn btn-outline-success btn-block" style="width: 100%; margin: 0;" type="submit"
                     value="ดูประวัติ" />
             </form>
         </div>
         <div class="col-md-2 text-center mt-2 px-1">
             <a class="btn btn-outline-success btn-block" style="width: 100%; margin: 0;"
-                href="/diagnosis/dentist" download>Download</a>
+                href="/upload/dentist" download>Download</a>
         </div>
         <div class="col-md-2 text-center mt-2 px-1">
-            <form action="/diagnosis/dentist" method="post" enctype="multipart/form-data">
+            <form action="/upload/dentist" method="post" enctype="multipart/form-data">
                 <input class="btn btn-outline-success" type="submit" style="width: 100%; margin: 0;"
                     value="หมุนรูปไปทางขวา" />
             </form>
         </div>
         <div class="col-md-2 text-center mt-2 px-1">
-            <form action="/diagnosis/dentist" method="post" enctype="multipart/form-data">
+            <form action="/upload/dentist" method="post" enctype="multipart/form-data">
                 <input class="btn btn-outline-success" type="submit" style="width: 100%; margin: 0;"
                     value="Recompute" />
             </form>
@@ -90,11 +90,11 @@
     <div class="card">
         <div class="card-body">
             <h5 class="card-title">ผลการวินิจฉัยของ AI</h5>
-            {% if data['ai_prediction'] == 0 %}
+            {% if session['img_ai_prediction'] == 0 %}
                 <h6 class="card-subtitle card shadow-lg bg-success my-3 py-3 ms-4 fs-2 text-white text-center">
                     ช่องปากของคุณไม่มีรอยโรค
                 </h6>
-            {% elif data['ai_prediction'] == 1 %}
+            {% elif session['img_ai_prediction'] == 1 %}
                 <h6 class="card-subtitle card shadow-lg bg-warning my-3 py-3 fs-2 text-dark text-center">
                     ช่องปากของคุณอาจมีรอยโรค OPMD (Oral Potentially Malignant Disorders)
                 </h6>

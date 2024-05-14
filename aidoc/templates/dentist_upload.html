@@ -40,11 +40,11 @@
       <img id="previewImage" src="{{ url_for('image.load_image', folder='temp', user_id=session['user_id'], imagename=data['uploadedImage']) }}" class="card d-flex mx-auto" alt="" />
       <div class="my-3">
         <a class="btn btn-outline-warning mb-2" href="/upload/dentist">เปลี่ยนรูป</a>
-        <form action="/upload/dentist" method="post" enctype="multipart/form-data">
+        <form action="{{ url_for('image.dentist_upload', submission='false') }}" method="post" enctype="multipart/form-data">
           <input name="uploadedImage" type="text" value="{{data['uploadedImage']}}" hidden />
           <input name="rotation_submitted" type="submit" class="btn btn-outline-primary mb-2" value="คนไข้ควรหัวตั้งขึ้น หรือ กดปุ่มนี้เพื่อหมุนรูป"/>
         </form>
-        <form id="submitimgForm" action="/diagnosis/dentist" method="post" enctype="multipart/form-data" >
+        <form id="submitimgForm" action="{{ url_for('image.dentist_upload', submission='true') }}" method="post" enctype="multipart/form-data" >
           <div id="submitbtn" onclick="disableButton()" class="btn btn-success mb-2">ยืนยัน</div>
       </div>
     </div>

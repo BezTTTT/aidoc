@@ -68,8 +68,7 @@
                             </h6>
                             <div class="btn-container">
                                 <div class="d-flex justify-content-center">
-                                    <form action="/" method="post" enctype="multipart/form-data">
-                                        <input name="history_fname" type="text" value="{{ item['fname'] }}" hidden />
+                                    <form action="{{ url_for('image.diagnosis', id=item['id']) }}" method="post" enctype="multipart/form-data">
                                         <input class="btn btn-outline-success btn-block" type="submit" value="ดูผลการวิเคราะห์" />
                                         <input name="current_history_page" type="text" value="{{ current_page }}" hidden />
                                     </form>
