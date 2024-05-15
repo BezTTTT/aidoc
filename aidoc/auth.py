@@ -291,6 +291,10 @@ def osm_register():
             session['user_id'] = new_user['id']
             load_logged_in_user()       
         
+        # Flag to refresh db_query for history page
+        if session.get('need_db_refresh') is not None:
+            session['need_db_refresh']=True
+
         # session['national_id'] is used to carry out id from login to register
         # After the registration is complete, this (sensitive) variable should be deleted
         if 'national_id' in session:  
@@ -324,12 +328,12 @@ def dentist_login():
 
         if error_msg is None:
             session['user_id'] = user['id']
-            return redirect(url_for('image.dentist_upload'))
+            return redirect(url_for('image.dentist_history'))
         
         flash(error_msg)
 
     if g.user:
-        return redirect(url_for('image.dentist_upload'))
+        return redirect(url_for('image.dentist_history'))
     else:
         return render_template("dentist_login.html")
 
@@ -445,7 +449,12 @@ def dentist_register():
             cursor.execute('SELECT id FROM user WHERE username=%s', (data["username"],))
             new_user = cursor.fetchone()
             session['user_id'] = new_user['id']
-            load_logged_in_user()       
+            load_logged_in_user()
+        
+        # Flag to refresh db_query for history page
+        if session.get('need_db_refresh') is not None:
+            session['need_db_refresh']=True
+            
         # session['national_id'] is used to carry out id from login to register
         # After the registration is complete, this (sensitive) variable should be deleted
         if 'national_id' in session:  

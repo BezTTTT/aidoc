@@ -27,6 +27,7 @@ def create_app(test_config=None):
     app.config['IMAGE_DATA_DIR'] = IMAGE_DATA_DIR
     os.makedirs(IMAGE_DATA_DIR, exist_ok=True)
     os.makedirs(os.path.join(IMAGE_DATA_DIR, 'temp'), exist_ok=True)
+    os.makedirs(os.path.join(IMAGE_DATA_DIR, 'recycle'), exist_ok=True)
     os.makedirs(os.path.join(IMAGE_DATA_DIR, 'upload', 'thumbnail'), exist_ok=True)
     os.makedirs(os.path.join(IMAGE_DATA_DIR, 'outlined', 'thumbnail'), exist_ok=True)
     

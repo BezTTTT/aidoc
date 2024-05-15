@@ -47,15 +47,17 @@
             {% for item in pagination %}
                 <div class="col-md-3 mb-4">
                     <div class="card">
+
                         <div style="height: 200px; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; ">
                             <a href="{{ url_for('image.load_image', folder='upload', user_id=session['user_id'], imagename=item['fname']) }}" target="_blank">
                                 <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=session['user_id'], imagename=item['fname']) }}" class="card-img-top" alt=""
                                     style="height: 100%; max-width: 100%; width: auto" />
                             </a>
                         </div>
+
                         <div class="card-body">
                             <h6 class="image-name">ชื่อไฟล์ : {{ item['fname'] }}</h6>
-                            <h6 class="">วันที่ : {{ item['created_at'] }} น.</h6>
+                            <h6 class="">วันที่ : {{ item['formatted_created_at'] }} น.</h6>
                             <h6 class="fs-6 card-subtitle text-muted mb-2">
                                 ผลการวินิจฉัยของ AI :
                                     {% if item['ai_prediction']==0 %}
@@ -74,35 +76,34 @@
                                     </form>
                                     <!-- Button trigger modal -->
                                     <button type="button" class="btn btn-outline-danger mx-1" style="width: 100%"
-                                        data-bs-toggle="modal" data-bs-target="#exampleModal{{ item['id'] }}">
+                                        data-bs-toggle="modal" data-bs-target="#submissionDeleteModal{{ item['id'] }}">
                                         ลบข้อมูล
                                     </button>
                                 </div>
                             </div>
                         </div>
 
-                        <div>
-                            <!-- Modal -->
-                            <div class="modal fade" id="exampleModal{{ item['id'] }}" tabindex="-1"
-                                aria-labelledby="exampleModalLabel" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h1 class="modal-title fs-5" id="exampleModalLabel"> ลบประวัติ </h1>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">คุณแน่ใจที่จะลบประวัติใช่หรือไม่</div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> ยกเลิก </button>
-                                            <form action="/history/history" method="post" enctype="multipart/form-data">
-                                                <input name="his_id" type="text" value="{{ item['id'] }}" hidden />
-                                                <input class="btn btn-outline-danger" style="width: 100%" type="submit" value="ลบข้อมูล" />
-                                            </form>
-                                        </div>
+                        <!-- Submission Delete Modal -->
+                        <div class="modal fade" id="submissionDeleteModal{{ item['id'] }}" tabindex="-1"
+                            aria-labelledby="submissionDeleteModalLabel" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h1 class="modal-title fs-5" id="submissionDeleteModalLabel"> ลบประวัติ </h1>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">คุณแน่ใจที่จะลบประวัตินี้ ใช่หรือไม่</div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> ยกเลิก </button>
+                                        <form action="{{ url_for('image.delete_image') }}" method="post" enctype="multipart/form-data">
+                                            <input name="img_id" type="text" value="{{ item['id'] }}" hidden />
+                                            <input class="btn btn-outline-danger" style="width: 100%" type="submit" value="ลบข้อมูล" />
+                                        </form>
                                     </div>
                                 </div>
                             </div>
                         </div>
+
                     </div>
                 </div>
             {% endfor %}
@@ -126,25 +127,18 @@
         </div>
     </div>
     <script>
-        function confirmDelete() {
-            return confirm("คุณต้องการลบรูปนี้ใช่หรือไม่ ?");
-        }
-    </script>
-    <script>
         document.getElementById("agree").addEventListener("change", function () {
             document.getElementById("agreeForm").submit();
         });
 
         // Get the agree element and set its value from Flask
-        const agree = document.getElementById("agree");
+        const agreeSelect = document.getElementById("agree");
         const agreeValue = "{{ data['agree'] }}"; // Use the correct variable name
 
         // Set the selected agree value if it exists
         if (agreeValue) {
-            agree.value = agreeValue;
+            agreeSelect.value = agreeValue;
         }
-
-
     </script>
     <style>
         .image-name {

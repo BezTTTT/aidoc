@@ -32,7 +32,6 @@ def dentist_upload():
     submission = request.args.get('submission', default='false', type=str)
     if request.method == 'POST':
         if request.form.get('rotation_submitted'):
-            print('rotated')
             imageName = request.form.get('uploadedImage')
             rotate_temp_image(imageName)
             data = {'uploadedImage': imageName}
@@ -83,14 +82,6 @@ def dentist_upload():
                 #Clear submission queue in the session
                 session.pop('imageNameList', None)
 
-                '''
-                lastImageName, ai_prediction, ai_scores = submission()
-                data = {
-                    'imagename':  lastImageName,
-                    'ai_prediction': ai_prediction,
-                    'ai_scores': ai_scores,
-                }
-                '''
                 return redirect(url_for('image.diagnosis', id=result['id']))
     return render_template("dentist_upload.html", data=data)
 
@@ -139,6 +130,42 @@ def load_image(folder, user_id, imagename):
                 im.save(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', imagename_png))
                 return send_from_directory(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp'), imagename_png)
 
+@bp.route('/delete_image', methods=('POST', ))
+@login_required
+def delete_image():
+    img_id = request.form.get('img_id')
+
+    db, cursor = get_db()
+    sql = "SELECT sender_id, fname FROM submission_record WHERE id=%s"
+    val = (img_id, )
+    cursor.execute(sql, val)
+    result = cursor.fetchone()
+
+    user_id = str(result['sender_id'])
+    uploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', user_id)
+    thumbUploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', 'thumbnail', user_id)
+    outlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', user_id)
+    thumbOutlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', 'thumbnail', user_id)
+    
+    recycleDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'recycle', user_id)
+    os.makedirs(recycleDir, exist_ok=True)
+
+    filename = result['fname']
+    shutil.move(os.path.join(uploadDir, filename), os.path.join(recycleDir, filename))
+    os.remove(os.path.join(thumbUploadDir, filename))
+    os.remove(os.path.join(outlinedDir, filename))
+    os.remove(os.path.join(thumbOutlinedDir, filename))
+
+    sql = "DELETE FROM submission_record WHERE id = %s"
+    val = (img_id,)
+    cursor.execute(sql, val)
+    
+    if session.get('need_db_refresh') is not None:
+        session['need_db_refresh']=True
+
+    if session['sender_mode']=='dentist':
+        return redirect(url_for('image.dentist_history'))
+    
 @bp.route('/diagnosis/<int:id>', methods=('GET', 'POST'))
 @login_required
 def diagnosis(id):
@@ -153,6 +180,8 @@ def diagnosis(id):
             val = (dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location, session.get('img_id'))
             cursor.execute(sql, val)
             session.pop('img_id', None)
+            if session.get('need_db_refresh') is not None:
+                session['need_db_refresh']=True
             
     if session['sender_mode']=='dentist':
         if session.get('img_id') is None or session['img_id']!=id:
@@ -178,26 +207,23 @@ PER_PAGE = 12 #number images data show on history page per page
 def dentist_history():
 
     session['sender_mode'] = 'dentist'
-    # Reload the history every time the page is reloaded
-    db, cursor = get_db()
-    sql = "SELECT * FROM submission_record WHERE sender_id = %s"
-    val = (session["user_id"],)
-    cursor.execute(sql, val)
-    db_query = cursor.fetchall()
+
+    if session.get('need_db_refresh') is None or session.get('need_db_refresh')==True:
+        session['need_db_refresh']=False
+    
+        # Reload the history every time the page is reloaded
+        db, cursor = get_db()
+        sql = "SELECT * FROM submission_record WHERE sender_id = %s"
+        val = (session["user_id"],)
+        cursor.execute(sql, val)
+        db_query = cursor.fetchall()
+        session['saved_db_query'] = db_query
+    else:
+        db_query = session['saved_db_query']
     
     # Filter data if search query is provided
-    search_query = request.args.get("search") 
-    agree = request.args.get("agree") 
-
-    data = {}
-    if search_query is not None:
-        data['search'] = search_query
-    else:
-        data['search'] = ""
-    if agree is not None:
-        data['agree'] = agree
-    else:
-        data['agree'] = ""
+    search_query = request.args.get("search", "") 
+    agree = request.args.get("agree", "") 
 
     # # Initialize an empty list to store filtered results
     filtered_data = []
@@ -226,10 +252,14 @@ def dentist_history():
     end_idx = start_idx + PER_PAGE
     paginated_data = filtered_data[start_idx:end_idx]
     
-        # Format the date in the desired format
+    # Format the date in the desired format
     for item in paginated_data:
-        item["created_at"] = item["created_at"].strftime("%d/%m/%Y %H:%M")
+        item["formatted_created_at"] = item["created_at"].strftime("%d/%m/%Y %H:%M")
 
+    data = {}
+    data['search'] = search_query
+    data['agree'] = agree
+    
     return render_template(
             "dentist_history.html",
             data=data,
@@ -346,13 +376,20 @@ def upload_submission_module():
         os.makedirs(thumbOutlinedDir, exist_ok=True)
 
         # Copy files to the storage
+        checked_filename_lst = []
         for filename in session['imageNameList']:
             if os.path.isfile(os.path.join(tempDir, filename)):
-                shutil.copy2(os.path.join(tempDir, filename), os.path.join(uploadDir, filename))
-                shutil.copy2(os.path.join(tempDir, 'thumb_'+filename), os.path.join(thumbUploadDir, filename))
-                shutil.copy2(os.path.join(tempDir, 'outlined_'+filename), os.path.join(outlinedDir, filename))
-                shutil.copy2(os.path.join(tempDir, 'thumb_outlined_'+filename), os.path.join(thumbOutlinedDir, filename))
-        
+
+                checked_filename = check_if_duplicate(uploadDir, filename)
+
+                shutil.copy2(os.path.join(tempDir, filename), os.path.join(uploadDir, checked_filename))
+                shutil.copy2(os.path.join(tempDir, 'thumb_'+filename), os.path.join(thumbUploadDir, checked_filename))
+                shutil.copy2(os.path.join(tempDir, 'outlined_'+filename), os.path.join(outlinedDir, checked_filename))
+                shutil.copy2(os.path.join(tempDir, 'thumb_outlined_'+filename), os.path.join(thumbOutlinedDir, checked_filename))
+
+                checked_filename_lst.append(checked_filename)
+        session['imageNameList'] = checked_filename_lst
+
         # Try to clear temp folder if #files are more than CLEAR_TEMP_THRESHOLD
         if len(os.listdir(tempDir)) > current_app.config['CLEAR_TEMP_THRESHOLD']:
             for filename in os.listdir(tempDir):
@@ -366,15 +403,29 @@ def upload_submission_module():
             val = (filename, session['user_id'], ai_predictions[i], ai_scores[i])
             cursor.execute(sql, val)
 
-'''
-        lastImageName = list(session['imageNameList'])[-1]
+            if session.get('need_db_refresh') is not None:
+                session['need_db_refresh']=True
 
-        #Clear submission queue in the session
-        session.pop('imageNameList', None)
+# Check filename in the user folder if duplicated, if so append a running number to the filename
+def check_if_duplicate(uploadDir, checked_filename):
 
-
-        # If submit multiple image, return only the last image for visualization
-        return (lastImageName, ai_predictions[-1], json.loads(ai_scores[-1]))
+    underscore_splits = checked_filename.split('_')
+    extension_splits = underscore_splits[-1].split('.')
+    if len(underscore_splits)>1:
+        runningNumber = int(extension_splits[0])
+        previouslyDuplicate = True
     else:
-        return (None, None, None)
-''' 
+        runningNumber = 1
+        previouslyDuplicate = False
+        
+    while (os.path.isfile(os.path.join(uploadDir, checked_filename))):
+        if previouslyDuplicate:
+            underscores_merge = '_'.join(underscore_splits[:-1])
+            checked_filename = underscores_merge + '_' + str(runningNumber+1) + '.' + extension_splits[1]
+        else:
+            file_parts = os.path.splitext(checked_filename)
+            checked_filename = file_parts[0] + '_' + str(runningNumber) + file_parts[1]
+        runningNumber+=1
+        previouslyDuplicate = True
+        underscore_splits = checked_filename.split('_')
+    return checked_filename
