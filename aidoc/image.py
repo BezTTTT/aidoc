@@ -28,6 +28,7 @@ bp = Blueprint('image', __name__)
 @login_required
 def dentist_upload():
     data = {}
+    session['sender_mode'] = 'dentist'
     submission = request.args.get('submission', default='false', type=str)
     if request.method == 'POST':
         if request.form.get('rotation_submitted'):
@@ -141,19 +142,22 @@ def load_image(folder, user_id, imagename):
 @bp.route('/diagnosis/<int:id>', methods=('GET', 'POST'))
 @login_required
 def diagnosis(id):
-    if session['sender_mode']=='dentist' and (session.get('img_id') is None or session['img_id']!=id):
-        db, cursor = get_db()
-        sql = "SELECT * FROM submission_record WHERE id=%s"
-        val = (id, )
-        cursor.execute(sql, val)
-        result = cursor.fetchone()
-        session['img_id'] = result['id']
-        session['img_fname'] = result['fname']
-        session['img_ai_prediction'] = result['ai_prediction']
-        session['img_ai_scores'] = json.loads(result['ai_scores'])
+    if session['sender_mode']=='dentist':
+        if session.get('img_id') is None or session['img_id']!=id:
+            db, cursor = get_db()
+            sql = "SELECT * FROM submission_record WHERE id=%s"
+            val = (id, )
+            cursor.execute(sql, val)
+            result = cursor.fetchone()
+            session['img_id'] = result['id']
+            session['img_fname'] = result['fname']
+            session['img_ai_prediction'] = result['ai_prediction']
+            session['img_ai_scores'] = json.loads(result['ai_scores'])
+            session['img_dentist_feedback_code'] = result['dentist_feedback_code']
+            session['img_dentist_feedback_comment'] = result['dentist_feedback_comment']
+            session['img_dentist_feedback_lesion'] = result['dentist_feedback_lesion']
+            session['img_dentist_feedback_location'] = result['dentist_feedback_location']
         return render_template('dentist_diagnosis.html')
-    else:
-        return redirect(url_for('dentist'))
     
 
 PER_PAGE = 12 #number images data show on history page per page
@@ -161,6 +165,7 @@ PER_PAGE = 12 #number images data show on history page per page
 @login_required
 def dentist_history():
 
+    session['sender_mode'] = 'dentist'
     # Reload the history every time the page is reloaded
     db, cursor = get_db()
     sql = "SELECT * FROM submission_record WHERE sender_id = %s"
@@ -187,7 +192,7 @@ def dentist_history():
 
     # Loop through the data and apply both search and filter criteria
     for record in db_query:
-        record_comment = record.get("general_comment").lower()
+        record_comment = record.get("dentist_feedback_comment").lower()
         record_fname = record.get("fname").lower()
         record_agree = record.get("dentist_feedback_code")
 

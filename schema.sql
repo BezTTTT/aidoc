@@ -25,9 +25,8 @@ CREATE TABLE `user` (
 
 /*
   dentist_feedback_code (in dentist general system): AGREE, DISAGREE
-  general_comment (in dentist general system)
-
-  case_id is the running id only for the patient system (dentist system will be NULL)
+  dentist_feedback_lesion: 1.White 2.Red 3.White and Red 4.Abrasion 5.Tumor
+  dentist_feedback_location: 1.Lip 2.Buccal mucosa 3.Gingiva 4.Retromolar Area 5.Hard Palate 6.Soft Palate 7.Dorsal and lateral tongue 8.Ventral tongue 9.Floor of mouth
 */
 
 CREATE TABLE `submission_record` (
@@ -39,7 +38,6 @@ CREATE TABLE `submission_record` (
   `special_request` tinyint NOT NULL DEFAULT 0,
   `zip_code` varchar(255) DEFAULT NULL,
   `patient_id` varchar(255) DEFAULT NULL,
-  `general_comment` varchar(255) NOT NULL DEFAULT '',
   `dentist_id` int DEFAULT NULL,
   `dentist_feedback_code` varchar(255) DEFAULT NULL,
   `dentist_feedback_comment` varchar(255) NOT NULL DEFAULT '',
