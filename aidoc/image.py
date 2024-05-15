@@ -380,7 +380,7 @@ def upload_submission_module():
         for filename in session['imageNameList']:
             if os.path.isfile(os.path.join(tempDir, filename)):
 
-                checked_filename = check_if_duplicate(uploadDir, filename)
+                checked_filename = rename_if_duplicated(uploadDir, filename)
 
                 shutil.copy2(os.path.join(tempDir, filename), os.path.join(uploadDir, checked_filename))
                 shutil.copy2(os.path.join(tempDir, 'thumb_'+filename), os.path.join(thumbUploadDir, checked_filename))
@@ -406,8 +406,8 @@ def upload_submission_module():
             if session.get('need_db_refresh') is not None:
                 session['need_db_refresh']=True
 
-# Check filename in the user folder if duplicated, if so append a running number to the filename
-def check_if_duplicate(uploadDir, checked_filename):
+# Rename the filename if duplicates in the user folder, By appending a running number
+def rename_if_duplicated(uploadDir, checked_filename):
 
     underscore_splits = checked_filename.split('_')
     extension_splits = underscore_splits[-1].split('.')
