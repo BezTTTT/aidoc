@@ -142,6 +142,18 @@ def load_image(folder, user_id, imagename):
 @bp.route('/diagnosis/<int:id>', methods=('GET', 'POST'))
 @login_required
 def diagnosis(id):
+    if request.method=='POST':
+        if request.form.get('feedback_submit') != None and session.get('img_id') is not None:
+            dentist_feedback_code = request.form.get('agree_option')
+            dentist_feedback_location = request.form.get('lesion_location')
+            dentist_feedback_lesion = request.form.get('lesion_type')
+            dentist_feedback_comment = request.form.get('dentist_comment')
+            db, cursor = get_db()
+            sql = "UPDATE submission_record SET dentist_feedback_code=%s, dentist_feedback_comment=%s, dentist_feedback_lesion=%s, dentist_feedback_location=%s WHERE id=%s"
+            val = (dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location, session.get('img_id'))
+            cursor.execute(sql, val)
+            session.pop('img_id', None)
+            
     if session['sender_mode']=='dentist':
         if session.get('img_id') is None or session['img_id']!=id:
             db, cursor = get_db()
