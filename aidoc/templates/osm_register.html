@@ -55,14 +55,14 @@
                 <div class="form-group py-2">
                     <label class="mr-sm-2">เลขที่บัตรประจำตัวประชาชน <span style="color: red;">*</span></label>
                     <input type="text" class="form-control" placeholder="เลขที่บัตรประจำตัวประชาชน..." name="national_id"
-                        value="{{session['national_id'] or data.national_id}}" maxlength="13" required
+                        value="{{g.national_id or data.national_id}}" maxlength="13" required
                         {% if data.valid_national_id is defined and not data.valid_national_id %} style="border-color: rgba(244, 92, 92, 1);" {% endif %} >
                     </input>
                 </div>
                 <div class="form-group py-2">
                     <label class="mr-sm-2">เบอร์โทรศัพท์ <span style="color: red;">*</span></label>
                     <input type="text" class="form-control" placeholder="เบอร์โทรศัพท์..." name="phone"
-                        value="{{ session['phone'] or data.phone}}" maxlength="10" required
+                        value="{{ g.phone or data.phone}}" maxlength="10" required
                         {% if data.phoneInvalid %} style="border-color: rgba(244, 92, 92, 1);" {% endif %}>
                     </input>
                 </div>

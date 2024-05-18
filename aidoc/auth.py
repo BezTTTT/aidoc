@@ -19,9 +19,7 @@ def load_logged_in_user():
         g.user = None
     else:
         db, cursor = get_db()
-        cursor.execute(
-            'SELECT * FROM user WHERE id = %s', (user_id,)
-        )
+        cursor.execute('SELECT * FROM user WHERE id = %s', (user_id,))
         user = cursor.fetchone()
         if user is None:
             session.pop('user_id', None)
@@ -30,7 +28,7 @@ def load_logged_in_user():
 
 @bp.route('/')
 def index():
-    if session.get('sender_mode') is not None or session.get('sender_mode')=='dentist':
+    if 'sender_mode' in session and session['sender_mode']=='dentist':
         return render_template("dentist_login.html")
     else:
         return render_template("patient_login.html")
@@ -292,7 +290,7 @@ def osm_register():
             load_logged_in_user()       
         
         # Flag to refresh db_query for history page
-        if session.get('need_db_refresh') is not None:
+        if 'need_db_refresh' in session:
             session['need_db_refresh']=True
 
         # session['national_id'] is used to carry out id from login to register
@@ -384,7 +382,7 @@ def dentist_register():
         '''
 
         # Validation 3: Check if there is a user with the same (name, surname) or email or phone
-        if request.form.get("create_new_account") is None and request.form.get("merge_account") is None:
+        if "create_new_account" not in request.form and "merge_account" not in request.form:
             db, cursor = get_db()
             cursor.execute('SELECT id, name, surname, email, phone, is_patient FROM user WHERE username IS NULL AND name=%s AND surname=%s AND phone=%s',
                         (data["name"], data["surname"], data["phone"]))
@@ -452,7 +450,7 @@ def dentist_register():
             load_logged_in_user()
         
         # Flag to refresh db_query for history page
-        if session.get('need_db_refresh') is not None:
+        if 'need_db_refresh' in session:
             session['need_db_refresh']=True
             
         # session['national_id'] is used to carry out id from login to register
@@ -467,7 +465,7 @@ def dentist_register():
 
 @bp.route('/logout')
 def logout():
-    if session.get('sender_mode') is not None and session.get('sender_mode')=='dentist':
+    if 'sender_mode' in session and session['sender_mode']=='dentist':
         session.clear()
         g.user = None
         return redirect(url_for('dentist'))
@@ -480,7 +478,7 @@ def login_required(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
         if g.user is None:
-            if session.get('sender_mode') is not None and session.get('sender_mode')=='dentist':
+            if 'sender_mode' in session and session['sender_mode']=='dentist':
                 return redirect(url_for('auth.dentist_login'))
             else:
                 return redirect(url_for('auth.patient_login'))

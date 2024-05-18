@@ -69,7 +69,7 @@ def dentist_upload():
         elif submission=='true': # upload confirmation is submitted
 
             # Check if submission list is in the queue (session), if so submit them to the Submission Module and the AI Prediction Engine
-            if session.get('imageNameList') is not None:
+            if 'imageNameList' in session:
                 upload_submission_module()
                 lastImageName = list(session['imageNameList'])[-1]
 
@@ -160,7 +160,7 @@ def delete_image():
     val = (img_id,)
     cursor.execute(sql, val)
     
-    if session.get('need_db_refresh') is not None:
+    if 'need_db_refresh' in session:
         session['need_db_refresh']=True
 
     if session['sender_mode']=='dentist':
@@ -170,7 +170,7 @@ def delete_image():
 @login_required
 def diagnosis(id):
     if request.method=='POST':
-        if request.form.get('feedback_submit') != None and session.get('img_id') is not None:
+        if 'feedback_submit' in request.form and 'img_id' in session:
             dentist_feedback_code = request.form.get('agree_option')
             dentist_feedback_location = request.form.get('lesion_location')
             dentist_feedback_lesion = request.form.get('lesion_type')
@@ -180,11 +180,11 @@ def diagnosis(id):
             val = (dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location, session.get('img_id'))
             cursor.execute(sql, val)
             session.pop('img_id', None)
-            if session.get('need_db_refresh') is not None:
+            if 'need_db_refresh' in session:
                 session['need_db_refresh']=True
             
     if session['sender_mode']=='dentist':
-        if session.get('img_id') is None or session['img_id']!=id:
+        if 'img_id' not in session or session['img_id']!=id:
             db, cursor = get_db()
             sql = "SELECT * FROM submission_record WHERE id=%s"
             val = (id, )
@@ -208,7 +208,7 @@ def dentist_history():
 
     session['sender_mode'] = 'dentist'
 
-    if session.get('need_db_refresh') is None or session.get('need_db_refresh')==True:
+    if 'need_db_refresh' not in session or session.get('need_db_refresh')==True:
         session['need_db_refresh']=False
     
         # Reload the history every time the page is reloaded
@@ -365,7 +365,7 @@ def upload_submission_module():
             session.pop('ai_infos', None)
         
         # Create directory for the user (using user_id) if not exist
-        user_id = str(session['user_id'])
+        user_id = str(g.user_id)
         uploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', user_id)
         thumbUploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', 'thumbnail', user_id)
         outlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', user_id)
@@ -403,7 +403,7 @@ def upload_submission_module():
             val = (filename, session['user_id'], ai_predictions[i], ai_scores[i])
             cursor.execute(sql, val)
 
-            if session.get('need_db_refresh') is not None:
+            if 'need_db_refresh' in session:
                 session['need_db_refresh']=True
 
 # Rename the filename if duplicates in the user folder, By appending a running number
