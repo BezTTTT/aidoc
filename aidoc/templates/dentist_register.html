@@ -10,12 +10,11 @@
             <form class="my-4" action="{{ url_for('auth.dentist_register') }}" method="post" enctype="multipart/form-data">
                 <div class="form-group py-2">
                     <label class="mr-sm-2">ชื่อ (ไม่ต้องใส่คำนำหน้าชื่อ) <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="ชื่อ..." name="name" value="{{data.name}}"required></input>
+                    <input type="text" class="form-control" placeholder="ชื่อ..." name="name" value="{{data.name}}"required>
                 </div>
                 <div class="form-group py-2">
                     <label class="mr-sm-2">นามสกุล <span style="color: red;">*</span></label>
                     <input type="text" class="form-control" placeholder="นามสกุล..." name="surname" value="{{data.surname}}" required>
-                    </input>
                 </div>
                 <div class="form-group py-2">
                     <label class="mr-sm-2">ตำแหน่งในทางสาธารณสุข <span style="color: red;">*</span></label>
@@ -37,32 +36,26 @@
                 <div class="form-group py-2">
                     <label class="mr-sm-2">กรณีที่ท่านระบุตำแหน่งเป็น อสม. หรือ บุคคลทั่วไป กรุณาระบุอาชีพ <span style="color: red;">*</span></label>
                     <input type="text" class="form-control" placeholder="กรุณาระบุอาชีพ..." name="osm_job" value="{{data.osm_job}}">
-                    </input>
                 </div>
                 <div class="form-group py-2">
                     <label class="mr-sm-2">กรณีที่ท่านระบุตำแหน่งเป็น ทันตแพทย์ หรือ แพทย์ กรุณาระบุเลขที่ใบอนุญาตฯ <span style="color: red;">*</span></label>
                     <input type="text" class="form-control" placeholder="กรุณาระบุเลขที่ใบอนุญาตฯ..." name="license" value="{{data.license}}">
-                    </input>
                 </div>
                 <div class="form-group py-2">
                     <label class="mr-sm-2">โรงพยาบาลหรือหน่วยงานที่สังกัด <span style="color: red;">*</span></label>
                     <input type="text" class="form-control" placeholder="โรงพยาบาลหรือหน่วยงานที่สังกัด..." name="hospital" value="{{data.hospital}}" required>
-                    </input>
                 </div>
                 <div class="form-group py-2">
                     <label class="mr-sm-2">จังหวัด <span style="color: red;">*</span></label>
                     <input type="text" class="form-control" placeholder="จังหวัด..." name="province" value="{{data.province}}" required>
-                    </input>
                 </div>
                 <div class="form-group py-2">
                     <label class="mr-sm-2">เบอร์โทรศัพท์ <span style="color: red;">*</span></label>
                     <input type="text" class="form-control" placeholder="เบอร์โทรศัพท์..." name="phone" value="{{ data.phone}}" maxlength="10">
-                    </input>
                 </div>
                 <div class="form-group py-2">
                     <label class="mr-sm-2">อีเมล <span style="color: red;">*</span></label>
                     <input type="text" class="form-control" placeholder="อีเมล..." name="email" value="{{ data.email}}" >
-                    </input>
                 </div>
                 <div class="row">
                     <div class="col-md-12 form-group py-2">
@@ -72,7 +65,7 @@
                             {% if data.valid_username is defined and not data.valid_username %} 
                                 style="border-color: rgba(244, 92, 92, 1);"
                             {% endif %}
-                        ></input>
+                        >
                     </div>
                 </div>
 
@@ -84,7 +77,7 @@
                             {% if data.valid_password is defined and not data.valid_password %} 
                                 style="border-color: rgba(244, 92, 92, 1);"
                             {% endif %}
-                        ></input>
+                        >
                     </div>
                     <div class="col-md-6 form-group py-2">
                         <label class="mr-sm-2 mb-2">ยืนยันรหัสผ่าน <span style="color: red;">*</span></label>
@@ -93,7 +86,7 @@
                             {% if data.valid_password is defined and not data.valid_password %} 
                                 style="border-color: rgba(244, 92, 92, 1);"
                             {% endif %}
-                        ></input>
+                        >
                     </div>
 
                 </div>

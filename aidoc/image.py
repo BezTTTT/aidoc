@@ -1,5 +1,5 @@
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for, send_from_directory, current_app
+    Blueprint, flash, g, redirect, render_template, request, session, url_for, send_from_directory, current_app, jsonify
 )
 from werkzeug.utils import secure_filename
 
@@ -84,6 +84,76 @@ def dentist_upload():
 
                 return redirect(url_for('image.diagnosis', id=result['id']))
     return render_template("dentist_upload.html", data=data)
+
+@bp.route('/upload/patient', methods=('GET', 'POST'))
+@login_required
+def patient_upload():
+    data = {}
+    session['sender_mode'] = 'patient'
+    submission = request.args.get('submission', default='false', type=str)
+    if request.method == 'POST':
+        if request.form.get('rotation_submitted'):
+            imageName = request.form.get('uploadedImage')
+            rotate_temp_image(imageName)
+            data = {'uploadedImage': imageName}
+        elif submission=='false': # Load and show the image in the queue, and wait for the confirmation
+            imageName = None
+            imageList = request.files.getlist("imageList")
+
+            imageNameList = []
+            for imageFile in imageList: 
+                if imageFile and allowed_file(imageFile.filename):
+                    imageName = secure_filename(imageFile.filename)
+                    imagePath = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', imageName)
+                    imageFile.save(imagePath)
+
+                    #Create the temp thumbnail
+                    pil_img = Image.open(imagePath) 
+                    MAX_SIZE = (512, 512) 
+                    pil_img.thumbnail(MAX_SIZE) 
+                    pil_img.save(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', 'thumb_' + imageName)) 
+
+                    # Save the current filenames on session for the upcoming prediction
+                    imageNameList.append(imageName)
+                else:
+                    flash('รับข้อมูลเฉพาะที่เป็นรูปภาพเท่านั้น')
+            
+            if len(imageList)>0:
+                # Save the current filenames on session for the upcoming prediction
+                session['imageNameList'] = imageNameList
+                # The following parameters are specific only on patient submission
+                session['sender_phone'] = request.form.get('inputPhone')
+                session['zip_code'] = request.form.get('inputZipCode')
+                if 'sender_phone' in session:
+                    session['sender_id'] = request.form.get('sender_id')
+                else:
+                    session['sender_id'] = g.user['id']
+            else:
+                session.pop('imageNameList', None)
+                session.pop('sender_phone', None)
+                session.pop('zip_code', None)
+            
+            if imageName:
+                data['uploadedImage'] = imageName # Send back path of the last submitted image (if sent for more than 1)
+        
+        elif submission=='true': # upload confirmation is submitted
+
+            # Check if submission list is in the queue (session), if so submit them to the Submission Module and the AI Prediction Engine
+            if 'imageNameList' in session:
+                upload_submission_module()
+                lastImageName = list(session['imageNameList'])[-1]
+
+                db, cursor = get_db()
+                sql = "SELECT id FROM submission_record WHERE fname=%s"
+                val = (lastImageName, )
+                cursor.execute(sql, val)
+                result = cursor.fetchone()
+
+                #Clear submission queue in the session
+                session.pop('imageNameList', None)
+
+                return redirect(url_for('image.diagnosis', id=result['id']))
+    return render_template("patient_upload.html", data=data)
 
 @bp.route('/load_image/<folder>/<user_id>/<imagename>')
 @login_required
@@ -200,8 +270,23 @@ def diagnosis(id):
             session['img_dentist_feedback_location'] = result['dentist_feedback_location']
         return render_template('dentist_diagnosis.html')
     
-
-PER_PAGE = 12 #number images data show on history page per page
+    if session['sender_mode']=='patient':
+        if 'img_id' not in session or session['img_id']!=id:
+            db, cursor = get_db()
+            sql = "SELECT * FROM submission_record WHERE id=%s"
+            val = (id, )
+            cursor.execute(sql, val)
+            result = cursor.fetchone()
+            session['img_id'] = result['id']
+            session['img_fname'] = result['fname']
+            session['img_ai_prediction'] = result['ai_prediction']
+            session['img_ai_scores'] = json.loads(result['ai_scores'])
+            session['img_dentist_feedback_code'] = result['dentist_feedback_code']
+            session['img_dentist_feedback_comment'] = result['dentist_feedback_comment']
+            session['img_dentist_feedback_lesion'] = result['dentist_feedback_lesion']
+            session['img_dentist_feedback_location'] = result['dentist_feedback_location']
+        return render_template('patient_diagnosis.html')
+    
 @bp.route('/history/dentist', methods=('GET', 'POST'))
 @login_required
 def dentist_history():
@@ -247,6 +332,7 @@ def dentist_history():
         page = request.form.get("current_history_page", 1, type=int)
         page = int(page)
         
+    PER_PAGE = 12 #number images data show on history page per page
     total_pages = (len(filtered_data) - 1) // PER_PAGE + 1
     start_idx = (page - 1) * PER_PAGE
     end_idx = start_idx + PER_PAGE
@@ -266,6 +352,27 @@ def dentist_history():
             pagination=paginated_data,
             current_page=page,
             total_pages=total_pages)
+
+@login_required
+@bp.route("/find_sender", methods=["POST"])
+def find_sender():
+    #get phone num
+    phone_number = request.form.get('phone_number')
+
+    db, cursor = get_db()
+    sql = "SELECT id, name, surname FROM user WHERE phone = %s AND is_osm = 1"
+    val = (phone_number,)
+    cursor.execute(sql, val)
+    senderInfo = cursor.fetchone()
+
+    if(senderInfo is not None):
+        return jsonify({
+            'name': senderInfo['name'],
+            'surname': senderInfo['surname'],
+            'sender_id': senderInfo['id']
+        }), 200
+    else:
+        return jsonify({}), 404
 
 # Helper functions
 
@@ -365,7 +472,7 @@ def upload_submission_module():
             session.pop('ai_infos', None)
         
         # Create directory for the user (using user_id) if not exist
-        user_id = str(g.user_id)
+        user_id = str(g.user['id'])
         uploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', user_id)
         thumbUploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', 'thumbnail', user_id)
         outlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', user_id)
@@ -399,10 +506,24 @@ def upload_submission_module():
         # Add the prediction record to the database
         for i, filename in enumerate(session['imageNameList']):
             db, cursor = get_db()
-            sql = "INSERT INTO submission_record (fname, sender_id, ai_prediction, ai_scores) VALUES (%s,%s,%s,%s)"
-            val = (filename, session['user_id'], ai_predictions[i], ai_scores[i])
-            cursor.execute(sql, val)
+            
+            if session['sender_mode']=='dentist':
+                sql = "INSERT INTO submission_record (fname, sender_id, ai_prediction, ai_scores) VALUES (%s,%s,%s,%s)"
+                val = (filename, session['sender_id'], ai_predictions[i], ai_scores[i])
+                cursor.execute(sql, val)
+            elif session['sender_mode']=='patient':
+                sql = "INSERT INTO submission_record (fname, patient_id, sender_id, ai_prediction, ai_scores) VALUES (%s,%s,%s,%s,%s)"
+                val = (filename, session['user_id'], session['sender_id'], ai_predictions[i], ai_scores[i])
+                cursor.execute(sql, val)
+                
+                cursor.execute("SELECT LAST_INSERT_ID()")
+                row = cursor.fetchone()
+                print(row)
+                sql = "INSERT INTO patient_case_id (id) VALUES (%s)"
+                val = (row['LAST_INSERT_ID()'],)
+                cursor.execute(sql, val)
 
+            
             if 'need_db_refresh' in session:
                 session['need_db_refresh']=True
 

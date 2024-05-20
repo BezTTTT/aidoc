@@ -20,7 +20,9 @@ CREATE TABLE `user` (
   `is_specialist` boolean DEFAULT FALSE,
   `is_admin` boolean DEFAULT FALSE,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `default_sender_phone` varchar(255) DEFAULT NULL,
+  `default_zip_code` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;
 
 /*
@@ -49,12 +51,10 @@ CREATE TABLE `submission_record` (
   `ai_prediction` int DEFAULT NULL,
   `ai_scores` varchar(255) DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime DEFAULT NULL,
-  `longitude` varchar(255) DEFAULT NULL,
-  `latitude` varchar(255) DEFAULT NULL
+  `updated_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;
 
 CREATE TABLE `patient_case_id` (
   `case_id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `id` int DEFAULT NULL,
+  `id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;

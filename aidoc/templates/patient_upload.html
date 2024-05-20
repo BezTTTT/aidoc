@@ -1,0 +1,226 @@
+{% extends "./base.html"%}
+
+{% block title %} RiskOCA | Upload {% endblock %}
+
+{% block content %}
+
+<h2 class="text-center"> ระบบปัญญาประดิษฐ์ที่ช่วยในการค้นหาและวิเคราะห์รอยโรคก่อนมะเร็งและมะเร็งช่องปาก</h2>
+<h4 class="text-center"> (Artificial Intelligent System for Detecting and Analyzing PMDs and Oral Cancer)</h4>
+
+{% if data is undefined or data.get('uploadedImage') is none %}
+  <div class="container-fluid">
+    <div style="width: auto"></div>
+    <div class="row d-flex justify-content-center align-items-center text-center">
+      <div class="col-8 col-xs-2 d-flex justify-content-center align-items-center">
+        <form class="p-3 text-center" action="/upload/patient" method="post" enctype="multipart/form-data">
+          <input id="file-upload1" type="file" name="imageList" onchange="form.submit()" accept="image/*" multiple hidden />
+          <div class="d-flex align-items-center" style="width: 100%">
+            <label for="file-upload1" class="card d-flex justify-content-center align-items-center" style="
+                  border-style: dashed;
+                  border-color: rgb(0, 229, 255); 
+                  border-width: 2px;
+                  width: 22rem;
+                  height: 20  rem;
+                  cursor: pointer;
+                  padding: 10px;
+                ">
+              <div class="d-flex justify-content-center align-items-center img-responsive">
+                <img src="{{url_for('static', filename='upload_icon.png')}}" style="width: 30%;" class="card-img-top">
+              </div>
+              คลิกเพื่ออัพโหลดรูปภาพ<br />(กรุณาอัพโหลดรูปช่องปากที่ได้มาตรฐานเท่านั้น)
+            </label>
+          </div>
+        </form> 
+      </div>
+    </div>
+  </div>
+{% else %}
+  <div class="p-3 text-center d-flex justify-content-center">
+    <div class="col-md-4">
+      <img id="previewImage" src="{{ url_for('image.load_image', folder='temp', user_id=g.user['id'], imagename=data['uploadedImage']) }}" class="card d-flex mx-auto" alt="" />
+      <div class="my-3">
+        <a class="btn btn-outline-warning mb-2" href="/upload/patient">เปลี่ยนรูป</a>
+        <form action="{{ url_for('image.patient_upload', submission='false') }}" method="post" enctype="multipart/form-data">
+          <input name="uploadedImage" type="text" value="{{data['uploadedImage']}}" hidden />
+          <input name="rotation_submitted" type="submit" class="btn btn-outline-primary mb-2" value="คนไข้ควรหัวตั้งขึ้น หรือ กดปุ่มนี้เพื่อหมุนรูป"/>
+        </form>
+        <form id="submitimgForm" action="{{ url_for('image.patient_upload', submission='true') }}" method="post" enctype="multipart/form-data" >
+          <div id="submitbtn" onclick="disableButton()" class="btn btn-success mb-2">ยืนยัน</div>
+          <div id="errorBox" class="alert alert-danger" role="alert" style="display: none;"></div>
+          <div class="border p-3 rounded-3 my-2">
+            <div class="card-body">
+              <div class="row justify-content-center">
+                <div class="d-flex align-items-center justify-content-start">
+                  <p class="card-title text-start"> ขอความร่วมมือแจ้งรหัสไปรษณีย์ เพื่อระบุสถานที่ ที่ท่านถ่ายรูปภาพนี้ (หากไม่ทราบให้ปล่อยว่างไว้) </p>
+                </div>
+                <div class="mt-2 col-md-6">
+                  <input class="form-control" placeholder="รหัสไปรษณีย์ 5 หลัก" maxlength="5" type="text" name="inputZipCode" id="inputZipCode" required
+                    {% if g.user['default_zip_code']  %}
+                      value="{{ g.user['default_zip_code'] }}"
+                    {% endif %}
+                  /> 
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="loginContainer border p-3 rounded-3 my-2">
+            <div class="card-body text-start">
+              <p class="card-title">
+                <span  style="color: red; font-weight: bold;">สำคัญ: </span>
+                หากภาพนี้ถูกนำส่งโดย เจ้าหน้าที่ผู้คัดกรอง กรุณากดใช่ เพื่อแจ้งเบอร์โทร ผู้คัดกรอง แต่หากท่านส่งภาพนี้ด้วยตัวท่านเอง กรุณากดยกเลิก
+              </p>
+              <div class="row mt-2 justify-content-center">
+                <div class="col-4">
+                  <input type="checkbox" name="checkbox" class="btn-check" id="checkbox" autocomplete="off" onchange="displayPhoneInput()" checked />
+                  <label id="checkboxYes" class="btn" for="checkbox"> ใช่ </label>
+                  <label id="checkboxNo" style="display: block;" class="btn btn-outline-danger" for="checkbox"> ยกเลิก </label>
+                </div>
+                <div id="inputPhoneContainer" class="col-8" style="display: block;">
+                  <input name="sender_id" id="sender_id" type="text" value="" hidden />
+                  <input class="form-control" placeholder="เบอร์โทร..." maxlength="10" type="text" name="inputPhone" id="inputPhone" required
+                    {% if g.user['default_sender_phone'] %}
+                      value="{{g.user['default_sender_phone'] }}"
+                    {% endif %}
+                  /> 
+                </div>
+                <div class="mt-3 d-flex justify-content-center align-items-center" id="senderInfoContainer"
+                  {% if g.user['default_sender_phone'] %}
+                    style="display: none;"
+                  {% endif %}>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+<script>
+  
+  // Define the const variable involves in the following script
+  const inputPhone = document.getElementById('inputPhone')
+  const inputPhoneContainer = document.getElementById('inputPhoneContainer')
+  const senderInfoContainer = document.getElementById('senderInfoContainer')
+  const checkbox = document.getElementById('checkbox')
+  const checkboxYes = document.getElementById('checkboxYes')
+  const checkboxNo = document.getElementById('checkboxNo')
+  const errorBox = document.getElementById("errorBox")
+  const inputZipCode = document.getElementById('inputZipCode')
+  const senderIDInput = document.getElementById('sender_id')
+
+  // Load sender info if there is a default_sender_phone
+  var isFirstOpen = true
+  checkSenderPhone(inputPhone.value)
+
+  inputPhone.addEventListener('input',function(e){
+      checkSenderPhone( phone = e.target.value)
+  })
+
+  function checkSenderPhone(phone){
+    if(phone.length == 10){
+      // Make an AJAX request to Flask server
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', '/find_sender', true);
+      xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+      xhr.onreadystatechange = function () {
+          if (xhr.readyState === 4 && xhr.status === 200) {
+              var senderInfo = JSON.parse(xhr.responseText)
+              senderInfoContainer.style.display = 'block'
+              senderInfoContainer.style.color = 'green'
+              senderInfoContainer.innerHTML = "เจ้าหน้าที่ผู้คัดกรอง ชื่อ "+senderInfo.name+" "+senderInfo.surname
+              senderIDInput.value = senderInfo.sender_id
+          }else{
+            senderInfoContainer.style.display = 'none'
+          }
+          isFirstOpen = false
+        }
+      // Send the input value to the server
+      xhr.send('phone_number=' + phone);
+    }else{
+      senderInfoContainer.style.display = 'none'
+      senderInfoContainer.innerHTML=""
+      if (isFirstOpen) {
+        isFirstOpen = false
+        checkbox.checked = false
+        checkboxYes.style.display = 'block'
+        checkboxNo.style.display = 'none'
+        inputPhoneContainer.style.display = 'none'
+      }
+    }
+  }
+
+  function isValidZipCode(zipCode) {
+    const zipCodePattern = /^\d{5}$/
+    return zipCodePattern.test(zipCode)
+  }
+
+  function isValidPhoneNumber(phoneNumber) {
+    const phonePattern = /^\d{10}$/
+    return phonePattern.test(phoneNumber)
+  }
+
+  function disableButton() {
+
+      if (!(isValidZipCode(inputZipCode.value) || inputZipCode.value == '')) {
+        errorBox.style.display = 'block'
+        inputZipCode.style.borderColor = 'red'
+        inputPhone.style.borderColor = ''
+        errorBox.innerHTML = 'กรุณากรอกรหัสไปรษณีย์ให้ถูกต้อง'
+        return
+      } else {
+        errorBox.style.display = 'none'
+        inputZipCode.style.borderColor = ''
+        errorBox.innerHTML = ''
+      }
+
+      if (checkbox.checked) {
+        if (!isValidPhoneNumber(inputPhone.value)) {
+          errorBox.style.display = 'block'
+          inputPhone.style.borderColor = 'red'
+          errorBox.innerHTML = 'กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง'
+        }else{
+          inputPhone.style.borderColor = ''
+          document.getElementById("submitbtn").disabled = true
+          document.getElementById("submitimgForm").submit()
+        }
+      }else{
+        document.getElementById("submitbtn").disabled = true
+        document.getElementById("submitbtn").onclick = null
+        document.getElementById("submitimgForm").submit()
+      }
+  }
+
+  function displayPhoneInput(){    
+    if (checkbox.checked) {
+      checkboxYes.style.display = 'none'
+      checkboxNo.style.display = 'block'
+      inputPhoneContainer.style.display = 'block'
+    } else {
+      checkboxYes.style.display = 'block'
+      checkboxNo.style.display = 'none'
+      inputPhoneContainer.style.display = 'none'
+    }
+
+    errorBox.style.display = 'none'
+    inputPhone.style.borderColor = ''
+    senderInfoContainer.innerHTML = ""
+    senderInfoContainer.style.display = 'none'
+    inputPhone.value = ""
+  }
+</script>
+<style>
+  #checkboxYes {
+    display: none; 
+    border-color: #198754;
+    color: #198754;
+  }
+  #checkboxYes:hover {
+    background-color: #198754;
+    color: rgb(255, 255, 255);
+  }
+</style>
+{% include 'examples_footer.html' %}
+{% include 'terms_footer.html' %}
+{% endblock %}

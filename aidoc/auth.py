@@ -14,7 +14,6 @@ bp = Blueprint('auth', __name__)
 @bp.before_app_request
 def load_logged_in_user():
     user_id = session.get('user_id')
-    
     if user_id is None:
         g.user = None
     else:
@@ -28,10 +27,19 @@ def load_logged_in_user():
 
 @bp.route('/')
 def index():
+    if g.get('user') is None:
+        session.clear()
+
     if 'sender_mode' in session and session['sender_mode']=='dentist':
-        return render_template("dentist_login.html")
+        if g.user:
+            return render_template("dentist_history.html")
+        else:
+            return render_template("dentist_login.html")
     else:
-        return render_template("patient_login.html")
+        if g.user:
+            return render_template("patient_upload.html")
+        else:
+            return render_template("patient_login.html")
 
 @bp.route('/login/patient', methods=('Post', ))
 def patient_login():
@@ -49,8 +57,12 @@ def patient_login():
         flash(error_msg)
         return redirect(url_for('auth.patient_register'))
     elif user['is_patient']:
+        # Logged in sucessfully
         session['user_id'] = user['id']
-        return redirect(url_for('index'))
+        print(session['user_id'])
+        load_logged_in_user()
+        print(g.user['id'])
+        return redirect(url_for('image.patient_upload'))
     else:
         error_msg = "พบข้อมูลเบื้องต้นของท่านในระบบ แต่ท่านยังไม่ได้ถูกลงทะเบียนในฐานะคนไข้ กรุณาลงทะเบียนก่อน"
         session['user_id'] = user['id']
@@ -192,7 +204,9 @@ def osm_login():
         flash(error_msg)
         return redirect(url_for('auth.osm_register'))
     elif user['is_osm'] and national_id==user['national_id'] and phone==user['phone']: # osm logged in successfully
+        # Logged in sucessfully
         session['user_id'] = user['id']
+        load_logged_in_user()
         return redirect(url_for('index'))
     else:
         error_msg = "พบข้อมูลเบื้องต้นของท่านในระบบ แต่ท่านยังไม่ได้ถูกลงทะเบียนในฐานะผู้ตรวจคัดกรอง กรุณาลงทะเบียนก่อน"
@@ -308,7 +322,6 @@ def osm_register():
 def dentist_login():
 
     session['sender_mode'] = 'dentist'
-
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']      
@@ -318,18 +331,16 @@ def dentist_login():
             'SELECT * FROM user WHERE username = %s', (username,)
         )
         user = cursor.fetchone()
-
         if user is None:
             error_msg = "ไม่พบรหัสผู้ใช้ โปรดลองอีกครั้งหนึ่งหรือสมัครบัญชีใหม่ ... หากลืมกรุณาติดต่อศูนย์ทันตสาธารณสุขระหว่างประเทศ"
         elif not check_password_hash(user['password'], password):
             error_msg = "รหัสผ่านไม่ถูกต้อง โปรดลองอีกครั้งหนึ่ง ... หากลืมกรุณากดเลือก ลืมรหัสผ่าน"
-
         if error_msg is None:
+            # Logged in sucessfully
             session['user_id'] = user['id']
+            load_logged_in_user()
             return redirect(url_for('image.dentist_history'))
-        
         flash(error_msg)
-
     if g.user:
         return redirect(url_for('image.dentist_history'))
     else:
@@ -509,4 +520,3 @@ def validate_national_id(national_id):
 def validate_phone(phone_number):
     phone_pattern = r'^\d{9,10}$'
     return re.match(phone_pattern, phone_number) is not None
-

@@ -1,6 +1,7 @@
 import mysql.connector
 from flask import current_app, g
 import click
+import os
 
 def get_db():
     if 'db' not in g:
@@ -26,8 +27,8 @@ def init_db():
     cursor.execute("SHOW TABLES")
     if cursor.fetchone() is None:
         click.echo('Initializing the database: ')
-
-        with open('schema.sql') as f:
+        projectDir = os.path.dirname(current_app.root_path)
+        with open(os.path.join(projectDir, 'schema.sql')) as f:
             cursor.execute(f.read(), multi=True)
         close_db()
 
