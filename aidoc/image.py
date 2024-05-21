@@ -121,17 +121,8 @@ def patient_upload():
             if len(imageList)>0:
                 # Save the current filenames on session for the upcoming prediction
                 session['imageNameList'] = imageNameList
-                # The following parameters are specific only on patient submission
-                session['sender_phone'] = request.form.get('inputPhone')
-                session['zip_code'] = request.form.get('inputZipCode')
-                if 'sender_phone' in session:
-                    session['sender_id'] = request.form.get('sender_id')
-                else:
-                    session['sender_id'] = g.user['id']
             else:
                 session.pop('imageNameList', None)
-                session.pop('sender_phone', None)
-                session.pop('zip_code', None)
             
             if imageName:
                 data['uploadedImage'] = imageName # Send back path of the last submitted image (if sent for more than 1)
@@ -140,6 +131,13 @@ def patient_upload():
 
             # Check if submission list is in the queue (session), if so submit them to the Submission Module and the AI Prediction Engine
             if 'imageNameList' in session:
+                # The following parameters are specific only on patient submission
+                session['sender_phone'] = request.form.get('inputPhone')
+                session['zip_code'] = request.form.get('inputZipCode')
+                if 'sender_phone' in session:
+                    session['sender_id'] = request.form.get('sender_id')
+                else:
+                    session['sender_id'] = g.user['id']
                 upload_submission_module()
                 lastImageName = list(session['imageNameList'])[-1]
 
@@ -151,6 +149,8 @@ def patient_upload():
 
                 #Clear submission queue in the session
                 session.pop('imageNameList', None)
+                session.pop('sender_phone', None)
+                session.pop('zip_code', None)
 
                 return redirect(url_for('image.diagnosis', id=result['id']))
     return render_template("patient_upload.html", data=data)
@@ -240,7 +240,16 @@ def delete_image():
 @login_required
 def diagnosis(id):
     if request.method=='POST':
-        if 'feedback_submit' in request.form and 'img_id' in session:
+        if request.args.get('special_request')=='true':
+            db, cursor = get_db()
+            sql = "UPDATE submission_record SET special_request=%s WHERE id=%s"
+            val = ( 1, session.get('img_id'))
+            cursor.execute(sql, val)
+            session.pop('img_id', None)
+            if 'need_db_refresh' in session:
+                session['need_db_refresh']=True
+
+        if 'feedback_submit' in request.form and 'img_id' in session and session['sender_mode']=='dentist':
             dentist_feedback_code = request.form.get('agree_option')
             dentist_feedback_location = request.form.get('lesion_location')
             dentist_feedback_lesion = request.form.get('lesion_type')
@@ -273,7 +282,7 @@ def diagnosis(id):
     if session['sender_mode']=='patient':
         if 'img_id' not in session or session['img_id']!=id:
             db, cursor = get_db()
-            sql = "SELECT * FROM submission_record WHERE id=%s"
+            sql = "SELECT * FROM submission_record INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id WHERE submission_record.id=%s"
             val = (id, )
             cursor.execute(sql, val)
             result = cursor.fetchone()
@@ -285,6 +294,10 @@ def diagnosis(id):
             session['img_dentist_feedback_comment'] = result['dentist_feedback_comment']
             session['img_dentist_feedback_lesion'] = result['dentist_feedback_lesion']
             session['img_dentist_feedback_location'] = result['dentist_feedback_location']
+
+            session['case_id'] = result['case_id']
+            session['special_request'] = result['special_request']
+
         return render_template('patient_diagnosis.html')
     
 @bp.route('/history/dentist', methods=('GET', 'POST'))
@@ -509,16 +522,26 @@ def upload_submission_module():
             
             if session['sender_mode']=='dentist':
                 sql = "INSERT INTO submission_record (fname, sender_id, ai_prediction, ai_scores) VALUES (%s,%s,%s,%s)"
-                val = (filename, session['sender_id'], ai_predictions[i], ai_scores[i])
+                val = (filename, session['user_id'], ai_predictions[i], ai_scores[i])
                 cursor.execute(sql, val)
             elif session['sender_mode']=='patient':
-                sql = "INSERT INTO submission_record (fname, patient_id, sender_id, ai_prediction, ai_scores) VALUES (%s,%s,%s,%s,%s)"
-                val = (filename, session['user_id'], session['sender_id'], ai_predictions[i], ai_scores[i])
-                cursor.execute(sql, val)
+
+                if 'sender_phone' in session or 'zip_code' in session:
+                    sql = "UPDATE user SET default_sender_phone=%s, default_zip_code=%s"
+                    val = (session['sender_phone'], session['zip_code'])
+                    cursor.execute(sql, val)
+
+                    sql = "INSERT INTO submission_record (fname, patient_id, sender_id, sender_phone, zip_code, ai_prediction, ai_scores) VALUES (%s,%s,%s,%s,%s,%s,%s)"
+                    val = (filename, session['user_id'], session['sender_id'], session['sender_phone'], session['zip_code'], ai_predictions[i], ai_scores[i])
+                    cursor.execute(sql, val)
+
+                else:
+                    sql = "INSERT INTO submission_record (fname, patient_id, sender_id, ai_prediction, ai_scores) VALUES (%s,%s,%s,%s,%s)"
+                    val = (filename, session['user_id'], session['sender_id'], ai_predictions[i], ai_scores[i])
+                    cursor.execute(sql, val)
                 
                 cursor.execute("SELECT LAST_INSERT_ID()")
                 row = cursor.fetchone()
-                print(row)
                 sql = "INSERT INTO patient_case_id (id) VALUES (%s)"
                 val = (row['LAST_INSERT_ID()'],)
                 cursor.execute(sql, val)

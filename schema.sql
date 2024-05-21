@@ -33,7 +33,6 @@ CREATE TABLE `user` (
 
 CREATE TABLE `submission_record` (
   `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `case_id` int DEFAULT NULL,
   `fname` varchar(255) NOT NULL,
   `sender_id` int DEFAULT NULL,
   `sender_phone` varchar(255) DEFAULT NULL,

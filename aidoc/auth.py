@@ -59,9 +59,7 @@ def patient_login():
     elif user['is_patient']:
         # Logged in sucessfully
         session['user_id'] = user['id']
-        print(session['user_id'])
         load_logged_in_user()
-        print(g.user['id'])
         return redirect(url_for('image.patient_upload'))
     else:
         error_msg = "พบข้อมูลเบื้องต้นของท่านในระบบ แต่ท่านยังไม่ได้ถูกลงทะเบียนในฐานะคนไข้ กรุณาลงทะเบียนก่อน"
@@ -470,7 +468,7 @@ def dentist_register():
             session.pop('national_id',None) 
             session.pop('phone',None)  
             
-        return redirect(url_for("/image/dentist"))
+        return redirect(url_for("/history/dentist"))
 
     return render_template("dentist_register.html", data=data)
 

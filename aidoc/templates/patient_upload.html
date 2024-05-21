@@ -98,6 +98,44 @@
 {% endif %}
 
 <script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var previewImage = document.getElementById('previewImage');
+
+    // Check if the image has loaded
+    previewImage.onload = function () {
+      handleImageDimensions(previewImage);
+    };
+
+    // If the image is cached and already loaded
+    if (previewImage.complete) {
+      handleImageDimensions(previewImage);
+    }
+  });
+
+  function handleImageDimensions(imageElement) {
+    var maxWidthPercent = 100;
+    var maxHeight = 512;
+
+    // Set the image width to 100%
+    imageElement.style.width = maxWidthPercent + '%'
+
+    // Calculate the new height based on the width
+    var newHeight = imageElement.naturalHeight * imageElement.width / imageElement.naturalWidth
+
+    // Check if the new height exceeds 512px
+    if (newHeight > maxHeight) {
+      imageElement.style.width = ''
+      imageElement.style.maxWidth = '100%'
+      imageElement.style.maxHeight = maxHeight + 'px'
+    } else {
+      imageElement.style.width = '100%'
+      imageElement.style.maxWidth = ''
+      imageElement.style.maxHeight = maxHeight + 'px'
+    }
+  }
+</script>
+
+<script>
   
   // Define the const variable involves in the following script
   const inputPhone = document.getElementById('inputPhone')
