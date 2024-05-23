@@ -313,27 +313,6 @@ def dentist_history():
             current_page=page,
             total_pages=total_pages)
 
-@login_required
-@bp.route("/find_sender", methods=["POST"])
-def find_sender():
-    #get phone num
-    phone_number = request.form.get('phone_number')
-
-    db, cursor = get_db()
-    sql = "SELECT id, name, surname FROM user WHERE phone = %s AND is_osm = 1"
-    val = (phone_number,)
-    cursor.execute(sql, val)
-    senderInfo = cursor.fetchone()
-
-    if(senderInfo is not None):
-        return jsonify({
-            'name': senderInfo['name'],
-            'surname': senderInfo['surname'],
-            'sender_id': senderInfo['id']
-        }), 200
-    else:
-        return jsonify({}), 404
-
 # Helper functions
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'tif', 'tiff'}
