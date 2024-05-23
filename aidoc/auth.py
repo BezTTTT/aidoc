@@ -32,7 +32,7 @@ def index():
 
     if 'sender_mode' in session and session['sender_mode']=='dentist':
         if g.user:
-            return render_template("dentist_history.html")
+            return redirect(url_for("image.dentist_history"))
         else:
             return render_template("dentist_login.html")
     else:
@@ -60,7 +60,7 @@ def patient_login():
         # Logged in sucessfully
         session['user_id'] = user['id']
         load_logged_in_user()
-        return redirect(url_for('image.patient_upload'))
+        return redirect(url_for('image.upload_image', role='patient'))
     else:
         error_msg = "พบข้อมูลเบื้องต้นของท่านในระบบ แต่ท่านยังไม่ได้ถูกลงทะเบียนในฐานะคนไข้ กรุณาลงทะเบียนก่อน"
         session['user_id'] = user['id']
@@ -468,7 +468,7 @@ def dentist_register():
             session.pop('national_id',None) 
             session.pop('phone',None)  
             
-        return redirect(url_for("/history/dentist"))
+        return redirect(url_for('image.dentist_history'))
 
     return render_template("dentist_register.html", data=data)
 

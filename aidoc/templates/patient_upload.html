@@ -12,7 +12,7 @@
     <div style="width: auto"></div>
     <div class="row d-flex justify-content-center align-items-center text-center">
       <div class="col-8 col-xs-2 d-flex justify-content-center align-items-center">
-        <form class="p-3 text-center" action="/upload/patient" method="post" enctype="multipart/form-data">
+        <form class="p-3 text-center" action="/upload_image/patient" method="post" enctype="multipart/form-data">
           <input id="file-upload1" type="file" name="imageList" onchange="form.submit()" accept="image/*" multiple hidden />
           <div class="d-flex align-items-center" style="width: 100%">
             <label for="file-upload1" class="card d-flex justify-content-center align-items-center" style="
@@ -39,12 +39,12 @@
     <div class="col-md-4">
       <img id="previewImage" src="{{ url_for('image.load_image', folder='temp', user_id=g.user['id'], imagename=data['uploadedImage']) }}" class="card d-flex mx-auto" alt="" />
       <div class="my-3">
-        <a class="btn btn-outline-warning mb-2" href="/upload/patient">เปลี่ยนรูป</a>
-        <form action="{{ url_for('image.patient_upload', submission='false') }}" method="post" enctype="multipart/form-data">
+        <a class="btn btn-outline-warning mb-2" href="/upload_image/patient">เปลี่ยนรูป</a>
+        <form action="{{ url_for('image.upload_image', role='patient', submission='false') }}" method="post" enctype="multipart/form-data">
           <input name="uploadedImage" type="text" value="{{data['uploadedImage']}}" hidden />
           <input name="rotation_submitted" type="submit" class="btn btn-outline-primary mb-2" value="คนไข้ควรหัวตั้งขึ้น หรือ กดปุ่มนี้เพื่อหมุนรูป"/>
         </form>
-        <form id="submitimgForm" action="{{ url_for('image.patient_upload', submission='true') }}" method="post" enctype="multipart/form-data" >
+        <form id="submitimgForm" action="{{ url_for('image.upload_image', role='patient', submission='true') }}" method="post" enctype="multipart/form-data" >
           <div id="submitbtn" onclick="disableButton()" class="btn btn-success mb-2">ยืนยัน</div>
           <div id="errorBox" class="alert alert-danger" role="alert" style="display: none;"></div>
           <div class="border p-3 rounded-3 my-2">

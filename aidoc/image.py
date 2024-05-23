@@ -24,11 +24,11 @@ bp = Blueprint('image', __name__)
 
 # Flask views
 
-@bp.route('/upload/dentist', methods=('GET', 'POST'))
+@bp.route('/upload_image/<role>', methods=('GET', 'POST'))
 @login_required
-def dentist_upload():
+def upload_image(role):
     data = {}
-    session['sender_mode'] = 'dentist'
+    session['sender_mode'] = role
     submission = request.args.get('submission', default='false', type=str)
     if request.method == 'POST':
         if request.form.get('rotation_submitted'):
@@ -70,6 +70,14 @@ def dentist_upload():
 
             # Check if submission list is in the queue (session), if so submit them to the Submission Module and the AI Prediction Engine
             if 'imageNameList' in session:
+                if role=='patient':
+                    session['sender_phone'] = request.form.get('inputPhone')
+                    session['zip_code'] = request.form.get('inputZipCode')
+                    if 'sender_phone' in session:
+                        session['sender_id'] = request.form.get('sender_id')
+                    else:
+                        session['sender_id'] = g.user['id']
+
                 upload_submission_module()
                 lastImageName = list(session['imageNameList'])[-1]
 
@@ -82,78 +90,17 @@ def dentist_upload():
                 #Clear submission queue in the session
                 session.pop('imageNameList', None)
 
-                return redirect(url_for('image.diagnosis', id=result['id']))
-    return render_template("dentist_upload.html", data=data)
-
-@bp.route('/upload/patient', methods=('GET', 'POST'))
-@login_required
-def patient_upload():
-    data = {}
-    session['sender_mode'] = 'patient'
-    submission = request.args.get('submission', default='false', type=str)
-    if request.method == 'POST':
-        if request.form.get('rotation_submitted'):
-            imageName = request.form.get('uploadedImage')
-            rotate_temp_image(imageName)
-            data = {'uploadedImage': imageName}
-        elif submission=='false': # Load and show the image in the queue, and wait for the confirmation
-            imageName = None
-            imageList = request.files.getlist("imageList")
-
-            imageNameList = []
-            for imageFile in imageList: 
-                if imageFile and allowed_file(imageFile.filename):
-                    imageName = secure_filename(imageFile.filename)
-                    imagePath = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', imageName)
-                    imageFile.save(imagePath)
-
-                    #Create the temp thumbnail
-                    pil_img = Image.open(imagePath) 
-                    MAX_SIZE = (512, 512) 
-                    pil_img.thumbnail(MAX_SIZE) 
-                    pil_img.save(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', 'thumb_' + imageName)) 
-
-                    # Save the current filenames on session for the upcoming prediction
-                    imageNameList.append(imageName)
-                else:
-                    flash('รับข้อมูลเฉพาะที่เป็นรูปภาพเท่านั้น')
-            
-            if len(imageList)>0:
-                # Save the current filenames on session for the upcoming prediction
-                session['imageNameList'] = imageNameList
-            else:
-                session.pop('imageNameList', None)
-            
-            if imageName:
-                data['uploadedImage'] = imageName # Send back path of the last submitted image (if sent for more than 1)
-        
-        elif submission=='true': # upload confirmation is submitted
-
-            # Check if submission list is in the queue (session), if so submit them to the Submission Module and the AI Prediction Engine
-            if 'imageNameList' in session:
-                # The following parameters are specific only on patient submission
-                session['sender_phone'] = request.form.get('inputPhone')
-                session['zip_code'] = request.form.get('inputZipCode')
-                if 'sender_phone' in session:
-                    session['sender_id'] = request.form.get('sender_id')
-                else:
-                    session['sender_id'] = g.user['id']
-                upload_submission_module()
-                lastImageName = list(session['imageNameList'])[-1]
-
-                db, cursor = get_db()
-                sql = "SELECT id FROM submission_record WHERE fname=%s"
-                val = (lastImageName, )
-                cursor.execute(sql, val)
-                result = cursor.fetchone()
-
-                #Clear submission queue in the session
-                session.pop('imageNameList', None)
-                session.pop('sender_phone', None)
-                session.pop('zip_code', None)
+                if role=='patient':
+                    session.pop('sender_phone', None)
+                    session.pop('zip_code', None)
 
                 return redirect(url_for('image.diagnosis', id=result['id']))
-    return render_template("patient_upload.html", data=data)
+    if role=='patient':
+        return render_template("patient_upload.html", data=data)
+    elif role=='dentist':
+        return render_template("dentist_upload.html", data=data)
+    else:
+        return None
 
 @bp.route('/load_image/<folder>/<user_id>/<imagename>')
 @login_required
@@ -303,7 +250,7 @@ def diagnosis(id):
 @bp.route('/history/dentist', methods=('GET', 'POST'))
 @login_required
 def dentist_history():
-
+    print('hello')
     session['sender_mode'] = 'dentist'
 
     if 'need_db_refresh' not in session or session.get('need_db_refresh')==True:
