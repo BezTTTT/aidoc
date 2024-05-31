@@ -355,7 +355,7 @@ def dentist_register():
             session.pop('national_id',None) 
             session.pop('phone',None)  
             
-        return redirect(url_for('image.dentist_history'))
+        return redirect(url_for('image.history', role='dentist'))
 
     return render_template("dentist_register.html", data=data)
 

@@ -31,9 +31,14 @@ def index():
 
     if 'sender_mode' in session and session['sender_mode']=='dentist':
         if g.user:
-            return redirect(url_for("image.dentist_history"))
+            return redirect(url_for("image.history", role='dentist'))
         else:
             return render_template("dentist_login.html")
+    elif 'sender_mode' in session and session['sender_mode']=='osm':
+        if g.user:
+            return redirect(url_for("image.history", role='osm'))
+        else:
+            return render_template("osm_login.html")
     else:
         if g.user:
             return render_template("patient_upload.html")
@@ -83,6 +88,7 @@ def patient_login():
 @bp.route('/login/osm', methods=('Post', ))
 def osm_login():
         
+    print('login/osm')
     session['sender_mode'] = 'osm'
     national_id = request.form['osm_national_id']
     phone = request.form['osm_phone']
@@ -139,10 +145,10 @@ def dentist_login():
             # Logged in sucessfully
             session['user_id'] = user['id']
             load_logged_in_user()
-            return redirect(url_for('image.dentist_history'))
+            return redirect(url_for('image.history', role='dentist'))
         flash(error_msg)
     if g.user:
-        return redirect(url_for('image.dentist_history'))
+        return redirect(url_for('image.history', role='dentist'))
     else:
         return render_template("dentist_login.html")
 

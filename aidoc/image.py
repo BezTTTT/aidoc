@@ -181,7 +181,7 @@ def delete_image():
         session['need_db_refresh']=True
 
     if session['sender_mode']=='dentist':
-        return redirect(url_for('image.dentist_history'))
+        return redirect(url_for('image.history', role='dentist'))
     
 @bp.route('/diagnosis/<int:id>', methods=('GET', 'POST'))
 @login_required
@@ -247,11 +247,11 @@ def diagnosis(id):
 
         return render_template('patient_diagnosis.html')
     
-@bp.route('/history/dentist', methods=('GET', 'POST'))
+@bp.route('/history/<role>', methods=('GET', 'POST'))
 @login_required
-def dentist_history():
-    print('hello')
-    session['sender_mode'] = 'dentist'
+def history(role):
+
+    session['sender_mode'] = role
 
     if 'need_db_refresh' not in session or session.get('need_db_refresh')==True:
         session['need_db_refresh']=False
@@ -306,12 +306,20 @@ def dentist_history():
     data['search'] = search_query
     data['agree'] = agree
     
-    return render_template(
-            "dentist_history.html",
-            data=data,
-            pagination=paginated_data,
-            current_page=page,
-            total_pages=total_pages)
+    if role=='dentist':
+        return render_template(
+                "dentist_history.html",
+                data=data,
+                pagination=paginated_data,
+                current_page=page,
+                total_pages=total_pages)
+    elif role=='osm':
+        return render_template(
+                "osm_history.html",
+                data=data,
+                pagination=paginated_data,
+                current_page=page,
+                total_pages=total_pages)
 
 # Helper functions
 
