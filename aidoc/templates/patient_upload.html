@@ -3,13 +3,23 @@
 {% block title %} RiskOCA | Upload {% endblock %}
 
 {% block content %}
+<style>
+  #checkboxYes {
+    display: none; 
+    border-color: #198754;
+    color: #198754;
+  }
+  #checkboxYes:hover {
+    background-color: #198754;
+    color: rgb(255, 255, 255);
+  }
+</style>
 
 <h2 class="text-center"> ระบบปัญญาประดิษฐ์ที่ช่วยในการค้นหาและวิเคราะห์รอยโรคก่อนมะเร็งและมะเร็งช่องปาก</h2>
 <h4 class="text-center"> (Artificial Intelligent System for Detecting and Analyzing PMDs and Oral Cancer)</h4>
 
 {% if data is undefined or data.get('uploadedImage') is none %}
   <div class="container-fluid">
-    <div style="width: auto"></div>
     <div class="row d-flex justify-content-center align-items-center text-center">
       <div class="col-8 col-xs-2 d-flex justify-content-center align-items-center">
         <form class="p-3 text-center" action="/upload_image/patient" method="post" enctype="multipart/form-data">
@@ -248,17 +258,6 @@
     inputPhone.value = ""
   }
 </script>
-<style>
-  #checkboxYes {
-    display: none; 
-    border-color: #198754;
-    color: #198754;
-  }
-  #checkboxYes:hover {
-    background-color: #198754;
-    color: rgb(255, 255, 255);
-  }
-</style>
 {% include 'examples_footer.html' %}
 {% include 'terms_footer.html' %}
 {% endblock %}

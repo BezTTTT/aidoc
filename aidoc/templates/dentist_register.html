@@ -7,7 +7,7 @@
             <h5 class="card-title">ลงทะเบียนผู้ใช้งานระบบ</h5><br>
             <label class="mr-sm-2"> <i> ระบบนี้เปิดให้ลงทะเบียนใช้งานได้เฉพาะกับทันตบุคลากรที่ผ่านการอบรมกับ <br> ศูนย์ทันตสาธารณสุขระหว่างประเทศ กรมอนามัย เท่านั้น </i><br>
                 <span style="color: red;"> <b>บุคคลภายนอก ไม่อนุญาติให้ใช้งาน</b></span></label><br><br>
-            <form class="my-4" action="{{ url_for('user.dentist_register') }}" method="post" enctype="multipart/form-data">
+            <form class="my-4" action="{{ url_for('user.register', role='dentist') }}" method="post" enctype="multipart/form-data">
                 <div class="form-group py-2">
                     <label class="mr-sm-2">ชื่อ (ไม่ต้องใส่คำนำหน้าชื่อ) <span style="color: red;">*</span></label>
                     <input type="text" class="form-control" placeholder="ชื่อ..." name="name" value="{{data.name}}"required>
@@ -110,7 +110,7 @@
                         </div>
                     </div>
                     <div class="col d-flex justify-content-center">
-                        <a class="btn btn-outline-primary my-2" style="width: 50%;" type="submit" href="/dentist">ยกเลิก</a>
+                        <a class="btn btn-outline-primary my-2" style="width: 50%;" type="submit" href="/">ยกเลิก</a>
                     </div>
                 {% endif %}
             </form>

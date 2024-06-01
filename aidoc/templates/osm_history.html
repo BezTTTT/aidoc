@@ -5,7 +5,7 @@
 <div class="row">
     <div class="col-12">
         <h2>ระบบการวิเคราะห์รอยโรคด้วย AI</h2>
-        <p>{{ g.user['name'] }} {{ g.user['surname'] }} {{ g.user['job_position'] }}</p>
+        <p>{{ g.user['name'] }} {{ g.user['surname'] }} ({{ g.user['job_position'] }}) </p>
     </div>
     <div class="col-12">
         <a class="btn btn-outline-success" style="width: 100%" type="submit"
@@ -56,7 +56,9 @@
                         </div>
 
                         <div class="card-body">
-                            <h6 class="image-name">ชื่อไฟล์ : {{ item['fname'] }}</h6>
+                            <h6 class="image-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; ">
+                                ชื่อไฟล์ : {{ item['fname'] }}
+                            </h6>
                             <h6 class="">วันที่ : {{ item['formatted_created_at'] }} น.</h6>
                             <h6 class="fs-6 card-subtitle text-muted mb-2">
                                 ผลการวินิจฉัยของ AI :
@@ -140,21 +142,5 @@
             agreeSelect.value = agreeValue;
         }
     </script>
-    <style>
-        .image-name {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 100%;
-        }
-
-        .truncate-text {
-            max-height: 3em;
-            /* Adjust this value to control the number of lines before truncation */
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-    </style>
 </div>
 {% endblock %}

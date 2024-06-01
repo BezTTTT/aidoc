@@ -5,7 +5,7 @@
     <div class="card mb-4" style="width: max-content;">
         <div class="card-body">
             <h5 class="card-title">ลงทะเบียนเจ้าหน้าที่ผู้ตรวจคัดกรอง</h5>
-            <form class="my-4" action="{{ url_for('user.osm_register') }}" method="post" enctype="multipart/form-data">
+            <form class="my-4" action="{{ url_for('user.register', role='osm') }}" method="post" enctype="multipart/form-data">
                 <div class="form-group py-2">
                     <label class="mr-sm-2">ชื่อ (ไม่ต้องใส่คำนำหน้าชื่อ) <span style="color: red;">*</span></label>
                     <input type="text" class="form-control" placeholder="ชื่อ..." name="name" value="{{data.name}}"required></input>

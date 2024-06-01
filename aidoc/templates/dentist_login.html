@@ -20,7 +20,7 @@
         <div class="card-body">
             <h5 class="card-title fw-bold">
                 ระบบปัญญาประดิษฐ์ที่ช่วยในการค้นหาและวิเคราะห์รอยโรคก่อนมะเร็งและมะเร็งช่องปาก</h5>
-            <form action="{{ url_for('dentist') }}" method="post" enctype="multipart/form-data">
+            <form action="/login/dentist" method="post" enctype="multipart/form-data">
                 <div class="my-4">
                     <div class="form-group">
                         <label class="mr-sm-2 mb-2">ชื่อผู้ใช้งาน:</label>
@@ -44,7 +44,7 @@
                     </div>
                     <div class="col-6 d-flex justify-content-center">
                         <a class="btn btn-outline-primary" style="width: 100%;" type="submit"
-                            href="{{ url_for('user.dentist_register') }}">ลงทะเบียน</a>
+                            href="{{ url_for('user.register', role='dentist') }}">ลงทะเบียน</a>
                     </div>
                 </div>
             </form>

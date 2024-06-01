@@ -41,7 +41,6 @@ def create_app(test_config=None):
 
     # Add special endpoints
     app.add_url_rule('/', endpoint='index')
-    app.add_url_rule('/login/dentist', endpoint='dentist')
 
     # Register the click command init-db
     from . import db

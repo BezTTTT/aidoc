@@ -14,7 +14,6 @@ from PIL import Image, ImageFilter
 import os
 import shutil
 import json
-from datetime import datetime
 
 from aidoc.db import get_db
 from aidoc.auth import login_required

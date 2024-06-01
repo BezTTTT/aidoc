@@ -51,7 +51,7 @@
                 </ul>
 
                 {% if not g.user %}
-                    <a class="btn btn-success" type="submit" href="{{url_for('index')}}">เข้าสู่ระบบ</a>
+                    <a class="btn btn-success" type="submit" href="/">เข้าสู่ระบบ</a>
                 {% else %}
                     <div class="me-2">
                         {{g.user['name']}} {{g.user['surname']}}
