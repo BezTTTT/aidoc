@@ -1,5 +1,7 @@
 {% extends "./base.html"%}
 
+{% block title %} RiskOCA | Doctor Register {% endblock %}
+
 {% block content %}
 <div class="row d-flex align-items-center justify-content-center pt-4">
     <div class="card mb-4" style="width: max-content;">
@@ -18,7 +20,7 @@
                 </div>
                 <div class="form-group py-2">
                     <label class="mr-sm-2">ตำแหน่งในทางสาธารณสุข <span style="color: red;">*</span></label>
-                    <select name="job_position" id="filter" class="form-control" value="{{data.job_position}}" required>
+                    <select id="job_position" name="job_position" class="form-control" value="{{data.job_position}}" required>
                         <option value="" {% if data.job_position is none %}selected{% endif %} hidden>เลือก...</option>
                         <option value="OSM" {% if data.job_position=='OSM' %}selected{% endif %}>อสม.</option> 
                         <option value="Dental Nurse" {% if data.job_position=='Dental Nurse' %}selected{% endif %}>ทันตาภิบาล/เจ้าพนักงานทันตสาธารณสุข</option>
@@ -33,13 +35,13 @@
                         <option value="General Public" {% if data.job_position=='General Public' %}selected{% endif %}>บุคคลทั่วไป</option>
                     </select>
                 </div>
-                <div class="form-group py-2">
+                <div class="form-group py-2" id="osm_job_div" style="display: none;">
                     <label class="mr-sm-2">กรณีที่ท่านระบุตำแหน่งเป็น อสม. หรือ บุคคลทั่วไป กรุณาระบุอาชีพ <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="กรุณาระบุอาชีพ..." name="osm_job" value="{{data.osm_job}}">
+                    <input type="text" class="form-control" placeholder="กรุณาระบุอาชีพ..." name="osm_job" id="osm_job" value="{{data.osm_job}}">
                 </div>
-                <div class="form-group py-2">
+                <div class="form-group py-2" id="license_div" style="display: none;">
                     <label class="mr-sm-2">กรณีที่ท่านระบุตำแหน่งเป็น ทันตแพทย์ หรือ แพทย์ กรุณาระบุเลขที่ใบอนุญาตฯ <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="กรุณาระบุเลขที่ใบอนุญาตฯ..." name="license" value="{{data.license}}">
+                    <input type="text" class="form-control" placeholder="กรุณาระบุเลขที่ใบอนุญาตฯ..." name="license" id="license" value="{{data.license}}">
                 </div>
                 <div class="form-group py-2">
                     <label class="mr-sm-2">โรงพยาบาลหรือหน่วยงานที่สังกัด <span style="color: red;">*</span></label>
@@ -117,4 +119,32 @@
         </div>
     </div>
 </div>
+<script>
+    var job_position_select = document.getElementById("job_position");
+    var osm_job_div = document.getElementById("osm_job_div");
+    var license_div = document.getElementById("license_div");
+    var osm_job_input = document.getElementById("osm_job");
+    var license_input = document.getElementById("license");
+    job_position_select.addEventListener("change", (event) => {
+        if (event.target.value === "OSM" || event.target.value === "General Public") {
+            osm_job_div.style.display = "block";
+            osm_job_input.required = true;
+            license_div.style.display = "none";
+            license_input.required = false;
+        }else if (event.target.value === "Dentist" || 
+                    event.target.value === "Oral Pathologist" ||
+                    event.target.value === "Oral and Maxillofacial Surgeon" ||
+                    event.target.value === "Physician") {
+            license_div.style.display = "block";
+            license_input.required = true;
+            osm_job_div.style.display = "none";
+            osm_job_input.required = false;
+        }else{
+            license_div.style.display = "none";
+            license_input.required = false;
+            osm_job_div.style.display = "none";
+            osm_job_input.required = false;
+        }
+    });
+</script>
 {% endblock %}
