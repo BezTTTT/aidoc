@@ -112,13 +112,16 @@
                         </div>
                     </div>
                     <div class="col d-flex justify-content-center">
-                        <a class="btn btn-outline-primary my-2" style="width: 50%;" type="submit" href="/">ยกเลิก</a>
+                        <a class="btn btn-outline-primary my-2" style="width: 50%;" type="submit" href="/logout">ยกเลิก</a>
                     </div>
                 {% endif %}
             </form>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block script %}
 <script>
     var job_position_select = document.getElementById("job_position");
     var osm_job_div = document.getElementById("osm_job_div");

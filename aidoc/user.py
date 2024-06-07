@@ -64,11 +64,9 @@ def register(role):
 
             # Validation 1: National ID must follow the CheckSum rule (disable if international) [DISABLE in TEST]
             # Validation 2: National ID and Retyped National ID must match
-            #if (data["national_id"] and not validate_national_id(data["national_id"]) or
-            if (data["national_id"] != request.form["cfnational_id"]
-            ):
+            if (data["national_id"] and not validate_national_id(data["national_id"])) or (data["national_id"] != request.form["cfnational_id"]):
                 error_msg = "กรุณากรอกรหัสบัตรประชาชนให้ถูกต้อง"
-                data["national_id"] = None
+                data["national_id"] = ""
                 data["valid_national_id"] = False
                 flash(error_msg)
                 return (render_template("patient_register.html", data=data))
@@ -77,36 +75,43 @@ def register(role):
             if ( data["phone"] and not validate_phone(data["phone"])
             ):
                 error_msg = "กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง"
-                data["phone"] =  None
+                data["phone"] = ""
                 data["valid_phone"] = False
                 flash(error_msg)
                 return (render_template("patient_register.html", data=data))
 
-            '''
-            #Check license duplicate in patient and user
-            check_patient_license = check_if_duplicate(data,"license","patients")
-            check_user_license = check_if_duplicate(data,"license","users")
-            if check_patient_license == True or check_user_license== True:
-                data["status"] ,data["userId"],data['error'],data["licenseInvalid"] =  "รหัสบัตรประชาชนนี้ถูกใช้ไปแล้วกรุณาใช้รหัสบัตรประชาชนอื่น",None,True,True
-                return ( render_template("patients/register.html",data=data,),200,)
-            '''
-            
+            # Validation 4: Check if there is a user with the same (name, surname) or email or phone
+            if "create_new_account" not in request.form and "merge_account" not in request.form:
+                db, cursor = get_db()
+                cursor.execute('SELECT id, name, surname, email, phone, is_osm FROM user WHERE is_patient=0 AND name=%s AND surname=%s',
+                            (data["name"], data["surname"]))
+                duplicate_user = cursor.fetchall() # Result in list of dicts
+                if len(duplicate_user)>0:
+                    duplicate_user = duplicate_user[0] # Select only the first matched user
+                    if duplicate_user['is_osm']:
+                        error_msg = "ตรวจพบข้อมูลของท่านใน [ระบบเจ้าหน้าที่ผู้ตรวจคัดกรอง] ... ท่านต้องการรวมบัญชีหรือไม่? กดปุ่มสีเขียวเพื่อรวมบัญชี กดปุ่มสีเหลืองเพื่อสร้างบัญชีใหม่แยก"
+                    else:
+                        error_msg = "ตรวจพบข้อมูลของท่านใน [ระบบทันตแพทย์] ... ท่านต้องการรวมบัญชีหรือไม่? กดปุ่มสีเขียวเพื่อรวมบัญชี กดปุ่มสีเหลืองเพื่อสร้างบัญชีใหม่แยก"
+                    error_msg += f" [ ข้อมูลซ้ำ: คุณ {duplicate_user['name']} {duplicate_user['surname']} ]"
+                    flash(error_msg)
+                    data["dublicate_flag"] = True
+                    session['user_id'] = duplicate_user['id']
+                    return (render_template("patient_register.html", data=data))
+                           
             #Change Thai era year to Common Era
             data['dob_year'] = str(int(data['dob_year']) - 543)
             #Save Date of Birth
             dob = data['dob_year'] + "-" + data['dob_month'] + "-" + data['dob_day']
             dob_obj = datetime.datetime.strptime(dob, "%Y-%m-%d")
 
-            # Pack data for SQL query
-            val = (data["name"], data["surname"], data["national_id"], data["email"], data["phone"], data["sex"], dob_obj, data["job_position"], data["province"], data['address'], True)
-
             db, cursor = get_db()
-            if session.get('user_id'): # Check if the user is already registered (checked by auth.login(role='osm))
-                sql = "UPDATE user SET name=%s, surname=%s, national_id=%s, email=%s, phone=%s, sex=%s, birthdate=%s, job_position=%s, province=%s, address=%s, is_patient=%s WHERE id=%s"
-                val = val + (session['user_id'], )
+            if request.form.get("merge_account"): # Check if the user wants to merge the account
+                sql = "UPDATE user SET name=%s, surname=%s, national_id=%s, email=%s, phone=%s, sex=%s, birthdate=%s,  province=%s, address=%s, is_patient=%s WHERE id=%s"
+                val = (data["name"], data["surname"], data["national_id"], data["email"], data["phone"], data["sex"], dob_obj, data["province"], data['address'], True, session['user_id'])
                 cursor.execute(sql, val)
             else:
                 sql = "INSERT INTO user (name, surname, national_id, email, phone, sex, birthdate, job_position, province, address, is_patient) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+                val = (data["name"], data["surname"], data["national_id"], data["email"], data["phone"], data["sex"], dob_obj, data["job_position"], data["province"], data['address'], True)
                 cursor.execute(sql, val)
                 
                 # Load the newly registered user to the session
@@ -143,45 +148,48 @@ def register(role):
             
             # this section validate the input data, if fails, redirect back to the form
 
-            # Validation 1: National ID must follow the CheckSum rule (disable if international) [DISABLE in TEST]
-            '''
-            if (data["national_id"] and not validate_national_id(data["national_id"])
-            ):
+            # Validation 1: National ID must follow the CheckSum rule (disable if international)
+            if (data["national_id"] and not validate_national_id(data["national_id"])):
                 error_msg = "กรุณากรอกรหัสบัตรประชาชนให้ถูกต้อง"
-                data["national_id"] = None
+                data["national_id"] = ""
                 data["valid_national_id"] = False
                 flash(error_msg)
                 return (render_template("osm_register.html", data=data))
-            '''
 
             # Validation 2: Number number must follow the 9-10 digits rule (disable if international)
-            if ( data["phone"] and not validate_phone(data["phone"])
-            ):
+            if ( data["phone"] and not validate_phone(data["phone"])):
                 error_msg = "กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง"
-                data["phone"] =  None
+                data["phone"] =  ""
                 data["valid_phone"] = False
                 flash(error_msg)
                 return (render_template("osm_register.html", data=data))
 
-            '''
-            #Check license duplicate in patient and user
-            check_patient_license = check_if_duplicate(data,"license","patients")
-            check_user_license = check_if_duplicate(data,"license","users")
-            if check_patient_license == True or check_user_license== True:
-                data["status"] ,data["userId"],data['error'],data["licenseInvalid"] =  "รหัสบัตรประชาชนนี้ถูกใช้ไปแล้วกรุณาใช้รหัสบัตรประชาชนอื่น",None,True,True
-                return ( render_template("patients/register.html",data=data,),200,)
-            '''
-
-            # Pack data for SQL query
-            val = (data["name"], data["surname"], data["national_id"], data["phone"], data["job_position"], data["osm_job"], data["province"], data["license"], True )
+            # Validation 3: Check if there is a user with the same (name, surname) or email or phone
+            if "create_new_account" not in request.form and "merge_account" not in request.form:
+                db, cursor = get_db()
+                cursor.execute('SELECT id, name, surname, email, phone, is_patient FROM user WHERE is_osm=0 AND name=%s AND surname=%s',
+                            (data["name"], data["surname"]))
+                duplicate_user = cursor.fetchall() # Result in list of dicts
+                if len(duplicate_user)>0:
+                    duplicate_user = duplicate_user[0] # Select only the first matched user
+                    if duplicate_user['is_patient']:
+                        error_msg = "ตรวจพบข้อมูลของท่านใน [ระบบประชาชน] ... ท่านต้องการรวมบัญชีหรือไม่? กดปุ่มสีเขียวเพื่อรวมบัญชี กดปุ่มสีเหลืองเพื่อสร้างบัญชีใหม่แยก"
+                    else:
+                        error_msg = "ตรวจพบข้อมูลของท่านใน [ระบบทันตแพทย์] ... ท่านต้องการรวมบัญชีหรือไม่? กดปุ่มสีเขียวเพื่อรวมบัญชี กดปุ่มสีเหลืองเพื่อสร้างบัญชีใหม่แยก"
+                    error_msg += f" [ ข้อมูลซ้ำ: คุณ {duplicate_user['name']} {duplicate_user['surname']} ]"
+                    flash(error_msg)
+                    data["dublicate_flag"] = True
+                    session['user_id'] = duplicate_user['id']
+                    return (render_template("osm_register.html", data=data))
 
             db, cursor = get_db()
-            if session.get('user_id'): # Check if the user is already registered (checked by auth.login(role='osm))
-                sql = "UPDATE user SET name=%s, surname=%s, national_id=%s, phone=%s, job_position=%s, osm_job=%s, province=%s, license=%s, is_osm=%s WHERE id=%s"
-                val = val + (session['user_id'],)
+            if request.form.get("merge_account"): # Check if the user wants to merge the account
+                sql = "UPDATE user SET name=%s, surname=%s, national_id=%s, phone=%s, osm_job=%s, province=%s, license=%s, is_osm=%s WHERE id=%s"
+                val = (data["name"], data["surname"], data["national_id"], data["phone"], data["osm_job"], data["province"], data["license"], True, session['user_id'])
                 cursor.execute(sql, val)
             else:
                 sql = "INSERT INTO user (name, surname, national_id, phone, job_position, osm_job, province, license, is_osm) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+                val = (data["name"], data["surname"], data["national_id"], data["phone"], data["job_position"], data["osm_job"], data["province"], data["license"], True)
                 cursor.execute(sql, val)
 
                 # Load the newly registered user to the session
@@ -234,7 +242,6 @@ def register(role):
                 return (render_template("dentist_register.html", data=data))
 
             # Validation 2: Check if there is the username is already taken
-            '''
             db, cursor = get_db()
             cursor.execute('SELECT id FROM user WHERE username=%s', (data["username"], ))
             duplicate_username = cursor.fetchall() # Result in list of dicts
@@ -244,13 +251,12 @@ def register(role):
                 data["valid_username"] = False
                 flash(error_msg)
                 return (render_template("dentist_register.html", data=data))
-            '''
 
-            # Validation 3: Check if there is a user with the same (name, surname) or email or phone
+            # Validation 3: Check if there is a user with the same name and surname
             if "create_new_account" not in request.form and "merge_account" not in request.form:
                 db, cursor = get_db()
-                cursor.execute('SELECT id, name, surname, email, phone, is_patient FROM user WHERE username IS NULL AND name=%s AND surname=%s AND phone=%s',
-                            (data["name"], data["surname"], data["phone"]))
+                cursor.execute('SELECT id, name, surname, email, phone, is_patient FROM user WHERE username IS NULL AND name=%s AND surname=%s',
+                            (data["name"], data["surname"]))
                 duplicate_user = cursor.fetchall() # Result in list of dicts
                 if len(duplicate_user)>0:
                     duplicate_user = duplicate_user[0] # Select only the first matched user
@@ -263,25 +269,15 @@ def register(role):
                     data["dublicate_flag"] = True
                     session['user_id'] = duplicate_user['id']
                     return (render_template("dentist_register.html", data=data))
-
-            '''
-            #Check license duplicate in patient and user
-            check_patient_license = check_if_duplicate(data,"license","patients")
-            check_user_license = check_if_duplicate(data,"license","users")
-            if check_patient_license == True or check_user_license== True:
-                data["status"] ,data["userId"],data['error'],data["licenseInvalid"] =  "รหัสบัตรประชาชนนี้ถูกใช้ไปแล้วกรุณาใช้รหัสบัตรประชาชนอื่น",None,True,True
-                return ( render_template("patients/register.html",data=data,),200,)
-            '''
-            # Pack data for SQL query
-            val = (data["name"], data["surname"], data["email"], data["phone"], data["username"],generate_password_hash(data["password"]), data["job_position"], data["osm_job"], data["hospital"],data["province"], data["license"])
             
             db, cursor = get_db()
-            if request.form.get("merge_account"): # Check if the user is already registered (checked by auth.login(role='osm))
+            if request.form.get("merge_account"): # Check if the user wants to merge the account
                 sql = "UPDATE user SET name=%s, surname=%s, email=%s, phone=%s, username=%s, password=%s, job_position=%s, osm_job=%s, hospital=%s, province=%s, license=%s WHERE id=%s"
-                val = val + (session['user_id'],)
+                val = (data["name"], data["surname"], data["email"], data["phone"], data["username"],generate_password_hash(data["password"]), data["job_position"], data["osm_job"], data["hospital"],data["province"], data["license"], session['user_id'])
                 cursor.execute(sql, val)
             else:
                 sql = "INSERT INTO user (name, surname, email, phone, username, password, job_position, osm_job, hospital, province, license) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+                val = (data["name"], data["surname"], data["email"], data["phone"], data["username"],generate_password_hash(data["password"]), data["job_position"], data["osm_job"], data["hospital"],data["province"], data["license"])
                 cursor.execute(sql, val)
 
                 # Load the newly registered user to the session
@@ -297,8 +293,8 @@ def register(role):
             # session['national_id'] is used to carry out id from login to register
             # After the registration is complete, this (sensitive) variable should be deleted
             if 'national_id' in session:  
-                session.pop('national_id',None) 
-                session.pop('phone',None)  
+                session.pop('national_id',None)
+                session.pop('phone',None)
                 
             return redirect(url_for('image.history', role='dentist'))
         else:

@@ -28,16 +28,14 @@ def load_logged_in_user():
 def index():
     if g.get('user') is None:
         session.clear() # logged out from everything
-
-    if g.user: # already logged in
+        return render_template("patient_login.html") # default index page (patient and osm login)
+    else: # if user is already logged in
         if 'sender_mode' in session and session['sender_mode']=='dentist':
             return redirect(url_for("image.history", role='dentist'))
         elif 'sender_mode' in session and session['sender_mode']=='osm':
             return redirect(url_for("image.history", role='osm'))
         else:
             return render_template("patient_upload.html")
-    else:
-        return render_template("patient_login.html") # OSM and Patient login are on the same page
 
 @bp.route('/dentist')
 def dentist_index():

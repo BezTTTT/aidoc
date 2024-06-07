@@ -51,6 +51,11 @@
     </div>
   </div>
 {% endif %}
+{% include 'examples_footer.html' %}
+{% include 'terms_footer.html' %}
+{% endblock %}
+
+{% block script %}
 <script>           
   function disableButton() {
     document.getElementById("submitbtn").disabled = true
@@ -58,6 +63,4 @@
     document.getElementById("submitimgForm").submit()
   }
 </script>
-{% include 'examples_footer.html' %}
-{% include 'terms_footer.html' %}
 {% endblock %}

@@ -28,30 +28,7 @@
     </div>
   </div>
 {% else %}
-
-  <script>
-    function toggleLoginMode(mode) {
-      formPatient = document.getElementById("form-patient")
-      formOSM = document.getElementById("form-osm")
-      tabPatient = document.getElementById("login-patient-tab")
-      tabOSM = document.getElementById("login-osm-tab")
-
-      if (mode === "patient") {
-        formPatient.style.display = "block"
-        formOSM.style.display = "none"
-        tabPatient.classList.add("active")
-        tabOSM.classList.remove("active")
-      } else if (mode === "osm") {
-        formOSM.style.display = "block"
-        formPatient.style.display = "none"
-        tabOSM.classList.add("active")
-        tabPatient.classList.remove("active")
-      }
-    }
-  </script>
-
   <div class="container-sm pb-4">
-
     <nav class="m-auto loginContainer p-0">
       <div class="nav nav-tabs" id="nav-tab" role="tablist">
         <span class="nav-item nav-link active" id="login-patient-tab" data-toggle="tab" role="button" aria-controls="nav-patient" onclick="toggleLoginMode('patient')">
@@ -110,4 +87,27 @@
   <br>
 {% endif %}
 {% include 'terms_footer.html' %}
+{% endblock %}
+
+{% block script %}
+<script>
+  function toggleLoginMode(mode) {
+    formPatient = document.getElementById("form-patient")
+    formOSM = document.getElementById("form-osm")
+    tabPatient = document.getElementById("login-patient-tab")
+    tabOSM = document.getElementById("login-osm-tab")
+
+    if (mode === "patient") {
+      formPatient.style.display = "block"
+      formOSM.style.display = "none"
+      tabPatient.classList.add("active")
+      tabOSM.classList.remove("active")
+    } else if (mode === "osm") {
+      formOSM.style.display = "block"
+      formPatient.style.display = "none"
+      tabOSM.classList.add("active")
+      tabPatient.classList.remove("active")
+    }
+  }
+</script>
 {% endblock %}

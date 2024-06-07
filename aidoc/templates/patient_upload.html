@@ -106,7 +106,11 @@
     </div>
   </div>
 {% endif %}
+{% include 'examples_footer.html' %}
+{% include 'terms_footer.html' %}
+{% endblock %}
 
+{% block script %}
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     var previewImage = document.getElementById('previewImage');
@@ -258,6 +262,4 @@
     inputPhone.value = ""
   }
 </script>
-{% include 'examples_footer.html' %}
-{% include 'terms_footer.html' %}
 {% endblock %}

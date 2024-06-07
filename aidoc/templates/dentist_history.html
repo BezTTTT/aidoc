@@ -128,19 +128,22 @@
             {% endif %}
         </div>
     </div>
-    <script>
-        document.getElementById("agree").addEventListener("change", function () {
-            document.getElementById("agreeForm").submit();
-        });
-
-        // Get the agree element and set its value from Flask
-        const agreeSelect = document.getElementById("agree");
-        const agreeValue = "{{ data['agree'] }}"; // Use the correct variable name
-
-        // Set the selected agree value if it exists
-        if (agreeValue) {
-            agreeSelect.value = agreeValue;
-        }
-    </script>
 </div>
+{% endblock %}
+
+{% block script %}
+<script>
+    document.getElementById("agree").addEventListener("change", function () {
+        document.getElementById("agreeForm").submit();
+    });
+
+    // Get the agree element and set its value from Flask
+    const agreeSelect = document.getElementById("agree");
+    const agreeValue = "{{ data['agree'] }}"; // Use the correct variable name
+
+    // Set the selected agree value if it exists
+    if (agreeValue) {
+        agreeSelect.value = agreeValue;
+    }
+</script>
 {% endblock %}

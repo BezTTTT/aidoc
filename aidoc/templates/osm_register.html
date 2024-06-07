@@ -61,18 +61,36 @@
                         value="{{ g.phone or data.phone}}" maxlength="10" required
                         {% if data.phoneInvalid %} style="border-color: rgba(244, 92, 92, 1);" {% endif %} />
                 </div>
-                <div class="row">
+                {% if data.dublicate_flag is undefined %}
+                    <div class="row d-flex justify-content-center">
+                        <div class="col d-flex justify-content-center">
+                            <a class="btn btn-outline-primary" style="width: 100%;" type="submit" href="/logout">ยกเลิก</a>
+                        </div>
+                        <div class="col d-flex justify-content-center">
+                            <input class="btn btn-success" style="width: 100%;" type="submit" value="ลงทะเบียน">
+                        </div>
+                    </div>
+                {% else %}
+                    <br><br>
+                    <div class="row d-flex justify-content-center">
+                        <div class="col d-flex justify-content-center">
+                            <input name="create_new_account" class="btn btn-warning" style="width: 100%;" type="submit" value="สร้างบัญชีใหม่แยก">
+                        </div>
+                        <div class="col d-flex justify-content-center">
+                            <input name="merge_account" class="btn btn-success" style="width: 100%;" type="submit" value="รวมข้อมูลกับบัญชีเดิม">
+                        </div>
+                    </div>
                     <div class="col d-flex justify-content-center">
-                        <a class="btn btn-outline-primary" style="width: 100%;" type="submit" href="/logout">ยกเลิก</a>
+                        <a class="btn btn-outline-primary my-2" style="width: 50%;" type="submit" href="/logout">ยกเลิก</a>
                     </div>
-                    <div class="col-6 d-flex justify-content-center">
-                        <input class="btn btn-success" style="width: 100%;" type="submit" value="ลงทะเบียน">
-                    </div>
-                </div>
+                {% endif %}
             </form>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block script %}
 <script>
     var job_position_select = document.getElementById("job_position");
     var osm_job_div = document.getElementById("osm_job_div");
