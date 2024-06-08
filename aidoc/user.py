@@ -71,16 +71,23 @@ def register(role):
                 flash(error_msg)
                 return (render_template("patient_register.html", data=data))
             
-            # Validation 3: Number number must follow the 9-10 digits rule (disable if international)
-            if ( data["phone"] and not validate_phone(data["phone"])
-            ):
+            # Validation 3: Number number must follow the 9-10 digits rule (should be disabled if international)
+            if ( data["phone"] and not validate_phone(data["phone"])):
                 error_msg = "กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง"
                 data["phone"] = ""
                 data["valid_phone"] = False
                 flash(error_msg)
                 return (render_template("patient_register.html", data=data))
 
-            # Validation 4: Check if there is a user with the same (name, surname) or email or phone
+            # Validation 4: Validate province name
+            if ( data["province"] and not validate_province_name(data["province"])):
+                error_msg = "กรุณากรอกชื่อจังหวัดให้ถูกต้อง"
+                data["province"] = ""
+                data["valid_province_name"] = False
+                flash(error_msg)
+                return (render_template("patient_register.html", data=data))
+            
+            # Validation 5: Check if there is a user with the same (name, surname) or email or phone
             if "create_new_account" not in request.form and "merge_account" not in request.form:
                 db, cursor = get_db()
                 cursor.execute('SELECT id, name, surname, email, phone, is_osm FROM user WHERE is_patient=0 AND name=%s AND surname=%s',
@@ -326,3 +333,9 @@ def validate_national_id(national_id):
 def validate_phone(phone_number):
     phone_pattern = r'^\d{9,10}$'
     return re.match(phone_pattern, phone_number) is not None
+
+def validate_province_name(province_name):
+    db, cursor = get_db()
+    cursor.execute('SELECT name_th FROM thai_provinces WHERE name_th=%s',(province_name, )) # MySQL treats เชียงใหม่==เชียงใหม้, เชียงราย==เชียงร้าย
+    row = cursor.fetchall()
+    return row[0]['name_th'] == province_name
