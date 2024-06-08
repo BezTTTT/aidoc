@@ -84,7 +84,11 @@ def login(role):
             data["national_id"] = user["national_id"]
             data["phone"] = user["phone"]
             data['sex'] = user['sex']
-            data["job_position"] = user["job_position"]
+            job_position_dict = {"OSM":"อสม.", "Dental Nurse":"ทันตาภิบาล/เจ้าพนักงานทันตสาธารณสุข", "Dentist":"ทันตแพทย์",
+                        "Oral Pathologist": "ทันตแพทย์เฉพาะทาง วิทยาการวินิจฉัยโรคช่องปาก", "Oral and Maxillofacial Surgeon":"ทันตแพทย์เฉพาะทาง ศัลยศาสตร์ช่องปากและแม็กซิลโลเฟเชียล",
+                        "Physician":"แพทย์", "Public Health Technical Officer":"นักวิชาการสาธารณสุข", "Computer Technical Officer":"นักวิชาการคอมพิวเตอร์/นักวิจัย/ผู้พัฒนาระบบ",
+                        "Other Public Health Officer":"ข้าราชการ/เจ้าพนักงานกระทรวงสาธารณสุข", "Other Government Officer":"เจ้าหน้าที่รัฐอื่น", "General Public":"บุคคลทั่วไป"}
+            data["job_position"] = job_position_dict[user["job_position"]]
             data["province"] = user["province"]
             if user["email"] is None:
                 data["email"] = ''
@@ -99,11 +103,12 @@ def login(role):
         )
         user = cursor.fetchone()
         if user is None:
-            error_msg = "ไม่พบข้อมูลของท่านในระบบ กรุณาลงทะเบียนก่อน"
+            error_msg = "ไม่พบข้อมูลของเจ้าหน้าที่ผู้ตรวจคัดกรองในระบบ หากยังไม่ได้ลงทะเบียน กรุณาลงทะเบียนก่อนการใช้งาน"
             session['national_id'] = national_id
             session['phone'] = phone
+            session['sender'] = 'osm'
             flash(error_msg)
-            return redirect(url_for('user.register', role='osm'))
+            return render_template("patient_login.html")
         elif user['is_osm'] and national_id==user['national_id'] and phone==user['phone']: # osm logged in successfully
             # Logged in sucessfully
             session['user_id'] = user['id']
@@ -120,6 +125,11 @@ def login(role):
             data["email"] = user["email"]
             data["phone"] = user["phone"]
             data["province"] = user["province"]
+            job_position_dict = {"OSM":"อสม.", "Dental Nurse":"ทันตาภิบาล/เจ้าพนักงานทันตสาธารณสุข", "Dentist":"ทันตแพทย์",
+                        "Oral Pathologist": "ทันตแพทย์เฉพาะทาง วิทยาการวินิจฉัยโรคช่องปาก", "Oral and Maxillofacial Surgeon":"ทันตแพทย์เฉพาะทาง ศัลยศาสตร์ช่องปากและแม็กซิลโลเฟเชียล",
+                        "Physician":"แพทย์", "Public Health Technical Officer":"นักวิชาการสาธารณสุข", "Computer Technical Officer":"นักวิชาการคอมพิวเตอร์/นักวิจัย/ผู้พัฒนาระบบ",
+                        "Other Public Health Officer":"ข้าราชการ/เจ้าพนักงานกระทรวงสาธารณสุข", "Other Government Officer":"เจ้าหน้าที่รัฐอื่น", "General Public":"บุคคลทั่วไป"}
+            data["job_position"] = job_position_dict[user["job_position"]]
             return render_template("osm_register.html", data=data)
     elif role=='dentist':
         

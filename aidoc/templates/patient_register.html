@@ -45,7 +45,7 @@
                 </div>
                 <div class="form-group py-2">
                     <label class="mr-sm-2">ที่อยู่ <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="ที่อยู่..." name="address" value="{{data.address}}" required>
+                    <textarea class="form-control" placeholder="บ้านเลขที่... หมู่... ตำบล... อำเภอ..." name="address" cols="50" required>{{data.address}}</textarea>
                 </div>
                 <div class="form-group py-2">
                     <label class="mr-sm-2">จังหวัด <span style="color: red;">*</span></label>
@@ -120,7 +120,7 @@
                         </div>
                     </div>
                 </div>
-                {% if data.dublicate_flag is undefined %}
+                {% if data.duplicate_flag is undefined %}
                     <div class="row d-flex justify-content-center">
                         <div class="col d-flex justify-content-center">
                             <a class="btn btn-outline-primary" style="width: 100%;" type="submit" href="/logout">ยกเลิก</a>
