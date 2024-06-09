@@ -56,15 +56,17 @@ def register(role):
             data["valid_national_id"] = True
             data["valid_phone"] = True
             data["valid_province_name"] = True
-
+    
             # this section validate the input data, if fails, redirect back to the form
             # If the validation fails, automatically redirect to the target template
-            validate_national_id(target_template, data, request.form)
-            validate_phone(target_template, data)
-            validate_province_name(target_template, data)
-            duplicate_users = validate_duplicate_users(target_template, data, request.form)
-            validate_duplicate_phone(target_template, data, duplicate_users, request.form)
-            validate_duplicate_national_id(target_template, data, duplicate_users, request.form)
+            duplicate_users = []
+            valid_func_list = [validate_national_id, validate_province_name,
+                               validate_duplicate_users, validate_duplicate_phone, validate_duplicate_national_id]
+            for valid_func in valid_func_list:
+                args = {'data': data, 'form': request.form, 'duplicate_users': duplicate_users}
+                valid_check, data, duplicate_users = valid_func(args)
+                if not valid_check:
+                    return render_template(target_template, data=data)
 
             #Change Thai Buddhist Era to Common Era
             data['dob_year'] = str(int(data['dob_year']) - 543)
@@ -117,18 +119,20 @@ def register(role):
             data["valid_province_name"] = True
 
             # this section validate the input data, if fails, redirect back to the form
-            validate_national_id(target_template, data)
-            validate_phone(target_template, data)
-            validate_province_name(target_template, data)
-            duplicate_users = validate_duplicate_users(target_template, data, request.form)
-            validate_duplicate_phone(target_template, data, duplicate_users, request.form)
-            validate_duplicate_national_id(target_template, data, duplicate_users, request.form)
+            duplicate_users = []
+            valid_func_list = [validate_national_id, validate_phone, validate_province_name,
+                               validate_duplicate_users, validate_duplicate_phone, validate_duplicate_national_id]
+            for valid_func in valid_func_list:
+                args = {'data': data, 'form': request.form, 'duplicate_users': duplicate_users}
+                valid_check, data, duplicate_users = valid_func(args)
+                if not valid_check:
+                    return render_template(target_template, data=data)
 
             # Create new account if there is no duplicate account, else merge the accounts
             db, cursor = get_db()
             if 'user_id' not in session or request.form.get('create_new_account'): # new account or user confirms that the duplicate account is not theirs
-                sql = "INSERT INTO user (name, surname, national_id, phone, job_position, osm_job, province, license, is_osm) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)"
-                val = (data["name"], data["surname"], data["national_id"], data["phone"], data["job_position"], data["osm_job"], data["province"], data["license"], True)
+                sql = "INSERT INTO user (name, surname, national_id, phone, job_position, osm_job, hospital, province, license, is_osm) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+                val = (data["name"], data["surname"], data["national_id"], data["phone"], data["job_position"], data["osm_job"], data["hospital"], data["province"], data["license"], True)
                 cursor.execute(sql, val)
 
                 # Load the newly registered user to the session (using national_id and phone and is_osm flag)
@@ -138,8 +142,8 @@ def register(role):
                 load_logged_in_user()     
                 
             else: # merge account
-                sql = "UPDATE user SET name=%s, surname=%s, national_id=%s, phone=%s, osm_job=%s, province=%s, license=%s, is_osm=%s WHERE id=%s"
-                val = (data["name"], data["surname"], data["national_id"], data["phone"], data["osm_job"], data["province"], data["license"], True, session['user_id'])
+                sql = "UPDATE user SET name=%s, surname=%s, national_id=%s, phone=%s, osm_job=%s, hospital=%s, province=%s, license=%s, is_osm=%s WHERE id=%s"
+                val = (data["name"], data["surname"], data["national_id"], data["phone"], data["osm_job"], data["hospital"], data["province"], data["license"], True, session['user_id'])
                 cursor.execute(sql, val)                  
             
             # Flag to refresh db_query for history page
@@ -170,11 +174,14 @@ def register(role):
             data["valid_province_name"] = True
 
             # this section validate the input data, if fails, redirect back to the form
-            validate_cf_password(target_template, data, request.form)
-            validate_username(target_template, data)
-            validate_province_name(target_template, data)
-            duplicate_users = validate_duplicate_users(target_template, data, request.form)
-            validate_duplicate_phone(target_template, data, duplicate_users, request.form)
+            duplicate_users = []
+            valid_func_list = [validate_cf_password, validate_username, validate_province_name,
+                               validate_duplicate_users, validate_duplicate_phone]
+            for valid_func in valid_func_list:
+                args = {'data': data, 'form': request.form, 'duplicate_users': duplicate_users}
+                valid_check, data, duplicate_users = valid_func(args)
+                if not valid_check:
+                    return render_template(target_template, data=data)
 
             # Create new account if there is no duplicate account, else merge the accounts
             db, cursor = get_db()
@@ -215,7 +222,9 @@ def remove_prefix(input_str):
 
 # National ID validation: National ID must follow the CheckSum rule (disable if international)
 # if given, cfnational_id must match national_id (inputs on the form)
-def validate_national_id(target_template, data, form=None):
+def validate_national_id(args):
+    data = args['data']
+    form = args['form']
     # National ID Checksum
     # Define national id pattern
     digit13_pattern = r'^\d{13}$'
@@ -228,34 +237,37 @@ def validate_national_id(target_template, data, form=None):
     check_sum = (check_digit == last_digit)
     national_id_checksum_flag = (re.match(digit13_pattern, data["national_id"]) is not None) and check_sum
     
-    if form["cfnational_id"]:
+    if "cfnational_id" in form:
         if not (national_id_checksum_flag and data["national_id"]==form["cfnational_id"]):
             error_msg = "กรุณากรอกรหัสบัตรประชาชนให้ถูกต้อง"
             data["valid_national_id"] = False
             flash(error_msg)
-            return render_template(target_template, data=data)
+            return False, data, []
     else:
         if not national_id_checksum_flag:
             error_msg = "กรุณากรอกรหัสบัตรประชาชนให้ถูกต้อง"
             data["valid_national_id"] = False
             flash(error_msg)
-            return render_template(target_template, data=data)
+            return False, data, []
+    return True, data, []
 
 # Phone number validation: Number number must follow the 9-10 digits rule (should be disabled if international)
-def validate_phone(target_template, data):
-    if data["phone"]:
+def validate_phone(args):
+    data = args['data']
+    if "phone" in data:
         phone_pattern = r'^\d{9,10}$'
         phone_validation_flag = re.match(phone_pattern, data["phone"]) is not None
         if not phone_validation_flag:
             error_msg = "กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง"
             data["valid_phone"] = False
             flash(error_msg)
-            return (render_template(target_template, data=data))
+            return False, data, []
+    return True, data, []
 
 # Thai province name must match the texts in thai_provinces database
 # กรุงเทพมหานคร must be spelled exactly as this
-def validate_province_name(target_template, data):
-
+def validate_province_name(args):
+    data = args['data']
     db, cursor = get_db()
     # MySQL treats เชียงใหม่==เชียงใหม้, เชียงราย==เชียงร้าย
     cursor.execute('SELECT name_th FROM thai_provinces WHERE name_th=%s',(data["province"], ))
@@ -270,17 +282,20 @@ def validate_province_name(target_template, data):
         error_msg = "กรุณากรอกชื่อจังหวัดให้ถูกต้อง"
         data["valid_province_name"] = False
         flash(error_msg)
-        return render_template(target_template, data=data)
+        return False, data, []
+    return True, data, []
     
 # Duplicate user validation: Check if there is a duplicate user with the same name and surname but different phone
 # If found, ask user to merge the account
 # If found with the same phone number, force merging the accounts
 # If multiple duplications are found, the most recent one will be selected
-def validate_duplicate_users(target_template, data, form):
+def validate_duplicate_users(args):
+    data = args['data']
+    form = args['form']
+    db, cursor = get_db()
+    cursor.execute('SELECT * FROM user WHERE name=%s AND surname=%s', (data["name"], data["surname"]))
+    duplicate_users = cursor.fetchall() # Result in list of dicts
     if "create_new_account" not in form and "merge_account" not in form:
-        db, cursor = get_db()
-        cursor.execute('SELECT * FROM user WHERE name=%s AND surname=%s', (data["name"], data["surname"]))
-        duplicate_users = cursor.fetchall() # Result in list of dicts
         if len(duplicate_users)>0:
             duplicate_users = duplicate_users[-1] # Select only the last matched user
             session['user_id'] = duplicate_users['id'] # Same name and same phone must be merged automatically
@@ -296,49 +311,62 @@ def validate_duplicate_users(target_template, data, form):
                     error_msg += f" [ ข้อมูลซ้ำ: คุณ {duplicate_users['name']} {duplicate_users['surname']} สังกัด {duplicate_users['hospital']}]"
                 flash(error_msg)
                 data["duplicate_flag"] = True
-                return render_template(target_template, data=data)
-        return duplicate_users
-    return []
+                return False, data, duplicate_users
+        return True, data, duplicate_users
+    return True, data, duplicate_users
     
 # Generally, duplicate phone number is not allowed.
 # Except in the process of merging duplicated accounts, the validation will be bypassed.
-def validate_duplicate_phone(target_template, data, duplicate_users, form): 
-    if data["phone"] and (len(duplicate_users)==0 or form.get('create_new_account')): 
+# validate_duplicate_users must be called first to get duplicate_users before running this function
+def validate_duplicate_phone(args): 
+    data = args['data']
+    form = args['form']
+    duplicate_users = args['duplicate_users']
+    if "phone" in data and (len(duplicate_users)==0 or form.get('create_new_account')): 
         db, cursor = get_db()
         cursor.execute('SELECT id FROM user WHERE phone=%s',
                         (data["phone"], ))
         row = cursor.fetchall() # Result in list of dicts
         if len(row) > 0:
             error_msg = "เบอร์โทรศัพท์นี้ถูกใช้ในการลงทะเบียนบัญชีอื่นแล้ว กรุณาใช้เบอร์โทรศัพท์อื่น"
-            data["phone"] = ""
             data["valid_phone"] = False
             flash(error_msg)
-            return render_template(target_template, data=data)
+            return False, data, duplicate_users
+    return True, data, duplicate_users
 
 # Generally, duplicate national_id number is not allowed.
 # Except in the process of merging duplicated accounts, the validation will be bypassed.
-def validate_duplicate_national_id(target_template, data, duplicate_users, form):
-    if data["national_id"] and (len(duplicate_users)==0 or form.get('create_new_account')):
+# validate_duplicate_users must be called first to get duplicate_users before running this function
+def validate_duplicate_national_id(args):
+    data = args['data']
+    duplicate_users = args['duplicate_users']
+    form = args['form']
+    if "national_id" in data and (len(duplicate_users)==0 or form.get('create_new_account')):
         db, cursor = get_db()
         cursor.execute('SELECT id FROM user WHERE national_id=%s', (data["national_id"], ))
         row = cursor.fetchall() # Result in list of dicts
         if len(row) > 0:
-            error_msg = "เลขบัตรประจำตัวประชาชนนี้ถูกใช้ในการลงทะเบียนบัญชีอื่นแล้ว กรุณาติดต่อเจ้าหน้าที่เพื่อแก้ไขข้อมูล"
+            error_msg = "เลขบัตรประจำตัวประชาชนนี้ถูกลงทะเบียนแล้ว ... กรุณาติดต่อเจ้าหน้าที่เพื่อแก้ไขข้อมูล"
             data["valid_national_id"] = False
             flash(error_msg)
-            return render_template(target_template, data=data)
+            return False, data, duplicate_users
+    return True, data, duplicate_users
 
 # Confirmation validation: the confirmation password must match
-def validate_cf_password(target_template, data, form):
+def validate_cf_password(args):
+    data = args['data']
+    form = args['form']
     if (data["password"] != form["cfpassword"]):
         error_msg = "กรุณากรอกรหัสผ่านให้ตรงกันทั้งสองครั้ง"
         data["password"] = ""
         data["valid_password"] = False
         flash(error_msg)
-        return render_template(target_template, data=data)
+        return False, data, []
+    return True, data, []
 
 # Username validation: duplicate username is not allowed
-def validate_username(target_template, data):
+def validate_username(args):
+    data = args['data']
     db, cursor = get_db()
     cursor.execute('SELECT id FROM user WHERE username=%s', (data["username"], ))
     duplicate_usersname = cursor.fetchall() # Result in list of dicts
@@ -346,4 +374,5 @@ def validate_username(target_template, data):
         error_msg = "รหัสผู้ใช้ (Username) นี้ มีผู้อื่นใช้ไปแล้ว กรุณาเลือกรหัสผู้ใช้ใหม่"
         data["valid_username"] = False
         flash(error_msg)
-        return render_template(target_template, data=data)
+        return False, data, []
+    return True, data, []
