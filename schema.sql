@@ -6,7 +6,7 @@ CREATE TABLE `user` (
   `email` varchar(255) DEFAULT NULL,
   `phone` varchar(255) DEFAULT NULL,
   `sex` varchar(255) DEFAULT NULL,
-  `birthdate` datetime DEFAULT NULL,
+  `birthdate` date DEFAULT NULL,
   `username` varchar(255) DEFAULT NULL,
   `password` varchar(255) DEFAULT NULL,
   `job_position` varchar(255) DEFAULT NULL,

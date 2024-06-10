@@ -77,6 +77,11 @@ def register(role):
             dob = data['dob_year'] + "-" + data['dob_month'] + "-" + data['dob_day']
             dob_obj = datetime.datetime.strptime(dob, "%Y-%m-%d")
 
+            if data["email"]=='':
+                data["email"] = None
+            if data["phone"]=='':
+                data["phone"] = None
+
             # Create new account if there is no duplicate account, else merge the accounts
             db, cursor = get_db()
             if 'user_id' not in session or request.form.get('create_new_account'): # new account or user confirms that the duplicate account is not theirs
@@ -134,6 +139,11 @@ def register(role):
                 valid_check, data, duplicate_users = valid_func(args)
                 if not valid_check:
                     return render_template(target_template, data=data)
+
+            if data["osm_job"] == '':
+                data["osm_job"] = None
+            if data["license"] == '':
+                data["license"] = None
 
             # Create new account if there is no duplicate account, else merge the accounts
             db, cursor = get_db()
@@ -193,6 +203,11 @@ def register(role):
                 if not valid_check:
                     return render_template(target_template, data=data)
 
+            if data["osm_job"] == '':
+                data["osm_job"] = None
+            if data["license"] == '':
+                data["license"] = None
+                
             # Create new account if there is no duplicate account, else merge the accounts
             db, cursor = get_db()
             if 'user_id' not in session or request.form.get('create_new_account'): # new account or user confirms that the duplicate account is not theirs
@@ -224,7 +239,7 @@ def register(role):
 # Helper functions
 
 def remove_prefix(input_str):
-    prefixes = ["นาย", "นาง", "นางสาว", "น.ส.", "น.", "นส.", "ทพ.", "ทพญ.", "ดร."]
+    prefixes = ["นาย", "นางสาว", "นาง", "น.ส.", "นส.", "น.",  "ทพญ.", "ทพ.", "ดร."]
     for prefix in prefixes:
         if input_str.startswith(prefix):
             return input_str[len(prefix):].strip()

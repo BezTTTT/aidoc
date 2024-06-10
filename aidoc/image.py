@@ -3,11 +3,14 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 
-'''
+####### Disable this section if you are not using the prediction model for speeding up the development process ##########
+
+import tensorflow as tf
 import oralLesionNet
 # Load the oralLesionNet model to the global variable
 model = oralLesionNet.load_model()
-'''
+
+#########################################################################################################################
 
 from PIL import Image, ImageFilter
 
@@ -68,10 +71,14 @@ def upload_image(role):
         elif submission=='true': # upload confirmation is submitted
 
             # Check if submission list is in the queue (session), if so submit them to the Submission Module and the AI Prediction Engine
-            if 'imageNameList' in session:
+            if 'imageNameList' in session and session['imageNameList']:
                 if role=='patient':
-                    session['sender_phone'] = request.form.get('inputPhone')
-                    session['zip_code'] = request.form.get('inputZipCode')
+
+                    if request.form.get('inputPhone') is not None and request.form.get('inputPhone')!='':
+                        session['sender_phone'] = request.form.get('inputPhone')
+                    if request.form.get('inputZipCode') is not None and request.form.get('inputZipCode')!='':
+                        session['zip_code'] = request.form.get('inputZipCode')
+
                     if 'sender_phone' in session:
                         session['sender_id'] = request.form.get('sender_id')
                     else:
@@ -274,7 +281,7 @@ def history(role):
 
     # Loop through the data and apply both search and filter criteria
     for record in db_query:
-        record_comment = record.get("dentist_feedback_comment").lower()
+        record_comment = record.get("dentist_feedback_comment")
         record_fname = record.get("fname").lower()
         record_agree = record.get("dentist_feedback_code")
 
@@ -340,7 +347,7 @@ def rotate_temp_image(imagename):
 # AI Prediction Engine
 def oral_lesion_prediction(imgPath):
     
-    import tensorflow as tf
+    #import tensorflow as tf
     
     img = tf.keras.utils.load_img(imgPath, target_size=(342, 512, 3))
     img = tf.expand_dims(img, axis=0)

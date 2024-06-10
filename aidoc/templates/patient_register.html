@@ -37,11 +37,18 @@
                 </div>
                 <div class="form-group py-2">
                     <label class="mr-sm-2">เพศ <span style="color: red;">*</span></label>
-                    <select name="sex" id="filter" class="form-control" value="{{data.sex}}" required>
-                        <option value="" {% if data.sex is none %}selected{% endif %} hidden>เพศ...</option>
-                        <option value="M" {% if data.sex=='M' %}selected{% endif %}>ชาย</option>
-                        <option value="F" {% if data.sex=='F' %}selected{% endif %}>หญิง</option>
-                    </select>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="sex" value="M"
+                            data-gtm-form-interact-field-id="0" required
+                            {% if data.sex=='M' %}checked{% endif %}>
+                        <label class="form-check-label" for="maleGender">ชาย</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="sex" value="F"
+                            data-gtm-form-interact-field-id="2" required
+                            {% if data.sex=='F' %}checked{% endif %}>
+                        <label class="form-check-label" for="femaleGender">หญิง</label>
+                    </div>
                 </div>
                 <div class="form-group py-2">
                     <label class="mr-sm-2">ที่อยู่ <span style="color: red;">*</span></label>
