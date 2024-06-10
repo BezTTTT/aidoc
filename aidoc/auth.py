@@ -8,11 +8,6 @@ import datetime
 
 from aidoc.db import get_db
 
-job_position_dict = {"OSM":"อสม.", "Dental Nurse":"ทันตาภิบาล/เจ้าพนักงานทันตสาธารณสุข", "Dentist":"ทันตแพทย์",
-            "Oral Pathologist": "ทันตแพทย์เฉพาะทาง วิทยาการวินิจฉัยโรคช่องปาก", "Oral and Maxillofacial Surgeon":"ทันตแพทย์เฉพาะทาง ศัลยศาสตร์ช่องปากและแม็กซิลโลเฟเชียล",
-            "Physician":"แพทย์", "Public Health Technical Officer":"นักวิชาการสาธารณสุข", "Computer Technical Officer":"นักวิชาการคอมพิวเตอร์/นักวิจัย/ผู้พัฒนาระบบ",
-            "Other Public Health Officer":"ข้าราชการ/เจ้าพนักงานกระทรวงสาธารณสุข", "Other Government Officer":"เจ้าหน้าที่รัฐอื่น", "General Public":"บุคคลทั่วไป"}
-
 bp = Blueprint('auth', __name__)
 
 @bp.before_app_request
@@ -31,6 +26,10 @@ def load_logged_in_user():
             if g.user['is_patient']:
                g.user['job_position_th'] = g.user['job_position']
             else:
+                job_position_dict = {"OSM":"อสม.", "Dental Nurse":"ทันตาภิบาล/เจ้าพนักงานทันตสาธารณสุข", "Dentist":"ทันตแพทย์",
+                                    "Oral Pathologist": "ทันตแพทย์เฉพาะทาง วิทยาการวินิจฉัยโรคช่องปาก", "Oral and Maxillofacial Surgeon":"ทันตแพทย์เฉพาะทาง ศัลยศาสตร์ช่องปากและแม็กซิลโลเฟเชียล",
+                                    "Physician":"แพทย์", "Public Health Technical Officer":"นักวิชาการสาธารณสุข", "Computer Technical Officer":"นักวิชาการคอมพิวเตอร์/นักวิจัย/ผู้พัฒนาระบบ",
+                                    "Other Public Health Officer":"ข้าราชการ/เจ้าพนักงานกระทรวงสาธารณสุข", "Other Government Officer":"เจ้าหน้าที่รัฐอื่น", "General Public":"บุคคลทั่วไป"}
                 g.user['job_position_th'] = job_position_dict[g.user['job_position']]
 
 @bp.route('/')
@@ -93,7 +92,6 @@ def login(role):
             data["national_id"] = user["national_id"]
             data["phone"] = user["phone"]
             data['sex'] = user['sex']
-            data["job_position"] = job_position_dict[user["job_position"]]
             data["province"] = user["province"]
             if user["email"] is None:
                 data["email"] = ''
@@ -126,11 +124,13 @@ def login(role):
             data = {} # data to populate the osm register page (with the already registered user)
             data["name"] = user["name"]
             data["surname"] = user["surname"]
-            data["national_id"] = user["national_id"]
+            if user["national_id"]:
+                data["national_id"] = user["national_id"]
+            else:
+                data["national_id"] = ""
             data["email"] = user["email"]
             data["phone"] = user["phone"]
             data["province"] = user["province"]
-            data["job_position"] = job_position_dict[user["job_position"]]
             return render_template("osm_register.html", data=data)
     elif role=='dentist':
         

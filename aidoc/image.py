@@ -3,12 +3,12 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 
-
+'''
 import oralLesionNet
 # Load the oralLesionNet model to the global variable
 model = oralLesionNet.load_model()
+'''
 
-import tensorflow as tf
 from PIL import Image, ImageFilter
 
 import os
@@ -339,6 +339,9 @@ def rotate_temp_image(imagename):
 
 # AI Prediction Engine
 def oral_lesion_prediction(imgPath):
+    
+    import tensorflow as tf
+    
     img = tf.keras.utils.load_img(imgPath, target_size=(342, 512, 3))
     img = tf.expand_dims(img, axis=0)
 

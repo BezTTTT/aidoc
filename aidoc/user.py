@@ -60,8 +60,11 @@ def register(role):
             # this section validate the input data, if fails, redirect back to the form
             # If the validation fails, automatically redirect to the target template
             duplicate_users = []
-            valid_func_list = [validate_national_id, validate_province_name,
-                               validate_duplicate_users, validate_duplicate_phone, validate_duplicate_national_id]
+            valid_func_list = [validate_national_id,
+                               validate_province_name,
+                               validate_duplicate_users,
+                               validate_duplicate_phone,
+                               validate_duplicate_national_id]
             for valid_func in valid_func_list:
                 args = {'data': data, 'form': request.form, 'duplicate_users': duplicate_users}
                 valid_check, data, duplicate_users = valid_func(args)
@@ -120,8 +123,12 @@ def register(role):
 
             # this section validate the input data, if fails, redirect back to the form
             duplicate_users = []
-            valid_func_list = [validate_national_id, validate_phone, validate_province_name,
-                               validate_duplicate_users, validate_duplicate_phone, validate_duplicate_national_id]
+            valid_func_list = [validate_national_id,
+                               validate_phone,
+                               validate_province_name,
+                               validate_duplicate_users,
+                               validate_duplicate_phone,
+                               validate_duplicate_national_id]
             for valid_func in valid_func_list:
                 args = {'data': data, 'form': request.form, 'duplicate_users': duplicate_users}
                 valid_check, data, duplicate_users = valid_func(args)
@@ -175,8 +182,11 @@ def register(role):
 
             # this section validate the input data, if fails, redirect back to the form
             duplicate_users = []
-            valid_func_list = [validate_cf_password, validate_username, validate_province_name,
-                               validate_duplicate_users, validate_duplicate_phone]
+            valid_func_list = [validate_cf_password,
+                               validate_username,
+                               validate_province_name,
+                               validate_duplicate_users,
+                               validate_duplicate_phone]
             for valid_func in valid_func_list:
                 args = {'data': data, 'form': request.form, 'duplicate_users': duplicate_users}
                 valid_check, data, duplicate_users = valid_func(args)
