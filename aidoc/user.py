@@ -163,7 +163,7 @@ def register(role):
                 val = (data["name"], data["surname"], data["national_id"], data["phone"], data["osm_job"], data["hospital"], data["province"], data["license"], True, session['user_id'])
                 cursor.execute(sql, val)                  
             
-            # Flag to refresh db_query for history page
+            # Flag to refresh db_query for record page
             if 'need_db_refresh' in session:
                 session['need_db_refresh']=True
                 
@@ -226,11 +226,11 @@ def register(role):
                 val = (data["name"], data["surname"], data["email"], data["phone"], data["username"],generate_password_hash(data["password"]), data["job_position"], data["osm_job"], data["hospital"],data["province"], data["license"], session['user_id'])
                 cursor.execute(sql, val)
 
-            # Flag to refresh db_query for history page
+            # Flag to refresh db_query for record page
             if 'need_db_refresh' in session:
                 session['need_db_refresh']=True
                 
-            return redirect(url_for('image.history', role='dentist'))
+            return redirect(url_for('image.record', role='dentist'))
         else:
             return render_template(target_template, data=data)
     else:

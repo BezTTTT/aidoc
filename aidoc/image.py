@@ -17,6 +17,7 @@ from PIL import Image, ImageFilter
 import os
 import shutil
 import json
+import functools
 
 from aidoc.db import get_db
 from aidoc.auth import login_required
@@ -187,7 +188,7 @@ def delete_image():
         session['need_db_refresh']=True
 
     if session['sender_mode']=='dentist':
-        return redirect(url_for('image.history', role='dentist'))
+        return redirect(url_for('image.record', role='dentist'))
     
 @bp.route('/diagnosis/<int:id>', methods=('GET', 'POST'))
 @login_required
@@ -253,20 +254,41 @@ def diagnosis(id):
 
         return render_template('patient_diagnosis.html')
     
-@bp.route('/history/<role>', methods=('GET', 'POST'))
+@bp.route('/record/<role>', methods=('GET', 'POST'))
 @login_required
-def history(role):
+def record(role): # Submission records
 
-    session['sender_mode'] = role
+    if role=='specialist':
+        if g.user['is_specialist']==0:
+            return redirect('/')
+        if 'specialist' not in session:
+            session['specialist'] = True
+            session['need_db_refresh']=True
+    else:
+        if 'specialist' in session:
+            session.pop('specialist', None)
+            session['need_db_refresh']=True
+        session['sender_mode'] = role
 
     if 'need_db_refresh' not in session or session.get('need_db_refresh')==True:
         session['need_db_refresh']=False
     
-        # Reload the history every time the page is reloaded
+        # Reload the record every time the page is reloaded
         db, cursor = get_db()
-        sql = "SELECT * FROM submission_record WHERE sender_id = %s"
-        val = (session["user_id"],)
-        cursor.execute(sql, val)
+        if role=='specialist':
+            sql = '''SELECT submission_record.id, case_id, fname, name, surname,
+                        sender_id, patient_id, dentist_id, special_request, province,
+                        dentist_feedback_comment,dentist_feedback_code,
+                        ai_prediction, submission_record.created_at
+                    FROM submission_record
+                    INNER JOIN user ON submission_record.patient_id = user.id
+                    INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
+                    WHERE user.is_patient = TRUE OR user.is_osm = TRUE'''
+            cursor.execute(sql)
+        else:
+            sql = "SELECT * FROM submission_record WHERE sender_id = %s"
+            val = (session["user_id"],)
+            cursor.execute(sql, val)
         db_query = cursor.fetchall()
         session['saved_db_query'] = db_query
     else:
@@ -281,13 +303,24 @@ def history(role):
 
     # Loop through the data and apply both search and filter criteria
     for record in db_query:
-        record_comment = record.get("dentist_feedback_comment")
-        record_fname = record.get("fname").lower()
-        record_agree = record.get("dentist_feedback_code")
+        if role=='specialist':
+            record_comment = record.get("dentist_feedback_comment")
+            record_fname = record.get("fname").lower()
+            record_agree = record.get("dentist_feedback_code")
+            record_name = record.get("name")
+            record_surname = record.get("surname")
+            if (not search_query or search_query in record_comment or search_query in record_fname or \
+                    search_query in record_name or search_query in record_surname) and \
+                (not agree or agree==record_agree):
+                filtered_data.append(record)
+        else:
+            record_comment = record.get("dentist_feedback_comment")
+            record_fname = record.get("fname").lower()
+            record_agree = record.get("dentist_feedback_code")
 
-        if (not search_query or search_query in record_comment or search_query in record_fname) and \
-            (not agree or agree==record_agree):
-            filtered_data.append(record)
+            if (not search_query or search_query in record_comment or search_query in record_fname) and \
+                (not agree or agree==record_agree):
+                filtered_data.append(record)
 
     # Sort the filtered data
     filtered_data = sorted(filtered_data, key=lambda x: x["created_at"], reverse=True)
@@ -295,10 +328,10 @@ def history(role):
     # Pagination
     page = request.args.get("page", 1, type=int)
     if request.method == "POST":
-        page = request.form.get("current_history_page", 1, type=int)
+        page = request.form.get("current_record_page", 1, type=int)
         page = int(page)
         
-    PER_PAGE = 12 #number images data show on history page per page
+    PER_PAGE = 12 #number images data show on record page per page
     total_pages = (len(filtered_data) - 1) // PER_PAGE + 1
     start_idx = (page - 1) * PER_PAGE
     end_idx = start_idx + PER_PAGE
@@ -314,14 +347,21 @@ def history(role):
     
     if role=='dentist':
         return render_template(
-                "dentist_history.html",
+                "dentist_record.html",
                 data=data,
                 pagination=paginated_data,
                 current_page=page,
                 total_pages=total_pages)
     elif role=='osm':
         return render_template(
-                "osm_history.html",
+                "osm_record.html",
+                data=data,
+                pagination=paginated_data,
+                current_page=page,
+                total_pages=total_pages)
+    elif role=='specialist':
+        return render_template(
+                "specialist_record.html",
                 data=data,
                 pagination=paginated_data,
                 current_page=page,

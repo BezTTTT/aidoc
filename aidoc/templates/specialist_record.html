@@ -1,32 +1,28 @@
 {% extends "./base.html" %}
 
-{% block title %} RiskOCA | OSM History {% endblock %}
+{% block title %} RiskOCA | Submission Records {% endblock %}
 
 {% block content %}
 
 <div class="row">
     <div class="col-12">
-        <h2>ระบบการวิเคราะห์รอยโรคมะเร็งช่องปากด้วย AI สำหรับเจ้าหน้าที่ผู้นำส่งข้อมูล</h2>
-        <p>{{ g.user['name'] }} {{ g.user['surname'] }} ({{ g.user['job_position_th'] }}) </p>
-    </div>
-    <div class="col-12">
-        <a class="btn btn-outline-success" style="width: 100%" type="submit"
-            href="{{ url_for('image.upload_image', role='osm') }}">คลิกเพื่อนำส่งภาพถ่ายช่องปากเพื่อวิเคราะห์รอยโรคใหม่</a>
+        <h2>ระบบการนำส่งภาพถ่ายช่องปากของประชาชน</h2>
+        <p>ผู้เชี่ยวชาญ: {{ g.user['name'] }} {{ g.user['surname'] }} ({{ g.user['job_position_th'] }}) </p>
     </div>
 
     <!-- Search Box -->
-    <div class="col-12 mt-5">
+    <div class="col-12 mt-3">
         <p>ค้นหาผลลัพธ์ตามคำสำคัญ</p>
     </div>
-    <form action="/history/osm" method="get">
+    <form action="/record/specialist" method="get">
         <div class="input-group mb-3">
             <input type="text" class="form-control" name="search" placeholder="Search" value="{{ data['search'] }}" />
             <button class="btn btn-outline-primary" type="submit" value="{{ data['search'] }}"> Search </button>
         </div>
     </form>
-    <div class="d-flex justify-content-end">
+    <div class="d-flex justify-content-end mb-3">
         <div class="mx-2">
-            <form action="/history/osm" method="get" id="agreeForm">
+            <form action="/record/specialist" method="get" id="agreeForm">
                 <select name="agree" id="agree" class="btn btn-light border border-1">
                     <option value="">ทั้งหมด</option>
                     <option value="AGREE">เห็นด้วย</option>
@@ -34,9 +30,6 @@
                 </select>
             </form>
         </div>
-    </div>
-    <div class="col-12 mt-5">
-        <p>ประวัติผลลัพธ์การวิเคราะห์รอยโรคในภาพถ่ายช่องปากวิเคราะห์</p>
     </div>
     {% if pagination|length == 0 %}
         <div class="col-12">
@@ -51,14 +44,14 @@
                     <div class="card">
 
                         <div style="height: 200px; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; ">
-                            <a href="{{ url_for('image.load_image', folder='upload', user_id=g.user['id'], imagename=item['fname']) }}" target="_blank">
-                                <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=g.user['id'], imagename=item['fname']) }}" class="card-img-top" alt=""
+                            <a href="{{ url_for('image.load_image', folder='upload', user_id=item['sender_id'], imagename=item['fname']) }}" target="_blank">
+                                <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=item['sender_id'], imagename=item['fname']) }}" class="card-img-top" alt=""
                                     style="height: 100%; max-width: 100%; width: auto" />
                             </a>
                         </div>
 
                         <div class="card-body">
-                            <h6 class="image-name" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; ">
+                            <h6 class="image-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">
                                 ชื่อไฟล์ : {{ item['fname'] }}
                             </h6>
                             <h6 class="">วันที่ : {{ item['formatted_created_at'] }} น.</h6>
@@ -76,7 +69,7 @@
                                 <div class="d-flex justify-content-center">
                                     <form action="{{ url_for('image.diagnosis', id=item['id']) }}" method="post" enctype="multipart/form-data">
                                         <input class="btn btn-outline-success btn-block" type="submit" value="ดูผลการวิเคราะห์" />
-                                        <input name="current_history_page" type="text" value="{{ current_page }}" hidden />
+                                        <input name="current_record_page" type="text" value="{{ current_page }}" hidden />
                                     </form>
                                     <!-- Button trigger modal -->
                                     <button type="button" class="btn btn-outline-danger mx-1" style="width: 100%"
