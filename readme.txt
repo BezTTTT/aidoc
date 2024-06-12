@@ -1,6 +1,6 @@
 1. Git clone patiwet/aidoc/main to WSL aidoc folder
 2. Copy the oralLesionNet folder to aidoc\ (rename to oralLesionNet)
-3. Add the following line to aidoc\oralLesionNet\__init__.py, after import os before load_model
+3. Add the following line to aidoc\oralLesionNet\__init__.py, after import os
 
 # ---------------------------------------------------------------------------
 __version__ = "2.2"
