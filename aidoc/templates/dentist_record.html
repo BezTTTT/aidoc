@@ -50,7 +50,7 @@
                 <div class="col-md-3 mb-4">
                     <div class="card">
 
-                        <div style="height: 200px; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; ">
+                        <div style="display: inline-flex; align-items: center; justify-content: center; overflow: hidden; ">
                             <a href="{{ url_for('image.load_image', folder='upload', user_id=g.user['id'], imagename=item['fname']) }}" target="_blank">
                                 <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=g.user['id'], imagename=item['fname']) }}" class="card-img-top" alt=""
                                     style="height: 100%; max-width: 100%; width: auto" />

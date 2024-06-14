@@ -15,9 +15,10 @@ model = oralLesionNet.load_model()
 from PIL import Image, ImageFilter
 
 import os
+import glob
 import shutil
 import json
-import functools
+
 
 from aidoc.db import get_db
 from aidoc.auth import login_required
@@ -80,7 +81,7 @@ def upload_image(role):
                     if request.form.get('inputZipCode') is not None and request.form.get('inputZipCode')!='':
                         session['zip_code'] = request.form.get('inputZipCode')
 
-                    if 'sender_phone' in session:
+                    if request.form.get('sender_id')!='':
                         session['sender_id'] = request.form.get('sender_id')
                     else:
                         session['sender_id'] = g.user['id']
@@ -536,23 +537,16 @@ def upload_submission_module():
 # Rename the filename if duplicates in the user folder, By appending a running number
 def rename_if_duplicated(uploadDir, checked_filename):
 
-    underscore_splits = checked_filename.split('_')
-    extension_splits = underscore_splits[-1].split('.')
-    if len(underscore_splits)>1:
-        runningNumber = int(extension_splits[0])
-        previouslyDuplicate = True
+    file_parts = os.path.splitext(checked_filename)
+    duplicate_files = glob.glob(os.path.join(uploadDir, file_parts[0] + '**'))
+    if len(duplicate_files)==0:
+        return checked_filename
     else:
-        runningNumber = 1
-        previouslyDuplicate = False
-        
+        runningNumber = len(duplicate_files)
+    
     while (os.path.isfile(os.path.join(uploadDir, checked_filename))):
-        if previouslyDuplicate:
-            underscores_merge = '_'.join(underscore_splits[:-1])
-            checked_filename = underscores_merge + '_' + str(runningNumber+1) + '.' + extension_splits[1]
-        else:
-            file_parts = os.path.splitext(checked_filename)
-            checked_filename = file_parts[0] + '_' + str(runningNumber) + file_parts[1]
+        file_parts = os.path.splitext(checked_filename)
+        checked_filename = file_parts[0] + '_' + str(runningNumber) + file_parts[1]
         runningNumber+=1
-        previouslyDuplicate = True
-        underscore_splits = checked_filename.split('_')
+        
     return checked_filename
