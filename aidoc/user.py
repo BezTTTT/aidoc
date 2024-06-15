@@ -7,14 +7,13 @@ import datetime
 import re
 
 from aidoc.db import get_db
-from aidoc.auth import login_required
-from aidoc.auth import load_logged_in_user
+from aidoc.auth import login_required, load_logged_in_user, valid_role
 
 # 'user' blueprint manages user management system
 bp = Blueprint('user', __name__)
 
-@login_required
 @bp.route("/find_sender", methods=["POST"])
+@login_required
 def find_sender():
     #get phone num
     phone_number = request.form.get('phone_number')
@@ -32,6 +31,7 @@ def find_sender():
         return jsonify({}), 404
 
 @bp.route('/register/<role>', methods=('GET', 'POST'))
+@valid_role
 def register(role):
     data = {}
     session['sender_mode'] = role

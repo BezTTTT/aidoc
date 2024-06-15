@@ -21,7 +21,7 @@ import json
 
 
 from aidoc.db import get_db
-from aidoc.auth import login_required
+from aidoc.auth import login_required, valid_role
 
 # 'image' blueprint manages Image upload, AI prediction, and the Diagnosis
 bp = Blueprint('image', __name__)
@@ -30,6 +30,7 @@ bp = Blueprint('image', __name__)
 
 @bp.route('/upload_image/<role>', methods=('GET', 'POST'))
 @login_required
+@valid_role
 def upload_image(role):
     data = {}
     session['sender_mode'] = role
@@ -52,8 +53,7 @@ def upload_image(role):
 
                     #Create the temp thumbnail
                     pil_img = Image.open(imagePath) 
-                    MAX_SIZE = (512, 512) 
-                    pil_img.thumbnail(MAX_SIZE) 
+                    pil_img = create_thumbnail(pil_img)
                     pil_img.save(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', 'thumb_' + imageName)) 
 
                     # Save the current filenames on session for the upcoming prediction
@@ -257,6 +257,7 @@ def diagnosis(id):
     
 @bp.route('/record/<role>', methods=('GET', 'POST'))
 @login_required
+@valid_role
 def record(role): # Submission records
 
     if role=='specialist':
@@ -318,7 +319,8 @@ def record(role): # Submission records
             record_comment = record.get("dentist_feedback_comment")
             record_fname = record.get("fname").lower()
             record_agree = record.get("dentist_feedback_code")
-
+            print(search_query)
+            print(record_comment)
             if (not search_query or search_query in record_comment or search_query in record_fname) and \
                 (not agree or agree==record_agree):
                 filtered_data.append(record)
@@ -329,8 +331,10 @@ def record(role): # Submission records
     # Pagination
     page = request.args.get("page", 1, type=int)
     if request.method == "POST":
-        page = request.form.get("current_record_page", 1, type=int)
-        page = int(page)
+        if 'current_record_page' in session:
+            page = session['current_record_page']
+        else:
+            page = 1
         
     PER_PAGE = 12 #number images data show on record page per page
     total_pages = (len(filtered_data) - 1) // PER_PAGE + 1
@@ -346,6 +350,8 @@ def record(role): # Submission records
     data['search'] = search_query
     data['agree'] = agree
     
+    session['current_record_page'] = page
+
     if role=='dentist':
         return render_template(
                 "dentist_record.html",
@@ -370,6 +376,22 @@ def record(role): # Submission records
 
 # Helper functions
 
+def create_thumbnail(pil_img):
+    MAX_SIZE = 512
+    width = pil_img.size[0]
+    height = pil_img.size[1]
+    if height < MAX_SIZE:
+        new_height = MAX_SIZE
+        new_width  = int(new_height * width / height)
+        pil_img = pil_img.resize((new_width, new_height), Image.NEAREST)
+        if new_width > MAX_SIZE:
+            canvas = Image.new(pil_img.mode, (new_width, new_width), (255, 255, 255))
+            canvas.paste(pil_img)
+            pil_img = canvas.resize((MAX_SIZE, MAX_SIZE), Image.NEAREST)
+    else:
+        pil_img.thumbnail((MAX_SIZE,MAX_SIZE))
+    return pil_img
+
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'tif', 'tiff'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -381,8 +403,7 @@ def rotate_temp_image(imagename):
     pil_img.save(imagePath)
 
     # Create the thumbnails
-    MAX_SIZE = (512, 512) 
-    pil_img.thumbnail(MAX_SIZE) 
+    pil_img = create_thumbnail(pil_img)
     pil_img.save(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', 'thumb_' + imagename))
 
 # AI Prediction Engine
@@ -454,8 +475,7 @@ def upload_submission_module():
 
             #Create the thumbnail and saved to temp folder
             pil_img = Image.open(os.path.join(tempDir, 'outlined_'+filename)) 
-            MAX_SIZE = (512, 512) 
-            pil_img.thumbnail(MAX_SIZE) 
+            pil_img = create_thumbnail(pil_img)
             pil_img.save(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', 'thumb_outlined_' + filename)) 
 
             ai_predictions.append(prediction)

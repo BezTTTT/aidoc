@@ -42,18 +42,21 @@
             {% for item in pagination %}
                 <div class="col-md-3 mb-4">
                     <div class="card">
-
                         <div style="display: inline-flex; align-items: center; justify-content: center; ">
                             <a href="{{ url_for('image.load_image', folder='upload', user_id=item['sender_id'], imagename=item['fname']) }}" target="_blank">
                                 <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=item['sender_id'], imagename=item['fname']) }}" 
-                                    class="card-img-top" alt="" style="max-height: 256px"/>
+                                    class="card-img-top mt-2" alt="" style="max-height: 256px"/>
                             </a>
                         </div>
 
-                        <div class="card-body">
-                            <h6 class="image-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">
-                                ชื่อไฟล์ : {{ item['fname'] }}
-                            </h6>
+                        <div class="card-body">                            
+                            <h6 class="image-name" >ชื่อไฟล์ : {{ item['fname'] }} </h6>
+                            <h6 class="image-name" >Case ID : {{ item['case_id'] }} </h6>
+                            {% if item['dentist_id'] %}
+                                <h6 class="image-name">สถานะ : ตรวจแล้ว</h6>
+                            {% else %}
+                                <h6 class="image-name">สถานะ : ยังไม่ได้ตรวจ</h6>
+                            {% endif %}
                             <h6 class="">วันที่ : {{ item['formatted_created_at'] }} น.</h6>
                             <h6 class="fs-6 card-subtitle text-muted mb-2">
                                 ผลการวินิจฉัยของ AI :
@@ -65,18 +68,10 @@
                                         OSCC
                                     {% endif %}
                             </h6>
-                            <div class="btn-container">
-                                <div class="d-flex justify-content-center">
-                                    <form action="{{ url_for('image.diagnosis', id=item['id']) }}" method="post" enctype="multipart/form-data">
-                                        <input class="btn btn-outline-success btn-block" type="submit" value="ดูผลการวิเคราะห์" />
-                                        <input name="current_record_page" type="text" value="{{ current_page }}" hidden />
-                                    </form>
-                                    <!-- Button trigger modal -->
-                                    <button type="button" class="btn btn-outline-danger mx-1" style="width: 100%"
-                                        data-bs-toggle="modal" data-bs-target="#submissionDeleteModal{{ item['id'] }}">
-                                        ลบข้อมูล
-                                    </button>
-                                </div>
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                                <form action="{{ url_for('image.diagnosis', id=item['id']) }}" id="form_id{{item['id']}}" method="post"> </form>
+                                <button class="btn btn-outline-success" type="submit" form="form_id{{item['id']}}">ดูผลการวิเคราะห์</button>
+                                <button class="btn btn-outline-danger" type="button" data-bs-toggle="modal" data-bs-target="#submissionDeleteModal{{ item['id'] }}" >ลบข้อมูล</button>
                             </div>
                         </div>
 

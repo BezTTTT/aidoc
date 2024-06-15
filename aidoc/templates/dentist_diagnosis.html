@@ -6,20 +6,13 @@
 
 <h2 class="text-center"> ระบบปัญญาประดิษฐ์ที่ช่วยในการค้นหาและวิเคราะห์รอยโรคก่อนมะเร็งและมะเร็งช่องปาก</h2>
 <h4 class="text-center"> (Artificial Intelligent System for Detecting and Analyzing PMDs and Oral Cancer)</h4>
-
 <div class="row d-flex justify-content-center text-center">
     <div class="col-md-4">
         <div class="card">
-            <div class="mx-2 mt-2" style="
-            height: 300px;
-            display: inline-flex; /* Use inline-flex to center horizontally */
-            align-items: center; /* Center vertically */
-            justify-content: center; /* Center horizontally */
-            overflow: hidden;
-          ">
+            <div class="mx-2 mt-2" style="display: inline-flex; align-items: center; justify-content: center; ">
                 <a href="{{ url_for('image.load_image', folder='upload', user_id=g.user['id'], imagename=session['img_fname']) }}" target="_blank">
-                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=g.user['id'], imagename=session['img_fname']) }}" alt=""
-                        style="height: 100%; max-width: 100%; width: auto" />
+                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=g.user['id'], imagename=session['img_fname']) }}"
+                        class="card-img-top" alt="" style="max-height: 512px" />
                 </a>
             </div>
             <div class="card-body">
@@ -29,16 +22,10 @@
     </div>
     <div class="col-md-4">
         <div class="card">
-            <div class="mx-2 mt-2" style="
-            height: 300px;
-            display: inline-flex; /* Use inline-flex to center horizontally */
-            align-items: center; /* Center vertically */
-            justify-content: center; /* Center horizontally */
-            overflow: hidden;
-          ">
+            <div class="mx-2 mt-2" style="display: inline-flex; align-items: center; justify-content: center; ">
                 <a href="{{ url_for('image.load_image', folder='outlined', user_id=g.user['id'], imagename=session['img_fname']) }}" target="_blank">
-                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=g.user['id'], imagename=session['img_fname']) }}" alt=""
-                        style="height: 100%; max-width: 100%; width: auto" />
+                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=g.user['id'], imagename=session['img_fname']) }}"
+                        class="card-img-top"  alt="" style="max-height: 512px" />
                 </a>
             </div>
             <div class="card-body">
@@ -47,7 +34,6 @@
         </div>
     </div>
 </div>
-
 <div class="row d-flex justify-content-center text-center mt-2" style="width: auto">
     <div class="col-md-8">
         <div class="card">

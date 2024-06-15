@@ -56,7 +56,17 @@ def dentist_index():
     else:
         return render_template("dentist_login.html")
 
+def valid_role(view):
+    @functools.wraps(view)
+    def wrapped_view(**kwargs):
+        allowed_roles = ['patient', 'osm', 'dentist', 'specialist']
+        if 'role' not in kwargs or kwargs['role'] not in allowed_roles:
+            return redirect('/')
+        return view(**kwargs)
+    return wrapped_view
+
 @bp.route('/login/<role>', methods=('Post',))
+@valid_role
 def login(role):
     
     session['sender_mode'] = role
