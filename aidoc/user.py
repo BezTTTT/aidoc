@@ -12,9 +12,9 @@ from aidoc.auth import login_required, load_logged_in_user, valid_role
 # 'user' blueprint manages user management system
 bp = Blueprint('user', __name__)
 
-@bp.route("/find_sender", methods=["POST"])
+@bp.route("/get_osm_info", methods=["POST"])
 @login_required
-def find_sender():
+def get_osm_info():
     #get phone num
     phone_number = request.form.get('phone_number')
     db, cursor = get_db()
@@ -26,6 +26,23 @@ def find_sender():
             'name': senderInfo['name'],
             'surname': senderInfo['surname'],
             'sender_id': senderInfo['id']
+        }), 200
+    else:
+        return jsonify({}), 404
+
+@bp.route("/get_patient_info", methods=["POST"])
+def get_patient_info():
+    #get patient national id
+    phone_number = request.form.get('patient_id')
+    db, cursor = get_db()
+    cursor.execute("SELECT id, name, surname FROM user WHERE national_id = %s AND is_patient = 1", (phone_number,))
+    senderInfo = cursor.fetchone()
+
+    if(senderInfo is not None):
+        return jsonify({
+            'name': senderInfo['name'],
+            'surname': senderInfo['surname'],
+            'patient_id': senderInfo['id']
         }), 200
     else:
         return jsonify({}), 404

@@ -1,46 +1,78 @@
 {% extends "./base.html"%}
 
-{% block title %} RiskOCA | Patient Diagnosis {% endblock %}
+{% block title %} RiskOCA | Diagnosis {% endblock %}
 
 {% block content %}
 
-<h2 class="mb-2 text-center"> การตรวจคัดกรองรอยโรคมะเร็งช่องปากด้วยตนเอง </h2>
-
-<div class="row d-flex justify-content-center text-center mt-2" style="width: auto">
+<h2 class="text-center"> ระบบปัญญาประดิษฐ์ที่ช่วยในการค้นหาและวิเคราะห์รอยโรคก่อนมะเร็งและมะเร็งช่องปาก</h2>
+<h4 class="text-center"> (Artificial Intelligent System for Detecting and Analyzing PMDs and Oral Cancer)</h4>
+<div class="row d-flex justify-content-center text-center">
     <div class="col-md-4">
         <div class="card"
-                {% if session['special_request']==1 %}
-                    style="border-color: red; border-width: 3px;"
-                {% endif %}>
-                <div class="mx-2 mt-2" 
-                    style="
-                    display: inline-flex;       /* Use inline-flex to center horizontally */
-                    align-items: center;        /* Center vertically */
-                    justify-content: center;    /* Center horizontally */
-                    overflow: hidden;">
-            <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=session['img_sender_id'], imagename=session['img_fname']) }}" alt="">
+            {% if session['special_request']==1 %}
+                style="border-color: red; border-width: 3px;"
+            {% endif %}>
+            <div class="mx-2 mt-2" style="display: inline-flex; align-items: center; justify-content: center; ">
+                <a href="{{ url_for('image.load_image', folder='upload', user_id=g.user['id'], imagename=session['img_fname']) }}" target="_blank">
+                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=g.user['id'], imagename=session['img_fname']) }}"
+                        class="card-img-top" alt="" style="max-height: 512px" />
+                </a>
             </div>
             <div class="card-body">
                 <p class="card-text">ภาพถ่ายช่องปาก</p>
             </div>
         </div>
     </div>
+    <div class="col-md-4">
+        <div class="card"
+            {% if session['special_request']==1 %}
+                style="border-color: red; border-width: 3px;"
+            {% endif %}>
+            <div class="mx-2 mt-2" style="display: inline-flex; align-items: center; justify-content: center; ">
+                <a href="{{ url_for('image.load_image', folder='outlined', user_id=g.user['id'], imagename=session['img_fname']) }}" target="_blank">
+                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=g.user['id'], imagename=session['img_fname']) }}"
+                        class="card-img-top"  alt="" style="max-height: 512px" />
+                </a>
+            </div>
+            <div class="card-body">
+                <p class="card-text">ภาพ AI ระบุรอยโรค</p>
+            </div>
+        </div>
+    </div>
 </div>
-
 <div class="row d-flex justify-content-center text-center mt-2" style="width: auto">
     <div class="col-md-8">
         <div class="card">
             <div class="card-body">
-                <p class="card-text">[คำแนะนำ] [1. คนไข้หัวตั้งขึ้น] [2. ตั้งกล้องแนวนอน] [3. ภาพคมชัด ช่องปากขนาดใหญ่] [4. เปิดแฟลชขณะถ่ายรูป] [5. มุมมองมาตรฐาน]</p>
+                <p class="card-text">[คำแนะนำ] [1. กดที่รูป เพื่อดูภาพความละเอียดสูง] [2. หากศรีษะของคนไข้ไม่อยู่ในทิศทางตั้งขึ้น ให้กดหมุนรูป แล้วกด Recompute เพื่อให้ AI ทำงานได้ถูกต้อง] [3. กด Recompute เพื่อให้ AI รุ่นล่าสุด พิจารณาภาพนี้อีกครั้ง]</p>
             </div>
         </div>
     </div>
 </div>
 
-<div class="p-3 text-center d-flex justify-content-center">
-    <div class="col-md-4">
-        <div class="col-md-4 d-flex justify-content-center" style="width: auto; margin-bottom: 5%;">
-            <a class="btn btn-success" href="/upload_image/patient">นำส่งภาพถ่ายช่องปากเพิ่มเติม</a>
+<div class="d-flex justify-content-center container-md">
+    <div class="row justify-content-center my-4" style="width: 90%;">
+        <div class="col-md-3 text-center mt-2 px-1">
+            <a class="btn btn-outline-success btn-block nowrap" style="width: 100%; margin: 0;"
+                href="/upload_image/osm">นำส่งภาพถ่ายช่องปากเพิ่มเติม</a>
+        </div>
+        <div class="col-md-2 text-center mt-2 px-1">
+            <form action="/record/osm" method="post" enctype="multipart/form-data">
+                <input class="btn btn-outline-success btn-block" style="width: 100%; margin: 0;" type="submit"
+                    value="ดูประวัติ" />
+            </form>
+        </div>
+        <div class="col-md-2 text-center mt-2 px-1">
+            <form action="/upload_image/dentist" method="post" enctype="multipart/form-data">
+                <input class="btn btn-outline-success" type="submit" style="width: 100%; margin: 0;"
+                    value="หมุนรูปไปทางขวา" />
+            </form>
+        </div>
+        <div class="col-md-2 text-center mt-2 px-1">
+            <form action="/upload_image/dentist" method="post" enctype="multipart/form-data">
+                <input class="btn btn-outline-success" type="submit" style="width: 100%; margin: 0;"
+                    value="Recompute" />
+            </form>
         </div>
     </div>
 </div>
@@ -113,7 +145,7 @@
                 <h4 class="card-title text-center"> ส่งคำขอตรวจสอบพิเศษเรียบร้อยแล้ว </h4>
             </div>
         </div>
-    </div>    
+    </div>      
 {% endif %}
 
 <div class="row d-flex justify-content-center my-4">

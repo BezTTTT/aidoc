@@ -60,7 +60,12 @@ def valid_role(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
         allowed_roles = ['patient', 'osm', 'dentist', 'specialist']
-        if 'role' not in kwargs or kwargs['role'] not in allowed_roles:
+        if ('role' not in kwargs) or (kwargs['role'] not in allowed_roles) or \
+            (kwargs['role']=='osm' and g.user is not None and g.user['is_osm']==0) or \
+            (kwargs['role']=='patient' and g.user is not None and g.user['is_patient']==0) or \
+            (kwargs['role']=='specialist' and g.user is not None and g.user['is_specialist']==0) \
+        :
+            session.pop('sender_mode', None)
             return redirect('/')
         return view(**kwargs)
     return wrapped_view

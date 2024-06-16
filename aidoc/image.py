@@ -28,6 +28,7 @@ bp = Blueprint('image', __name__)
 
 # Flask views
 
+# region upload_image
 @bp.route('/upload_image/<role>', methods=('GET', 'POST'))
 @login_required
 @valid_role
@@ -75,18 +76,44 @@ def upload_image(role):
             # Check if submission list is in the queue (session), if so submit them to the Submission Module and the AI Prediction Engine
             if 'imageNameList' in session and session['imageNameList']:
                 if role=='patient':
-
                     if request.form.get('inputPhone') is not None and request.form.get('inputPhone')!='':
                         session['sender_phone'] = request.form.get('inputPhone')
+                    else:
+                        session['sender_phone'] = None
+
                     if request.form.get('inputZipCode') is not None and request.form.get('inputZipCode')!='':
                         session['zip_code'] = request.form.get('inputZipCode')
-
-                    if request.form.get('sender_id')!='':
-                        session['sender_id'] = request.form.get('sender_id')
                     else:
-                        session['sender_id'] = g.user['id']
+                        session['zip_code'] = None
 
-                upload_submission_module()
+                    if request.form.get('sender_id') is not None and request.form.get('sender_id')!='':
+                        session['sender_id'] = request.form.get('sender_id')
+                    elif session['sender_phone'] is None:
+                        session['sender_id'] = session['user_id']
+                    else:
+                        session['sender_id'] = None
+
+                if role=='osm':
+                    if request.form.get('inputIdentityID') is not None and request.form.get('inputIdentityID')!='':
+                        session['patient_national_id'] = request.form.get('inputIdentityID')
+                    else:
+                        session['patient_national_id'] = None
+
+                    if request.form.get('inputZipCode') is not None and request.form.get('inputZipCode')!='':
+                        session['zip_code'] = request.form.get('inputZipCode')
+                    else:
+                        session['zip_code'] = None
+
+                    if request.form.get('patient_id')!='':
+                        session['patient_id'] = request.form.get('patient_id')
+                    else:
+                        session['patient_id'] = None
+
+                if 'sender_id' not in session or session['sender_id']==None:
+                    upload_submission_module(target_user_id=session['user_id'])
+                else:
+                    upload_submission_module(target_user_id=session['sender_id']) # Upload files to the sender folders, not patient's
+
                 lastImageName = list(session['imageNameList'])[-1]
 
                 db, cursor = get_db()
@@ -100,6 +127,11 @@ def upload_image(role):
 
                 if role=='patient':
                     session.pop('sender_phone', None)
+                    session.pop('sender_id', None)
+                    session.pop('zip_code', None)
+                elif role=='osm':
+                    session.pop('patient_national_id', None)
+                    session.pop('patient_id', None)
                     session.pop('zip_code', None)
 
                 return redirect(url_for('image.diagnosis', id=result['id']))
@@ -107,9 +139,12 @@ def upload_image(role):
         return render_template("patient_upload.html", data=data)
     elif role=='dentist':
         return render_template("dentist_upload.html", data=data)
+    elif role=='osm':
+        return render_template("osm_upload.html", data=data)
     else:
         return None
 
+# region load_image
 @bp.route('/load_image/<folder>/<user_id>/<imagename>')
 @login_required
 def load_image(folder, user_id, imagename):
@@ -155,6 +190,7 @@ def load_image(folder, user_id, imagename):
                 im.save(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', imagename_png))
                 return send_from_directory(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp'), imagename_png)
 
+# region delete_image
 @bp.route('/delete_image', methods=('POST', ))
 @login_required
 def delete_image():
@@ -191,6 +227,7 @@ def delete_image():
     if session['sender_mode']=='dentist':
         return redirect(url_for('image.record', role='dentist'))
     
+# region diagnosis
 @bp.route('/diagnosis/<int:id>', methods=('GET', 'POST'))
 @login_required
 def diagnosis(id):
@@ -218,7 +255,7 @@ def diagnosis(id):
                 session['need_db_refresh']=True
             
     if session['sender_mode']=='dentist':
-        if 'img_id' not in session or session['img_id']!=id:
+        if 'img_id' not in session or session['img_id']!=id: # Check if the image is already loaded to the session
             db, cursor = get_db()
             sql = "SELECT * FROM submission_record WHERE id=%s"
             val = (id, )
@@ -235,7 +272,28 @@ def diagnosis(id):
         return render_template('dentist_diagnosis.html')
     
     if session['sender_mode']=='patient':
-        if 'img_id' not in session or session['img_id']!=id:
+        if 'img_id' not in session or session['img_id']!=id: # Check if the image is already loaded to the session
+            db, cursor = get_db()
+            sql = "SELECT * FROM submission_record INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id WHERE submission_record.id=%s"
+            val = (id, )
+            cursor.execute(sql, val)
+            result = cursor.fetchone()
+            session['img_id'] = result['id']
+            session['img_fname'] = result['fname']
+            session['img_sender_id'] = result['sender_id']
+            session['img_ai_prediction'] = result['ai_prediction']
+            session['img_ai_scores'] = json.loads(result['ai_scores'])
+            session['img_dentist_feedback_code'] = result['dentist_feedback_code']
+            session['img_dentist_feedback_comment'] = result['dentist_feedback_comment']
+            session['img_dentist_feedback_lesion'] = result['dentist_feedback_lesion']
+            session['img_dentist_feedback_location'] = result['dentist_feedback_location']
+
+            session['case_id'] = result['case_id']
+            session['special_request'] = result['special_request']
+        return render_template('patient_diagnosis.html')
+    
+    if session['sender_mode']=='osm':
+        if 'img_id' not in session or session['img_id']!=id: # Check if the image is already loaded to the session
             db, cursor = get_db()
             sql = "SELECT * FROM submission_record INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id WHERE submission_record.id=%s"
             val = (id, )
@@ -252,9 +310,8 @@ def diagnosis(id):
 
             session['case_id'] = result['case_id']
             session['special_request'] = result['special_request']
-
-        return render_template('patient_diagnosis.html')
-    
+        return render_template('osm_diagnosis.html')
+# region record
 @bp.route('/record/<role>', methods=('GET', 'POST'))
 @login_required
 @valid_role
@@ -319,8 +376,6 @@ def record(role): # Submission records
             record_comment = record.get("dentist_feedback_comment")
             record_fname = record.get("fname").lower()
             record_agree = record.get("dentist_feedback_code")
-            print(search_query)
-            print(record_comment)
             if (not search_query or search_query in record_comment or search_query in record_fname) and \
                 (not agree or agree==record_agree):
                 filtered_data.append(record)
@@ -375,9 +430,9 @@ def record(role): # Submission records
                 total_pages=total_pages)
 
 # Helper functions
-
+# region create_thumbnail
 def create_thumbnail(pil_img):
-    MAX_SIZE = 512
+    MAX_SIZE = 342
     width = pil_img.size[0]
     height = pil_img.size[1]
     if height < MAX_SIZE:
@@ -392,10 +447,12 @@ def create_thumbnail(pil_img):
         pil_img.thumbnail((MAX_SIZE,MAX_SIZE))
     return pil_img
 
+# region allowed_files
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'tif', 'tiff'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+# region rotate_temp_image
 def rotate_temp_image(imagename):
     imagePath = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', imagename)
     pil_img = Image.open(imagePath) 
@@ -406,6 +463,7 @@ def rotate_temp_image(imagename):
     pil_img = create_thumbnail(pil_img)
     pil_img.save(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', 'thumb_' + imagename))
 
+# region oral_lesion_prediction
 # AI Prediction Engine
 def oral_lesion_prediction(imgPath):
     
@@ -459,8 +517,9 @@ def oral_lesion_prediction(imgPath):
     scores = [backgroundScore.numpy(), opmdScore.numpy(), osccScore.numpy()]
     return outlined_img, predictClass, scores
 
+# region upload_submission_module
 # Upload Submission Module
-def upload_submission_module():
+def upload_submission_module(target_user_id):
     if session['imageNameList']:
         # Define the related directories
         tempDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp')
@@ -489,7 +548,7 @@ def upload_submission_module():
             session.pop('ai_infos', None)
         
         # Create directory for the user (using user_id) if not exist
-        user_id = str(g.user['id'])
+        user_id = target_user_id
         uploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', user_id)
         thumbUploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', 'thumbnail', user_id)
         outlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', user_id)
@@ -530,19 +589,28 @@ def upload_submission_module():
                 cursor.execute(sql, val)
             elif session['sender_mode']=='patient':
 
-                if 'sender_phone' in session or 'zip_code' in session:
-                    sql = "UPDATE user SET default_sender_phone=%s, default_zip_code=%s"
-                    val = (session['sender_phone'], session['zip_code'])
+                if ('sender_phone' in session and session['sender_phone']) or ('zip_code' in session and session['zip_code']):
+                    sql = "UPDATE user SET default_sender_phone=%s, default_zip_code=%s WHERE id=%s"
+                    val = (session['sender_phone'], session['zip_code'], session['user_id'])
                     cursor.execute(sql, val)
 
-                    sql = "INSERT INTO submission_record (fname, patient_id, sender_id, sender_phone, zip_code, ai_prediction, ai_scores) VALUES (%s,%s,%s,%s,%s,%s,%s)"
-                    val = (filename, session['user_id'], session['sender_id'], session['sender_phone'], session['zip_code'], ai_predictions[i], ai_scores[i])
-                    cursor.execute(sql, val)
-
-                else:
-                    sql = "INSERT INTO submission_record (fname, patient_id, sender_id, ai_prediction, ai_scores) VALUES (%s,%s,%s,%s,%s)"
-                    val = (filename, session['user_id'], session['sender_id'], ai_predictions[i], ai_scores[i])
-                    cursor.execute(sql, val)
+                sql = '''INSERT INTO submission_record 
+                        (fname,
+                        sender_id,
+                        sender_phone,
+                        zip_code,
+                        patient_id,
+                        ai_prediction,
+                        ai_scores)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s)'''
+                val = (filename,
+                        session['sender_id'],
+                        session['sender_phone'],
+                        session['zip_code'],
+                        session['user_id'],
+                        ai_predictions[i],
+                        ai_scores[i])
+                cursor.execute(sql, val)
                 
                 cursor.execute("SELECT LAST_INSERT_ID()")
                 row = cursor.fetchone()
@@ -550,10 +618,41 @@ def upload_submission_module():
                 val = (row['LAST_INSERT_ID()'],)
                 cursor.execute(sql, val)
 
-            
+            elif session['sender_mode']=='osm':
+
+                if ('patient_national_id' in session and session['patient_national_id']) or ('zip_code' in session and session['zip_code']):
+                    sql = "UPDATE user SET default_zip_code=%s WHERE id=%s"
+                    val = (session['zip_code'], session['user_id'])
+                    cursor.execute(sql, val)
+
+                sql = '''INSERT INTO submission_record 
+                        (fname, 
+                        sender_id,
+                        zip_code,
+                        patient_id,
+                        patient_national_id,
+                        ai_prediction,
+                        ai_scores)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s)'''
+                val = (filename,
+                        session['user_id'],
+                        session['zip_code'],
+                        session['patient_id'],
+                        session['patient_national_id'],
+                        ai_predictions[i],
+                        ai_scores[i])
+                cursor.execute(sql, val)
+
+                cursor.execute("SELECT LAST_INSERT_ID()")
+                row = cursor.fetchone()
+                sql = "INSERT INTO patient_case_id (id) VALUES (%s)"
+                val = (row['LAST_INSERT_ID()'],)
+                cursor.execute(sql, val)
+
             if 'need_db_refresh' in session:
                 session['need_db_refresh']=True
 
+# region rename_if_duplicated
 # Rename the filename if duplicates in the user folder, By appending a running number
 def rename_if_duplicated(uploadDir, checked_filename):
 

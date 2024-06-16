@@ -39,6 +39,7 @@ CREATE TABLE `submission_record` (
   `special_request` tinyint NOT NULL DEFAULT 0,
   `zip_code` varchar(255) DEFAULT NULL,
   `patient_id` int DEFAULT NULL,
+  `patient_national_id` varchar(255) DEFAULT NULL,
   `dentist_id` int DEFAULT NULL,
   `dentist_feedback_code` varchar(255) DEFAULT NULL,
   `dentist_feedback_comment` varchar(255) NOT NULL DEFAULT '',

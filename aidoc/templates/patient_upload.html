@@ -46,7 +46,7 @@
   </div>
 {% else %}
   <div class="p-3 text-center d-flex justify-content-center">
-    <div class="col-md-4">
+    <div class="col-md-8">
       <img id="previewImage" src="{{ url_for('image.load_image', folder='temp', user_id=g.user['id'], imagename=data['uploadedImage']) }}" class="card d-flex mx-auto" alt="" />
       <div class="my-3">
         <a class="btn btn-outline-warning mb-2" href="/upload_image/patient">เปลี่ยนรูป</a>
@@ -55,7 +55,7 @@
           <input name="rotation_submitted" type="submit" class="btn btn-outline-primary mb-2" value="คนไข้ควรหัวตั้งขึ้น หรือ กดปุ่มนี้เพื่อหมุนรูป"/>
         </form>
         <form id="submitimgForm" action="{{ url_for('image.upload_image', role='patient', submission='true') }}" method="post" enctype="multipart/form-data" >
-          <div id="submitbtn" onclick="disableButton()" class="btn btn-success mb-2">ยืนยัน</div>
+          <div id="submitbtn" onclick="dataSubmission()" class="btn btn-success mb-2">ยืนยัน</div>
           <div id="errorBox" class="alert alert-danger" role="alert" style="display: none;"></div>
           <div class="border p-3 rounded-3 my-2">
             <div class="card-body">
@@ -86,7 +86,6 @@
                   <label id="checkboxNo" style="display: block;" class="btn btn-outline-danger" for="checkbox"> ยกเลิก </label>
                 </div>
                 <div id="inputPhoneContainer" class="col-8" style="display: block;">
-                  <input name="sender_id" id="sender_id" type="text" value="" hidden />
                   <input class="form-control" placeholder="เบอร์โทร..." maxlength="10" type="text" name="inputPhone" id="inputPhone" required
                     {% if g.user['default_sender_phone'] %}
                       value="{{g.user['default_sender_phone'] }}"
@@ -98,6 +97,7 @@
                     style="display: none;"
                   {% endif %}>
                 </div>
+                <input name="sender_id" id="sender_id" type="text" value="" hidden/>
               </div>
             </div>
           </div>
@@ -111,44 +111,6 @@
 {% endblock %}
 
 {% block script %}
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    var previewImage = document.getElementById('previewImage');
-
-    // Check if the image has loaded
-    previewImage.onload = function () {
-      handleImageDimensions(previewImage);
-    };
-
-    // If the image is cached and already loaded
-    if (previewImage.complete) {
-      handleImageDimensions(previewImage);
-    }
-  });
-
-  function handleImageDimensions(imageElement) {
-    var maxWidthPercent = 100;
-    var maxHeight = 512;
-
-    // Set the image width to 100%
-    imageElement.style.width = maxWidthPercent + '%'
-
-    // Calculate the new height based on the width
-    var newHeight = imageElement.naturalHeight * imageElement.width / imageElement.naturalWidth
-
-    // Check if the new height exceeds 512px
-    if (newHeight > maxHeight) {
-      imageElement.style.width = ''
-      imageElement.style.maxWidth = '100%'
-      imageElement.style.maxHeight = maxHeight + 'px'
-    } else {
-      imageElement.style.width = '100%'
-      imageElement.style.maxWidth = ''
-      imageElement.style.maxHeight = maxHeight + 'px'
-    }
-  }
-</script>
-
 <script>
   
   // Define the const variable involves in the following script
@@ -174,7 +136,7 @@
     if(phone.length == 10){
       // Make an AJAX request to Flask server
       var xhr = new XMLHttpRequest();
-      xhr.open('POST', '/find_sender', true);
+      xhr.open('POST', '/get_osm_info', true);
       xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
       xhr.onreadystatechange = function () {
           if (xhr.readyState === 4 && xhr.status === 200) {
@@ -184,7 +146,9 @@
               senderInfoContainer.innerHTML = "เจ้าหน้าที่ผู้คัดกรอง ชื่อ "+senderInfo.name+" "+senderInfo.surname
               senderIDInput.value = senderInfo.sender_id
           }else{
-            senderInfoContainer.style.display = 'none'
+            senderInfoContainer.style.color = 'red'
+            senderInfoContainer.innerHTML="ไม่พบข้อมูลเจ้าหน้าที่ผู้คัดกรองในระบบ (กรุณาแจ้งให้เจ้าหน้าที่ดังกล่าว ลงทะเบียนภายหลัง)"
+            senderIDInput.value = ""
           }
           isFirstOpen = false
         }
@@ -213,7 +177,7 @@
     return phonePattern.test(phoneNumber)
   }
 
-  function disableButton() {
+  function dataSubmission() {
 
       if (!(isValidZipCode(inputZipCode.value) || inputZipCode.value == '')) {
         errorBox.style.display = 'block'

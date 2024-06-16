@@ -36,7 +36,7 @@
   </div>
 {% else %}
   <div class="p-3 text-center d-flex justify-content-center">
-    <div class="col-md-4">
+    <div class="col-md-8">
       <img id="previewImage" src="{{ url_for('image.load_image', folder='temp', user_id=g.user['id'], imagename=data['uploadedImage']) }}" class="card d-flex mx-auto" alt="" />
       <div class="my-3">
         <a class="btn btn-outline-warning mb-2" href="/upload_image/dentist">เปลี่ยนรูป</a>
