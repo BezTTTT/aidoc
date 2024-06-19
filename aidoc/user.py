@@ -7,7 +7,7 @@ import datetime
 import re
 
 from aidoc.db import get_db
-from aidoc.auth import login_required, load_logged_in_user, valid_role
+from aidoc.auth import login_required, load_logged_in_user, role_validation
 
 # 'user' blueprint manages user management system
 bp = Blueprint('user', __name__)
@@ -48,7 +48,7 @@ def get_patient_info():
         return jsonify({}), 404
 
 @bp.route('/register/<role>', methods=('GET', 'POST'))
-@valid_role
+@role_validation
 def register(role):
     data = {}
     session['sender_mode'] = role

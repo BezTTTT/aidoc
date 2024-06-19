@@ -18,10 +18,10 @@ import os
 import glob
 import shutil
 import json
-
+from datetime import date
 
 from aidoc.db import get_db
-from aidoc.auth import login_required, valid_role
+from aidoc.auth import login_required, role_validation, role_authorization
 
 # 'image' blueprint manages Image upload, AI prediction, and the Diagnosis
 bp = Blueprint('image', __name__)
@@ -31,7 +31,8 @@ bp = Blueprint('image', __name__)
 # region upload_image
 @bp.route('/upload_image/<role>', methods=('GET', 'POST'))
 @login_required
-@valid_role
+@role_validation
+@role_authorization
 def upload_image(role):
     data = {}
     session['sender_mode'] = role
@@ -157,12 +158,12 @@ def load_image(folder, user_id, imagename):
     # We need to treat tif files differently than other image type
     if '.tif' not in imagename.lower() and '.tiff' not in imagename.lower():
         if 'temp' in folder:
-            return send_from_directory(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp'), 'thumb_'+imagename)
+            return send_from_directory(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp'), 'thumb_'+imagename, conditional=False)
         elif 'thumbnail' in folder:
             folders = folder.split('_')
-            return send_from_directory(os.path.join(current_app.config['IMAGE_DATA_DIR'], folders[0], folders[1], user_id), imagename)
+            return send_from_directory(os.path.join(current_app.config['IMAGE_DATA_DIR'], folders[0], folders[1], user_id), imagename, conditional=False)
         else:
-            return send_from_directory(os.path.join(current_app.config['IMAGE_DATA_DIR'], folder, user_id), imagename)
+            return send_from_directory(os.path.join(current_app.config['IMAGE_DATA_DIR'], folder, user_id), imagename, conditional=False)
     else:
         # If tif, create the equivalent png and save to temp
         if '.tiff' in imagename.lower():
@@ -174,7 +175,7 @@ def load_image(folder, user_id, imagename):
             im = Image.open(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', 'thumb_'+imagename))
             saved_name = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', 'thumb_'+imagename_png)
             im.save(saved_name)
-            return send_from_directory(os.path.dirname(saved_name), os.path.basename(saved_name))
+            return send_from_directory(os.path.dirname(saved_name), os.path.basename(saved_name), conditional=False)
         else:
             if 'thumbnail' in folder:
                 folders = folder.split('_')
@@ -184,16 +185,16 @@ def load_image(folder, user_id, imagename):
                 else:
                     saved_name = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', imagename_png)
                 im.save(saved_name)
-                return send_from_directory(os.path.dirname(saved_name), os.path.basename(saved_name))
+                return send_from_directory(os.path.dirname(saved_name), os.path.basename(saved_name), conditional=False)
             else:
                 im = Image.open(os.path.join(current_app.config['IMAGE_DATA_DIR'], folder, user_id, imagename))
                 im.save(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', imagename_png))
-                return send_from_directory(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp'), imagename_png)
+                return send_from_directory(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp'), imagename_png, conditional=False)
 
 # region delete_image
-@bp.route('/delete_image', methods=('POST', ))
+@bp.route('/delete_image/<role>', methods=('POST', ))
 @login_required
-def delete_image():
+def delete_image(role):
     img_id = request.form.get('img_id')
 
     db, cursor = get_db()
@@ -224,8 +225,8 @@ def delete_image():
     if 'need_db_refresh' in session:
         session['need_db_refresh']=True
 
-    if session['sender_mode']=='dentist':
-        return redirect(url_for('image.record', role='dentist'))
+    return redirect(url_for('image.record', role=role))
+    
     
 # region diagnosis
 @bp.route('/diagnosis/<int:id>', methods=('GET', 'POST'))
@@ -314,28 +315,23 @@ def diagnosis(id):
 # region record
 @bp.route('/record/<role>', methods=('GET', 'POST'))
 @login_required
-@valid_role
+@role_validation
+@role_authorization
 def record(role): # Submission records
-
-    if role=='specialist':
-        if g.user['is_specialist']==0:
-            return redirect('/')
-        if 'specialist' not in session:
-            session['specialist'] = True
-            session['need_db_refresh']=True
-    else:
-        if 'specialist' in session:
-            session.pop('specialist', None)
-            session['need_db_refresh']=True
+   
+    if session['sender_mode'] != role: # Check role switching
+        session['need_db_refresh']=True
         session['sender_mode'] = role
 
-    if 'need_db_refresh' not in session or session.get('need_db_refresh')==True:
+    if 'need_db_refresh' not in session or \
+        session.get('need_db_refresh')==True or \
+        request.args.get('refresh', default='false', type=str)=='true':
         session['need_db_refresh']=False
     
         # Reload the record every time the page is reloaded
         db, cursor = get_db()
         if role=='specialist':
-            sql = '''SELECT submission_record.id, case_id, fname, name, surname,
+            sql = '''SELECT submission_record.id, case_id, fname, name, surname, birthdate,
                         sender_id, patient_id, dentist_id, special_request, province,
                         dentist_feedback_comment,dentist_feedback_code,
                         ai_prediction, submission_record.created_at
@@ -400,6 +396,8 @@ def record(role): # Submission records
     # Format the date in the desired format
     for item in paginated_data:
         item["formatted_created_at"] = item["created_at"].strftime("%d/%m/%Y %H:%M")
+        if "birthdate" in item:
+            item["age"] = calculate_age(item["birthdate"])
 
     data = {}
     data['search'] = search_query
@@ -548,7 +546,7 @@ def upload_submission_module(target_user_id):
             session.pop('ai_infos', None)
         
         # Create directory for the user (using user_id) if not exist
-        user_id = target_user_id
+        user_id = str(target_user_id)
         uploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', user_id)
         thumbUploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', 'thumbnail', user_id)
         outlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', user_id)
@@ -669,3 +667,8 @@ def rename_if_duplicated(uploadDir, checked_filename):
         runningNumber+=1
         
     return checked_filename
+
+
+def calculate_age(born):
+    today = date.today()
+    return today.year - born.year - ((today.month, today.day) < (born.month, born.day))

@@ -56,7 +56,7 @@ def dentist_index():
     else:
         return render_template("dentist_login.html")
 
-def valid_role(view):
+def role_validation(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
         allowed_roles = ['patient', 'osm', 'dentist', 'specialist']
@@ -71,7 +71,7 @@ def valid_role(view):
     return wrapped_view
 
 @bp.route('/login/<role>', methods=('Post',))
-@valid_role
+@role_validation
 def login(role):
     
     session['sender_mode'] = role
@@ -160,7 +160,7 @@ def login(role):
         if user is None:
             error_msg = "ไม่พบรหัสผู้ใช้ โปรดลองอีกครั้งหนึ่งหรือสมัครบัญชีใหม่ ... หากลืมกรุณาติดต่อศูนย์ทันตสาธารณสุขระหว่างประเทศ"
         elif not check_password_hash(user['password'], password):
-            error_msg = "รหัสผ่านไม่ถูกต้อง โปรดลองอีกครั้งหนึ่ง ... หากลืมกรุณากดเลือก ลืมรหัสผ่าน"
+            error_msg = "รหัสผ่านไม่ถูกต้อง โปรดลองอีกครั้งหนึ่ง ... หากลืมรหัสผ่าน กรุณากดเลือก ลืมรหัสผ่าน"
         if error_msg is None: # Logged in sucessfully
             session['user_id'] = user['id']
             load_logged_in_user()
@@ -189,5 +189,17 @@ def login_required(view):
                 return redirect(url_for('auth.login', role='osm'))
             else:
                 return redirect(url_for('auth.login', role='patient'))
+        return view(**kwargs)
+    return wrapped_view
+
+def role_authorization(view):
+    @functools.wraps(view)
+    def wrapped_view(**kwargs):
+        if ('sender_mode' in session) and ('role' in kwargs) and g.user and kwargs['role']:
+            if (kwargs['role']=='osm' and g.user['is_osm']==0) or \
+               (kwargs['role']=='specialist' and g.user['is_specialist']==0) or \
+               (kwargs['role']=='patient' and g.user['is_patient']==0) or \
+               (kwargs['role']=='dentist' and (g.user['username'] is None) ):
+                return redirect(url_for('auth.login', role=kwargs['role']))
         return view(**kwargs)
     return wrapped_view

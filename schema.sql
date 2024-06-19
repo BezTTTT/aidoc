@@ -1,3 +1,11 @@
+/*
+  user is a patient if 'is_patient' is TRUE or 1
+  user is a osm     if 'is_osm' is TRUE or 1
+  user is a specialist if 'is_specialist' is TRUE or 1
+  user is a admin if 'is_admin' is TRUE or 1
+  but the user is a dentist (or general users) if 'username' is not null
+*/
+
 CREATE TABLE `user` (
   `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `name` varchar(255) NOT NULL,

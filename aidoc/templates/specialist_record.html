@@ -7,7 +7,7 @@
 <div class="row">
     <div class="col-12">
         <h2>ระบบการนำส่งภาพถ่ายช่องปากของประชาชน</h2>
-        <p>ผู้เชี่ยวชาญ: {{ g.user['name'] }} {{ g.user['surname'] }} ({{ g.user['job_position_th'] }}) </p>
+        <p>ผู้เชี่ยวชาญผู้ตรวจยืนยันผล: {{ g.user['name'] }} {{ g.user['surname'] }} ({{ g.user['job_position_th'] }}) </p>
     </div>
 
     <!-- Search Box -->
@@ -41,7 +41,11 @@
         <div class="row">
             {% for item in pagination %}
                 <div class="col-md-3 mb-4">
-                    <div class="card">
+                    <div class="card"
+                    {% if item['special_request']==1 %}
+                        style="border-color: red; border-width: 3px"
+                    {% endif %}
+                    >
                         <div style="display: inline-flex; align-items: center; justify-content: center; ">
                             <a href="{{ url_for('image.load_image', folder='upload', user_id=item['sender_id'], imagename=item['fname']) }}" target="_blank">
                                 <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=item['sender_id'], imagename=item['fname']) }}" 
@@ -51,13 +55,26 @@
 
                         <div class="card-body">                            
                             <h6 class="image-name" >ชื่อไฟล์ : {{ item['fname'] }} </h6>
-                            <h6 class="image-name" >Case ID : {{ item['case_id'] }} </h6>
-                            {% if item['dentist_id'] %}
-                                <h6 class="image-name">สถานะ : ตรวจแล้ว</h6>
-                            {% else %}
-                                <h6 class="image-name">สถานะ : ยังไม่ได้ตรวจ</h6>
-                            {% endif %}
-                            <h6 class="">วันที่ : {{ item['formatted_created_at'] }} น.</h6>
+                            <h6 class="image-name" >Case ID : {{ item['case_id'] }}
+                                {% if item['dentist_id'] %}
+                                    [ตรวจแล้ว]
+                                {% else %}
+                                    [ยังไม่ได้ตรวจ]
+                                {% endif %}
+                                {% if item['special_request']==1 %}
+                                    [มีคำขอตรวจพิเศษ]
+                                {% endif %}
+                            </h6>
+                            <h6 class="image-name">ชื่อผู้ป่วย : {{ item['name'] }} {{ item['surname'] }} ( {{ item["age"] }} ปี )</h6>
+                            <h6 class="image-name" >ช่องทาง :
+                                {% if item['sender_id']!=item['patient_id'] %}
+                                    นำส่งโดยเจ้าหน้าที่ผู้ตรวจคัดกรอง
+                                {% else %}
+                                    ผู้ป่วยนำส่งข้อมูลเอง
+                                {% endif %}
+                            </h6>
+                            <h6 class="image-name">จังหวัดของผู้ป่วย : {{ item['province'] }} </h6>
+                            <h6 class="image-name">นำส่งวันที่ : {{ item['formatted_created_at'] }} น.</h6>
                             <h6 class="fs-6 card-subtitle text-muted mb-2">
                                 ผลการวินิจฉัยของ AI :
                                     {% if item['ai_prediction']==0 %}
@@ -70,8 +87,10 @@
                             </h6>
                             <div class="d-grid gap-2 d-md-flex justify-content-md-center">
                                 <form action="{{ url_for('image.diagnosis', id=item['id']) }}" id="form_id{{item['id']}}" method="post"> </form>
-                                <button class="btn btn-outline-success" type="submit" form="form_id{{item['id']}}">ดูผลการวิเคราะห์</button>
-                                <button class="btn btn-outline-danger" type="button" data-bs-toggle="modal" data-bs-target="#submissionDeleteModal{{ item['id'] }}" >ลบข้อมูล</button>
+                                <button class="btn btn-outline-success" type="submit" form="form_id{{item['id']}}">ตรวจยืนยันผล</button>
+                                <button class="btn btn-outline-danger" type="button" 
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#submissionDeleteModal{{ item['id'] }}" >ลบข้อมูล</button>
                             </div>
                         </div>
 
@@ -81,13 +100,13 @@
                             <div class="modal-dialog">
                                 <div class="modal-content">
                                     <div class="modal-header">
-                                        <h1 class="modal-title fs-5" id="submissionDeleteModalLabel"> ลบประวัติ </h1>
+                                        <h1 class="modal-title fs-5" id="submissionDeleteModalLabel"> ลบข้อมูลการนำส่ง </h1>
                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
-                                    <div class="modal-body">คุณแน่ใจที่จะลบประวัตินี้ ใช่หรือไม่</div>
+                                    <div class="modal-body">คุณแน่ใจที่จะลบข้อมูลการนำส่งนี้ ใช่หรือไม่</div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> ยกเลิก </button>
-                                        <form action="{{ url_for('image.delete_image') }}" method="post" enctype="multipart/form-data">
+                                        <form action="{{ url_for('image.delete_image', role='specialist') }}" method="post" enctype="multipart/form-data">
                                             <input name="img_id" type="text" value="{{ item['id'] }}" hidden />
                                             <input class="btn btn-outline-danger" style="width: 100%" type="submit" value="ลบข้อมูล" />
                                         </form>
