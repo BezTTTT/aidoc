@@ -275,14 +275,14 @@ def diagnosis(id):
             result = cursor.fetchone()
             session['img_id'] = result['id']
             session['img_fname'] = result['fname']
-            session['img_sender_id'] = result['sender_id']
             session['img_ai_prediction'] = result['ai_prediction']
             session['img_ai_scores'] = json.loads(result['ai_scores'])
             session['img_dentist_feedback_code'] = result['dentist_feedback_code']
             session['img_dentist_feedback_comment'] = result['dentist_feedback_comment']
             session['img_dentist_feedback_lesion'] = result['dentist_feedback_lesion']
             session['img_dentist_feedback_location'] = result['dentist_feedback_location']
-
+            
+            session['img_sender_id'] = result['sender_id']
             session['case_id'] = result['case_id']
             session['special_request'] = result['special_request']
         return render_template('patient_diagnosis.html')
@@ -314,8 +314,6 @@ def diagnosis(id):
 def record(role): # Submission records
    
     session['sender_mode'] = role
-
-
 
     # Reload the record every time the page is reloaded
     db, cursor = get_db()
