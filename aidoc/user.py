@@ -178,11 +178,7 @@ def register(role):
             else: # merge account
                 sql = "UPDATE user SET name=%s, surname=%s, national_id=%s, phone=%s, osm_job=%s, hospital=%s, province=%s, license=%s, is_osm=%s WHERE id=%s"
                 val = (data["name"], data["surname"], data["national_id"], data["phone"], data["osm_job"], data["hospital"], data["province"], data["license"], True, session['user_id'])
-                cursor.execute(sql, val)                  
-            
-            # Flag to refresh db_query for record page
-            if 'need_db_refresh' in session:
-                session['need_db_refresh']=True
+                cursor.execute(sql, val)
                 
             return redirect('/')
         else:
@@ -242,10 +238,6 @@ def register(role):
                 sql = "UPDATE user SET name=%s, surname=%s, email=%s, phone=%s, username=%s, password=%s, job_position=%s, osm_job=%s, hospital=%s, province=%s, license=%s WHERE id=%s"
                 val = (data["name"], data["surname"], data["email"], data["phone"], data["username"],generate_password_hash(data["password"]), data["job_position"], data["osm_job"], data["hospital"],data["province"], data["license"], session['user_id'])
                 cursor.execute(sql, val)
-
-            # Flag to refresh db_query for record page
-            if 'need_db_refresh' in session:
-                session['need_db_refresh']=True
                 
             return redirect(url_for('image.record', role='dentist'))
         else:

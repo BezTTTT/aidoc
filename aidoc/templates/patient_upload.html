@@ -202,6 +202,8 @@
           document.getElementById("submitimgForm").submit()
         }
       }else{
+        inputPhone.value = ""
+        senderIDInput.value = ""
         document.getElementById("submitbtn").disabled = true
         document.getElementById("submitbtn").onclick = null
         document.getElementById("submitimgForm").submit()
@@ -220,10 +222,11 @@
     }
 
     errorBox.style.display = 'none'
-    inputPhone.style.borderColor = ''
+    inputPhone.style.borderColor = ""
     senderInfoContainer.innerHTML = ""
     senderInfoContainer.style.display = 'none'
     inputPhone.value = ""
+    senderIDInput.value = ""
   }
 </script>
 {% endblock %}

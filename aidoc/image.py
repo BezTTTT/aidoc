@@ -19,6 +19,7 @@ import glob
 import shutil
 import json
 from datetime import date
+from dateutil.parser import parse
 
 from aidoc.db import get_db
 from aidoc.auth import login_required, role_validation, role_authorization
@@ -221,9 +222,6 @@ def delete_image(role):
     sql = "DELETE FROM submission_record WHERE id = %s"
     val = (img_id,)
     cursor.execute(sql, val)
-    
-    if 'need_db_refresh' in session:
-        session['need_db_refresh']=True
 
     return redirect(url_for('image.record', role=role))
     
@@ -239,8 +237,6 @@ def diagnosis(id):
             val = ( 1, session.get('img_id'))
             cursor.execute(sql, val)
             session.pop('img_id', None)
-            if 'need_db_refresh' in session:
-                session['need_db_refresh']=True
 
         if 'feedback_submit' in request.form and 'img_id' in session and session['sender_mode']=='dentist':
             dentist_feedback_code = request.form.get('agree_option')
@@ -252,8 +248,6 @@ def diagnosis(id):
             val = (dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location, session.get('img_id'))
             cursor.execute(sql, val)
             session.pop('img_id', None)
-            if 'need_db_refresh' in session:
-                session['need_db_refresh']=True
             
     if session['sender_mode']=='dentist':
         if 'img_id' not in session or session['img_id']!=id: # Check if the image is already loaded to the session
@@ -319,36 +313,36 @@ def diagnosis(id):
 @role_authorization
 def record(role): # Submission records
    
-    if session['sender_mode'] != role: # Check role switching
-        session['need_db_refresh']=True
-        session['sender_mode'] = role
+    session['sender_mode'] = role
 
-    if 'need_db_refresh' not in session or \
-        session.get('need_db_refresh')==True or \
-        request.args.get('refresh', default='false', type=str)=='true':
-        session['need_db_refresh']=False
-    
-        # Reload the record every time the page is reloaded
-        db, cursor = get_db()
-        if role=='specialist':
-            sql = '''SELECT submission_record.id, case_id, fname, name, surname, birthdate,
-                        sender_id, patient_id, dentist_id, special_request, province,
-                        dentist_feedback_comment,dentist_feedback_code,
-                        ai_prediction, submission_record.created_at
-                    FROM submission_record
-                    INNER JOIN user ON submission_record.patient_id = user.id
-                    INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
-                    WHERE user.is_patient = TRUE OR user.is_osm = TRUE'''
-            cursor.execute(sql)
-        else:
-            sql = "SELECT * FROM submission_record WHERE sender_id = %s"
-            val = (session["user_id"],)
-            cursor.execute(sql, val)
-        db_query = cursor.fetchall()
-        session['saved_db_query'] = db_query
+
+
+    # Reload the record every time the page is reloaded
+    db, cursor = get_db()
+    if role=='specialist':
+        sql = '''SELECT submission_record.id, case_id, fname, patient_user.name, patient_user.surname, patient_user.birthdate,
+                    sender_id, patient_id, dentist_id, special_request, patient_user.province,
+                    dentist_feedback_comment,dentist_feedback_code,
+                    ai_prediction, submission_record.created_at
+                FROM submission_record
+                INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
+                LEFT JOIN user AS sender_user ON submission_record.sender_id = sender_user.id
+                LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
+                WHERE sender_user.is_patient = TRUE OR sender_user.is_osm = TRUE'''
+        cursor.execute(sql)
     else:
-        db_query = session['saved_db_query']
-    
+        sql = '''SELECT submission_record.id, case_id, fname, name, surname, birthdate,
+                    sender_id, patient_id, dentist_id, special_request, province,
+                    dentist_feedback_comment,dentist_feedback_code,
+                    ai_prediction, submission_record.created_at
+                FROM submission_record
+                INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
+                LEFT JOIN user ON submission_record.patient_id = user.id
+                WHERE sender_id = %s'''
+        val = (session["user_id"],)
+        cursor.execute(sql, val)
+    db_query = cursor.fetchall()
+
     # Filter data if search query is provided
     search_query = request.args.get("search", "") 
     agree = request.args.get("agree", "") 
@@ -396,7 +390,7 @@ def record(role): # Submission records
     # Format the date in the desired format
     for item in paginated_data:
         item["formatted_created_at"] = item["created_at"].strftime("%d/%m/%Y %H:%M")
-        if "birthdate" in item:
+        if ("birthdate" in item and item["birthdate"]):
             item["age"] = calculate_age(item["birthdate"])
 
     data = {}
@@ -405,23 +399,8 @@ def record(role): # Submission records
     
     session['current_record_page'] = page
 
-    if role=='dentist':
-        return render_template(
-                "dentist_record.html",
-                data=data,
-                pagination=paginated_data,
-                current_page=page,
-                total_pages=total_pages)
-    elif role=='osm':
-        return render_template(
-                "osm_record.html",
-                data=data,
-                pagination=paginated_data,
-                current_page=page,
-                total_pages=total_pages)
-    elif role=='specialist':
-        return render_template(
-                "specialist_record.html",
+    return render_template(
+                role + "_record.html",
                 data=data,
                 pagination=paginated_data,
                 current_page=page,
@@ -591,6 +570,16 @@ def upload_submission_module(target_user_id):
                     sql = "UPDATE user SET default_sender_phone=%s, default_zip_code=%s WHERE id=%s"
                     val = (session['sender_phone'], session['zip_code'], session['user_id'])
                     cursor.execute(sql, val)
+                
+                if (g.user['default_sender_phone'] and ('sender_phone' not in session or session['sender_phone'] is None)):
+                    sql = "UPDATE user SET default_sender_phone=NULL WHERE id=%s"
+                    val = (session['user_id'], )
+                    cursor.execute(sql, val)
+
+                if (g.user['default_zip_code'] and ('zip_code' not in session or session['zip_code'] is None)):
+                    sql = "UPDATE user SET default_zip_code=NULL WHERE id=%s"
+                    val = (session['user_id'], )
+                    cursor.execute(sql, val)
 
                 sql = '''INSERT INTO submission_record 
                         (fname,
@@ -647,9 +636,6 @@ def upload_submission_module(target_user_id):
                 val = (row['LAST_INSERT_ID()'],)
                 cursor.execute(sql, val)
 
-            if 'need_db_refresh' in session:
-                session['need_db_refresh']=True
-
 # region rename_if_duplicated
 # Rename the filename if duplicates in the user folder, By appending a running number
 def rename_if_duplicated(uploadDir, checked_filename):
@@ -670,5 +656,7 @@ def rename_if_duplicated(uploadDir, checked_filename):
 
 
 def calculate_age(born):
+    if isinstance(born,str):
+        born = parse(born)
     today = date.today()
     return today.year - born.year - ((today.month, today.day) < (born.month, born.day))

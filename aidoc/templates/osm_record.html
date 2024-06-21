@@ -48,17 +48,45 @@
         <div class="row">
             {% for item in pagination %}
                 <div class="col-md-3 mb-4">
-                    <div class="card">
+                    <div class="card"
+                    {% if item['special_request']==1 %}
+                        style="border-color: red; border-width: 3px"
+                    {% endif %}
+                    >
                         <div style="display: inline-flex; align-items: center; justify-content: center; ">
                             <a href="{{ url_for('image.load_image', folder='upload', user_id=g.user['id'], imagename=item['fname']) }}" target="_blank">
                                 <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=g.user['id'], imagename=item['fname']) }}" 
-                                    class="card-img-top" alt="" style="max-height: 256px" />
+                                    class="card-img-top mt-2" alt="" style="max-height: 256px" />
                             </a>
                         </div>
 
                         <div class="card-body">
                             <h6 class="image-name">ชื่อไฟล์ : {{ item['fname'] }} </h6>
-                            <h6 class="">วันที่ : {{ item['formatted_created_at'] }} น.</h6>
+                            <h6 class="image-name" >Case ID : {{ item['case_id'] }}
+                                {% if item['dentist_id'] %}
+                                    [ตรวจแล้ว]
+                                {% else %}
+                                    [ยังไม่ได้ตรวจ]
+                                {% endif %}
+                                {% if item['special_request']==1 %}
+                                    [มีคำขอตรวจพิเศษ]
+                                {% endif %}
+                            </h6>
+                            {% if item['name'] is not none %}
+                                <h6 class="image-name">ชื่อผู้ป่วย : {{ item['name'] }} {{ item['surname'] }} ( {{ item["age"] }} ปี )</h6>
+                                <h6 class="image-name">ภูมิลำเนา : {{ item['province'] }} </h6>
+                            {% else %}
+                                <h6 class="image-name">ชื่อผู้ป่วย : <i>ไม่มีข้อมูล</i> </h6>
+                                <h6 class="image-name">ภูมิลำเนา : <i>ไม่มีข้อมูล</i> </h6>
+                            {% endif%}
+                            <h6 class="image-name" >ช่องทาง :
+                                {% if item['sender_phone'] is not none %}
+                                    ระบบเจ้าหน้าที่ผู้ตรวจคัดกรอง
+                                {% else %}
+                                    ระบบประชาชน
+                                {% endif %}
+                            </h6>
+                            <h6 class="">นำส่งวันที่ : {{ item['formatted_created_at'] }} น.</h6>
                             <h6 class="fs-6 card-subtitle text-muted mb-2">
                                 ผลการวินิจฉัยของ AI :
                                     {% if item['ai_prediction']==0 %}

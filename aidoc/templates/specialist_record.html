@@ -65,7 +65,13 @@
                                     [มีคำขอตรวจพิเศษ]
                                 {% endif %}
                             </h6>
-                            <h6 class="image-name">ชื่อผู้ป่วย : {{ item['name'] }} {{ item['surname'] }} ( {{ item["age"] }} ปี )</h6>
+                            {% if item['name'] is not none %}
+                                <h6 class="image-name">ชื่อผู้ป่วย : {{ item['name'] }} {{ item['surname'] }} ( {{ item["age"] }} ปี )</h6>
+                                <h6 class="image-name">ภูมิลำเนา : {{ item['province'] }} </h6>
+                            {% else %}
+                                <h6 class="image-name">ชื่อผู้ป่วย : <i>ไม่มีข้อมูล</i> </h6>
+                                <h6 class="image-name">ภูมิลำเนา : <i>ไม่มีข้อมูล</i> </h6>
+                            {% endif%}
                             <h6 class="image-name" >ช่องทาง :
                                 {% if item['sender_id']!=item['patient_id'] %}
                                     นำส่งโดยเจ้าหน้าที่ผู้ตรวจคัดกรอง
@@ -73,7 +79,6 @@
                                     ผู้ป่วยนำส่งข้อมูลเอง
                                 {% endif %}
                             </h6>
-                            <h6 class="image-name">จังหวัดของผู้ป่วย : {{ item['province'] }} </h6>
                             <h6 class="image-name">นำส่งวันที่ : {{ item['formatted_created_at'] }} น.</h6>
                             <h6 class="fs-6 card-subtitle text-muted mb-2">
                                 ผลการวินิจฉัยของ AI :
