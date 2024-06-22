@@ -17,8 +17,8 @@
             justify-content: center; /* Center horizontally */
             overflow: hidden;
           ">
-                <a href="{{ url_for('image.load_image', folder='upload', user_id=g.user['id'], imagename=session['img_fname']) }}" target="_blank">
-                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=g.user['id'], imagename=session['img_fname']) }}" alt=""
+                <a href="{{ url_for('image.load_image', folder='upload', user_id=session['img_sender_id'], imagename=session['img_fname']) }}" target="_blank">
+                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=session['img_sender_id'], imagename=session['img_fname']) }}" alt=""
                         style="height: 100%; max-width: 100%; width: auto" />
                 </a>
             </div>
@@ -36,8 +36,8 @@
             justify-content: center; /* Center horizontally */
             overflow: hidden;
           ">
-                <a href="{{ url_for('image.load_image', folder='outlined', user_id=g.user['id'], imagename=session['img_fname']) }}" target="_blank">
-                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=g.user['id'], imagename=session['img_fname']) }}" alt=""
+                <a href="{{ url_for('image.load_image', folder='outlined', user_id=session['img_sender_id'], imagename=session['img_fname']) }}" target="_blank">
+                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=session['img_sender_id'], imagename=session['img_fname']) }}" alt=""
                         style="height: 100%; max-width: 100%; width: auto" />
                 </a>
             </div>
@@ -52,7 +52,7 @@
     <div class="col-md-8">
         <div class="card">
             <div class="card-body">
-                <p class="card-text">[คำแนะนำ] [1. กดที่รูป เพื่อดูภาพความละเอียดสูง] [2. หากศรีษะของคนไข้ไม่อยู่ในทิศทางตั้งขึ้น ให้กดหมุนรูป แล้วกด Recompute เพื่อให้ AI ทำงานได้ถูกต้อง] [3. กด Recompute เพื่อให้ AI รุ่นล่าสุด พิจารณาภาพนี้อีกครั้ง]</p>
+                <p class="card-text">[คำแนะนำ] [1. กดที่รูป เพื่อดูภาพความละเอียดสูง] [2. หากศรีษะของคนไข้ไม่อยู่ในทิศทางตั้งขึ้น เพื่อให้ AI ทำงานได้แม่นยำที่สุด กรุณากดหมุนรูป แล้วกด Recompute เพื่อให้ AI ประมวลผลอีกครั้ง] [3. เนื่องจาก AI อาจมีการปรับปรุงตัวเป็นรุ่นใหม่ ผู้ใช้อาจกด Recompute เพื่อขอให้ AI รุ่นล่าสุดพิจารณาภาพนี้อีกครั้ง]</p>
             </div>
         </div>
     </div>
@@ -92,24 +92,24 @@
 <div class="row d-flex justify-content-center text-align-left my-4" style="width: auto">
     <div class="card">
         <div class="card-body">
-            <h5 class="card-title">ผลการวินิจฉัยของ AI</h5>
+            <h5 class="card-title">ผลการพยากรณ์ของ AI</h5>
             {% if session['img_ai_prediction'] == 0 %}
-                <h6 class="card-subtitle card shadow-lg bg-success my-3 py-3 ms-4 fs-2 text-white text-center">
-                    ช่องปากของคุณไม่มีรอยโรค
+                <h6 class="card-subtitle card shadow-lg bg-success my-3 py-3 ms-4 fs-4 text-white text-center">
+                    ภาพช่องปากไม่น่าจะมีรอยโรค
                 </h6>
             {% elif session['img_ai_prediction'] == 1 %}
-                <h6 class="card-subtitle card shadow-lg bg-warning my-3 py-3 fs-2 text-dark text-center">
-                    ช่องปากของคุณอาจมีรอยโรค OPMD (Oral Potentially Malignant Disorders)
+                <h6 class="card-subtitle card shadow-lg bg-warning my-3 py-3 fs-4 text-dark text-center">
+                    ภาพถ่ายช่องปากอาจมีรอยโรคที่มีลักษณะคล้ายกันกับ OPMD (Oral Potentially Malignant Disorders)
                 </h6>
             {% else %}
-                <h6 class="card-subtitle card shadow-lg bg-danger my-3 py-3 ms-4 fs-2 text-white text-center">
-                    ช่องปากของคุณอาจมีรอยโรค OSCC (Oral Squamous Cell Carcinoma)
+                <h6 class="card-subtitle card shadow-lg bg-danger my-3 py-3 ms-4 fs-4 text-white text-center">
+                    ภาพถ่ายช่องปากอาจมีรอยโรคที่มีลักษณะคล้ายกันกับ OSCC (Oral Squamous Cell Carcinoma)
                 </h6>
             {% endif %}
         
             <button id="seeMoreButton" class="btn btn-light"
                 style="padding: 5px 10px; font-size: 13px;background-color:rgb(196, 196, 196);">
-                <span class="bi bi-plus"></span> ดูผลคำวินิจฉัยด้วย AI เพิ่มเติม
+                <span class="bi bi-plus">คลิกเพื่อดูความน่าจะเป็นของการพยากรณ์ด้วย AI</span>
             </button>
     
             <div id="hiddenContent" class="m-2">
@@ -171,111 +171,353 @@
     </div>
 </div>
 
-<form action="{{ url_for('image.diagnosis', id=session['img_id']) }}" method="post" enctype="multipart/form-data">
-    <div class="row d-flex justify-content-center text-align-left my-4">
-        <div class="card mb-5" style="width: 100%">
-            <div class="card-body">
-                <h5 class="card-title">
-                    ท่านเห็นด้วยกับผลการวิเคราะทาง AI ดังที่ปรากฏหรือไม่?
-                </h5>
-
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="agree_option" value="AGREE"
-                        {% if session['img_dentist_feedback_code']=='AGREE' %} checked {% endif %}/>
-                    <label class="form-check-label" for="agree_option"> เห็นด้วย </label>
+<div id="outer-container" class="row d-flex justify-content-start my-4 pb-3">
+    <div id="inner-left-container" class="p-0" style="width: 49.5%; margin-right: 0.5%">
+        <div id="image-info-container" class="card mb-3" style="width: 100%">
+            <div class="card-body px-4">
+                <h5 class="card-title text-start mb-3">ข้อมูลภาพ</h5>
+                <p>Case ID: 1</p>
+                <p>ชื่อไฟล์: xyz.jpg</p>
+                <p>วันที่นำส่ง: วันนี้</p>
+                <p>ผู้นำส่งรูป: ปฏิเวธ วุฒิสารวัฒนา (อสม., เบอร์โทรศัพท์: 0989989072)</p>
+                <p>โรงพยาบาลที่สังกัด: โรงพยาบาลมหาราชนครเชียงใหม่ จ.เชียงใหม่</p>
+                <p>ผู้นำส่งรูป: (อสม., เบอร์โทรศัพท์: 0989989072)</p>
+                <p>ผู้นำส่งรูป: ปฏิเวธ วุฒิสารวัฒนา (ผู้ป่วยนำส่งรูปด้วยตัวเอง)</p>
+            </div>
+        </div>
+        <div id="dentist-feedback-history-container" class="card mb-3" style="width: 100%; height: fit-content">
+            <div class="card-body px-4">
+                <h5 class="card-title text-start mb-3">ประวัติคำวินิจฉัย</h5>
+                <p>ความคิดเห็นของทันตแพทย์: xxx</p>
+                <p>ชนิดรอยโรค: xxx </p>
+                <p>ตำแหน่งที่พบรอยโรค: xxx</p>
+                <p>ความคิดเห็นเพิ่มเติม: xxx </p>
+                <p>ทันตแพทย์ผู้ตรวจ: xxx </p>
+                <p>วันที่: xxx </p>
+            </div>
+            <button id="dentistFeedbackHistBtn" class="btn btn-light mb-3"
+                style="
+                padding: 5px 10px;
+                font-size: 13px;
+                background-color: rgb(196, 196, 196);
+                width: fit-content;
+                margin-left: 1.25rem;
+                ">ดูประวัติการแก้ไขคำวินิจฉัยทั้งหมด
+            </button>
+            <div id="dentist-feedback-history-history-container" style="display: none; height: fit-content">
+                <div class="card mb-3 mx-3" style="height: fit-content">
+                    <div class="card-body px-4">
+                        <p>ความคิดเห็นของทันตแพทย์: yyy</p>
+                        <p>ชนิดรอยโรค: yyy</p>
+                        <p>ตำแหน่งที่พบรอยโรค: yyy</p>
+                        <p>ความคิดเห็นเพิ่มเติม: yyy</p>
+                        <p>ทันตแพทย์ผู้ตรวจ: yyy</p>
+                        <p>วันที่: yyy</p>
+                    </div>
                 </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="agree_option" value="DISAGREE"
-                        {% if session['img_dentist_feedback_code']=='DISAGREE' %} checked {% endif %} />
-                    <label class="form-check-label" for="agree_option"> ไม่เห็นด้วย </label>
-                </div>
+            </div>
+            <script>
+                const dentistFeedbackHistBtn = document.getElementById("dentistFeedbackHistBtn");
+                const dentistFeedbackHistHistContainer = document.getElementById("dentist-feedback-history-history-container");
+          
+                let displayToggle = false;
+                dentistFeedbackHistBtn.addEventListener("click", () => {
+                  if (!displayToggle) {
+                    dentistFeedbackHistHistContainer.style.display = "block";
+                    dentistFeedbackHistBtn.innerText = "ปิด";
+                  } else {
+                    dentistFeedbackHistHistContainer.style.display = "none";
+                    dentistFeedbackHistBtn.innerText = "ดูประวัติการแก้ไขคำวินิจฉัยทั้งหมด";
+                  }
+                  displayToggle = !displayToggle;
+                });
+            </script>
+        </div>
+        <div id="dentist-feedback-container" class="card" style="width: 100%; height: fit-content">
+            <form action="/dentist_comment" method="post" enctype="multipart/form-data">
+                <div class="card-body px-4">
+                    <h5 class="card-title">สำหรับทันตแพทย์ที่เข้าร่วมโครงการ ท่านจะวินิจฉัยภาพนี้ให้เข้ากรณีใด</h5>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="dt_comment_option" id="dt_comment_option1" value="NORMAL" required>
+                        <label class="form-check-label" for="dt_comment_option1">ยืนยันว่าไม่พบรอยโรค (Normal)</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="dt_comment_option" id="dt_comment_option2" value="OPMD" required>
+                        <label class="form-check-label" for="dt_comment_option2">น่าจะมีรอยโรคที่คล้ายกันกับ OPMD</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="dt_comment_option" id="dt_comment_option3" value="OSCC" required>
+                        <label class="form-check-label" for="dt_comment_option3">น่าจะมีรอยโรคที่คล้ายกันกับ OSCC</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="dt_comment_option" id="dt_comment_option4" value="BAD_IMG" required>
+                        <label class="form-check-label" for="dt_comment_option4">ภาพถ่ายที่ส่งมายังไม่ได้มาตรฐาน ทำให้วินิจฉัยไม่ได้</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="dt_comment_option" id="dt_comment_option5" value="OTHER" required>
+                        <label class="form-check-label" for="dt_comment_option5">อื่น ๆ</label>
+                    </div>
 
-                <h5 class="card-title mt-4">
-                    คำวินิจฉัยเพิ่มเติม
-                </h5>
-                <div class="d-flex justify-content-lg-start mb-4">
-                    <div>
-                        <!-- {{ data}} -->
-                        <label class="mb-1">ตำแหน่งที่ตรวจพบรอยโรค</label>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" value="1" {% if session['img_dentist_feedback_location']==1 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location"> 1.ริมฝีปากบนและล่าง (Lip) </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" value="2" {% if session['img_dentist_feedback_location']==2 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location"> 2.กระพุ้งแก้มด้านขวาด้านซ้าย (Buccal mucosa)</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" value="3" {% if session['img_dentist_feedback_location']==3 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location"> 3.เหงือกบนและล่าง (Gingiva) </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" value="4" {% if session['img_dentist_feedback_location']==4 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location"> 4.เหงือกด้านหลังฟันกรามล่าง (Retromolar area) </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" value="5" {% if session['img_dentist_feedback_location']==5 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location"> 5.เพดานแข็ง (Hard palate) </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" value="6" {% if session['img_dentist_feedback_location']==6 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location"> 6.เพดานอ่อน (Soft palate) </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" value="7" {% if session['img_dentist_feedback_location']==7 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location"> 7.ลิ้นด้านบนและด้านข้าง (Dorsal and lateral tongue) </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" value="8" {% if session['img_dentist_feedback_location']==8 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location"> 8.ใต้ลิ้น (Ventral tongue) </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" value="9" {% if session['img_dentist_feedback_location']==9 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location"> 9.พื้นปาก (Floor of mouth) </label>
+                    <div id="BadImgCommentSelection" style="display: none">
+                        <h6>ตัวเลือก</h6>
+                        <div class="ms-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="BadImgCommentSelectOptions" id="bad_img_option1" value="NON_STANDARD">
+                                <label class="form-check-label" for="bad_img_option1">มุมมองไม่ได้มาตรฐาน</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="BadImgCommentSelectOptions" id="bad_img_option2" value="BLUR">
+                                <label class="form-check-label" for="bad_img_option2">ภาพเบลอ ไม่ชัด</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="BadImgCommentSelectOptions" id="bad_img_option3" value="DARK">
+                                <label class="form-check-label" for="bad_img_option3">ภาพช่องปากมืดเกินไป ขอเปิดแฟลชด้วย</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="BadImgCommentSelectOptions" id="bad_img_option4" value="SMALL">
+                                <label class="form-check-label" for="bad_img_option4">ช่องปากเล็กเกินไป ขอนำกล้องเข้าใกล้ปากมากกว่านี้</label>
+                            </div>
                         </div>
                     </div>
 
-                    <div>
-                        <label class="mb-1">ชนิดรอยโรค</label>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_type" value="1"
-                                {% if session['img_dentist_feedback_lesion']==1 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_type"> รอยโรคสีขาว </label>
+                    <div id="OSCCOPMDSelection" style="display: none">
+                        <div>
+                            <h6>ตำแหน่งที่ตรวจพบรอยโรค</h6>
+                            <div class="ms-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position1" value="Lip">
+                                    <label class="form-check-label" for="lesion_position1">ริมฝีปากบนและล่าง (Lip)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position2" value="Buccal mucosa">
+                                    <label class="form-check-label" for="lesion_position2">กระพุ้งแก้มด้านขวาด้านซ้าย (Buccal mucosa)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position3" value="Gingiva">
+                                    <label class="form-check-label" for="lesion_position3">เหงือกบนและล่าง (Gingiva)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position4" value="Retromolar Area">
+                                    <label class="form-check-label" for="lesion_position4">เหงือกด้านหลังฟันกรามล่าง (Retromolar area)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position5" value="Hard Palate">
+                                    <label class="form-check-label" for="lesion_position5">เพดานแข็ง (Hard palate)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position6" value="Soft Palate">
+                                    <label class="form-check-label" for="lesion_position6">เพดานอ่อน (Soft palate)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position7" value="Dorsal and lateral tongue">
+                                    <label class="form-check-label" for="lesion_position7">ลิ้นด้านบนและด้านข้าง (Dorsal and lateral tongue)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position8" value="Ventral tongue">
+                                    <label class="form-check-label" for="lesion_position8">ใต้ลิ้น (Ventral tongue)</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position9" value="Floor of mouth">
+                                    <label class="form-check-label" for="lesion_position9">พื้นปาก (Floor of mouth)</label>
+                                </div>
+                            </div>
                         </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_type" value="2"
-                                {% if session['img_dentist_feedback_lesion']==2 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_type"> รอยโรคสีแดง </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_type" value="3"
-                                {% if session['img_dentist_feedback_lesion']==3 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_type"> รอยโรคสีขาวปนแดง </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_type" value="4"
-                                {% if session['img_dentist_feedback_lesion']==4 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_type"> รอยแผลถลอก </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_type" value="5"
-                                {% if session['img_dentist_feedback_lesion']==5 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_type"> ลักษณะเป็นก้อน </label>
+                        <div>
+                            <div>
+                                <div>
+                                    <h6>ชนิดรอยโรค</h6>
+                                    <div class="ms-4">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="LesionTypeSelection" id="lesion_type1" value="White">
+                                            <label class="form-check-label" for="lesion_type1">รอยโรคสีขาว</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="LesionTypeSelection" id="lesion_type2" value="Red">
+                                            <label class="form-check-label" for="lesion_type2">รอยโรคสีแดง</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="LesionTypeSelection" id="lesion_type3" value="White and Red">
+                                            <label class="form-check-label" for="lesion_type3">รอยโรคสีขาวปนแดง</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="LesionTypeSelection" id="lesion_type4" value="Abrasion">
+                                            <label class="form-check-label" for="lesion_type4">รอยแผลถลอก</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="LesionTypeSelection" id="lesion_type5" value="Tumor">
+                                            <label class="form-check-label" for="lesion_type5">ลักษณะเป็นก้อน</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="mb-3">
-                    <label for="dentist_comment" class="form-label">ความคิดเห็น</label>
-                    <textarea class="form-control" rows="3" name="dentist_comment">{{session['img_dentist_feedback_comment']}}</textarea>
-                </div>
-               
-                <input name="feedback_submit" class="btn btn-outline-success" type="submit" value="บันทึกความคิดเห็น" />
+                    <div id="OtherCommentBox" style="display: none">
+                        <label for="OtherCommentTextarea" class="form-label" style="font-weight: bold">กรุณาพิมพ์ความคิดเห็นในช่องด้านล่าง</label>
+                        <textarea class="form-control" id="OtherCommentTextarea" rows="3" name="other_comment"></textarea>
+                    </div>
 
+                    <input class="btn btn-outline-success mt-3" type="submit" value="บันทึกคำวินิจฉัย">
+
+                    <script>
+                        var dt_comment_list = document.getElementsByName("dt_comment_option");
+                        var bad_img_select = document.getElementById("BadImgCommentSelection");
+                        var bad_img_option_list = document.getElementsByName("BadImgCommentSelectOptions");
+                        var lesion_select = document.getElementById("OSCCOPMDSelection");
+                        var lesion_pos_list = document.getElementsByName("LesionPositionSelection");
+                        var lesion_type_list = document.getElementsByName("LesionTypeSelection");
+                        var commentBox = document.getElementById("OtherCommentBox");
+                        var commentTextArea = document.getElementById("OtherCommentTextarea");
+            
+                        const closeCommentBox = () => {
+                            commentBox.style.display = "none";
+                            commentTextArea.required = false;
+                            commentTextArea.value = null;
+                        };
+            
+                        const closeBadImgOption = () => {
+                            bad_img_option_list.forEach((option) => {
+                                option.required = false;
+                                option.checked = false;
+                            });
+                            bad_img_select.style.display = "none";
+                        };
+            
+                        const closeLesionOption = () => {
+                            lesion_pos_list.forEach((option) => {
+                                option.required = false;
+                                option.checked = false;
+                            });
+                            lesion_type_list.forEach((option) => {
+                                option.required = false;
+                                option.checked = false;
+                            });
+                            lesion_select.style.display = "none";
+                        };
+            
+                        for (var i = 0; i < dt_comment_list.length; i++) {
+                            dt_comment_list[i].addEventListener("change", function () {
+                                if (this.value == "BAD_IMG") {
+                                    bad_img_select.style.display = "block";
+                                    bad_img_option_list.forEach((option) => {
+                                        option.required = true;
+                                    });
+                                    closeLesionOption();
+                                    closeCommentBox();
+                                } else if (this.value == "OTHER") {
+                                    commentBox.style.display = "block";
+                                    commentTextArea.required = true;
+                                    closeLesionOption();
+                                    closeBadImgOption();
+                                } else if (this.value == "OSCC" || this.value == "OPMD") {
+                                    lesion_select.style.display = "block";
+                                    lesion_pos_list.forEach((option) => {
+                                        option.required = true;
+                                    });
+                                    lesion_type_list.forEach((option) => {
+                                        option.required = true;
+                                    });
+                                    closeBadImgOption();
+                                    closeCommentBox();
+                                } else {
+                                    closeLesionOption();
+                                    closeBadImgOption();
+                                    closeCommentBox();
+                                }
+                            });
+                        }
+                      </script>
+                </div>
+            </form>
+        </div>
+
+        <div id="biopsy-container" class="card mt-3" style="width: 100%; height: fit-content">
+            <div class="card-body px-4">
+                <h5 class="card-title text-start mb-3">ผลการตรวจชิ้นเนื้อ (Biopsy)</h5>
+                <form class="p-3" action="/biopsy_upload" method="post" enctype="multipart/form-data">
+                    <div class="row d-flex justify-content-center align-items-center text-center mb-3">
+                        <div class="col-8 col-xs-2 d-flex justify-content-center align-items-center">
+                            <input id="file-upload" type="file" name="biopsy_file" required>
+                        </div>
+                    </div>
+                    
+                    <div id="BiopsyCommentBox">
+                        <label for="BiopsyCommentTextarea" class="form-label mt-2">กรุณาพิมพ์ความคิดเห็นต่อผลการตรวจชิ้นเนื้อ</label>
+                        <textarea class="form-control" id="BiopsyCommentTextarea" rows="3" name="biopsy_comment"></textarea>
+                    </div>
+
+                    <input class="btn btn-outline-success mt-3" type="submit" value="บันทึก">
+                </form>
             </div>
         </div>
     </div>
-</form>
+
+    <div id="patient-container" class="card" style="width: 49.5%; margin-left: 0.5%">
+        <div class="card-body">
+            <h5 class="card-title text-start mb-4">ประวัติผู้ป่วย</h5>
+            <p>ไม่มีข้อมูลผู้ป่วย</p>
+            <p>รหัสประจำตัวประชาชน: 0000000000001</p>
+            <p>ชื่อ-สกุล: ปฏิเวธ วุฒิสารวัฒนา</p>
+            <p>เพศ: ชาย</p>
+            <p>อายุ: 40 ปี</p>
+            <p>อาชีพ: รองศาสตราจารย์</p>
+            <p>รหัสประจำตัวประชาชน: 0000000000001</p>
+            <p>อีเมล: patiwet@eng.cmu.ac.th</p>
+            <p>เบอร์โทรศัพท์: 0989989072</p>
+            <p>ที่อยู่: มหาวิทยาลัยเชียงใหม่</p>
+            <p>จังหวัด: เชียงใหม่</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const windowWidth = window.innerWidth;
+  
+    if (windowWidth < 920) {
+        const outerContainer = document.getElementById("outer-container");
+        
+        const innerLeftContainer = document.getElementById("inner-left-container");
+        const dentistFeedbackHistoryContainer = document.getElementById("dentist-feedback-history-container");
+        const dentistFeedbackContainer = document.getElementById("dentist-feedback-container");
+        const biopsyContainer = document.getElementById("biopsy-container");
+
+        const patientContainer = document.getElementById("patient-container");
+  
+        // Move the containers outside the inner-left-container to outer-container (which placed after the patient-container)
+        innerLeftContainer.removeChild(dentistFeedbackHistoryContainer);
+        innerLeftContainer.removeChild(dentistFeedbackContainer);
+        innerLeftContainer.removeChild(biopsyContainer);
+        outerContainer.appendChild(dentistFeedbackHistoryContainer); 
+        outerContainer.appendChild(dentistFeedbackContainer);
+        outerContainer.appendChild(biopsyContainer);
+
+        dentistFeedbackHistoryContainer.style.padding = 0;  // Set pading to 0 (left justify)
+        dentistFeedbackContainer.style.padding = 0; 
+        biopsyContainer.style.padding = 0; 
+
+        innerLeftContainer.style.width = "100%"; // Push patient-container down
+        innerLeftContainer.style.margin = 0;
+        
+        patientContainer.style.width = "100%"; // Restore the width of patient-container to 100%
+        patientContainer.style.margin = 0;  // Set left margin to 0 (instead of 0.5% left margin)
+        patientContainer.style.marginBottom = "16px"; // Create down margin for the patient-container (dentist-feedback-history-container is next)
+
+    }
+</script>
+
+<style>
+    input[type="radio"] {
+      border: 1px solid rgb(0, 0, 0);
+    }
+  
+    #image-info-container p {
+      margin-bottom: 0.25rem; /* Apply margin bottom equivalent to mb-1 */
+    }
+    #dentist-feedback-history-container p {
+      margin-bottom: 0.25rem; /* Apply margin bottom equivalent to mb-1 */
+    }
+</style>
 
 {% endblock %}
 
@@ -294,7 +536,7 @@
         });
       } else {
         hiddenContent.slideUp("slow", function () {
-          button.text("ดูผลคำวินิจฉัยด้วย AI เพิ่มเติม");
+          button.text("คลิกเพื่อดูความน่าจะเป็นของการพยากรณ์ด้วย AI");
         });
       }
     });

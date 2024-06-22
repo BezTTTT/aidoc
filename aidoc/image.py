@@ -230,6 +230,7 @@ def delete_image(role):
 @bp.route('/diagnosis/<int:id>', methods=('GET', 'POST'))
 @login_required
 def diagnosis(id):
+
     if request.method=='POST':
         if request.args.get('special_request')=='true':
             db, cursor = get_db()
@@ -306,6 +307,28 @@ def diagnosis(id):
             session['case_id'] = result['case_id']
             session['special_request'] = result['special_request']
         return render_template('osm_diagnosis.html')
+    
+    if session['sender_mode']=='specialist':
+        if 'img_id' not in session or session['img_id']!=id: # Check if the image is already loaded to the session
+            db, cursor = get_db()
+            sql = "SELECT * FROM submission_record INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id WHERE submission_record.id=%s"
+            val = (id, )
+            cursor.execute(sql, val)
+            result = cursor.fetchone()
+            session['img_id'] = result['id']
+            session['img_fname'] = result['fname']
+            session['img_ai_prediction'] = result['ai_prediction']
+            session['img_ai_scores'] = json.loads(result['ai_scores'])
+            session['img_dentist_feedback_code'] = result['dentist_feedback_code']
+            session['img_dentist_feedback_comment'] = result['dentist_feedback_comment']
+            session['img_dentist_feedback_lesion'] = result['dentist_feedback_lesion']
+            session['img_dentist_feedback_location'] = result['dentist_feedback_location']
+
+            session['img_sender_id'] = result['sender_id']
+            session['case_id'] = result['case_id']
+            session['special_request'] = result['special_request']
+        return render_template('specialist_diagnosis.html')
+    
 # region record
 @bp.route('/record/<role>', methods=('GET', 'POST'))
 @login_required
@@ -329,12 +352,11 @@ def record(role): # Submission records
                 WHERE sender_user.is_patient = TRUE OR sender_user.is_osm = TRUE'''
         cursor.execute(sql)
     else:
-        sql = '''SELECT submission_record.id, case_id, fname, name, surname, birthdate,
+        sql = '''SELECT submission_record.id, fname, name, surname, birthdate,
                     sender_id, patient_id, dentist_id, special_request, province,
                     dentist_feedback_comment,dentist_feedback_code,
                     ai_prediction, submission_record.created_at
                 FROM submission_record
-                INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
                 LEFT JOIN user ON submission_record.patient_id = user.id
                 WHERE sender_id = %s'''
         val = (session["user_id"],)

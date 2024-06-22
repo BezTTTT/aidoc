@@ -38,7 +38,7 @@
     <div class="col-md-8">
         <div class="card">
             <div class="card-body">
-                <p class="card-text">[คำแนะนำ] [1. กดที่รูป เพื่อดูภาพความละเอียดสูง] [2. หากศรีษะของคนไข้ไม่อยู่ในทิศทางตั้งขึ้น ให้กดหมุนรูป แล้วกด Recompute เพื่อให้ AI ทำงานได้ถูกต้อง] [3. กด Recompute เพื่อให้ AI รุ่นล่าสุด พิจารณาภาพนี้อีกครั้ง]</p>
+                <p class="card-text">[คำแนะนำ] [1. กดที่รูป เพื่อดูภาพความละเอียดสูง] [2. หากศรีษะของคนไข้ไม่อยู่ในทิศทางตั้งขึ้น เพื่อให้ AI ทำงานได้แม่นยำที่สุด กรุณากดหมุนรูป แล้วกด Recompute เพื่อให้ AI ประมวลผลอีกครั้ง] [3. เนื่องจาก AI อาจมีการปรับปรุงตัวเป็นรุ่นใหม่ ผู้ใช้อาจกด Recompute เพื่อขอให้ AI รุ่นล่าสุดพิจารณาภาพนี้อีกครั้ง]</p>
             </div>
         </div>
     </div>
@@ -78,24 +78,24 @@
 <div class="row d-flex justify-content-center text-align-left my-4" style="width: auto">
     <div class="card">
         <div class="card-body">
-            <h5 class="card-title">ผลการวินิจฉัยของ AI</h5>
+            <h5 class="card-title">ผลการพยากรณ์ของ AI</h5>
             {% if session['img_ai_prediction'] == 0 %}
-                <h6 class="card-subtitle card shadow-lg bg-success my-3 py-3 ms-4 fs-2 text-white text-center">
-                    ช่องปากของคุณไม่มีรอยโรค
+                <h6 class="card-subtitle card shadow-lg bg-success my-3 py-3 ms-4 fs-3 text-white text-center">
+                    ภาพช่องปากไม่น่าจะมีรอยโรค
                 </h6>
             {% elif session['img_ai_prediction'] == 1 %}
-                <h6 class="card-subtitle card shadow-lg bg-warning my-3 py-3 fs-2 text-dark text-center">
-                    ช่องปากของคุณอาจมีรอยโรค OPMD (Oral Potentially Malignant Disorders)
+                <h6 class="card-subtitle card shadow-lg bg-warning my-3 py-3 fs-3 text-dark text-center">
+                    ภาพถ่ายช่องปากอาจมีรอยโรคที่มีลักษณะคล้ายกันกับ OPMD (Oral Potentially Malignant Disorders)
                 </h6>
             {% else %}
-                <h6 class="card-subtitle card shadow-lg bg-danger my-3 py-3 ms-4 fs-2 text-white text-center">
-                    ช่องปากของคุณอาจมีรอยโรค OSCC (Oral Squamous Cell Carcinoma)
+                <h6 class="card-subtitle card shadow-lg bg-danger my-3 py-3 ms-4 fs-3 text-white text-center">
+                    ภาพถ่ายช่องปากอาจมีรอยโรคที่มีลักษณะคล้ายกันกับ OSCC (Oral Squamous Cell Carcinoma)
                 </h6>
             {% endif %}
         
             <button id="seeMoreButton" class="btn btn-light"
                 style="padding: 5px 10px; font-size: 13px;background-color:rgb(196, 196, 196);">
-                <span class="bi bi-plus"></span> ดูผลคำวินิจฉัยด้วย AI เพิ่มเติม
+                <span class="bi bi-plus">คลิกเพื่อดูความน่าจะเป็นของการพยากรณ์ด้วย AI</span>
             </button>
     
             <div id="hiddenContent" class="m-2">
@@ -280,7 +280,7 @@
         });
       } else {
         hiddenContent.slideUp("slow", function () {
-          button.text("ดูผลคำวินิจฉัยด้วย AI เพิ่มเติม");
+          button.text("คลิกเพื่อดูความน่าจะเป็นของการพยากรณ์ด้วย AI");
         });
       }
     });

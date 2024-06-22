@@ -44,7 +44,7 @@
     <div class="col-md-8">
         <div class="card">
             <div class="card-body">
-                <p class="card-text">[คำแนะนำ] [1. กดที่รูป เพื่อดูภาพความละเอียดสูง] [2. หากศรีษะของคนไข้ไม่อยู่ในทิศทางตั้งขึ้น ให้กดหมุนรูป แล้วกด Recompute เพื่อให้ AI ทำงานได้ถูกต้อง] [3. กด Recompute เพื่อให้ AI รุ่นล่าสุด พิจารณาภาพนี้อีกครั้ง]</p>
+                <p class="card-text">[คำแนะนำ] [1. กดที่รูป เพื่อดูภาพความละเอียดสูง] [2. หากศรีษะของคนไข้ไม่อยู่ในทิศทางตั้งขึ้น เพื่อให้ AI ทำงานได้แม่นยำที่สุด กรุณากดหมุนรูป แล้วกด Recompute เพื่อให้ AI ประมวลผลอีกครั้ง] [3. เนื่องจาก AI อาจมีการปรับปรุงตัวเป็นรุ่นใหม่ ผู้ใช้อาจกด Recompute เพื่อขอให้ AI รุ่นล่าสุดพิจารณาภาพนี้อีกครั้ง]</p>
             </div>
         </div>
     </div>
@@ -80,7 +80,7 @@
 <div class="row d-flex justify-content-center text-align-left" style="width: auto">
     <div class="card">
         <div class="card-body">
-            <h5 class="card-title">ผลการวินิจฉัยของ AI</h5>
+            <h5 class="card-title">ผลการพยากรณ์ของ AI</h5>
             {% if session['img_ai_prediction'] == 0 %}
                 <div class="card-subtitle card shadow-lg bg-success my-3 py-3 ms-4 text-white text-center">
                     <h6 class="fs-2"> ภาพถ่ายช่องปาก ไม่พบรอยโรค <br></h6>
@@ -151,7 +151,7 @@
 <div class="row d-flex justify-content-center my-4">
     <div class="card" style="width: 100%;">
         <div class="card-body">
-            <h6>หากท่านมีข้อสงสัยต่อคำวินิจฉัยนี้หรือต้องการขอคำแนะนำทางการแพทย์ กรุณาติดต่อผู้ประสานงานโครงการได้ที่ </h6>
+            <h6>หากท่านมีข้อสงสัยต่อการพยากรณ์นี้หรือต้องการขอคำแนะนำทางการแพทย์ กรุณาติดต่อผู้ประสานงานโครงการได้ที่ </h6>
             <h6>ช่องแชทของไลน์ “ตรวจมะเร็งช่องปาก” โดยการแอดเพิ่มเพื่อนได้ที่ Line ID @riskoca และแจ้งหมายเลข Case ID: {{ session['case_id'] }} เพื่อใช้ในการตรวจสอบข้อมูล</h6>
         </div>
     </div>

@@ -34,9 +34,14 @@ CREATE TABLE `user` (
 ) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;
 
 /*
-  dentist_feedback_code (in dentist general system): AGREE, DISAGREE
+  For dentist system,
+  dentist_feedback_code (in the dentist general system): AGREE, DISAGREE
   dentist_feedback_lesion: 1.White 2.Red 3.White and Red 4.Abrasion 5.Tumor
   dentist_feedback_location: 1.Lip 2.Buccal mucosa 3.Gingiva 4.Retromolar Area 5.Hard Palate 6.Soft Palate 7.Dorsal and lateral tongue 8.Ventral tongue 9.Floor of mouth
+
+  For specialist system,
+  dentist_feedback_code (in the specialist system): NORMAL, OPMD, OSCC, BAD_IMG, OTHER
+  dentist_feedback_lesion (in the case of BAD_IMG): NON_STANDARD, BLUR, DARK, SMALL
 */
 
 CREATE TABLE `submission_record` (
