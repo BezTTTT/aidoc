@@ -18,7 +18,7 @@ import os
 import glob
 import shutil
 import json
-from datetime import date
+from datetime import datetime, date
 from dateutil.parser import parse
 
 from aidoc.db import get_db
@@ -37,7 +37,6 @@ bp = Blueprint('image', __name__)
 def upload_image(role):
     data = {}
     session['sender_mode'] = role
-
     submission = request.args.get('submission', default='false', type=str)
     if request.method == 'POST':
         if request.form.get('rotation_submitted'):
@@ -47,35 +46,28 @@ def upload_image(role):
         elif submission=='false': # Load and show the image, wait for the confirmation
             imageName = None
             imageList = request.files.getlist("imageList")
-
             imageNameList = []
             for imageFile in imageList: 
                 if imageFile and allowed_file(imageFile.filename):
                     imageName = secure_filename(imageFile.filename)
                     imagePath = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', imageName)
                     imageFile.save(imagePath)
-
                     #Create the temp thumbnail
                     pil_img = Image.open(imagePath) 
                     pil_img = create_thumbnail(pil_img)
                     pil_img.save(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', 'thumb_' + imageName)) 
-
                     # Save the current filenames on session for the upcoming prediction
                     imageNameList.append(imageName)
                 else:
                     flash('รับข้อมูลเฉพาะที่เป็นรูปภาพเท่านั้น')
-            
             if len(imageList)>0:
                 # Save the current filenames on session for the upcoming prediction
                 session['imageNameList'] = imageNameList
             else:
                 session.pop('imageNameList', None)
-            
             if imageName:
                 data['uploadedImage'] = imageName # Send back path of the last submitted image (if sent for more than 1)
-        
         elif submission=='true': # upload confirmation is submitted
-
             # Check if submission list is in the queue (session), if so submit them to the Submission Module and the AI Prediction Engine
             if 'imageNameList' in session and session['imageNameList']:
                 if role=='patient':
@@ -83,19 +75,16 @@ def upload_image(role):
                         session['sender_phone'] = request.form.get('inputPhone')
                     else:
                         session['sender_phone'] = None
-
                     if request.form.get('inputZipCode') is not None and request.form.get('inputZipCode')!='':
                         session['zip_code'] = request.form.get('inputZipCode')
                     else:
                         session['zip_code'] = None
-
                     if request.form.get('sender_id') is not None and request.form.get('sender_id')!='':
                         session['sender_id'] = request.form.get('sender_id')
                     elif session['sender_phone'] is None:
                         session['sender_id'] = session['user_id']
                     else:
                         session['sender_id'] = None
-
                 if role=='osm':
                     if request.form.get('inputIdentityID') is not None and request.form.get('inputIdentityID')!='':
                         session['patient_national_id'] = request.form.get('inputIdentityID')
@@ -111,23 +100,18 @@ def upload_image(role):
                         session['patient_id'] = request.form.get('patient_id')
                     else:
                         session['patient_id'] = None
-
                 if 'sender_id' not in session or session['sender_id']==None:
                     upload_submission_module(target_user_id=session['user_id'])
                 else:
                     upload_submission_module(target_user_id=session['sender_id']) # Upload files to the sender folders, not patient's
-
                 lastImageName = list(session['imageNameList'])[-1]
-
                 db, cursor = get_db()
                 sql = "SELECT id FROM submission_record WHERE fname=%s"
                 val = (lastImageName, )
                 cursor.execute(sql, val)
                 result = cursor.fetchone()
-
                 #Clear submission queue in the session
                 session.pop('imageNameList', None)
-
                 if role=='patient':
                     session.pop('sender_phone', None)
                     session.pop('sender_id', None)
@@ -136,9 +120,7 @@ def upload_image(role):
                     session.pop('patient_national_id', None)
                     session.pop('patient_id', None)
                     session.pop('zip_code', None)
-
                 return redirect(url_for('image.diagnosis', role=role, img_id=result['id']))
-    
     return render_template(role+"_upload.html", data=data)
 
 # region load_image
@@ -218,7 +200,7 @@ def delete_image(role):
     val = (img_id,)
     cursor.execute(sql, val)
 
-    return redirect(url_for('image.record', role=role))
+    return redirect(url_for('image.record', role=role, page=session['current_record_page']))
     
     
 # region diagnosis
@@ -228,8 +210,8 @@ def delete_image(role):
 @role_authorization
 def diagnosis(role, img_id):
     if request.method=='POST':
+        db, cursor = get_db()
         if request.args.get('special_request')=='true':
-            db, cursor = get_db()
             sql = "UPDATE submission_record SET special_request=%s WHERE id=%s"
             val = (1, img_id)
             cursor.execute(sql, val)
@@ -239,38 +221,125 @@ def diagnosis(role, img_id):
             dentist_feedback_location = request.form.get('lesion_location')
             dentist_feedback_lesion = request.form.get('lesion_type')
             dentist_feedback_comment = request.form.get('dentist_comment')
-            db, cursor = get_db()
             sql = "UPDATE submission_record SET dentist_feedback_code=%s, dentist_feedback_comment=%s, dentist_feedback_lesion=%s, dentist_feedback_location=%s WHERE id=%s"
             val = (dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location, img_id)
             cursor.execute(sql, val)
-
-    data = {}
-    db, cursor = get_db()
-    if role=='dentist':
-        sql = "SELECT * FROM submission_record WHERE id=%s"
-        val = (img_id, )
-    else:
-        sql = "SELECT * FROM submission_record INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id WHERE submission_record.id=%s"
-        val = (img_id, )
         
-    cursor.execute(sql, val)
-    result = cursor.fetchone()
-    data['img_id'] = result['id']
-    data['img_fname'] = result['fname']
-    data['img_ai_prediction'] = result['ai_prediction']
-    data['img_ai_scores'] = json.loads(result['ai_scores'])
-    data['img_dentist_feedback_code'] = result['dentist_feedback_code']
-    data['img_dentist_feedback_comment'] = result['dentist_feedback_comment']
-    data['img_dentist_feedback_lesion'] = result['dentist_feedback_lesion']
-    data['img_dentist_feedback_location'] = result['dentist_feedback_location']
-    
-    if role!='dentist':
-        data['case_id'] = result['case_id']
-        data['special_request'] = result['special_request']
-        if role=='patient' or role=='specialist':
-            data['img_sender_id'] = result['sender_id']
+        if role=='specialist' and request.args.get('specialist_feedback')=='true':
+            dentist_feedback_code = request.form.get('dt_comment_option')
+            dentist_feedback_lesion = None
+            dentist_feedback_location = None
+            dentist_feedback_comment = ''
+            if dentist_feedback_code=='BAD_IMG':
+                dentist_feedback_comment = request.form.get('BadImgCommentSelectOptions')
+            elif dentist_feedback_code=='OPMD' or dentist_feedback_code=='OSCC':
+                dentist_feedback_lesion = request.form.get('LesionTypeSelection')
+                dentist_feedback_location = request.form.get('LesionPositionSelection')
+            elif dentist_feedback_code=='OTHER':
+                dentist_feedback_comment = request.form.get('OtherCommentTextarea', '')
+            sql = '''UPDATE submission_record SET
+                        dentist_id=%s,
+                        dentist_feedback_code=%s,
+                        dentist_feedback_comment=%s,
+                        dentist_feedback_lesion=%s,
+                        dentist_feedback_location=%s,
+                        dentist_feedback_date=%s,
+                        updated_at=%s
+                    WHERE id=%s'''
+            val = (session["user_id"],
+                   dentist_feedback_code,
+                   dentist_feedback_comment,
+                   dentist_feedback_lesion,
+                   dentist_feedback_location,
+                   datetime.now(),
+                   datetime.now(),
+                   img_id)
+            cursor.execute(sql, val)
 
-    return render_template(role+'_diagnosis.html', data=data)
+    db, cursor = get_db()
+    if role=='specialist':
+        sql = '''SELECT submission_record.id AS img_id, case_id, fname, special_request,
+                    patient_id, patient.name AS patient_name, patient.surname AS patient_surname, patient.national_id, patient.birthdate,
+                    patient.sex, patient.job_position, patient.email, patient.phone AS patient_phone, patient.address, patient.province,
+                    sender_id, sender.name AS sender_name, sender.surname AS sender_surname, sender.hospital AS sender_hospital, sender.province AS sender_province,
+                    sender.phone AS sender_phone_db, sender_phone,
+                    dentist_id, dentist.name AS dentist_name, dentist.surname AS dentist_surname,
+                    dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location, dentist_feedback_date,
+                    ai_prediction, ai_scores, submission_record.created_at
+                FROM submission_record
+                INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
+                LEFT JOIN user AS sender ON submission_record.sender_id = sender.id
+                LEFT JOIN user AS patient ON submission_record.patient_id = patient.id
+                LEFT JOIN user AS dentist ON submission_record.dentist_id = dentist.id
+                WHERE submission_record.id=%s'''
+    elif role=='dentist':
+        sql = '''SELECT submission_record.id AS img_id, fname,
+                    dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location,
+                    ai_prediction, ai_scores
+                FROM submission_record
+                WHERE id=%s'''
+    else:
+        sql = '''SELECT submission_record.id AS img_id, case_id, fname, special_request,
+                    ai_prediction, ai_scores, submission_record.created_at
+                FROM submission_record
+                INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id
+                WHERE submission_record.id=%s'''
+        
+    val = (img_id, )
+    cursor.execute(sql, val)
+    data = cursor.fetchone()
+
+    # Further process the data
+    data['ai_scores'] = json.loads(data['ai_scores'])
+    if data['patient_id']!=data['sender_id']:
+        if data['sender_name'] is not None:
+            data['sender_description'] = f"{data['sender_name']} {data['sender_surname']} (เจ้าหน้าที่ผู้นำส่งข้อมูล, เบอร์โทรติดต่อ: {data['sender_phone_db']})"
+
+        else:
+            data['sender_description'] = f"(เจ้าหน้าที่ผู้นำส่งข้อมูล, เบอร์โทรติดต่อ: {data['sender_phone_db']})"
+    else:
+        data['sender_description'] = f"{data['sender_name']} {data['sender_surname']} (ผู้ป่วยนำส่งรูปด้วยตัวเอง)"
+
+    if data['birthdate'] is not None:
+        data['patient_age'] = calculate_age(data['birthdate'])
+        if data['sex']=='M':
+            data['sex']='ชาย'
+        elif data['sex']=='F':
+            data['sex']='หญิง'
+
+    
+    dentist_diagnosis_map = {'NORMAL': 'ยืนยันว่าไม่พบรอยโรค (Normal)',
+                                'OPMD': 'น่าจะมีรอยโรคที่คล้ายกันกับ OPMD',
+                                'OSCC': 'น่าจะมีรอยโรคที่คล้ายกันกับ OSCC',
+                                'BAD_IMG': 'ภาพถ่ายที่ส่งมายังไม่ได้มาตรฐาน ทำให้วินิจฉัยไม่ได้',
+                                'OTHER': 'อื่น ๆ'
+                            }
+    bad_image_map = {'NON_STANDARD': 'มุมมองไม่ได้มาตรฐาน',
+                     'BLUR': 'ภาพเบลอ ไม่ชัด',
+                     'DARK': 'ภาพช่องปากมืดเกินไป ขอเปิดแฟลชด้วย',
+                     'SMALL': 'ช่องปากเล็กเกินไป ขอนำกล้องเข้าใกล้ปากมากกว่านี้'
+                    }
+    lesion_location_map = {1: 'ริมฝีปากบนและล่าง (Lip)',
+                           2: 'กระพุ้งแก้มด้านขวาด้านซ้าย (Buccal mucosa)',
+                           3: 'เหงือกบนและล่าง (Gingiva)',
+                           4: 'เหงือกด้านหลังฟันกรามล่าง (Retromolar area)',
+                           5: 'เพดานแข็ง (Hard palate)',
+                           6: 'เพดานอ่อน (Soft palate)',
+                           7: 'ลิ้นด้านบนและด้านข้าง (Dorsal and lateral tongue)',
+                           8: 'ใต้ลิ้น (Ventral tongue)',
+                           9: 'พื้นปาก (Floor of mouth)'
+                           }
+    lesion_type_map = {1: 'รอยโรคสีขาว',
+                       2: 'รอยโรคสีแดง',
+                       3: 'รอยโรคสีขาวปนแดง',
+                       4: 'รอยแผลถลอก',
+                       5: 'ลักษณะเป็นก้อน'
+                       }
+    maps = {'dentist_diagnosis_map': dentist_diagnosis_map,
+            'bad_image_map': bad_image_map,
+            'lesion_location_map': lesion_location_map,
+            'lesion_type_map': lesion_type_map}
+    return render_template(role+'_diagnosis.html', data=data, maps=maps)
     
 # region record
 @bp.route('/record/<role>', methods=('GET', 'POST'))

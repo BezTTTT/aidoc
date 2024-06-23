@@ -17,8 +17,8 @@
             justify-content: center; /* Center horizontally */
             overflow: hidden;
           ">
-                <a href="{{ url_for('image.load_image', folder='upload', user_id=data['img_sender_id'], imagename=data['img_fname']) }}" target="_blank">
-                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=data['img_sender_id'], imagename=data['img_fname']) }}" alt=""
+                <a href="{{ url_for('image.load_image', folder='upload', user_id=data['sender_id'], imagename=data['fname']) }}" target="_blank">
+                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=data['sender_id'], imagename=data['fname']) }}" alt=""
                         style="height: 100%; max-width: 100%; width: auto" />
                 </a>
             </div>
@@ -36,8 +36,8 @@
             justify-content: center; /* Center horizontally */
             overflow: hidden;
           ">
-                <a href="{{ url_for('image.load_image', folder='outlined', user_id=data['img_sender_id'], imagename=data['img_fname']) }}" target="_blank">
-                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=data['img_sender_id'], imagename=data['img_fname']) }}" alt=""
+                <a href="{{ url_for('image.load_image', folder='outlined', user_id=data['sender_id'], imagename=data['fname']) }}" target="_blank">
+                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=data['sender_id'], imagename=data['fname']) }}" alt=""
                         style="height: 100%; max-width: 100%; width: auto" />
                 </a>
             </div>
@@ -60,28 +60,24 @@
 
 <div class="d-flex justify-content-center container-md">
     <div class="row justify-content-center my-4" style="width: 90%;">
-        <div class="col-md-3 text-center mt-2 px-1">
-            <a class="btn btn-outline-success btn-block nowrap" style="width: 100%; margin: 0;"
-                href="/upload_image/dentist">วิเคราะห์รูปภาพอื่นเพิ่มเติม</a>
-        </div>
         <div class="col-md-2 text-center mt-2 px-1">
-            <form action="/record/dentist" method="post" enctype="multipart/form-data">
+            <form action="{{url_for('image.record', role='specialist', page=session['current_record_page'])}}" method="post" enctype="multipart/form-data">
                 <input class="btn btn-outline-success btn-block" style="width: 100%; margin: 0;" type="submit"
-                    value="ดูประวัติ" />
+                    value="ย้อนกลับ" />
             </form>
         </div>
         <div class="col-md-2 text-center mt-2 px-1">
             <a class="btn btn-outline-success btn-block" style="width: 100%; margin: 0;"
-                href="/upload_image/dentist" download>Download</a>
+                href="#" download>Download</a>
         </div>
         <div class="col-md-2 text-center mt-2 px-1">
-            <form action="/upload_image/dentist" method="post" enctype="multipart/form-data">
+            <form action="#" method="post" enctype="multipart/form-data">
                 <input class="btn btn-outline-success" type="submit" style="width: 100%; margin: 0;"
                     value="หมุนรูปไปทางขวา" />
             </form>
         </div>
         <div class="col-md-2 text-center mt-2 px-1">
-            <form action="/upload_image/dentist" method="post" enctype="multipart/form-data">
+            <form action="#" method="post" enctype="multipart/form-data">
                 <input class="btn btn-outline-success" type="submit" style="width: 100%; margin: 0;"
                     value="Recompute" />
             </form>
@@ -93,11 +89,11 @@
     <div class="card">
         <div class="card-body">
             <h5 class="card-title">ผลการพยากรณ์ของ AI</h5>
-            {% if data['img_ai_prediction'] == 0 %}
+            {% if data['ai_prediction'] == 0 %}
                 <h6 class="card-subtitle card shadow-lg bg-success my-3 py-3 ms-4 fs-4 text-white text-center">
                     ภาพช่องปากไม่น่าจะมีรอยโรค
                 </h6>
-            {% elif data['img_ai_prediction'] == 1 %}
+            {% elif data['ai_prediction'] == 1 %}
                 <h6 class="card-subtitle card shadow-lg bg-warning my-3 py-3 fs-4 text-dark text-center">
                     ภาพถ่ายช่องปากอาจมีรอยโรคที่มีลักษณะคล้ายกันกับ OPMD (Oral Potentially Malignant Disorders)
                 </h6>
@@ -115,7 +111,7 @@
             <div id="hiddenContent" class="m-2">
                 <div class="row d-flex justify-content-center">
                     <div class="col-1 d-flex justify-content-end" style="width: 33%">
-                        {% if data['img_ai_prediction'] == 0 %}
+                        {% if data['ai_prediction'] == 0 %}
                             <input class="" type="checkbox" checked />
                         {% else %}
                             <input class="" type="checkbox" />
@@ -126,14 +122,14 @@
                     </div>
                     <div class="col-3" style="width: 33%">
                         <p class="card-text">
-                            {{'%0.2f'| format(data['img_ai_scores'][0]*100 | float)}} %
+                            {{'%0.2f'| format(data['ai_scores'][0]*100 | float)}} %
                         </p>
                     </div>
                 </div>
             
                 <div class="row justify-content-center" style="width: auto">
                     <div class="col-1 d-flex justify-content-end" style="width: 33%">
-                        {% if data['img_ai_prediction'] == 1 %}
+                        {% if data['ai_prediction'] == 1 %}
                             <input class="mt-2" type="checkbox" checked />
                         {% else %}
                             <input class="mt-2" type="checkbox" />
@@ -144,14 +140,14 @@
                     </div>
                     <div class="col-3" style="width: 33%">
                         <p class="card-text">
-                            {{'%0.2f'| format(data['img_ai_scores'][1]*100 | float)}} %
+                            {{'%0.2f'| format(data['ai_scores'][1]*100 | float)}} %
                         </p>
                     </div>
                 </div>
             
                 <div class="row justify-content-center" style="width: auto">
                     <div class="col-1 d-flex justify-content-end" style="width: 33%">
-                        {% if data['img_ai_prediction'] == 2 %}
+                        {% if data['ai_prediction'] == 2 %}
                             <input class="mt-2" type="checkbox" checked />
                         {% else %}
                             <input class="mt-2 mb-2" type="checkbox" />
@@ -162,7 +158,7 @@
                     </div>
                     <div class="col-3" style="width: 33%">
                         <p class="card-text">
-                            {{'%0.2f'| format(data['img_ai_scores'][2]*100 | float)}} %
+                            {{'%0.2f'| format(data['ai_scores'][2]*100 | float)}} %
                         </p>
                     </div>
                 </div>
@@ -176,65 +172,74 @@
         <div id="image-info-container" class="card mb-3" style="width: 100%">
             <div class="card-body px-4">
                 <h5 class="card-title text-start mb-3">ข้อมูลภาพ</h5>
-                <p>Case ID: 1</p>
-                <p>ชื่อไฟล์: xyz.jpg</p>
-                <p>วันที่นำส่ง: วันนี้</p>
-                <p>ผู้นำส่งรูป: ปฏิเวธ วุฒิสารวัฒนา (อสม., เบอร์โทรศัพท์: 0989989072)</p>
-                <p>โรงพยาบาลที่สังกัด: โรงพยาบาลมหาราชนครเชียงใหม่ จ.เชียงใหม่</p>
-                <p>ผู้นำส่งรูป: (อสม., เบอร์โทรศัพท์: 0989989072)</p>
-                <p>ผู้นำส่งรูป: ปฏิเวธ วุฒิสารวัฒนา (ผู้ป่วยนำส่งรูปด้วยตัวเอง)</p>
+                <p>Case ID: {{data['case_id']}}</p>
+                <p>ชื่อไฟล์: {{data['fname']}}</p>
+                <p>วันที่นำส่ง: {{data['created_at']}}</p>
+                <p>ผู้นำส่งรูป: {{data['sender_description']}}</p>
+                {% if data['sender_hospital'] is not none%}
+                    <p>โรงพยาบาลที่สังกัด: {{data['sender_hospital']}} จ.{{data['sender_province']}}</p>
+                {% endif %}
             </div>
         </div>
-        <div id="dentist-feedback-history-container" class="card mb-3" style="width: 100%; height: fit-content">
-            <div class="card-body px-4">
-                <h5 class="card-title text-start mb-3">ประวัติคำวินิจฉัย</h5>
-                <p>ความคิดเห็นของทันตแพทย์: xxx</p>
-                <p>ชนิดรอยโรค: xxx </p>
-                <p>ตำแหน่งที่พบรอยโรค: xxx</p>
-                <p>ความคิดเห็นเพิ่มเติม: xxx </p>
-                <p>ทันตแพทย์ผู้ตรวจ: xxx </p>
-                <p>วันที่: xxx </p>
-            </div>
-            <button id="dentistFeedbackHistBtn" class="btn btn-light mb-3"
-                style="
-                padding: 5px 10px;
-                font-size: 13px;
-                background-color: rgb(196, 196, 196);
-                width: fit-content;
-                margin-left: 1.25rem;
-                ">ดูประวัติการแก้ไขคำวินิจฉัยทั้งหมด
-            </button>
-            <div id="dentist-feedback-history-history-container" style="display: none; height: fit-content">
-                <div class="card mb-3 mx-3" style="height: fit-content">
-                    <div class="card-body px-4">
-                        <p>ความคิดเห็นของทันตแพทย์: yyy</p>
-                        <p>ชนิดรอยโรค: yyy</p>
-                        <p>ตำแหน่งที่พบรอยโรค: yyy</p>
-                        <p>ความคิดเห็นเพิ่มเติม: yyy</p>
-                        <p>ทันตแพทย์ผู้ตรวจ: yyy</p>
-                        <p>วันที่: yyy</p>
+        {% if data['dentist_id'] is not none %}
+            <div id="dentist-feedback-history-container" class="card mb-3" style="width: 100%; height: fit-content">
+                <div class="card-body px-4">
+                    <h5 class="card-title text-start mb-3">ประวัติคำวินิจฉัย</h5>
+                    <p>ความคิดเห็นของทันตแพทย์: {{maps['dentist_diagnosis_map'][data['dentist_feedback_code']]}}</p>
+                    {% if data['dentist_feedback_code']!= 'NORMAL' %}
+                        {% if data['dentist_feedback_code']== 'OPMD' or data['dentist_feedback_code']== 'OSCC' %}
+                            <p>ชนิดรอยโรค: {{maps['lesion_type_map'][data['dentist_feedback_lesion']]}} </p>
+                            <p>ตำแหน่งที่พบรอยโรค: {{maps['lesion_location_map'][data['dentist_feedback_location']]}}</p>
+                        {% elif data['dentist_feedback_code']== 'BAD_IMG' %}
+                            <p>ความคิดเห็นเพิ่มเติม: {{maps['bad_image_map'][data['dentist_feedback_comment']]}} </p>
+                        {% else %}
+                            <p>ความคิดเห็นเพิ่มเติม: {{data['dentist_feedback_comment']}} </p>
+                        {% endif %}
+                    {% endif %}
+                    <p>ทันตแพทย์ผู้ตรวจ: {{data['dentist_name']}} {{data['dentist_surname']}} </p>
+                    <p>วันที่: {{data['dentist_feedback_date']}} </p>
+                </div>
+                <button id="dentistFeedbackHistBtn" class="btn btn-light mb-3"
+                    style="
+                    padding: 5px 10px;
+                    font-size: 13px;
+                    background-color: rgb(196, 196, 196);
+                    width: fit-content;
+                    margin-left: 1.25rem;
+                    ">ดูประวัติการแก้ไขคำวินิจฉัยทั้งหมด
+                </button>
+                <div id="dentist-feedback-history-history-container" style="display: none; height: fit-content">
+                    <div class="card mb-3 mx-3" style="height: fit-content">
+                        <div class="card-body px-4">
+                            <p>ความคิดเห็นของทันตแพทย์: yyy</p>
+                            <p>ชนิดรอยโรค: yyy</p>
+                            <p>ตำแหน่งที่พบรอยโรค: yyy</p>
+                            <p>ความคิดเห็นเพิ่มเติม: yyy</p>
+                            <p>ทันตแพทย์ผู้ตรวจ: yyy</p>
+                            <p>วันที่: yyy</p>
+                        </div>
                     </div>
                 </div>
+                <script>
+                    const dentistFeedbackHistBtn = document.getElementById("dentistFeedbackHistBtn");
+                    const dentistFeedbackHistHistContainer = document.getElementById("dentist-feedback-history-history-container");
+            
+                    let displayToggle = false;
+                    dentistFeedbackHistBtn.addEventListener("click", () => {
+                    if (!displayToggle) {
+                        dentistFeedbackHistHistContainer.style.display = "block";
+                        dentistFeedbackHistBtn.innerText = "ปิด";
+                    } else {
+                        dentistFeedbackHistHistContainer.style.display = "none";
+                        dentistFeedbackHistBtn.innerText = "ดูประวัติการแก้ไขคำวินิจฉัยทั้งหมด";
+                    }
+                    displayToggle = !displayToggle;
+                    });
+                </script>
             </div>
-            <script>
-                const dentistFeedbackHistBtn = document.getElementById("dentistFeedbackHistBtn");
-                const dentistFeedbackHistHistContainer = document.getElementById("dentist-feedback-history-history-container");
-          
-                let displayToggle = false;
-                dentistFeedbackHistBtn.addEventListener("click", () => {
-                  if (!displayToggle) {
-                    dentistFeedbackHistHistContainer.style.display = "block";
-                    dentistFeedbackHistBtn.innerText = "ปิด";
-                  } else {
-                    dentistFeedbackHistHistContainer.style.display = "none";
-                    dentistFeedbackHistBtn.innerText = "ดูประวัติการแก้ไขคำวินิจฉัยทั้งหมด";
-                  }
-                  displayToggle = !displayToggle;
-                });
-            </script>
-        </div>
+        {% endif %}
         <div id="dentist-feedback-container" class="card" style="width: 100%; height: fit-content">
-            <form action="/dentist_comment" method="post" enctype="multipart/form-data">
+            <form action="{{url_for('image.diagnosis', role='specialist', img_id=data['img_id'], specialist_feedback='true')}}" method="post" enctype="multipart/form-data">
                 <div class="card-body px-4">
                     <h5 class="card-title">สำหรับทันตแพทย์ที่เข้าร่วมโครงการ ท่านจะวินิจฉัยภาพนี้ให้เข้ากรณีใด</h5>
                     <div class="form-check">
@@ -285,39 +290,39 @@
                             <h6>ตำแหน่งที่ตรวจพบรอยโรค</h6>
                             <div class="ms-4">
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position1" value="Lip">
+                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position1" value="1">
                                     <label class="form-check-label" for="lesion_position1">ริมฝีปากบนและล่าง (Lip)</label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position2" value="Buccal mucosa">
+                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position2" value="2">
                                     <label class="form-check-label" for="lesion_position2">กระพุ้งแก้มด้านขวาด้านซ้าย (Buccal mucosa)</label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position3" value="Gingiva">
+                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position3" value="3">
                                     <label class="form-check-label" for="lesion_position3">เหงือกบนและล่าง (Gingiva)</label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position4" value="Retromolar Area">
+                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position4" value="4">
                                     <label class="form-check-label" for="lesion_position4">เหงือกด้านหลังฟันกรามล่าง (Retromolar area)</label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position5" value="Hard Palate">
+                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position5" value="5">
                                     <label class="form-check-label" for="lesion_position5">เพดานแข็ง (Hard palate)</label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position6" value="Soft Palate">
+                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position6" value="6">
                                     <label class="form-check-label" for="lesion_position6">เพดานอ่อน (Soft palate)</label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position7" value="Dorsal and lateral tongue">
+                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position7" value="7">
                                     <label class="form-check-label" for="lesion_position7">ลิ้นด้านบนและด้านข้าง (Dorsal and lateral tongue)</label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position8" value="Ventral tongue">
+                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position8" value="8">
                                     <label class="form-check-label" for="lesion_position8">ใต้ลิ้น (Ventral tongue)</label>
                                 </div>
                                 <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position9" value="Floor of mouth">
+                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position9" value="9">
                                     <label class="form-check-label" for="lesion_position9">พื้นปาก (Floor of mouth)</label>
                                 </div>
                             </div>
@@ -328,23 +333,23 @@
                                     <h6>ชนิดรอยโรค</h6>
                                     <div class="ms-4">
                                         <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="LesionTypeSelection" id="lesion_type1" value="White">
+                                            <input class="form-check-input" type="radio" name="LesionTypeSelection" id="lesion_type1" value="1">
                                             <label class="form-check-label" for="lesion_type1">รอยโรคสีขาว</label>
                                         </div>
                                         <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="LesionTypeSelection" id="lesion_type2" value="Red">
+                                            <input class="form-check-input" type="radio" name="LesionTypeSelection" id="lesion_type2" value="2">
                                             <label class="form-check-label" for="lesion_type2">รอยโรคสีแดง</label>
                                         </div>
                                         <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="LesionTypeSelection" id="lesion_type3" value="White and Red">
+                                            <input class="form-check-input" type="radio" name="LesionTypeSelection" id="lesion_type3" value="3">
                                             <label class="form-check-label" for="lesion_type3">รอยโรคสีขาวปนแดง</label>
                                         </div>
                                         <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="LesionTypeSelection" id="lesion_type4" value="Abrasion">
+                                            <input class="form-check-input" type="radio" name="LesionTypeSelection" id="lesion_type4" value="4">
                                             <label class="form-check-label" for="lesion_type4">รอยแผลถลอก</label>
                                         </div>
                                         <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="LesionTypeSelection" id="lesion_type5" value="Tumor">
+                                            <input class="form-check-input" type="radio" name="LesionTypeSelection" id="lesion_type5" value="5">
                                             <label class="form-check-label" for="lesion_type5">ลักษณะเป็นก้อน</label>
                                         </div>
                                     </div>
@@ -355,7 +360,7 @@
 
                     <div id="OtherCommentBox" style="display: none">
                         <label for="OtherCommentTextarea" class="form-label" style="font-weight: bold">กรุณาพิมพ์ความคิดเห็นในช่องด้านล่าง</label>
-                        <textarea class="form-control" id="OtherCommentTextarea" rows="3" name="other_comment"></textarea>
+                        <textarea class="form-control" id="OtherCommentTextarea" rows="3" name="OtherCommentTextarea"></textarea>
                     </div>
 
                     <input class="btn btn-outline-success mt-3" type="submit" value="บันทึกคำวินิจฉัย">
@@ -456,17 +461,26 @@
     <div id="patient-container" class="card" style="width: 49.5%; margin-left: 0.5%">
         <div class="card-body">
             <h5 class="card-title text-start mb-4">ประวัติผู้ป่วย</h5>
-            <p>ไม่มีข้อมูลผู้ป่วย</p>
-            <p>รหัสประจำตัวประชาชน: 0000000000001</p>
-            <p>ชื่อ-สกุล: ปฏิเวธ วุฒิสารวัฒนา</p>
-            <p>เพศ: ชาย</p>
-            <p>อายุ: 40 ปี</p>
-            <p>อาชีพ: รองศาสตราจารย์</p>
-            <p>รหัสประจำตัวประชาชน: 0000000000001</p>
-            <p>อีเมล: patiwet@eng.cmu.ac.th</p>
-            <p>เบอร์โทรศัพท์: 0989989072</p>
-            <p>ที่อยู่: มหาวิทยาลัยเชียงใหม่</p>
-            <p>จังหวัด: เชียงใหม่</p>
+            {%if data['patient_id'] is none %}
+                <p>ไม่มีข้อมูลผู้ป่วย</p>
+            {% elif data['patient_name'] is none %}
+                <p>รหัสประจำตัวประชาชน: {{data['patient_national_id']}}</p>
+                <p>ผู้ป่วยยังไม่ถูกลงทะเบียนในระบบ</p>
+            {% else %}
+                <p>ชื่อ-สกุล: {{data['patient_name']}} {{data['patient_surname']}}</p>
+                <p>เพศ: {{data['sex']}}</p>
+                <p>อายุ: {{data['patient_age']}} ปี</p>
+                <p>อาชีพ: {{data['job_position']}}</p>
+                <p>รหัสประจำตัวประชาชน: {{data['national_id']}}</p>
+                {% if data['email'] is not none %}
+                    <p>อีเมล: {{data['email']}}</p>
+                {% endif %}
+                {% if data['patient_phone'] is not none %}
+                    <p>เบอร์โทรศัพท์: {{data['patient_phone']}}</p>
+                {% endif %}
+                <p>ที่อยู่: {{data['address']}}</p>
+                <p>จังหวัด: {{data['province']}}</p>
+            {% endif %}
         </div>
     </div>
 </div>

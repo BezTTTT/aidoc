@@ -18,7 +18,7 @@
                     align-items: center;        /* Center vertically */
                     justify-content: center;    /* Center horizontally */
                     overflow: hidden;">
-            <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=data['img_sender_id'], imagename=data['img_fname']) }}" alt="">
+            <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=data['sender_id'], imagename=data['fname']) }}" alt="">
             </div>
             <div class="card-body">
                 <p class="card-text">ภาพถ่ายช่องปาก</p>
@@ -49,12 +49,12 @@
     <div class="card">
         <div class="card-body">
             <h5 class="card-title">ผลการพยากรณ์ของ AI</h5>
-            {% if data['img_ai_prediction'] == 0 %}
+            {% if data['ai_prediction'] == 0 %}
                 <div class="card-subtitle card shadow-lg bg-success my-3 py-3 ms-4 text-white text-center">
                     <h6 class="fs-2"> ช่องปากของคุณไม่พบรอยโรค <br></h6>
                     <h6 class="fs-6"> กรุณาส่งภาพถ่ายช่องปากมุมมองอื่น ๆ มาให้ตรวจสอบด้วย หรือถ่ายซ้ำด้วยกล้องคุณภาพที่ดีขึ้น</h6>
                 </div>
-            {% elif data['img_ai_prediction'] == 1 %}
+            {% elif data['ai_prediction'] == 1 %}
                 <div class="card-subtitle card shadow-lg bg-warning my-3 pt-3 text-dark text-center">
                     <h6 class="fs-2"> ช่องปากของคุณอาจจะมีรอยโรค <br></h6>
                     <h6 class="fs-6"> ผลลัพธ์ที่แสดงเป็นเพียงผลการตรวจเบื้องต้น แนะนำให้ไปพบทันตแพทย์เพื่อรับการตรวจเพิ่มเติม เพื่อให้ได้การวินิจฉัยสุดท้าย </h6>
