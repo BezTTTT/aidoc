@@ -17,8 +17,8 @@
             justify-content: center; /* Center horizontally */
             overflow: hidden;
           ">
-                <a href="{{ url_for('image.load_image', folder='upload', user_id=session['img_sender_id'], imagename=session['img_fname']) }}" target="_blank">
-                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=session['img_sender_id'], imagename=session['img_fname']) }}" alt=""
+                <a href="{{ url_for('image.load_image', folder='upload', user_id=data['img_sender_id'], imagename=data['img_fname']) }}" target="_blank">
+                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=data['img_sender_id'], imagename=data['img_fname']) }}" alt=""
                         style="height: 100%; max-width: 100%; width: auto" />
                 </a>
             </div>
@@ -36,8 +36,8 @@
             justify-content: center; /* Center horizontally */
             overflow: hidden;
           ">
-                <a href="{{ url_for('image.load_image', folder='outlined', user_id=session['img_sender_id'], imagename=session['img_fname']) }}" target="_blank">
-                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=session['img_sender_id'], imagename=session['img_fname']) }}" alt=""
+                <a href="{{ url_for('image.load_image', folder='outlined', user_id=data['img_sender_id'], imagename=data['img_fname']) }}" target="_blank">
+                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=data['img_sender_id'], imagename=data['img_fname']) }}" alt=""
                         style="height: 100%; max-width: 100%; width: auto" />
                 </a>
             </div>
@@ -93,11 +93,11 @@
     <div class="card">
         <div class="card-body">
             <h5 class="card-title">ผลการพยากรณ์ของ AI</h5>
-            {% if session['img_ai_prediction'] == 0 %}
+            {% if data['img_ai_prediction'] == 0 %}
                 <h6 class="card-subtitle card shadow-lg bg-success my-3 py-3 ms-4 fs-4 text-white text-center">
                     ภาพช่องปากไม่น่าจะมีรอยโรค
                 </h6>
-            {% elif session['img_ai_prediction'] == 1 %}
+            {% elif data['img_ai_prediction'] == 1 %}
                 <h6 class="card-subtitle card shadow-lg bg-warning my-3 py-3 fs-4 text-dark text-center">
                     ภาพถ่ายช่องปากอาจมีรอยโรคที่มีลักษณะคล้ายกันกับ OPMD (Oral Potentially Malignant Disorders)
                 </h6>
@@ -115,7 +115,7 @@
             <div id="hiddenContent" class="m-2">
                 <div class="row d-flex justify-content-center">
                     <div class="col-1 d-flex justify-content-end" style="width: 33%">
-                        {% if session['img_ai_prediction'] == 0 %}
+                        {% if data['img_ai_prediction'] == 0 %}
                             <input class="" type="checkbox" checked />
                         {% else %}
                             <input class="" type="checkbox" />
@@ -126,14 +126,14 @@
                     </div>
                     <div class="col-3" style="width: 33%">
                         <p class="card-text">
-                            {{'%0.2f'| format(session['img_ai_scores'][0]*100 | float)}} %
+                            {{'%0.2f'| format(data['img_ai_scores'][0]*100 | float)}} %
                         </p>
                     </div>
                 </div>
             
                 <div class="row justify-content-center" style="width: auto">
                     <div class="col-1 d-flex justify-content-end" style="width: 33%">
-                        {% if session['img_ai_prediction'] == 1 %}
+                        {% if data['img_ai_prediction'] == 1 %}
                             <input class="mt-2" type="checkbox" checked />
                         {% else %}
                             <input class="mt-2" type="checkbox" />
@@ -144,14 +144,14 @@
                     </div>
                     <div class="col-3" style="width: 33%">
                         <p class="card-text">
-                            {{'%0.2f'| format(session['img_ai_scores'][1]*100 | float)}} %
+                            {{'%0.2f'| format(data['img_ai_scores'][1]*100 | float)}} %
                         </p>
                     </div>
                 </div>
             
                 <div class="row justify-content-center" style="width: auto">
                     <div class="col-1 d-flex justify-content-end" style="width: 33%">
-                        {% if session['img_ai_prediction'] == 2 %}
+                        {% if data['img_ai_prediction'] == 2 %}
                             <input class="mt-2" type="checkbox" checked />
                         {% else %}
                             <input class="mt-2 mb-2" type="checkbox" />
@@ -162,7 +162,7 @@
                     </div>
                     <div class="col-3" style="width: 33%">
                         <p class="card-text">
-                            {{'%0.2f'| format(session['img_ai_scores'][2]*100 | float)}} %
+                            {{'%0.2f'| format(data['img_ai_scores'][2]*100 | float)}} %
                         </p>
                     </div>
                 </div>

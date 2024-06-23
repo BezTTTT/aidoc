@@ -37,6 +37,7 @@ bp = Blueprint('image', __name__)
 def upload_image(role):
     data = {}
     session['sender_mode'] = role
+
     submission = request.args.get('submission', default='false', type=str)
     if request.method == 'POST':
         if request.form.get('rotation_submitted'):
@@ -136,15 +137,9 @@ def upload_image(role):
                     session.pop('patient_id', None)
                     session.pop('zip_code', None)
 
-                return redirect(url_for('image.diagnosis', id=result['id']))
-    if role=='patient':
-        return render_template("patient_upload.html", data=data)
-    elif role=='dentist':
-        return render_template("dentist_upload.html", data=data)
-    elif role=='osm':
-        return render_template("osm_upload.html", data=data)
-    else:
-        return None
+                return redirect(url_for('image.diagnosis', role=role, img_id=result['id']))
+    
+    return render_template(role+"_upload.html", data=data)
 
 # region load_image
 @bp.route('/load_image/<folder>/<user_id>/<imagename>')
@@ -227,107 +222,55 @@ def delete_image(role):
     
     
 # region diagnosis
-@bp.route('/diagnosis/<int:id>', methods=('GET', 'POST'))
+@bp.route('/diagnosis/<role>/<int:img_id>', methods=('GET', 'POST'))
 @login_required
-def diagnosis(id):
-
+@role_validation
+@role_authorization
+def diagnosis(role, img_id):
     if request.method=='POST':
         if request.args.get('special_request')=='true':
             db, cursor = get_db()
             sql = "UPDATE submission_record SET special_request=%s WHERE id=%s"
-            val = ( 1, session.get('img_id'))
+            val = (1, img_id)
             cursor.execute(sql, val)
-            session.pop('img_id', None)
 
-        if 'feedback_submit' in request.form and 'img_id' in session and session['sender_mode']=='dentist':
+        if role=='dentist' and 'feedback_submit' in request.form:
             dentist_feedback_code = request.form.get('agree_option')
             dentist_feedback_location = request.form.get('lesion_location')
             dentist_feedback_lesion = request.form.get('lesion_type')
             dentist_feedback_comment = request.form.get('dentist_comment')
             db, cursor = get_db()
             sql = "UPDATE submission_record SET dentist_feedback_code=%s, dentist_feedback_comment=%s, dentist_feedback_lesion=%s, dentist_feedback_location=%s WHERE id=%s"
-            val = (dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location, session.get('img_id'))
+            val = (dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location, img_id)
             cursor.execute(sql, val)
-            session.pop('img_id', None)
-            
-    if session['sender_mode']=='dentist':
-        if 'img_id' not in session or session['img_id']!=id: # Check if the image is already loaded to the session
-            db, cursor = get_db()
-            sql = "SELECT * FROM submission_record WHERE id=%s"
-            val = (id, )
-            cursor.execute(sql, val)
-            result = cursor.fetchone()
-            session['img_id'] = result['id']
-            session['img_fname'] = result['fname']
-            session['img_ai_prediction'] = result['ai_prediction']
-            session['img_ai_scores'] = json.loads(result['ai_scores'])
-            session['img_dentist_feedback_code'] = result['dentist_feedback_code']
-            session['img_dentist_feedback_comment'] = result['dentist_feedback_comment']
-            session['img_dentist_feedback_lesion'] = result['dentist_feedback_lesion']
-            session['img_dentist_feedback_location'] = result['dentist_feedback_location']
-        return render_template('dentist_diagnosis.html')
-    
-    if session['sender_mode']=='patient':
-        if 'img_id' not in session or session['img_id']!=id: # Check if the image is already loaded to the session
-            db, cursor = get_db()
-            sql = "SELECT * FROM submission_record INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id WHERE submission_record.id=%s"
-            val = (id, )
-            cursor.execute(sql, val)
-            result = cursor.fetchone()
-            session['img_id'] = result['id']
-            session['img_fname'] = result['fname']
-            session['img_ai_prediction'] = result['ai_prediction']
-            session['img_ai_scores'] = json.loads(result['ai_scores'])
-            session['img_dentist_feedback_code'] = result['dentist_feedback_code']
-            session['img_dentist_feedback_comment'] = result['dentist_feedback_comment']
-            session['img_dentist_feedback_lesion'] = result['dentist_feedback_lesion']
-            session['img_dentist_feedback_location'] = result['dentist_feedback_location']
-            
-            session['img_sender_id'] = result['sender_id']
-            session['case_id'] = result['case_id']
-            session['special_request'] = result['special_request']
-        return render_template('patient_diagnosis.html')
-    
-    if session['sender_mode']=='osm':
-        if 'img_id' not in session or session['img_id']!=id: # Check if the image is already loaded to the session
-            db, cursor = get_db()
-            sql = "SELECT * FROM submission_record INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id WHERE submission_record.id=%s"
-            val = (id, )
-            cursor.execute(sql, val)
-            result = cursor.fetchone()
-            session['img_id'] = result['id']
-            session['img_fname'] = result['fname']
-            session['img_ai_prediction'] = result['ai_prediction']
-            session['img_ai_scores'] = json.loads(result['ai_scores'])
-            session['img_dentist_feedback_code'] = result['dentist_feedback_code']
-            session['img_dentist_feedback_comment'] = result['dentist_feedback_comment']
-            session['img_dentist_feedback_lesion'] = result['dentist_feedback_lesion']
-            session['img_dentist_feedback_location'] = result['dentist_feedback_location']
 
-            session['case_id'] = result['case_id']
-            session['special_request'] = result['special_request']
-        return render_template('osm_diagnosis.html')
+    data = {}
+    db, cursor = get_db()
+    if role=='dentist':
+        sql = "SELECT * FROM submission_record WHERE id=%s"
+        val = (img_id, )
+    else:
+        sql = "SELECT * FROM submission_record INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id WHERE submission_record.id=%s"
+        val = (img_id, )
+        
+    cursor.execute(sql, val)
+    result = cursor.fetchone()
+    data['img_id'] = result['id']
+    data['img_fname'] = result['fname']
+    data['img_ai_prediction'] = result['ai_prediction']
+    data['img_ai_scores'] = json.loads(result['ai_scores'])
+    data['img_dentist_feedback_code'] = result['dentist_feedback_code']
+    data['img_dentist_feedback_comment'] = result['dentist_feedback_comment']
+    data['img_dentist_feedback_lesion'] = result['dentist_feedback_lesion']
+    data['img_dentist_feedback_location'] = result['dentist_feedback_location']
     
-    if session['sender_mode']=='specialist':
-        if 'img_id' not in session or session['img_id']!=id: # Check if the image is already loaded to the session
-            db, cursor = get_db()
-            sql = "SELECT * FROM submission_record INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id WHERE submission_record.id=%s"
-            val = (id, )
-            cursor.execute(sql, val)
-            result = cursor.fetchone()
-            session['img_id'] = result['id']
-            session['img_fname'] = result['fname']
-            session['img_ai_prediction'] = result['ai_prediction']
-            session['img_ai_scores'] = json.loads(result['ai_scores'])
-            session['img_dentist_feedback_code'] = result['dentist_feedback_code']
-            session['img_dentist_feedback_comment'] = result['dentist_feedback_comment']
-            session['img_dentist_feedback_lesion'] = result['dentist_feedback_lesion']
-            session['img_dentist_feedback_location'] = result['dentist_feedback_location']
+    if role!='dentist':
+        data['case_id'] = result['case_id']
+        data['special_request'] = result['special_request']
+        if role=='patient' or role=='specialist':
+            data['img_sender_id'] = result['sender_id']
 
-            session['img_sender_id'] = result['sender_id']
-            session['case_id'] = result['case_id']
-            session['special_request'] = result['special_request']
-        return render_template('specialist_diagnosis.html')
+    return render_template(role+'_diagnosis.html', data=data)
     
 # region record
 @bp.route('/record/<role>', methods=('GET', 'POST'))

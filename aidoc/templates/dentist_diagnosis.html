@@ -10,8 +10,8 @@
     <div class="col-md-4">
         <div class="card">
             <div class="mx-2 mt-2" style="display: inline-flex; align-items: center; justify-content: center; ">
-                <a href="{{ url_for('image.load_image', folder='upload', user_id=g.user['id'], imagename=session['img_fname']) }}" target="_blank">
-                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=g.user['id'], imagename=session['img_fname']) }}"
+                <a href="{{ url_for('image.load_image', folder='upload', user_id=g.user['id'], imagename=data['img_fname']) }}" target="_blank">
+                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=g.user['id'], imagename=data['img_fname']) }}"
                         class="card-img-top" alt="" style="max-height: 512px" />
                 </a>
             </div>
@@ -23,8 +23,8 @@
     <div class="col-md-4">
         <div class="card">
             <div class="mx-2 mt-2" style="display: inline-flex; align-items: center; justify-content: center; ">
-                <a href="{{ url_for('image.load_image', folder='outlined', user_id=g.user['id'], imagename=session['img_fname']) }}" target="_blank">
-                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=g.user['id'], imagename=session['img_fname']) }}"
+                <a href="{{ url_for('image.load_image', folder='outlined', user_id=g.user['id'], imagename=data['img_fname']) }}" target="_blank">
+                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=g.user['id'], imagename=data['img_fname']) }}"
                         class="card-img-top"  alt="" style="max-height: 512px" />
                 </a>
             </div>
@@ -79,11 +79,11 @@
     <div class="card">
         <div class="card-body">
             <h5 class="card-title">ผลการพยากรณ์ของ AI</h5>
-            {% if session['img_ai_prediction'] == 0 %}
+            {% if data['img_ai_prediction'] == 0 %}
                 <h6 class="card-subtitle card shadow-lg bg-success my-3 py-3 ms-4 fs-3 text-white text-center">
                     ภาพช่องปากไม่น่าจะมีรอยโรค
                 </h6>
-            {% elif session['img_ai_prediction'] == 1 %}
+            {% elif data['img_ai_prediction'] == 1 %}
                 <h6 class="card-subtitle card shadow-lg bg-warning my-3 py-3 fs-3 text-dark text-center">
                     ภาพถ่ายช่องปากอาจมีรอยโรคที่มีลักษณะคล้ายกันกับ OPMD (Oral Potentially Malignant Disorders)
                 </h6>
@@ -101,7 +101,7 @@
             <div id="hiddenContent" class="m-2">
                 <div class="row d-flex justify-content-center">
                     <div class="col-1 d-flex justify-content-end" style="width: 33%">
-                        {% if session['img_ai_prediction'] == 0 %}
+                        {% if data['img_ai_prediction'] == 0 %}
                             <input class="" type="checkbox" checked />
                         {% else %}
                             <input class="" type="checkbox" />
@@ -112,14 +112,14 @@
                     </div>
                     <div class="col-3" style="width: 33%">
                         <p class="card-text">
-                            {{'%0.2f'| format(session['img_ai_scores'][0]*100 | float)}} %
+                            {{'%0.2f'| format(data['img_ai_scores'][0]*100 | float)}} %
                         </p>
                     </div>
                 </div>
             
                 <div class="row justify-content-center" style="width: auto">
                     <div class="col-1 d-flex justify-content-end" style="width: 33%">
-                        {% if session['img_ai_prediction'] == 1 %}
+                        {% if data['img_ai_prediction'] == 1 %}
                             <input class="mt-2" type="checkbox" checked />
                         {% else %}
                             <input class="mt-2" type="checkbox" />
@@ -130,14 +130,14 @@
                     </div>
                     <div class="col-3" style="width: 33%">
                         <p class="card-text">
-                            {{'%0.2f'| format(session['img_ai_scores'][1]*100 | float)}} %
+                            {{'%0.2f'| format(data['img_ai_scores'][1]*100 | float)}} %
                         </p>
                     </div>
                 </div>
             
                 <div class="row justify-content-center" style="width: auto">
                     <div class="col-1 d-flex justify-content-end" style="width: 33%">
-                        {% if session['img_ai_prediction'] == 2 %}
+                        {% if data['img_ai_prediction'] == 2 %}
                             <input class="mt-2" type="checkbox" checked />
                         {% else %}
                             <input class="mt-2 mb-2" type="checkbox" />
@@ -148,7 +148,7 @@
                     </div>
                     <div class="col-3" style="width: 33%">
                         <p class="card-text">
-                            {{'%0.2f'| format(session['img_ai_scores'][2]*100 | float)}} %
+                            {{'%0.2f'| format(data['img_ai_scores'][2]*100 | float)}} %
                         </p>
                     </div>
                 </div>
@@ -157,7 +157,7 @@
     </div>
 </div>
 
-<form action="{{ url_for('image.diagnosis', id=session['img_id']) }}" method="post" enctype="multipart/form-data">
+<form action="{{ url_for('image.diagnosis', role='dentist', img_id=data['img_id']) }}" method="post" enctype="multipart/form-data">
     <div class="row d-flex justify-content-center text-align-left my-4">
         <div class="card mb-5" style="width: 100%">
             <div class="card-body">
@@ -166,14 +166,14 @@
                 </h5>
 
                 <div class="form-check">
-                    <input class="form-check-input" type="radio" name="agree_option" value="AGREE"
-                        {% if session['img_dentist_feedback_code']=='AGREE' %} checked {% endif %}/>
-                    <label class="form-check-label" for="agree_option"> เห็นด้วย </label>
+                    <input class="form-check-input" type="radio" name="agree_option" id="agree_option1" value="AGREE"
+                        {% if data['img_dentist_feedback_code']=='AGREE' %} checked {% endif %}/>
+                    <label class="form-check-label" for="agree_option1"> เห็นด้วย </label>
                 </div>
                 <div class="form-check">
-                    <input class="form-check-input" type="radio" name="agree_option" value="DISAGREE"
-                        {% if session['img_dentist_feedback_code']=='DISAGREE' %} checked {% endif %} />
-                    <label class="form-check-label" for="agree_option"> ไม่เห็นด้วย </label>
+                    <input class="form-check-input" type="radio" name="agree_option" id="agree_option2" value="DISAGREE"
+                        {% if data['img_dentist_feedback_code']=='DISAGREE' %} checked {% endif %} />
+                    <label class="form-check-label" for="agree_option2"> ไม่เห็นด้วย </label>
                 </div>
 
                 <h5 class="card-title mt-4">
@@ -184,76 +184,85 @@
                         <!-- {{ data}} -->
                         <label class="mb-1">ตำแหน่งที่ตรวจพบรอยโรค</label>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" value="1" {% if session['img_dentist_feedback_location']==1 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location"> 1.ริมฝีปากบนและล่าง (Lip) </label>
+                            <input class="form-check-input" type="radio" name="lesion_location" id="lesion_location1" value="1"
+                                {% if data['img_dentist_feedback_location']==1 %}checked{% endif %} />
+                            <label class="form-check-label" for="lesion_location1"> 1.ริมฝีปากบนและล่าง (Lip) </label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" value="2" {% if session['img_dentist_feedback_location']==2 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location"> 2.กระพุ้งแก้มด้านขวาด้านซ้าย (Buccal mucosa)</label>
+                            <input class="form-check-input" type="radio" name="lesion_location" id="lesion_location2" value="2"
+                                {% if data['img_dentist_feedback_location']==2 %}checked{% endif %} />
+                            <label class="form-check-label" for="lesion_location2"> 2.กระพุ้งแก้มด้านขวาด้านซ้าย (Buccal mucosa)</label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" value="3" {% if session['img_dentist_feedback_location']==3 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location"> 3.เหงือกบนและล่าง (Gingiva) </label>
+                            <input class="form-check-input" type="radio" name="lesion_location" id="lesion_location3" value="3"
+                                {% if data['img_dentist_feedback_location']==3 %}checked{% endif %} />
+                            <label class="form-check-label" for="lesion_location3"> 3.เหงือกบนและล่าง (Gingiva) </label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" value="4" {% if session['img_dentist_feedback_location']==4 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location"> 4.เหงือกด้านหลังฟันกรามล่าง (Retromolar area) </label>
+                            <input class="form-check-input" type="radio" name="lesion_location" id="lesion_location4" value="4"
+                                {% if data['img_dentist_feedback_location']==4 %}checked{% endif %} />
+                            <label class="form-check-label" for="lesion_location4"> 4.เหงือกด้านหลังฟันกรามล่าง (Retromolar area) </label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" value="5" {% if session['img_dentist_feedback_location']==5 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location"> 5.เพดานแข็ง (Hard palate) </label>
+                            <input class="form-check-input" type="radio" name="lesion_location" id="lesion_location5" value="5"
+                                {% if data['img_dentist_feedback_location']==5 %}checked{% endif %} />
+                            <label class="form-check-label" for="lesion_location5"> 5.เพดานแข็ง (Hard palate) </label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" value="6" {% if session['img_dentist_feedback_location']==6 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location"> 6.เพดานอ่อน (Soft palate) </label>
+                            <input class="form-check-input" type="radio" name="lesion_location" id="lesion_location6" value="6"
+                                {% if data['img_dentist_feedback_location']==6 %}checked{% endif %} />
+                            <label class="form-check-label" for="lesion_location6"> 6.เพดานอ่อน (Soft palate) </label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" value="7" {% if session['img_dentist_feedback_location']==7 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location"> 7.ลิ้นด้านบนและด้านข้าง (Dorsal and lateral tongue) </label>
+                            <input class="form-check-input" type="radio" name="lesion_location" id="lesion_location7" value="7"
+                                {% if data['img_dentist_feedback_location']==7 %}checked{% endif %} />
+                            <label class="form-check-label" for="lesion_location7"> 7.ลิ้นด้านบนและด้านข้าง (Dorsal and lateral tongue) </label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" value="8" {% if session['img_dentist_feedback_location']==8 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location"> 8.ใต้ลิ้น (Ventral tongue) </label>
+                            <input class="form-check-input" type="radio" name="lesion_location" id="lesion_location8" value="8"
+                                {% if data['img_dentist_feedback_location']==8 %}checked{% endif %} />
+                            <label class="form-check-label" for="lesion_location8"> 8.ใต้ลิ้น (Ventral tongue) </label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" value="9" {% if session['img_dentist_feedback_location']==9 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location"> 9.พื้นปาก (Floor of mouth) </label>
+                            <input class="form-check-input" type="radio" name="lesion_location" id="lesion_location9" value="9"
+                                {% if data['img_dentist_feedback_location']==9 %}checked{% endif %} />
+                            <label class="form-check-label" for="lesion_location9"> 9.พื้นปาก (Floor of mouth) </label>
                         </div>
                     </div>
 
                     <div>
                         <label class="mb-1">ชนิดรอยโรค</label>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_type" value="1"
-                                {% if session['img_dentist_feedback_lesion']==1 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_type"> รอยโรคสีขาว </label>
+                            <input class="form-check-input" type="radio" name="lesion_type" id="lesion_type1" value="1"
+                                {% if data['img_dentist_feedback_lesion']==1 %}checked{% endif %} />
+                            <label class="form-check-label" for="lesion_type1"> รอยโรคสีขาว </label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_type" value="2"
-                                {% if session['img_dentist_feedback_lesion']==2 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_type"> รอยโรคสีแดง </label>
+                            <input class="form-check-input" type="radio" name="lesion_type" id="lesion_type2" value="2"
+                                {% if data['img_dentist_feedback_lesion']==2 %}checked{% endif %} />
+                            <label class="form-check-label" for="lesion_type2"> รอยโรคสีแดง </label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_type" value="3"
-                                {% if session['img_dentist_feedback_lesion']==3 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_type"> รอยโรคสีขาวปนแดง </label>
+                            <input class="form-check-input" type="radio" name="lesion_type" id="lesion_type3" value="3"
+                                {% if data['img_dentist_feedback_lesion']==3 %}checked{% endif %} />
+                            <label class="form-check-label" for="lesion_type3"> รอยโรคสีขาวปนแดง </label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_type" value="4"
-                                {% if session['img_dentist_feedback_lesion']==4 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_type"> รอยแผลถลอก </label>
+                            <input class="form-check-input" type="radio" name="lesion_type" id="lesion_type4" value="4"
+                                {% if data['img_dentist_feedback_lesion']==4 %}checked{% endif %} />
+                            <label class="form-check-label" for="lesion_type4"> รอยแผลถลอก </label>
                         </div>
                         <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_type" value="5"
-                                {% if session['img_dentist_feedback_lesion']==5 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_type"> ลักษณะเป็นก้อน </label>
+                            <input class="form-check-input" type="radio" name="lesion_type" id="lesion_type5" value="5"
+                                {% if data['img_dentist_feedback_lesion']==5 %}checked{% endif %} />
+                            <label class="form-check-label" for="lesion_type5"> ลักษณะเป็นก้อน </label>
                         </div>
                     </div>
                 </div>
 
                 <div class="mb-3">
                     <label for="dentist_comment" class="form-label">ความคิดเห็น</label>
-                    <textarea class="form-control" rows="3" name="dentist_comment">{{session['img_dentist_feedback_comment']}}</textarea>
+                    <textarea class="form-control" rows="3" name="dentist_comment">{{data['img_dentist_feedback_comment']}}</textarea>
                 </div>
                
                 <input name="feedback_submit" class="btn btn-outline-success" type="submit" value="บันทึกความคิดเห็น" />
