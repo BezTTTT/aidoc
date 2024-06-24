@@ -56,11 +56,6 @@
                         <div class="card-body">                            
                             <h6 class="image-name" >ชื่อไฟล์ : {{ item['fname'] }} </h6>
                             <h6 class="image-name" >Case ID : {{ item['case_id'] }}
-                                {% if item['dentist_id'] %}
-                                    [ตรวจแล้ว]
-                                {% else %}
-                                    [ยังไม่ได้ตรวจ]
-                                {% endif %}
                                 {% if item['special_request']==1 %}
                                     [มีคำขอตรวจพิเศษ]
                                 {% endif %}
@@ -90,10 +85,21 @@
                                         OSCC
                                     {% endif %}
                             </h6>
-                            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
-                                <form action="{{ url_for('image.diagnosis', role='specialist', img_id=item['id']) }}" id="form_id{{item['id']}}" method="post"> </form>
-                                <button class="btn btn-outline-success" type="submit" form="form_id{{item['id']}}">ตรวจยืนยันผล</button>
-                                <button class="btn btn-outline-danger" type="button" 
+                            <h6 class="fs-6 card-subtitle text-muted mb-2">
+                                ผลการวินิจฉัยของทันตแพทย์: 
+                                {% if item['dentist_feedback_code'] is none %}
+                                    [ยังไม่ได้ตรวจ]
+                                {% else %}
+                                    {{item['dentist_feedback_code']}}
+                                {% endif %}
+                            </h6>
+                            <form action="{{ url_for('image.diagnosis', role='specialist', img_id=item['id']) }}" id="diagnosis_submit_id{{item['id']}}" method="post"></form>
+                            <form action="{{ url_for('image.quick_confirm', role='specialist', img_id=item['id'], ai_result=item['ai_prediction']) }}" id="quick_submit_id{{item['id']}}" method="post"></form>
+                            <div class="d-grid gap-2 d-md-block justify-content-md-center">
+                                <button class="btn btn-outline-primary" type="submit" form="diagnosis_submit_id{{item['id']}}">ตรวจยืนยันผล</button>
+                                <button class="btn btn-outline-success my-1" type="submit" form="quick_submit_id{{item['id']}}"
+                                    {% if item['dentist_feedback_code'] is not none %}disabled{% endif %}>Quick AI Confirm</button>
+                                <button class="btn btn-outline-danger my-1" type="button" 
                                     data-bs-toggle="modal"
                                     data-bs-target="#submissionDeleteModal{{ item['id'] }}" >ลบข้อมูล</button>
                             </div>

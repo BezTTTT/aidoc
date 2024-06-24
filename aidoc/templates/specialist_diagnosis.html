@@ -187,12 +187,12 @@
                     <h5 class="card-title text-start mb-3">ประวัติคำวินิจฉัย</h5>
                     <p>ความคิดเห็นของทันตแพทย์: {{maps['dentist_diagnosis_map'][data['dentist_feedback_code']]}}</p>
                     {% if data['dentist_feedback_code']!= 'NORMAL' %}
-                        {% if data['dentist_feedback_code']== 'OPMD' or data['dentist_feedback_code']== 'OSCC' %}
+                        {% if (data['dentist_feedback_code']== 'OPMD' or data['dentist_feedback_code']== 'OSCC') and data['dentist_feedback_lesion'] is not none %}
                             <p>ชนิดรอยโรค: {{maps['lesion_type_map'][data['dentist_feedback_lesion']]}} </p>
                             <p>ตำแหน่งที่พบรอยโรค: {{maps['lesion_location_map'][data['dentist_feedback_location']]}}</p>
                         {% elif data['dentist_feedback_code']== 'BAD_IMG' %}
                             <p>ความคิดเห็นเพิ่มเติม: {{maps['bad_image_map'][data['dentist_feedback_comment']]}} </p>
-                        {% else %}
+                        {% elif data['dentist_feedback_comment'] != '' %}
                             <p>ความคิดเห็นเพิ่มเติม: {{data['dentist_feedback_comment']}} </p>
                         {% endif %}
                     {% endif %}

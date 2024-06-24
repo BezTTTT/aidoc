@@ -172,6 +172,8 @@ def load_image(folder, user_id, imagename):
 # region delete_image
 @bp.route('/delete_image/<role>', methods=('POST', ))
 @login_required
+@role_validation
+@role_authorization
 def delete_image(role):
     img_id = request.form.get('img_id')
 
@@ -201,8 +203,27 @@ def delete_image(role):
     cursor.execute(sql, val)
 
     return redirect(url_for('image.record', role=role, page=session['current_record_page']))
-    
-    
+
+ # region diagnosis
+@bp.route('/quick_confirm/<role>/<int:img_id>', methods=('POST', ))
+@login_required
+@role_validation
+@role_authorization   
+def quick_confirm(role, img_id):
+    if role=='specialist':
+        ai_result = request.args.get('ai_result', type=int)
+        if ai_result==0:
+            diagnostic_code = 'NORMAL'
+        elif ai_result==1:
+            diagnostic_code = 'OPMD'
+        else:
+            diagnostic_code = 'OSCC'
+        db, cursor = get_db()
+        sql = "UPDATE submission_record SET dentist_id=%s, dentist_feedback_code=%s, dentist_feedback_date=%s, updated_at=%s WHERE id=%s"
+        val = ( session["user_id"], diagnostic_code, datetime.now(), datetime.now(), img_id)
+        cursor.execute(sql, val)
+    return redirect(url_for('image.record', role=role, page=session['current_record_page']))
+
 # region diagnosis
 @bp.route('/diagnosis/<role>/<int:img_id>', methods=('GET', 'POST'))
 @login_required
@@ -307,7 +328,6 @@ def diagnosis(role, img_id):
         elif data['sex']=='F':
             data['sex']='หญิง'
 
-    
     dentist_diagnosis_map = {'NORMAL': 'ยืนยันว่าไม่พบรอยโรค (Normal)',
                                 'OPMD': 'น่าจะมีรอยโรคที่คล้ายกันกับ OPMD',
                                 'OSCC': 'น่าจะมีรอยโรคที่คล้ายกันกับ OSCC',
