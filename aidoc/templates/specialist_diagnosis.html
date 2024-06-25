@@ -242,89 +242,33 @@
             <form action="{{url_for('image.diagnosis', role='specialist', img_id=data['img_id'], specialist_feedback='true')}}" method="post" enctype="multipart/form-data">
                 <div class="card-body px-4">
                     <h5 class="card-title">สำหรับทันตแพทย์ที่เข้าร่วมโครงการ ท่านจะวินิจฉัยภาพนี้ให้เข้ากรณีใด</h5>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="dt_comment_option" id="dt_comment_option1" value="NORMAL" required>
-                        <label class="form-check-label" for="dt_comment_option1">ยืนยันว่าไม่พบรอยโรค (Normal)</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="dt_comment_option" id="dt_comment_option2" value="OPMD" required>
-                        <label class="form-check-label" for="dt_comment_option2">น่าจะมีรอยโรคที่คล้ายกันกับ OPMD</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="dt_comment_option" id="dt_comment_option3" value="OSCC" required>
-                        <label class="form-check-label" for="dt_comment_option3">น่าจะมีรอยโรคที่คล้ายกันกับ OSCC</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="dt_comment_option" id="dt_comment_option4" value="BAD_IMG" required>
-                        <label class="form-check-label" for="dt_comment_option4">ภาพถ่ายที่ส่งมายังไม่ได้มาตรฐาน ทำให้วินิจฉัยไม่ได้</label>
-                    </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="dt_comment_option" id="dt_comment_option5" value="OTHER" required>
-                        <label class="form-check-label" for="dt_comment_option5">อื่น ๆ</label>
-                    </div>
-
+                    {% for key, value in maps['dentist_diagnosis_map'].items() %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="dt_comment_option" id="dt_comment_option{{loop.index}}" value="{{key}}" required>
+                            <label class="form-check-label" for="dt_comment_option{{loop.index}}">{{value}}</label>
+                        </div>
+                    {% endfor %}
                     <div id="BadImgCommentSelection" style="display: none">
                         <h6>ตัวเลือก</h6>
                         <div class="ms-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="BadImgCommentSelectOptions" id="bad_img_option1" value="NON_STANDARD">
-                                <label class="form-check-label" for="bad_img_option1">มุมมองไม่ได้มาตรฐาน</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="BadImgCommentSelectOptions" id="bad_img_option2" value="BLUR">
-                                <label class="form-check-label" for="bad_img_option2">ภาพเบลอ ไม่ชัด</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="BadImgCommentSelectOptions" id="bad_img_option3" value="DARK">
-                                <label class="form-check-label" for="bad_img_option3">ภาพช่องปากมืดเกินไป ขอเปิดแฟลชด้วย</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="BadImgCommentSelectOptions" id="bad_img_option4" value="SMALL">
-                                <label class="form-check-label" for="bad_img_option4">ช่องปากเล็กเกินไป ขอนำกล้องเข้าใกล้ปากมากกว่านี้</label>
-                            </div>
+                            {% for key, value in maps['bad_image_map'].items() %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="BadImgCommentSelectOptions" id="bad_img_option{{loop.index}}" value="{{key}}">
+                                    <label class="form-check-label" for="bad_img_option{{loop.index}}">{{value}}</label>
+                                </div>
+                            {% endfor %}
                         </div>
                     </div>
-
                     <div id="OSCCOPMDSelection" style="display: none">
                         <div>
                             <h6>ตำแหน่งที่ตรวจพบรอยโรค</h6>
                             <div class="ms-4">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position1" value="1">
-                                    <label class="form-check-label" for="lesion_position1">ริมฝีปากบนและล่าง (Lip)</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position2" value="2">
-                                    <label class="form-check-label" for="lesion_position2">กระพุ้งแก้มด้านขวาด้านซ้าย (Buccal mucosa)</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position3" value="3">
-                                    <label class="form-check-label" for="lesion_position3">เหงือกบนและล่าง (Gingiva)</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position4" value="4">
-                                    <label class="form-check-label" for="lesion_position4">เหงือกด้านหลังฟันกรามล่าง (Retromolar area)</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position5" value="5">
-                                    <label class="form-check-label" for="lesion_position5">เพดานแข็ง (Hard palate)</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position6" value="6">
-                                    <label class="form-check-label" for="lesion_position6">เพดานอ่อน (Soft palate)</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position7" value="7">
-                                    <label class="form-check-label" for="lesion_position7">ลิ้นด้านบนและด้านข้าง (Dorsal and lateral tongue)</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position8" value="8">
-                                    <label class="form-check-label" for="lesion_position8">ใต้ลิ้น (Ventral tongue)</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="LesionPositionSelection" id="lesion_position9" value="9">
-                                    <label class="form-check-label" for="lesion_position9">พื้นปาก (Floor of mouth)</label>
-                                </div>
+                                {% for key, value in maps['lesion_location_map'].items() %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="LesionLocationSelection" id="lesion_location{{loop.index}}" value="{{key}}">
+                                        <label class="form-check-label" for="lesion_location{{loop.index}}">{{value}}</label>
+                                    </div>
+                                {% endfor %}
                             </div>
                         </div>
                         <div>
@@ -332,32 +276,17 @@
                                 <div>
                                     <h6>ชนิดรอยโรค</h6>
                                     <div class="ms-4">
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="LesionTypeSelection" id="lesion_type1" value="1">
-                                            <label class="form-check-label" for="lesion_type1">รอยโรคสีขาว</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="LesionTypeSelection" id="lesion_type2" value="2">
-                                            <label class="form-check-label" for="lesion_type2">รอยโรคสีแดง</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="LesionTypeSelection" id="lesion_type3" value="3">
-                                            <label class="form-check-label" for="lesion_type3">รอยโรคสีขาวปนแดง</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="LesionTypeSelection" id="lesion_type4" value="4">
-                                            <label class="form-check-label" for="lesion_type4">รอยแผลถลอก</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="LesionTypeSelection" id="lesion_type5" value="5">
-                                            <label class="form-check-label" for="lesion_type5">ลักษณะเป็นก้อน</label>
-                                        </div>
+                                        {% for key, value in maps['lesion_type_map'].items() %}
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="LesionTypeSelection" id="lesion_type{{loop.index}}" value="{{key}}">
+                                                <label class="form-check-label" for="lesion_type{{loop.index}}">{{value}}</label>
+                                            </div>
+                                        {% endfor %}
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-
                     <div id="OtherCommentBox" style="display: none">
                         <label for="OtherCommentTextarea" class="form-label" style="font-weight: bold">กรุณาพิมพ์ความคิดเห็นในช่องด้านล่าง</label>
                         <textarea class="form-control" id="OtherCommentTextarea" rows="3" name="OtherCommentTextarea"></textarea>
@@ -370,7 +299,7 @@
                         var bad_img_select = document.getElementById("BadImgCommentSelection");
                         var bad_img_option_list = document.getElementsByName("BadImgCommentSelectOptions");
                         var lesion_select = document.getElementById("OSCCOPMDSelection");
-                        var lesion_pos_list = document.getElementsByName("LesionPositionSelection");
+                        var lesion_pos_list = document.getElementsByName("LesionLocationSelection");
                         var lesion_type_list = document.getElementsByName("LesionTypeSelection");
                         var commentBox = document.getElementById("OtherCommentBox");
                         var commentTextArea = document.getElementById("OtherCommentTextarea");

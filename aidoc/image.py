@@ -22,7 +22,7 @@ from datetime import datetime, date
 from dateutil.parser import parse
 
 from aidoc.db import get_db
-from aidoc.auth import login_required, role_validation, role_authorization
+from aidoc.auth import login_required, role_validation
 
 # 'image' blueprint manages Image upload, AI prediction, and the Diagnosis
 bp = Blueprint('image', __name__)
@@ -33,7 +33,6 @@ bp = Blueprint('image', __name__)
 @bp.route('/upload_image/<role>', methods=('GET', 'POST'))
 @login_required
 @role_validation
-@role_authorization
 def upload_image(role):
     data = {}
     session['sender_mode'] = role
@@ -109,7 +108,8 @@ def upload_image(role):
                 sql = "SELECT id FROM submission_record WHERE fname=%s"
                 val = (lastImageName, )
                 cursor.execute(sql, val)
-                result = cursor.fetchone()
+                result = cursor.fetchall() # There might be several images of the same name (duplication is checked only the same user upload the same files)
+                result = result[-1] # The last image will be selected
                 #Clear submission queue in the session
                 session.pop('imageNameList', None)
                 if role=='patient':
@@ -173,7 +173,6 @@ def load_image(folder, user_id, imagename):
 @bp.route('/delete_image/<role>', methods=('POST', ))
 @login_required
 @role_validation
-@role_authorization
 def delete_image(role):
     img_id = request.form.get('img_id')
 
@@ -201,6 +200,9 @@ def delete_image(role):
     sql = "DELETE FROM submission_record WHERE id = %s"
     val = (img_id,)
     cursor.execute(sql, val)
+    sql = "DELETE FROM patient_case_id WHERE id = %s"
+    val = (img_id,)
+    cursor.execute(sql, val)
 
     return redirect(url_for('image.record', role=role, page=session['current_record_page']))
 
@@ -208,7 +210,6 @@ def delete_image(role):
 @bp.route('/quick_confirm/<role>/<int:img_id>', methods=('POST', ))
 @login_required
 @role_validation
-@role_authorization   
 def quick_confirm(role, img_id):
     if role=='specialist':
         ai_result = request.args.get('ai_result', type=int)
@@ -228,7 +229,6 @@ def quick_confirm(role, img_id):
 @bp.route('/diagnosis/<role>/<int:img_id>', methods=('GET', 'POST'))
 @login_required
 @role_validation
-@role_authorization
 def diagnosis(role, img_id):
     if request.method=='POST':
         db, cursor = get_db()
@@ -255,7 +255,7 @@ def diagnosis(role, img_id):
                 dentist_feedback_comment = request.form.get('BadImgCommentSelectOptions')
             elif dentist_feedback_code=='OPMD' or dentist_feedback_code=='OSCC':
                 dentist_feedback_lesion = request.form.get('LesionTypeSelection')
-                dentist_feedback_location = request.form.get('LesionPositionSelection')
+                dentist_feedback_location = request.form.get('LesionLocationSelection')
             elif dentist_feedback_code=='OTHER':
                 dentist_feedback_comment = request.form.get('OtherCommentTextarea', '')
             sql = '''UPDATE submission_record SET
@@ -294,7 +294,7 @@ def diagnosis(role, img_id):
                 LEFT JOIN user AS dentist ON submission_record.dentist_id = dentist.id
                 WHERE submission_record.id=%s'''
     elif role=='dentist':
-        sql = '''SELECT submission_record.id AS img_id, fname,
+        sql = '''SELECT submission_record.id AS img_id, fname, sender_id,
                     dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location,
                     ai_prediction, ai_scores
                 FROM submission_record
@@ -309,6 +309,14 @@ def diagnosis(role, img_id):
     val = (img_id, )
     cursor.execute(sql, val)
     data = cursor.fetchone()
+
+    # Authorization check
+    if data is None:
+        return render_template('unauthorized_access.html', error_msg='ไม่พบข้อมูลที่ร้องขอ Data Not Found')
+    elif (session['sender_mode']!=role) or \
+        (role=='patient' and (session['user_id']!=data['patient_id'])) or \
+        ((role=='osm' or role=='dentist') and (session['user_id']!=data['sender_id'])):
+        return render_template('unauthorized_access.html', error_msg='คุณไม่มีสิทธิ์เข้าถึงข้อมูล Unauthorized Access')
 
     # Further process the data
     data['ai_scores'] = json.loads(data['ai_scores'])
@@ -370,10 +378,11 @@ def diagnosis(role, img_id):
 @bp.route('/record/<role>', methods=('GET', 'POST'))
 @login_required
 @role_validation
-@role_authorization
 def record(role): # Submission records
    
     session['sender_mode'] = role
+    if role=='patient': # Not available for patient
+        return render_template('unauthorized_access.html', error_msg='ไม่พบข้อมูลที่ร้องขอ Data Not Found')
 
     # Reload the record every time the page is reloaded
     db, cursor = get_db()

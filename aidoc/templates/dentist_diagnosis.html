@@ -183,80 +183,24 @@
                     <div>
                         <!-- {{ data}} -->
                         <label class="mb-1">ตำแหน่งที่ตรวจพบรอยโรค</label>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" id="lesion_location1" value="1"
-                                {% if data['dentist_feedback_location']==1 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location1"> 1.ริมฝีปากบนและล่าง (Lip) </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" id="lesion_location2" value="2"
-                                {% if data['dentist_feedback_location']==2 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location2"> 2.กระพุ้งแก้มด้านขวาด้านซ้าย (Buccal mucosa)</label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" id="lesion_location3" value="3"
-                                {% if data['dentist_feedback_location']==3 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location3"> 3.เหงือกบนและล่าง (Gingiva) </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" id="lesion_location4" value="4"
-                                {% if data['dentist_feedback_location']==4 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location4"> 4.เหงือกด้านหลังฟันกรามล่าง (Retromolar area) </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" id="lesion_location5" value="5"
-                                {% if data['dentist_feedback_location']==5 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location5"> 5.เพดานแข็ง (Hard palate) </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" id="lesion_location6" value="6"
-                                {% if data['dentist_feedback_location']==6 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location6"> 6.เพดานอ่อน (Soft palate) </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" id="lesion_location7" value="7"
-                                {% if data['dentist_feedback_location']==7 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location7"> 7.ลิ้นด้านบนและด้านข้าง (Dorsal and lateral tongue) </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" id="lesion_location8" value="8"
-                                {% if data['dentist_feedback_location']==8 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location8"> 8.ใต้ลิ้น (Ventral tongue) </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_location" id="lesion_location9" value="9"
-                                {% if data['dentist_feedback_location']==9 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_location9"> 9.พื้นปาก (Floor of mouth) </label>
-                        </div>
+                        {% for key, value in maps['lesion_location_map'].items() %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="lesion_location" id="lesion_location{{loop.index}}" value="{{key}}"
+                                    {% if data['dentist_feedback_location']==loop.index %}checked{% endif %} />
+                                <label class="form-check-label" for="lesion_location{{loop.index}}">{{value}}</label>
+                            </div>
+                        {% endfor %}
                     </div>
 
                     <div>
                         <label class="mb-1">ชนิดรอยโรค</label>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_type" id="lesion_type1" value="1"
-                                {% if data['dentist_feedback_lesion']==1 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_type1"> รอยโรคสีขาว </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_type" id="lesion_type2" value="2"
-                                {% if data['dentist_feedback_lesion']==2 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_type2"> รอยโรคสีแดง </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_type" id="lesion_type3" value="3"
-                                {% if data['dentist_feedback_lesion']==3 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_type3"> รอยโรคสีขาวปนแดง </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_type" id="lesion_type4" value="4"
-                                {% if data['dentist_feedback_lesion']==4 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_type4"> รอยแผลถลอก </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="lesion_type" id="lesion_type5" value="5"
-                                {% if data['dentist_feedback_lesion']==5 %}checked{% endif %} />
-                            <label class="form-check-label" for="lesion_type5"> ลักษณะเป็นก้อน </label>
-                        </div>
+                        {% for key, value in maps['lesion_type_map'].items() %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="lesion_type" id="lesion_type{{loop.index}}" value="{{key}}"
+                                    {% if data['dentist_feedback_lesion']==loop.index %}checked{% endif %} />
+                                <label class="form-check-label" for="lesion_type{{loop.index}}">{{value}}</label>
+                            </div>
+                        {% endfor %}
                     </div>
                 </div>
 

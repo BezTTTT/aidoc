@@ -6,6 +6,7 @@ log = logging.getLogger('werkzeug')
 #log.setLevel(logging.ERROR)
 log.setLevel(logging.INFO)
 
+# Application Factory
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)

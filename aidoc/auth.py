@@ -63,10 +63,11 @@ def role_validation(view):
         if ('role' not in kwargs) or (kwargs['role'] not in allowed_roles) or \
             (kwargs['role']=='osm' and g.user is not None and g.user['is_osm']==0) or \
             (kwargs['role']=='patient' and g.user is not None and g.user['is_patient']==0) or \
-            (kwargs['role']=='specialist' and g.user is not None and g.user['is_specialist']==0) \
+            (kwargs['role']=='specialist' and g.user is not None and g.user['is_specialist']==0) or \
+            (kwargs['role']=='dentist' and g.user is not None and g.user['username'] is None) \
         :
             session.pop('sender_mode', None)
-            return redirect('/')
+            return render_template('unauthorized_access.html', error_msg='คุณไม่มีสิทธิ์เข้าถึงข้อมูล Unauthorized Access [role_validation]')
         return view(**kwargs)
     return wrapped_view
 
@@ -189,17 +190,5 @@ def login_required(view):
                 return redirect(url_for('auth.login', role='osm'))
             else:
                 return redirect(url_for('auth.login', role='patient'))
-        return view(**kwargs)
-    return wrapped_view
-
-def role_authorization(view):
-    @functools.wraps(view)
-    def wrapped_view(**kwargs):
-        if ('sender_mode' in session) and ('role' in kwargs) and g.user and kwargs['role']:
-            if (kwargs['role']=='osm' and g.user['is_osm']==0) or \
-               (kwargs['role']=='specialist' and g.user['is_specialist']==0) or \
-               (kwargs['role']=='patient' and g.user['is_patient']==0) or \
-               (kwargs['role']=='dentist' and (g.user['username'] is None) ):
-                return redirect(url_for('auth.login', role=kwargs['role']))
         return view(**kwargs)
     return wrapped_view

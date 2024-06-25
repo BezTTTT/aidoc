@@ -6,3 +6,11 @@
 7. flask --app aidoc init-db
 8. copy \instance folder (having config.py) in the 'OneDrive - Personal' to aidoc\aidoc\instance folder
 9. flask --app aidoc run
+
+----- On production
+(pip install --upgrade pip)
+(pip install waitress)
+waitress-serve --host 127.0.0.1 --port 85 --call aidoc:create_app
+
+----- create pip requirements.txt, run the following command in the aidoc/aidoc folder
+pipreqs --force
