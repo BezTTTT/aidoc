@@ -204,7 +204,7 @@ def delete_image(role):
 
     return redirect(url_for('image.record', role=role, page=session['current_record_page']))
 
- # region diagnosis
+ # region quick_confirm
 @bp.route('/quick_confirm/<role>/<int:img_id>', methods=('POST', ))
 @login_required
 @role_validation
@@ -300,7 +300,7 @@ def diagnosis(role, img_id):
                 FROM submission_record
                 WHERE id=%s'''
     else:
-        sql = '''SELECT submission_record.id AS img_id, case_id, fname, special_request,
+        sql = '''SELECT submission_record.id AS img_id, case_id, fname, special_request, sender_id, patient_id,
                     ai_prediction, ai_scores, submission_record.created_at
                 FROM submission_record
                 INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id
@@ -312,21 +312,26 @@ def diagnosis(role, img_id):
 
     # Further process the data
     data['ai_scores'] = json.loads(data['ai_scores'])
-    if data['patient_id']!=data['sender_id']:
-        if data['sender_name'] is not None:
-            data['sender_description'] = f"{data['sender_name']} {data['sender_surname']} (เจ้าหน้าที่ผู้นำส่งข้อมูล, เบอร์โทรติดต่อ: {data['sender_phone_db']})"
 
+    if role=='patient' and data['sender_id'] is None: # If an unregistered osm submit the data, the data will be stored with patient_id
+        data['sender_id'] = data['patient_id']
+
+    if role=='specialist':
+        if data['patient_id']!=data['sender_id']:
+            if data['sender_name'] is not None:
+                data['sender_description'] = f"{data['sender_name']} {data['sender_surname']} (เจ้าหน้าที่ผู้นำส่งข้อมูล, เบอร์โทรติดต่อ: {data['sender_phone_db']})"
+
+            else:
+                data['sender_description'] = f"(เจ้าหน้าที่ผู้นำส่งข้อมูล, เบอร์โทรติดต่อ: {data['sender_phone_db']})"
         else:
-            data['sender_description'] = f"(เจ้าหน้าที่ผู้นำส่งข้อมูล, เบอร์โทรติดต่อ: {data['sender_phone_db']})"
-    else:
-        data['sender_description'] = f"{data['sender_name']} {data['sender_surname']} (ผู้ป่วยนำส่งรูปด้วยตัวเอง)"
+            data['sender_description'] = f"{data['sender_name']} {data['sender_surname']} (ผู้ป่วยนำส่งรูปด้วยตัวเอง)"
 
-    if data['birthdate'] is not None:
-        data['patient_age'] = calculate_age(data['birthdate'])
-        if data['sex']=='M':
-            data['sex']='ชาย'
-        elif data['sex']=='F':
-            data['sex']='หญิง'
+        if data['birthdate'] is not None:
+            data['patient_age'] = calculate_age(data['birthdate'])
+            if data['sex']=='M':
+                data['sex']='ชาย'
+            elif data['sex']=='F':
+                data['sex']='หญิง'
 
     dentist_diagnosis_map = {'NORMAL': 'ยืนยันว่าไม่พบรอยโรค (Normal)',
                                 'OPMD': 'น่าจะมีรอยโรคที่คล้ายกันกับ OPMD',
