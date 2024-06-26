@@ -2,9 +2,8 @@ from flask import Flask
 import os
 
 import logging
-log = logging.getLogger('werkzeug')
-#log.setLevel(logging.ERROR)
-log.setLevel(logging.INFO)
+logger = logging.getLogger('waitress')
+logger.setLevel(logging.DEBUG)
 
 # Application Factory
 def create_app(test_config=None):
