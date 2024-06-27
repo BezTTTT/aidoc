@@ -61,7 +61,7 @@
                 href="/upload_image/dentist" download>Download</a>
         </div>
         <div class="col-md-2 text-center mt-2 px-1">
-            <form action="/upload_image/dentist" method="post" enctype="multipart/form-data">
+            <form action="{{url_for('image.rotate_image', user_id=g.user['id'], imagename=data['fname'], return_page='diagnosis', role='dentist', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
                 <input class="btn btn-outline-success" type="submit" style="width: 100%; margin: 0;"
                     value="หมุนรูปไปทางขวา" />
             </form>

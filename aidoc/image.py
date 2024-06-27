@@ -48,7 +48,14 @@ def upload_image(role):
             imageNameList = []
             for imageFile in imageList: 
                 if imageFile and allowed_file(imageFile.filename):
-                    imageName = secure_filename(imageFile.filename)
+                    fileName, fileExtension = os.path.splitext(imageFile.filename)
+                    fileName = secure_filename(fileName)
+                    if fileName != '':
+                        imageName = fileName+fileExtension
+                    else:
+                        newFileName = 'secured_filename'
+                        suffix = datetime.now().strftime("%y%m%d_%H%M%S")
+                        imageName = "_".join([newFileName, suffix]) + fileExtension 
                     imagePath = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', imageName)
                     imageFile.save(imagePath)
                     #Create the temp thumbnail
@@ -205,6 +212,40 @@ def delete_image(role):
     cursor.execute(sql, val)
 
     return redirect(url_for('image.record', role=role, page=session['current_record_page']))
+
+# region rotate_image
+@bp.route('/rotate_image/<user_id>/<imagename>', methods=('POST', ))
+@login_required
+def rotate_image(user_id, imagename):
+    return_page = request.args.get('return_page')
+    role = request.args.get('role')
+    img_id = request.args.get('img_id')
+
+    uploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', user_id)
+    thumbUploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', 'thumbnail', user_id)
+    outlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', user_id)
+    thumbOutlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', 'thumbnail', user_id)
+    
+    imagePath = os.path.join(uploadDir, imagename)
+    thumbPath =os.path.join(thumbUploadDir, imagename)
+    outlinedPath =os.path.join(outlinedDir, imagename)
+    thumbOutlinedImagePath = os.path.join(thumbOutlinedDir, imagename)
+
+    pil_img = Image.open(imagePath) 
+    pil_img = pil_img.rotate(-90, expand=True)
+    pil_img.save(imagePath)
+    thumb_img = create_thumbnail(pil_img)
+    thumb_img.save(thumbPath)
+
+    pil_img = Image.open(outlinedPath) 
+    pil_img = pil_img.rotate(-90, expand=True)
+    pil_img.save(outlinedPath)
+    thumb_img = create_thumbnail(pil_img)
+    thumb_img.save(thumbOutlinedImagePath)
+    
+    if (return_page=='diagnosis'):
+        return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
+
 
  # region quick_confirm
 @bp.route('/quick_confirm/<role>/<int:img_id>', methods=('POST', ))
