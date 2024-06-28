@@ -68,18 +68,20 @@
         </div>
         <div class="col-md-2 text-center mt-2 px-1">
             <a class="btn btn-outline-success btn-block" style="width: 100%; margin: 0;"
-                href="#" download>Download</a>
+                href="/download_image/{{data['sender_id']}}/{{data['fname']}}" download>Download</a>
         </div>
         <div class="col-md-2 text-center mt-2 px-1">
-            <form action="#" method="post" enctype="multipart/form-data">
-                <input class="btn btn-outline-success" type="submit" style="width: 100%; margin: 0;"
-                    value="หมุนรูปไปทางขวา" />
+            <form action="{{url_for('image.rotate_image', return_page='diagnosis', role='specialist', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
+                <input name="user_id" type="hidden" value="{{data['sender_id']}}">
+                <input name="imagename" type="hidden" value="{{data['fname']}}">
+                <input class="btn btn-outline-success" type="submit" style="width: 100%; margin: 0;" value="หมุนรูปไปทางขวา" />
             </form>
         </div>
         <div class="col-md-2 text-center mt-2 px-1">
-            <form action="#" method="post" enctype="multipart/form-data">
-                <input class="btn btn-outline-success" type="submit" style="width: 100%; margin: 0;"
-                    value="Recompute" />
+            <form action="{{url_for('image.recompute_image', return_page='diagnosis', role='specialist', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
+                <input name="user_id" type="hidden" value="{{data['sender_id']}}">
+                <input name="imagename" type="hidden" value="{{data['fname']}}">
+                <input class="btn btn-outline-success" type="submit" style="width: 100%; margin: 0;" value="Recompute" />
             </form>
         </div>
     </div>

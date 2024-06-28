@@ -1,5 +1,5 @@
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for, send_from_directory, current_app, jsonify
+    Blueprint, flash, g, redirect, render_template, request, session, url_for, send_from_directory, send_file, current_app, jsonify
 )
 from werkzeug.utils import secure_filename
 
@@ -18,6 +18,7 @@ import os
 import glob
 import shutil
 import json
+import zipfile
 from datetime import datetime, date
 from dateutil.parser import parse
 
@@ -194,7 +195,8 @@ def delete_image(role):
     thumbUploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', 'thumbnail', user_id)
     outlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', user_id)
     thumbOutlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', 'thumbnail', user_id)
-    
+    maskDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'mask', user_id)
+
     recycleDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'recycle', user_id)
     os.makedirs(recycleDir, exist_ok=True)
 
@@ -203,6 +205,7 @@ def delete_image(role):
     os.remove(os.path.join(thumbUploadDir, filename))
     os.remove(os.path.join(outlinedDir, filename))
     os.remove(os.path.join(thumbOutlinedDir, filename))
+    os.remove(os.path.join(maskDir, filename))
 
     sql = "DELETE FROM submission_record WHERE id = %s"
     val = (img_id,)
@@ -214,22 +217,23 @@ def delete_image(role):
     return redirect(url_for('image.record', role=role, page=session['current_record_page']))
 
 # region rotate_image
-@bp.route('/rotate_image/<user_id>/<imagename>', methods=('POST', ))
+@bp.route('/rotate_image/<return_page>/<role>/<img_id>', methods=('POST', ))
 @login_required
-def rotate_image(user_id, imagename):
-    return_page = request.args.get('return_page')
-    role = request.args.get('role')
-    img_id = request.args.get('img_id')
+def rotate_image(return_page, role, img_id):
+    imagename = request.form.get('imagename')
+    user_id = request.form.get('user_id')
 
     uploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', user_id)
     thumbUploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', 'thumbnail', user_id)
     outlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', user_id)
     thumbOutlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', 'thumbnail', user_id)
-    
+    maskDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'mask', user_id)
+
     imagePath = os.path.join(uploadDir, imagename)
-    thumbPath =os.path.join(thumbUploadDir, imagename)
-    outlinedPath =os.path.join(outlinedDir, imagename)
+    thumbPath = os.path.join(thumbUploadDir, imagename)
+    outlinedPath = os.path.join(outlinedDir, imagename)
     thumbOutlinedImagePath = os.path.join(thumbOutlinedDir, imagename)
+    maskPath = os.path.join(maskDir, imagename)
 
     pil_img = Image.open(imagePath) 
     pil_img = pil_img.rotate(-90, expand=True)
@@ -243,9 +247,70 @@ def rotate_image(user_id, imagename):
     thumb_img = create_thumbnail(pil_img)
     thumb_img.save(thumbOutlinedImagePath)
     
+    pil_img = Image.open(maskPath) 
+    pil_img = pil_img.rotate(-90, expand=True)
+    pil_img.save(maskPath)
+
     if (return_page=='diagnosis'):
         return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
 
+# region rocompute_image
+@bp.route('/recompute_image/<return_page>/<role>/<img_id>', methods=('POST', ))
+@login_required
+def recompute_image(return_page, role, img_id):
+    imagename = request.form.get('imagename')
+    user_id = request.form.get('user_id')
+
+    uploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', user_id)
+    outlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', user_id)
+    thumbOutlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', 'thumbnail', user_id)
+    maskDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'mask', user_id)
+    os.makedirs(maskDir, exist_ok=True)
+
+    imagePath = os.path.join(uploadDir, imagename)
+    outlinedPath = os.path.join(outlinedDir, imagename)
+    thumbOutlinedImagePath = os.path.join(thumbOutlinedDir, imagename)
+    maskPath = os.path.join(maskDir, imagename)
+
+    outlined_img, prediction, scores, mask = oral_lesion_prediction(imagePath)
+    outlined_img.save(outlinedPath)
+    mask.save(maskPath)
+
+    #Create the thumbnail and saved to temp folder
+    pil_img = Image.open(outlinedPath) 
+    pil_img = create_thumbnail(pil_img)
+    pil_img.save(thumbOutlinedImagePath) 
+
+    db, cursor = get_db()
+    sql = "UPDATE submission_record SET ai_prediction=%s, ai_scores=%s WHERE id=%s"
+    val = (prediction, str(scores), img_id)
+    cursor.execute(sql, val)
+
+    return redirect(url_for('image.'+return_page, role=role, img_id=img_id))
+
+# region download_image
+@bp.route('/download_image/<user_id>/<imagename>', methods=('GET', ))
+@login_required
+def download_image(user_id, imagename):
+
+    uploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', user_id)
+    outlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', user_id)
+    maskDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'mask', user_id)
+
+    imagePath = os.path.join(uploadDir, imagename)
+    outlinedPath =os.path.join(outlinedDir, imagename)
+    maskPath = os.path.join(maskDir, imagename)
+
+    zip_filename = os.path.splitext(imagename)
+    zip_filename = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', zip_filename[0] + '_uid_' + user_id + '.zip')
+    with zipfile.ZipFile(zip_filename, "w", zipfile.ZIP_DEFLATED) as zipf:
+        zipf.write(imagePath, imagename)
+        zipf.write(outlinedPath, 'outlined_' + imagename)
+        zipf.write(maskPath, 'mask_' + imagename)
+
+    response = send_file(zip_filename, as_attachment=True)
+    response.call_on_close(lambda: os.remove(zip_filename))
+    return response
 
  # region quick_confirm
 @bp.route('/quick_confirm/<role>/<int:img_id>', methods=('POST', ))
@@ -593,13 +658,14 @@ def oral_lesion_prediction(imgPath):
 
     full_img = Image.open(imgPath)
     full_dilation_img = dilation_img.resize(full_img.size, resample=Image.NEAREST)
+    mask = output.resize(full_img.size, resample=Image.NEAREST)
 
     yellow_edge = Image.merge("RGB", (full_dilation_img, full_dilation_img, Image.new(mode="L", size=full_dilation_img.size)))
     outlined_img = full_img.copy()
     outlined_img.paste(yellow_edge, full_dilation_img)
     
     scores = [backgroundScore.numpy(), opmdScore.numpy(), osccScore.numpy()]
-    return outlined_img, predictClass, scores
+    return outlined_img, predictClass, scores, mask
 
 # region upload_submission_module
 # Upload Submission Module
@@ -613,8 +679,10 @@ def upload_submission_module(target_user_id):
         ai_scores = []
         for i, filename in enumerate(session['imageNameList']):
             imgPath = os.path.join(tempDir, filename)
-            outlined_img, prediction, scores = oral_lesion_prediction(imgPath)
+            outlined_img, prediction, scores, mask = oral_lesion_prediction(imgPath)
+
             outlined_img.save(os.path.join(tempDir, 'outlined_'+filename))
+            mask.save(os.path.join(tempDir, 'mask_'+filename))
 
             #Create the thumbnail and saved to temp folder
             pil_img = Image.open(os.path.join(tempDir, 'outlined_'+filename)) 
@@ -637,10 +705,12 @@ def upload_submission_module(target_user_id):
         thumbUploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', 'thumbnail', user_id)
         outlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', user_id)
         thumbOutlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', 'thumbnail', user_id)
+        maskDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'mask', user_id)
         os.makedirs(uploadDir, exist_ok=True)
         os.makedirs(thumbUploadDir, exist_ok=True)
         os.makedirs(outlinedDir, exist_ok=True)
         os.makedirs(thumbOutlinedDir, exist_ok=True)
+        os.makedirs(maskDir, exist_ok=True)
 
         # Copy files to the storage
         checked_filename_lst = []
@@ -653,6 +723,7 @@ def upload_submission_module(target_user_id):
                 shutil.copy2(os.path.join(tempDir, 'thumb_'+filename), os.path.join(thumbUploadDir, checked_filename))
                 shutil.copy2(os.path.join(tempDir, 'outlined_'+filename), os.path.join(outlinedDir, checked_filename))
                 shutil.copy2(os.path.join(tempDir, 'thumb_outlined_'+filename), os.path.join(thumbOutlinedDir, checked_filename))
+                shutil.copy2(os.path.join(tempDir, 'mask_'+filename), os.path.join(maskDir, checked_filename))
 
                 checked_filename_lst.append(checked_filename)
         session['imageNameList'] = checked_filename_lst

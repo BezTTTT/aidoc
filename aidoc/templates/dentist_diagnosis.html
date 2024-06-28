@@ -52,8 +52,7 @@
         </div>
         <div class="col-md-2 text-center mt-2 px-1">
             <form action="/record/dentist" method="post" enctype="multipart/form-data">
-                <input class="btn btn-outline-success btn-block" style="width: 100%; margin: 0;" type="submit"
-                    value="ดูประวัติ" />
+                <input class="btn btn-outline-success btn-block" style="width: 100%; margin: 0;" type="submit" value="ดูประวัติ" />
             </form>
         </div>
         <div class="col-md-2 text-center mt-2 px-1">
@@ -61,15 +60,17 @@
                 href="/upload_image/dentist" download>Download</a>
         </div>
         <div class="col-md-2 text-center mt-2 px-1">
-            <form action="{{url_for('image.rotate_image', user_id=g.user['id'], imagename=data['fname'], return_page='diagnosis', role='dentist', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
-                <input class="btn btn-outline-success" type="submit" style="width: 100%; margin: 0;"
-                    value="หมุนรูปไปทางขวา" />
+            <form action="{{url_for('image.rotate_image', return_page='diagnosis', role='dentist', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
+                <input name="user_id" type="hidden" value="{{g.user['id']}}">
+                <input name="imagename" type="hidden" value="{{data['fname']}}">
+                <input class="btn btn-outline-success" type="submit" style="width: 100%; margin: 0;" value="หมุนรูปไปทางขวา" />
             </form>
         </div>
         <div class="col-md-2 text-center mt-2 px-1">
-            <form action="/upload_image/dentist" method="post" enctype="multipart/form-data">
-                <input class="btn btn-outline-success" type="submit" style="width: 100%; margin: 0;"
-                    value="Recompute" />
+            <form action="{{url_for('image.recompute_image', return_page='diagnosis', role='dentist', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
+                <input name="user_id" type="hidden" value="{{g.user['id']}}">
+                <input name="imagename" type="hidden" value="{{data['fname']}}">
+                <input class="btn btn-outline-success" type="submit" style="width: 100%; margin: 0;" value="Recompute" />
             </form>
         </div>
     </div>
