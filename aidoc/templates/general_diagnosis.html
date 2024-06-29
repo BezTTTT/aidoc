@@ -51,11 +51,6 @@
                 href="/upload_image/dentist">วิเคราะห์รูปภาพอื่นเพิ่มเติม</a>
         </div>
         <div class="col-md-2 text-center mt-2 px-1">
-            <form action="/record/dentist" method="post" enctype="multipart/form-data">
-                <input class="btn btn-outline-success btn-block" style="width: 100%; margin: 0;" type="submit" value="ดูประวัติ" />
-            </form>
-        </div>
-        <div class="col-md-2 text-center mt-2 px-1">
             <a class="btn btn-outline-success btn-block" style="width: 100%; margin: 0;"
                 href="/download_image/{{data['sender_id']}}/{{data['fname']}}" download>Download</a>
         </div>
@@ -157,65 +152,6 @@
         </div>
     </div>
 </div>
-
-<form action="{{ url_for('image.diagnosis', role='dentist', img_id=data['img_id']) }}" method="post" enctype="multipart/form-data">
-    <div class="row d-flex justify-content-center text-align-left my-4">
-        <div class="card mb-5" style="width: 100%">
-            <div class="card-body">
-                <h5 class="card-title">
-                    ท่านเห็นด้วยกับผลการวิเคราะทาง AI ดังที่ปรากฏหรือไม่?
-                </h5>
-
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="agree_option" id="agree_option1" value="AGREE"
-                        {% if data['dentist_feedback_code']=='AGREE' %} checked {% endif %}/>
-                    <label class="form-check-label" for="agree_option1"> เห็นด้วย </label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="radio" name="agree_option" id="agree_option2" value="DISAGREE"
-                        {% if data['dentist_feedback_code']=='DISAGREE' %} checked {% endif %} />
-                    <label class="form-check-label" for="agree_option2"> ไม่เห็นด้วย </label>
-                </div>
-
-                <h5 class="card-title mt-4">
-                    คำวินิจฉัยเพิ่มเติม
-                </h5>
-                <div class="d-flex justify-content-lg-start mb-4">
-                    <div>
-                        <!-- {{ data}} -->
-                        <label class="mb-1">ตำแหน่งที่ตรวจพบรอยโรค</label>
-                        {% for key, value in maps['lesion_location_map'].items() %}
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="lesion_location" id="lesion_location{{loop.index}}" value="{{key}}"
-                                    {% if data['dentist_feedback_location']==loop.index %}checked{% endif %} />
-                                <label class="form-check-label" for="lesion_location{{loop.index}}">{{value}}</label>
-                            </div>
-                        {% endfor %}
-                    </div>
-
-                    <div>
-                        <label class="mb-1">ชนิดรอยโรค</label>
-                        {% for key, value in maps['lesion_type_map'].items() %}
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="lesion_type" id="lesion_type{{loop.index}}" value="{{key}}"
-                                    {% if data['dentist_feedback_lesion']==loop.index %}checked{% endif %} />
-                                <label class="form-check-label" for="lesion_type{{loop.index}}">{{value}}</label>
-                            </div>
-                        {% endfor %}
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <label for="dentist_comment" class="form-label">ความคิดเห็น</label>
-                    <textarea class="form-control" rows="3" name="dentist_comment">{{data['dentist_feedback_comment']}}</textarea>
-                </div>
-               
-                <input name="feedback_submit" class="btn btn-outline-success" type="submit" value="บันทึกความคิดเห็น" />
-
-            </div>
-        </div>
-    </div>
-</form>
 
 {% endblock %}
 

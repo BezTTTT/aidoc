@@ -39,6 +39,8 @@ def create_app(test_config=None):
     app.register_blueprint(image.bp)
     from . import user
     app.register_blueprint(user.bp)
+    from . import general
+    app.register_blueprint(general.bp)
 
     # Add special endpoints
     app.add_url_rule('/', endpoint='index')

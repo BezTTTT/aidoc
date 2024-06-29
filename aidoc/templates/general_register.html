@@ -1,0 +1,56 @@
+{% extends "./base.html"%}
+
+{% block title %} RiskOCA | General User Register {% endblock %}
+
+{% block content %}
+<div class="row d-flex align-items-center justify-content-center pt-4">
+    <div class="card mb-4" style="width: max-content;">
+        <div class="card-body">
+            <h5 class="card-title">ลงทะเบียนผู้ใช้งานระบบ</h5><br>
+            <label class="mr-sm-2"> <i> ระบบนี้ เปิดให้ลงทะเบียนใช้งาน ได้เฉพาะกับ ทันตบุคลากร ที่ผ่านการอบรมกับ <br> ศูนย์ทันตสาธารณสุขระหว่างประเทศ กรมอนามัย เท่านั้น </i><br>
+                <span style="color: red;"> <b>บุคคลภายนอก ไม่อนุญาติให้ใช้งาน</b></span></label><br><br>
+            <form class="my-4" action="/general/register" method="post" enctype="multipart/form-data">
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">ชื่อ (ไม่ต้องใส่คำนำหน้าชื่อ) <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="ชื่อ..." name="name" value="{{data.name}}"required>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">นามสกุล <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="นามสกุล..." name="surname" value="{{data.surname}}" required>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">อีเมล <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="อีเมล..." name="email" value="{{data.email}}" required
+                    {% if data.valid_email is defined and not data.valid_email %}
+                        style="border-color: rgba(244, 92, 92, 1);"
+                    {% endif %}>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">อาชีพ <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="อาชีพ..." name="job_position" value="{{data.job_position}}" required>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">สถานที่ทำงาน หรือ หน่วยงานที่สังกัด <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="สถานที่ทำงาน หรือ หน่วยงานที่สังกัด ..." name="workplace" value="{{data.workplace}}" required>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">จังหวัด <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="จังหวัด..." name="city" value="{{data.city}}" required>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2">ประเทศ <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="ประเทศ..." name="country" value="Thailand" required>
+                </div>
+                <div class="row d-flex justify-content-center my-2">
+                    <div class="col d-flex justify-content-center">
+                        <a class="btn btn-outline-primary" style="width: 100%;" type="submit" href="/general">ยกเลิก</a>
+                    </div>
+                    <div class="col d-flex justify-content-center">
+                        <input class="btn btn-success" style="width: 100%;" type="submit" value="ลงทะเบียน">
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -74,6 +74,28 @@ CREATE TABLE `patient_case_id` (
   `id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;
 
+CREATE TABLE `general_user` (
+  `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `name` varchar(255) NOT NULL,
+  `surname` varchar(255) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `job_position` varchar(255) DEFAULT NULL,
+  `workplace` varchar(255) DEFAULT NULL,
+  `city` varchar(255) DEFAULT NULL,
+  `country` varchar(255) DEFAULT NULL,
+  `ip_address` varchar(255) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;
+
+CREATE TABLE `general_submission_record` (
+  `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `fname` varchar(255) NOT NULL,
+  `sender_id` int DEFAULT NULL,
+  `ai_prediction` int DEFAULT NULL,
+  `ai_scores` varchar(255) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;
+
 /*
  Source Server         : rockpi
  Source Server Type    : MariaDB

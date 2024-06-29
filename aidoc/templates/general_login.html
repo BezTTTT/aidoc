@@ -1,0 +1,42 @@
+{% extends "./base.html"%}
+
+{% block title %} RiskOCA | Public User Login {% endblock %}
+
+{% block content %}
+<style>
+    .loginContainer {
+        width: 100%;
+    }
+
+    @media screen and (min-width: 1024px) {
+        .loginContainer {
+            padding: 0.3rem;
+            width: 50%;
+        }
+    }
+</style>
+<div class="container-sm my-4">
+    <div class="card m-auto loginContainer">
+        <div class="card-body">
+            <h5 class="card-title fw-bold">
+                ระบบปัญญาประดิษฐ์ที่ช่วยในการค้นหาและวิเคราะห์รอยโรคก่อนมะเร็งและมะเร็งช่องปาก</h5>
+            <form action="/general/login" method="post" enctype="multipart/form-data">
+                <div class="my-4">
+                    <div class="form-group">
+                        <label class="mr-sm-2 mb-2">E-mail:</label>
+                        <input type="text" class="form-control" placeholder="Please enter your email ..." name="email" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12 d-flex justify-content-center">
+                        <input class="btn btn-outline-success" style="width: 50%;" type="submit" value="ตกลง">
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<br>
+{% include 'terms_footer.html' %}
+{% endblock %}
+
