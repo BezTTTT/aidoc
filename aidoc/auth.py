@@ -1,5 +1,5 @@
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for
+    Blueprint, flash, redirect, render_template, request, session, url_for
 )
 from werkzeug.security import check_password_hash
 
@@ -10,31 +10,35 @@ from aidoc.db import get_db
 
 bp = Blueprint('auth', __name__)
 
-@bp.before_app_request
 def load_logged_in_user():
     user_id = session.get('user_id')
     if user_id is None:
-        g.user = None
+        session.pop('user', None)
     else:
         db, cursor = get_db()
-        cursor.execute('SELECT * FROM user WHERE id = %s', (user_id,))
+        if session['sender_mode']=='general':
+            cursor.execute('SELECT * FROM general_user WHERE id = %s', (user_id,))
+        else:
+            cursor.execute('SELECT * FROM user WHERE id = %s', (user_id,))
         user = cursor.fetchone()
         if user is None:
             session.pop('user_id', None)
         else:
-            g.user = user
-            if g.user['is_patient']:
-               g.user['job_position_th'] = g.user['job_position']
+            session['user'] = user
+            if session['sender_mode']=='general':
+                session['general_user'] = True
+            elif session['user']['is_patient']:
+                session['user']['job_position_th'] = session['user']['job_position']
             else:
                 job_position_dict = {"OSM":"อสม.", "Dental Nurse":"ทันตาภิบาล/เจ้าพนักงานทันตสาธารณสุข", "Dentist":"ทันตแพทย์",
                                     "Oral Pathologist": "ทันตแพทย์เฉพาะทาง วิทยาการวินิจฉัยโรคช่องปาก", "Oral and Maxillofacial Surgeon":"ทันตแพทย์เฉพาะทาง ศัลยศาสตร์ช่องปากและแม็กซิลโลเฟเชียล",
                                     "Physician":"แพทย์", "Public Health Technical Officer":"นักวิชาการสาธารณสุข", "Computer Technical Officer":"นักวิชาการคอมพิวเตอร์/นักวิจัย/ผู้พัฒนาระบบ",
                                     "Other Public Health Officer":"ข้าราชการ/เจ้าพนักงานกระทรวงสาธารณสุข", "Other Government Officer":"เจ้าหน้าที่รัฐอื่น", "General Public":"บุคคลทั่วไป"}
-                g.user['job_position_th'] = job_position_dict[g.user['job_position']]
+                session['user']['job_position_th'] = job_position_dict[session['user']['job_position']]
 
 @bp.route('/')
 def index():
-    if g.get('user') is None:
+    if session.get('user') is None:
         session.clear() # logged out from everything
         return render_template("patient_login.html") # default index page (patient and osm login)
     else: # if user is already logged in
@@ -47,10 +51,10 @@ def index():
 
 @bp.route('/dentist')
 def dentist_index():
-    if g.get('user') is None:
+    if session.get('user') is None:
         session.clear() # logged out from everything
 
-    if g.user: # already logged in
+    if 'user' in session and session['user']: # already logged in
         if 'sender_mode' in session and session['sender_mode']=='dentist':
             return redirect(url_for("image.record", role='dentist'))
     else:
@@ -61,10 +65,10 @@ def role_validation(view):
     def wrapped_view(**kwargs):
         allowed_roles = ['patient', 'osm', 'dentist', 'specialist']
         if ('role' not in kwargs) or (kwargs['role'] not in allowed_roles) or \
-            (kwargs['role']=='osm' and g.user is not None and g.user['is_osm']==0) or \
-            (kwargs['role']=='patient' and g.user is not None and g.user['is_patient']==0) or \
-            (kwargs['role']=='specialist' and g.user is not None and g.user['is_specialist']==0) or \
-            (kwargs['role']=='dentist' and g.user is not None and g.user['username'] is None) \
+            (kwargs['role']=='osm' and session['user'] is not None and session['user']['is_osm']==0) or \
+            (kwargs['role']=='patient' and session['user'] is not None and session['user']['is_patient']==0) or \
+            (kwargs['role']=='specialist' and session['user'] is not None and session['user']['is_specialist']==0) or \
+            (kwargs['role']=='dentist' and session['user'] is not None and session['user']['username'] is None) \
         :
             session.pop('sender_mode', None)
             return render_template('unauthorized_access.html', error_msg='คุณไม่มีสิทธิ์เข้าถึงข้อมูล Unauthorized Access [role_validation]')
@@ -171,24 +175,27 @@ def login(role):
 
 @bp.route('/logout')
 def logout():
-    if 'sender_mode' in session and session['sender_mode']=='dentist':
+    if 'sender_mode' in session and session['sender_mode']=='general':
         session.clear()
-        g.user = None
+        return redirect('/general')
+    elif 'sender_mode' in session and session['sender_mode']=='dentist':
+        session.clear()
         return redirect(url_for('auth.dentist_index'))
     else:
         session.clear()
-        g.user = None
         return redirect('/')
 
 def login_required(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
-        if g.user is None:
-            if 'sender_mode' in session and session['sender_mode']=='dentist':
-                return redirect(url_for('auth.login', role='dentist'))
-            elif 'sender_mode' in session and session['sender_mode']=='osm':
-                return redirect(url_for('auth.login', role='osm'))
-            else:
-                return redirect(url_for('auth.login', role='patient'))
+        if 'user' not in session or session['user'] is None:
+            if 'sender_mode' in session:
+                if session['sender_mode']=='dentist':
+                    return redirect(url_for('auth.login', role='dentist'))
+                elif session['sender_mode']=='osm':
+                    return redirect(url_for('auth.login', role='osm'))
+                elif session['sender_mode']=='general':
+                    return redirect('/general')
+            return redirect('/')
         return view(**kwargs)
     return wrapped_view

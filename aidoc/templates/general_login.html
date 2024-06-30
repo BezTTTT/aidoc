@@ -15,28 +15,30 @@
         }
     }
 </style>
-<div class="container-sm my-4">
+<div class="container-sm mt-4">
     <div class="card m-auto loginContainer">
         <div class="card-body">
-            <h5 class="card-title fw-bold">
-                ระบบปัญญาประดิษฐ์ที่ช่วยในการค้นหาและวิเคราะห์รอยโรคก่อนมะเร็งและมะเร็งช่องปาก</h5>
+            <h5 class="card-title fw-bold text-center">Artificial Intelligent System for Detecting and Analyzing PMDs and Oral Cancer in Photographic Images</h5>
             <form action="/general/login" method="post" enctype="multipart/form-data">
                 <div class="my-4">
                     <div class="form-group">
-                        <label class="mr-sm-2 mb-2">E-mail:</label>
-                        <input type="text" class="form-control" placeholder="Please enter your email ..." name="email" required>
+                        <label class="mr-sm-2 mb-2">Your email will be used as the username in this system, unregistered email will be redirected to the registation page</label>
+                        <input type="text" class="form-control" placeholder="Please enter your email here to continue" name="email" required>
                     </div>
                 </div>
                 <div class="row">
                     <div class="col-12 d-flex justify-content-center">
-                        <input class="btn btn-outline-success" style="width: 50%;" type="submit" value="ตกลง">
+                        <input class="btn btn-outline-success" style="width: 50%;" type="submit" value="Enter">
                     </div>
+                </div>
+                <div class="my-4 text-center">
+                    By entering your email in the field above, you agree to all terms and conditions described below.
                 </div>
             </form>
         </div>
     </div>
 </div>
 <br>
-{% include 'terms_footer.html' %}
+{% include 'terms_footer_en.html' %}
 {% endblock %}
 

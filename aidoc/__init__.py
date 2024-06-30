@@ -32,6 +32,19 @@ def create_app(test_config=None):
     os.makedirs(os.path.join(IMAGE_DATA_DIR, 'upload', 'thumbnail'), exist_ok=True)
     os.makedirs(os.path.join(IMAGE_DATA_DIR, 'outlined', 'thumbnail'), exist_ok=True)
     
+    # Create folders for the default user_id:0 to save general public submissions
+    user_id = '0'
+    uploadDir = os.path.join(app.config['IMAGE_DATA_DIR'], 'upload', user_id)
+    thumbUploadDir = os.path.join(app.config['IMAGE_DATA_DIR'], 'upload', 'thumbnail', user_id)
+    outlinedDir = os.path.join(app.config['IMAGE_DATA_DIR'], 'outlined', user_id)
+    thumbOutlinedDir = os.path.join(app.config['IMAGE_DATA_DIR'], 'outlined', 'thumbnail', user_id)
+    maskDir = os.path.join(app.config['IMAGE_DATA_DIR'], 'mask', user_id)
+    os.makedirs(uploadDir, exist_ok=True)
+    os.makedirs(thumbUploadDir, exist_ok=True)
+    os.makedirs(outlinedDir, exist_ok=True)
+    os.makedirs(thumbOutlinedDir, exist_ok=True)
+    os.makedirs(maskDir, exist_ok=True)
+
     # Register blueprints
     from . import auth
     app.register_blueprint(auth.bp)

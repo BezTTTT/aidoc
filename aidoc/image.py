@@ -1,5 +1,5 @@
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, session, url_for, send_from_directory, send_file, current_app, jsonify
+    Blueprint, flash, redirect, render_template, request, session, url_for, send_from_directory, send_file, current_app, jsonify
 )
 from werkzeug.utils import secure_filename
 
@@ -251,7 +251,7 @@ def rotate_image(return_page, role, img_id):
     pil_img = pil_img.rotate(-90, expand=True)
     pil_img.save(maskPath)
 
-    if (return_page=='diagnosis'):
+    if return_page=='diagnosis':
         return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
 
 # region rocompute_image
@@ -749,12 +749,12 @@ def upload_submission_module(target_user_id):
                     val = (session['sender_phone'], session['zip_code'], session['user_id'])
                     cursor.execute(sql, val)
                 
-                if (g.user['default_sender_phone'] and ('sender_phone' not in session or session['sender_phone'] is None)):
+                if (session['user']['default_sender_phone'] and ('sender_phone' not in session or session['sender_phone'] is None)):
                     sql = "UPDATE user SET default_sender_phone=NULL WHERE id=%s"
                     val = (session['user_id'], )
                     cursor.execute(sql, val)
 
-                if (g.user['default_zip_code'] and ('zip_code' not in session or session['zip_code'] is None)):
+                if (session['user']['default_zip_code'] and ('zip_code' not in session or session['zip_code'] is None)):
                     sql = "UPDATE user SET default_zip_code=NULL WHERE id=%s"
                     val = (session['user_id'], )
                     cursor.execute(sql, val)

@@ -47,7 +47,7 @@
 {% else %}
   <div class="p-3 text-center d-flex justify-content-center">
     <div class="col-md-8">
-      <img id="previewImage" src="{{ url_for('image.load_image', folder='temp', user_id=g.user['id'], imagename=data['uploadedImage']) }}"
+      <img id="previewImage" src="{{ url_for('image.load_image', folder='temp', user_id=session['user_id'], imagename=data['uploadedImage']) }}"
         class="card d-flex mx-auto" alt="" />
       <div class="my-3">
         <a class="btn btn-outline-warning mb-2" href="/upload_image/osm">เปลี่ยนรูป</a>
@@ -64,8 +64,8 @@
                 <div class="row mt-2 justify-content-center">
                   <div class="col-4">
                     <input class="form-control" placeholder="รหัสไปรษณีย์ 5 หลัก" maxlength="5" type="text" name="inputZipCode" id="inputZipCode" required
-                      {% if g.user['default_zip_code']  %}
-                        value="{{ g.user['default_zip_code'] }}"
+                      {% if session['user']['default_zip_code']  %}
+                        value="{{ session['user']['default_zip_code'] }}"
                       {% endif %}
                     /> 
                   </div>

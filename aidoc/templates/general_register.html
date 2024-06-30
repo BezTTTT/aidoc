@@ -6,47 +6,49 @@
 <div class="row d-flex align-items-center justify-content-center pt-4">
     <div class="card mb-4" style="width: max-content;">
         <div class="card-body">
-            <h5 class="card-title">ลงทะเบียนผู้ใช้งานระบบ</h5><br>
-            <label class="mr-sm-2"> <i> ระบบนี้ เปิดให้ลงทะเบียนใช้งาน ได้เฉพาะกับ ทันตบุคลากร ที่ผ่านการอบรมกับ <br> ศูนย์ทันตสาธารณสุขระหว่างประเทศ กรมอนามัย เท่านั้น </i><br>
-                <span style="color: red;"> <b>บุคคลภายนอก ไม่อนุญาติให้ใช้งาน</b></span></label><br><br>
+            <h5 class="card-title">Register a new user</h5><br>
+            <label class="mr-sm-2"> <i> This system opens to use for invited users only. For more information, please contact <br> the Intercountry Centre for Oral Health, Department of Health, Thailand Ministry of Public Health <br></i>
+                <span style="color: red;"> <b>Uninvited users are not allowed to access the system</b><br></span>
+                <span style="color: purple;"> <b>By entering your information in this form, you agree to all of our terms and conditions</b></span>
+            </label><br><br>
             <form class="my-4" action="/general/register" method="post" enctype="multipart/form-data">
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">ชื่อ (ไม่ต้องใส่คำนำหน้าชื่อ) <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="ชื่อ..." name="name" value="{{data.name}}"required>
+                    <label class="mr-sm-2">First name (no title) <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="First name..." name="name" value="{{data.name}}"required>
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">นามสกุล <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="นามสกุล..." name="surname" value="{{data.surname}}" required>
+                    <label class="mr-sm-2">Last name <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="Last name..." name="surname" value="{{data.surname}}" required>
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">อีเมล <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="อีเมล..." name="email" value="{{data.email}}" required
+                    <label class="mr-sm-2">Email <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="Email..." name="email" value="{{data.email}}" required
                     {% if data.valid_email is defined and not data.valid_email %}
                         style="border-color: rgba(244, 92, 92, 1);"
                     {% endif %}>
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">อาชีพ <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="อาชีพ..." name="job_position" value="{{data.job_position}}" required>
+                    <label class="mr-sm-2">Occupation <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="Occupation..." name="job_position" value="{{data.job_position}}" required>
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">สถานที่ทำงาน หรือ หน่วยงานที่สังกัด <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="สถานที่ทำงาน หรือ หน่วยงานที่สังกัด ..." name="workplace" value="{{data.workplace}}" required>
+                    <label class="mr-sm-2">Worksplace or Organization <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="Workplace or Organization ..." name="workplace" value="{{data.workplace}}" required>
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">จังหวัด <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="จังหวัด..." name="city" value="{{data.city}}" required>
+                    <label class="mr-sm-2">City of the workspace <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="City of the worksplace ..." name="city" value="{{data.city}}" required>
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">ประเทศ <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="ประเทศ..." name="country" value="Thailand" required>
+                    <label class="mr-sm-2">Country <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="Country ..." name="country" value="Thailand" required>
                 </div>
                 <div class="row d-flex justify-content-center my-2">
                     <div class="col d-flex justify-content-center">
-                        <a class="btn btn-outline-primary" style="width: 100%;" type="submit" href="/general">ยกเลิก</a>
+                        <a class="btn btn-outline-primary" style="width: 100%;" type="submit" href="/general">Cancel</a>
                     </div>
                     <div class="col d-flex justify-content-center">
-                        <input class="btn btn-success" style="width: 100%;" type="submit" value="ลงทะเบียน">
+                        <input class="btn btn-success" style="width: 100%;" type="submit" value="Register">
                     </div>
                 </div>
             </form>

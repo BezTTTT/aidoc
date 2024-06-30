@@ -47,9 +47,9 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    {% if g.user is not none %}
+                    {% if 'user' in session and session['user'] is not none %}
                         <!--  Dentist navbar -->
-                        {% if g.user['username'] is not none %} 
+                        {% if not session['general_user'] and session['user']['username'] is not none %} 
                             <li class="nav-item">
                                 <a class="nav-link active" aria-current="page" href="/upload_image/dentist">นำส่งข้อมูลเพิ่มเติม</a>
                             </li>
@@ -57,14 +57,14 @@
                                 <a class="nav-link active" aria-current="page" href="/record/dentist">ประวัติการนำส่งข้อมูล</a>
                             </li>
                             <!-- Specialist is a subset of dentist -->
-                            {% if g.user['is_specialist']==1 %}
+                            {% if session['user']['is_specialist']==1 %}
                                 <li class="nav-item">
                                     <a class="nav-link active" aria-current="page" href="/record/specialist">ระบบผู้เชี่ยวชาญ</a>
                                 </li>
                             {% endif %}
                         
                         <!--  osm navbar -->
-                        {% elif g.user['is_osm']==1 %}
+                        {% elif session['user']['is_osm']==1 %}
                             <li class="nav-item">
                                 <a class="nav-link active" aria-current="page" href="/upload_image/osm">นำส่งข้อมูลเพิ่มเติม</a>
                             </li>
@@ -73,7 +73,7 @@
                             </li>
 
                         <!--  patient navbar -->
-                        {% elif g.user['is_patient']==1 %}
+                        {% elif session['user']['is_patient']==1 %}
                             <li class="nav-item">
                                 <a class="nav-link active" aria-current="page" href="/upload_image/patient">นำส่งข้อมูลเพิ่มเติม</a>
                             </li>
@@ -83,16 +83,32 @@
                 </ul>
 
                 <!--  navbar footer -->
-                {% if not g.user %}
-                    <a class="btn btn-success" type="submit" href="/">เข้าสู่ระบบ</a>
+                
+                {% if 'user' not in session or session['user'] is none %}
+                    {% if session['sender_mode'] == 'general' %}
+                        <a class="btn btn-success" type="submit" href="/general">Login</a>
+                    {% else %}
+                        <a class="btn btn-success" type="submit" href="/">เข้าสู่ระบบ</a>
+                    {% endif %}
+                {% elif session['general_user'] %}
+                    <div class="me-2">
+                        User: {{session['user']['name']}} {{session['user']['surname']}}, {{session['user']['job_position']}} ( 👨‍🔬 )
+                    </div>
+                    <div class="d-flex flex-column align-items-center">
+                        <form action="{{ url_for('auth.logout') }}" method="get" enctype="multipart/form-data">
+                            <button class="btn btn-danger" type="submit" id="Logoutbtn">
+                                Logout
+                            </button>
+                        </form>
+                    </div>
                 {% else %}
                     <div class="me-2">
-                        ชื่อผู้ใช้งาน: {{g.user['name']}} {{g.user['surname']}} (
-                            {% if g.user['is_patient'] == 1 %}👨‍🦽{% endif %}
-                            {% if g.user['is_osm'] == 1 %}👨‍🚒{% endif %}
-                            {% if g.user['username'] is not none %}👨‍⚕️{% endif %}
-                            {% if g.user['is_specialist'] == 1 %}⚕️{% endif %}
-                            {% if g.user['is_admin'] == 1 %}🤴{% endif %}                            
+                        ชื่อผู้ใช้งาน: {{session['user']['name']}} {{session['user']['surname']}} (
+                            {% if session['user']['is_patient'] == 1 %}👨‍🦽{% endif %}
+                            {% if session['user']['is_osm'] == 1 %}👨‍🚒{% endif %}
+                            {% if session['user']['username'] is not none %}👨‍⚕️{% endif %}
+                            {% if session['user']['is_specialist'] == 1 %}⚕️{% endif %}
+                            {% if session['user']['is_admin'] == 1 %}🤴{% endif %}                            
                         )
                     </div>
                     <div class="d-flex flex-column align-items-center">

@@ -4,32 +4,31 @@
 
 {% block content %}
 
-<h2 class="text-center"> ระบบปัญญาประดิษฐ์ที่ช่วยในการค้นหาและวิเคราะห์รอยโรคก่อนมะเร็งและมะเร็งช่องปาก</h2>
-<h4 class="text-center"> (Artificial Intelligent System for Detecting and Analyzing PMDs and Oral Cancer)</h4>
+<h2 class="text-center"> Artificial Intelligent System for Detecting and Analyzing PMDs and Oral Cancer</h2>
 <div class="row d-flex justify-content-center text-center">
     <div class="col-md-4">
         <div class="card">
             <div class="mx-2 mt-2" style="display: inline-flex; align-items: center; justify-content: center; ">
-                <a href="{{ url_for('image.load_image', folder='upload', user_id=g.user['id'], imagename=data['fname']) }}" target="_blank">
-                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=g.user['id'], imagename=data['fname']) }}"
+                <a href="{{ url_for('image.load_image', folder='upload', user_id='0', imagename=data['fname']) }}" target="_blank">
+                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id='0', imagename=data['fname']) }}"
                         class="card-img-top" alt="" style="max-height: 512px" />
                 </a>
             </div>
             <div class="card-body">
-                <p class="card-text">ภาพถ่ายช่องปาก</p>
+                <p class="card-text">Input image</p>
             </div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card">
             <div class="mx-2 mt-2" style="display: inline-flex; align-items: center; justify-content: center; ">
-                <a href="{{ url_for('image.load_image', folder='outlined', user_id=g.user['id'], imagename=data['fname']) }}" target="_blank">
-                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=g.user['id'], imagename=data['fname']) }}"
+                <a href="{{ url_for('image.load_image', folder='outlined', user_id='0', imagename=data['fname']) }}" target="_blank">
+                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id='0', imagename=data['fname']) }}"
                         class="card-img-top"  alt="" style="max-height: 512px" />
                 </a>
             </div>
             <div class="card-body">
-                <p class="card-text">ภาพ AI ระบุรอยโรค</p>
+                <p class="card-text">AI Prediction</p>
             </div>
         </div>
     </div>
@@ -38,7 +37,7 @@
     <div class="col-md-8">
         <div class="card">
             <div class="card-body">
-                <p class="card-text">[คำแนะนำ] [1. กดที่รูป เพื่อดูภาพความละเอียดสูง] [2. หากศรีษะของคนไข้ไม่อยู่ในทิศทางตั้งขึ้น เพื่อให้ AI ทำงานได้แม่นยำที่สุด กรุณากดหมุนรูป แล้วกด Recompute เพื่อให้ AI ประมวลผลอีกครั้ง] [3. เนื่องจาก AI อาจมีการปรับปรุงตัวเป็นรุ่นใหม่ ผู้ใช้อาจกด Recompute เพื่อขอให้ AI รุ่นล่าสุดพิจารณาภาพนี้อีกครั้ง]</p>
+                <p class="card-text">[Suggestions] [1. Click at the image to see high resolution image] [2. To improve the AI prediction results, patient head should be upgright. If not, please click 'Rotate CW' then 'Recompute']</p>
             </div>
         </div>
     </div>
@@ -48,22 +47,20 @@
     <div class="row justify-content-center my-4" style="width: 90%;">
         <div class="col-md-3 text-center mt-2 px-1">
             <a class="btn btn-outline-success btn-block nowrap" style="width: 100%; margin: 0;"
-                href="/upload_image/dentist">วิเคราะห์รูปภาพอื่นเพิ่มเติม</a>
+                href="/general/upload">Submit other image</a>
         </div>
         <div class="col-md-2 text-center mt-2 px-1">
             <a class="btn btn-outline-success btn-block" style="width: 100%; margin: 0;"
-                href="/download_image/{{data['sender_id']}}/{{data['fname']}}" download>Download</a>
+                href="/download_image/0/{{data['fname']}}" download>Download</a>
         </div>
         <div class="col-md-2 text-center mt-2 px-1">
-            <form action="{{url_for('image.rotate_image', return_page='diagnosis', role='dentist', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
-                <input name="user_id" type="hidden" value="{{data['sender_id']}}">
+            <form action="{{url_for('general.rotate_general_image', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
                 <input name="imagename" type="hidden" value="{{data['fname']}}">
-                <input class="btn btn-outline-success" type="submit" style="width: 100%; margin: 0;" value="หมุนรูปไปทางขวา" />
+                <input class="btn btn-outline-success" type="submit" style="width: 100%; margin: 0;" value="Rotate CW" />
             </form>
         </div>
         <div class="col-md-2 text-center mt-2 px-1">
-            <form action="{{url_for('image.recompute_image', return_page='diagnosis', role='dentist', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
-                <input name="user_id" type="hidden" value="{{data['sender_id']}}">
+            <form action="{{url_for('general.recompute_general_image', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
                 <input name="imagename" type="hidden" value="{{data['fname']}}">
                 <input class="btn btn-outline-success" type="submit" style="width: 100%; margin: 0;" value="Recompute" />
             </form>
@@ -74,27 +71,22 @@
 <div class="row d-flex justify-content-center text-align-left my-4" style="width: auto">
     <div class="card">
         <div class="card-body">
-            <h5 class="card-title">ผลการพยากรณ์ของ AI</h5>
+            <h5 class="card-title">AI Prediction Result</h5>
             {% if data['ai_prediction'] == 0 %}
                 <h6 class="card-subtitle card shadow-lg bg-success my-3 py-3 ms-4 fs-3 text-white text-center">
-                    ภาพช่องปากไม่น่าจะมีรอยโรค
+                    The oral image may not have any lesion
                 </h6>
             {% elif data['ai_prediction'] == 1 %}
                 <h6 class="card-subtitle card shadow-lg bg-warning my-3 py-3 fs-3 text-dark text-center">
-                    ภาพถ่ายช่องปากอาจมีรอยโรคที่มีลักษณะคล้ายกันกับ OPMD (Oral Potentially Malignant Disorders)
+                    The oral image may have lesions similar to OPMD (Oral Potentially Malignant Disorders)
                 </h6>
             {% else %}
                 <h6 class="card-subtitle card shadow-lg bg-danger my-3 py-3 ms-4 fs-3 text-white text-center">
-                    ภาพถ่ายช่องปากอาจมีรอยโรคที่มีลักษณะคล้ายกันกับ OSCC (Oral Squamous Cell Carcinoma)
+                    The oral image may have lesions similar to OSCC (Oral Squamous Cell Carcinoma)
                 </h6>
             {% endif %}
-        
-            <button id="seeMoreButton" class="btn btn-light"
-                style="padding: 5px 10px; font-size: 13px;background-color:rgb(196, 196, 196);">
-                <span class="bi bi-plus">คลิกเพื่อดูความน่าจะเป็นของการพยากรณ์ด้วย AI</span>
-            </button>
-    
-            <div id="hiddenContent" class="m-2">
+           
+            <div class="mt-4">
                 <div class="row d-flex justify-content-center">
                     <div class="col-1 d-flex justify-content-end" style="width: 33%">
                         {% if data['ai_prediction'] == 0 %}
@@ -104,7 +96,7 @@
                         {% endif %}
                     </div>
                     <div class="col-2" style="width: 33%">
-                        <p class="card-text">ความน่าจะเป็นที่จะไม่มีรอยโรค</p>
+                        <p class="card-text">Similarity Index of not having any lesion</p>
                     </div>
                     <div class="col-3" style="width: 33%">
                         <p class="card-text">
@@ -122,7 +114,7 @@
                         {% endif %}
                     </div>
                     <div class="col-2" style="width: 33%">
-                        <p class="card-text">ความน่าจะเป็นของการมีรอยโรค OPMD</p>
+                        <p class="card-text">Similarity Index of having OPMD lesions</p>
                     </div>
                     <div class="col-3" style="width: 33%">
                         <p class="card-text">
@@ -140,7 +132,7 @@
                         {% endif %}
                     </div>
                     <div class="col-2" style="width: 33%">
-                        <p class="card-text">ความน่าจะเป็นของการมีรอยโรค OSCC</p>
+                        <p class="card-text">Similarity Index of having OSCC lesions</p>
                     </div>
                     <div class="col-3" style="width: 33%">
                         <p class="card-text">
@@ -152,29 +144,9 @@
         </div>
     </div>
 </div>
-
-{% endblock %}
-
-{% block script %}
-
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-  $(document).ready(function () {
-    $("#seeMoreButton").click(function () {
-      var hiddenContent = $("#hiddenContent");
-      var button = $("#seeMoreButton");
-
-      if (hiddenContent.is(":hidden")) {
-        hiddenContent.slideDown("slow", function () {
-          button.text("ปิด");
-        });
-      } else {
-        hiddenContent.slideUp("slow", function () {
-          button.text("คลิกเพื่อดูความน่าจะเป็นของการพยากรณ์ด้วย AI");
-        });
-      }
-    });
-  });
-</script>
+<br />
+<br />
+{% include 'examples_footer_en.html' %}
+{% include 'terms_footer_en.html' %}
 
 {% endblock %}

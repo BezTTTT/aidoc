@@ -90,7 +90,7 @@ CREATE TABLE `general_user` (
 CREATE TABLE `general_submission_record` (
   `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `fname` varchar(255) NOT NULL,
-  `sender_id` int DEFAULT NULL,
+  `general_sender_id` int DEFAULT NULL,
   `ai_prediction` int DEFAULT NULL,
   `ai_scores` varchar(255) DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP

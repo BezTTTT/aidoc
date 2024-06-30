@@ -13,8 +13,8 @@
                 style="border-color: red; border-width: 3px;"
             {% endif %}>
             <div class="mx-2 mt-2" style="display: inline-flex; align-items: center; justify-content: center; ">
-                <a href="{{ url_for('image.load_image', folder='upload', user_id=g.user['id'], imagename=data['fname']) }}" target="_blank">
-                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=g.user['id'], imagename=data['fname']) }}"
+                <a href="{{ url_for('image.load_image', folder='upload', user_id=session['user_id'], imagename=data['fname']) }}" target="_blank">
+                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=session['user_id'], imagename=data['fname']) }}"
                         class="card-img-top" alt="" style="max-height: 512px" />
                 </a>
             </div>
@@ -29,8 +29,8 @@
                 style="border-color: red; border-width: 3px;"
             {% endif %}>
             <div class="mx-2 mt-2" style="display: inline-flex; align-items: center; justify-content: center; ">
-                <a href="{{ url_for('image.load_image', folder='outlined', user_id=g.user['id'], imagename=data['fname']) }}" target="_blank">
-                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=g.user['id'], imagename=data['fname']) }}"
+                <a href="{{ url_for('image.load_image', folder='outlined', user_id=session['user_id'], imagename=data['fname']) }}" target="_blank">
+                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=session['user_id'], imagename=data['fname']) }}"
                         class="card-img-top"  alt="" style="max-height: 512px" />
                 </a>
             </div>

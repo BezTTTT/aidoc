@@ -4,8 +4,7 @@
 
 {% block content %}
 
-<h2 class="text-center"> ระบบปัญญาประดิษฐ์ที่ช่วยในการค้นหาและวิเคราะห์รอยโรคก่อนมะเร็งและมะเร็งช่องปาก</h2>
-<h4 class="text-center"> (Artificial Intelligent System for Detecting and Analyzing PMDs and Oral Cancer)</h4>
+<h2 class="text-center"> Artificial Intelligent System for Detecting and Analyzing PMDs and Oral Cancer</h2>
 
 {% if data is undefined or data.get('uploadedImage') is none %}
   <div class="container-fluid">
@@ -13,13 +12,13 @@
     <div class="row d-flex justify-content-center align-items-center text-center">
       <div class="col-8 col-xs-2 d-flex justify-content-center align-items-center">
         <form class="p-3 text-center" action="/general/upload" method="post" enctype="multipart/form-data">
-          <input id="file-upload1" type="file" name="imageList" onchange="form.submit()" accept="image/*" multiple hidden />
+          <input id="file-upload1" type="file" name="imageList" onchange="form.submit()" accept="image/*" hidden />
           <div class="d-flex align-items-center" style="width: 100%">
             <label for="file-upload1" class="card d-flex justify-content-center align-items-center" style="
                   border-style: dashed;
                   border-color: rgb(0, 229, 255); 
                   border-width: 2px;
-                  width: 22rem;
+                  width: 25rem;
                   height: 20  rem;
                   cursor: pointer;
                   padding: 10px;
@@ -27,7 +26,8 @@
               <div class="d-flex justify-content-center align-items-center img-responsive">
                 <img src="{{url_for('static', filename='upload_icon.png')}}" style="width: 30%;" class="card-img-top">
               </div>
-              คลิกเพื่ออัพโหลดรูปภาพ<br />(กรุณาอัพโหลดรูปช่องปากที่ได้มาตรฐานเท่านั้น)
+              Click here to upload an oral image<br />
+              (Please upload only the image with standard views and quality)
             </label>
           </div>
         </form> 
@@ -37,22 +37,22 @@
 {% else %}
   <div class="p-3 text-center d-flex justify-content-center">
     <div class="col-md-8">
-      <img id="previewImage" src="{{ url_for('image.load_image', folder='temp', user_id=g.user['id'], imagename=data['uploadedImage']) }}" class="card d-flex mx-auto" alt="" />
+      <img id="previewImage" src="{{ url_for('image.load_image', folder='temp', user_id='0', imagename=data['uploadedImage']) }}" class="card d-flex mx-auto" alt="" />
       <div class="my-3">
-        <a class="btn btn-outline-warning mb-2" href="/general/upload">เปลี่ยนรูป</a>
-        <form action="{{ url_for('image.upload_image', role='dentist', submission='false') }}" method="post" enctype="multipart/form-data">
+        <a class="btn btn-outline-warning mb-2" href="/general/upload">Change image</a>
+        <form action="{{ url_for('general.general_upload', submission='false') }}" method="post" enctype="multipart/form-data">
           <input name="uploadedImage" type="text" value="{{data['uploadedImage']}}" hidden />
-          <input name="rotation_submitted" type="submit" class="btn btn-outline-primary mb-2" value="คนไข้ควรหัวตั้งขึ้น หรือ กดปุ่มนี้เพื่อหมุนรูป"/>
+          <input name="rotation_submitted" type="submit" class="btn btn-outline-primary mb-2" value="The patient head must be upright or click here to rotate"/>
         </form>
-        <form id="submitimgForm" action="{{ url_for('image.upload_image', role='dentist', submission='true') }}" method="post" enctype="multipart/form-data" >
-          <div id="submitbtn" onclick="disableButton()" class="btn btn-success mb-2">ยืนยัน</div>
+        <form id="submitimgForm" action="{{ url_for('general.general_upload', submission='true') }}" method="post" enctype="multipart/form-data" >
+          <div id="submitbtn" onclick="disableButton()" class="btn btn-success mb-2">Confirm</div>
         </form>
       </div>
     </div>
   </div>
 {% endif %}
-{% include 'examples_footer.html' %}
-{% include 'terms_footer.html' %}
+{% include 'examples_footer_en.html' %}
+{% include 'terms_footer_en.html' %}
 {% endblock %}
 
 {% block script %}
