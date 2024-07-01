@@ -17,19 +17,30 @@
                     <input type="text" class="form-control" placeholder="นามสกุล..." name="surname" value="{{data.surname}}" required>
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">เลขบัตรประจำตัวประชาชน <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="เลขบัตรประจำตัวประชาชน 13 หลัก..." name="national_id" value="{{session['national_id'] or data.national_id}}" maxlength="13" required
+                    <label class="mr-sm-2">เลขประจำตัวประชาชน <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="เลขประจำตัว ปชช. 13 หลัก ..." name="national_id" value="{{session['national_id'] or data.national_id}}" maxlength="13" required
                         {% if data.valid_national_id is defined and not data.valid_national_id %}
                             style="border-color: rgba(244, 92, 92, 1);"
-                        {% endif %} >
+                        {% endif %}
+                        {% if 'national_id' in session and session['national_id']!='' %}
+                            readonly
+                        {% endif %}
+                        >
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">ยืนยันเลขบัตรประจำตัวประชาชน <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="ยืนยันเลขบัตรประจำตัวประชาชน 13 หลัก..."
-                        name="cfnational_id" value="{{data.cfnational_id}}" maxlength="13" required
+                    <label class="mr-sm-2">ยืนยันเลขประจำตัวประชาชน <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="ยืนยันเลข ปชช. 13 หลัก ..."
+                        name="cfnational_id" maxlength="13" required
                         {% if data.valid_national_id is defined and not data.valid_national_id %}
                             style="border-color: rgba(244, 92, 92, 1);"
-                        {% endif %} >
+                        {% endif %}
+                        {% if 'register_later' in session %}
+                            value="{{session['national_id']}}"
+                            readonly
+                        {% else %}
+                            value="{{data.cfnational_id}}"
+                        {% endif %}
+                        >
                 </div>
                 <div class="form-group py-2">
                     <label class="mr-sm-2">อาชีพ <span style="color: red;">*</span></label>
@@ -73,7 +84,7 @@
                         {% endif %}>
                 </div>
                 <div class="form-group py-2">
-                    <label for="dob_day">วันเกิด <span style="color: red;">*</span></label>
+                    <label for="dob_day">วันเดือนปีเกิด <span style="color: red;">*</span></label>
                     <div class="row">
                         <div class="col-3">
                             <select id="dob_day" name="dob_day" class="form-control">
@@ -128,12 +139,19 @@
                     </div>
                 </div>
                 {% if data.duplicate_flag is undefined %}
+                    <br>
                     <div class="row d-flex justify-content-center">
                         <div class="col d-flex justify-content-center">
-                            <a class="btn btn-outline-primary" style="width: 100%;" type="submit" href="/logout">ยกเลิก</a>
+                            <a class="btn btn-outline-danger" style="width: 100%;" type="submit" href="/cancel_register">ยกเลิก</a>
                         </div>
                         <div class="col d-flex justify-content-center">
-                            <input class="btn btn-success" style="width: 100%;" type="submit" value="ลงทะเบียน">
+                            <input class="btn btn-success" style="width: 100%;" type="submit" 
+                                {% if 'register_later' in session and session['register_later']['order']=='edit' %}
+                                    value="ยืนยันการแก้ไข"
+                                {% else %}
+                                    value="ลงทะเบียน"
+                                {% endif %}
+                            >
                         </div>
                     </div>
                 {% else %}
@@ -147,7 +165,7 @@
                         </div>
                     </div>
                     <div class="col d-flex justify-content-center">
-                        <a class="btn btn-outline-primary my-2" style="width: 50%;" type="submit" href="/logout">ยกเลิก</a>
+                        <a class="btn btn-outline-danger my-2" style="width: 50%;" type="submit" href="/cancel_register">ยกเลิก</a>
                     </div>
                 {% endif %}
                 

@@ -12,6 +12,7 @@ from aidoc.auth import login_required, load_logged_in_user, role_validation
 # 'user' blueprint manages user management system
 bp = Blueprint('user', __name__)
 
+# region get_osm_info
 @bp.route("/get_osm_info", methods=["POST"])
 @login_required
 def get_osm_info():
@@ -30,6 +31,7 @@ def get_osm_info():
     else:
         return jsonify({}), 404
 
+# region get_patient_info
 @bp.route("/get_patient_info", methods=["POST"])
 def get_patient_info():
     #get patient national id
@@ -47,10 +49,39 @@ def get_patient_info():
     else:
         return jsonify({}), 404
 
+# region register
 @bp.route('/register/<role>', methods=('GET', 'POST'))
 @role_validation
 def register(role):
     data = {}
+
+    # Check if a post calling from diagnosis pages
+    if request.form.get('order', None):
+        session['register_later'] = {}
+        session['register_later']['order'] = request.form.get('order', None)
+        session['register_later']['return_page'] = request.form.get('return_page', None)
+        session['register_later']['sender_mode'] = request.form.get('role', None)
+        session['register_later']['img_id'] = request.form.get('img_id', None)
+        session['national_id'] = request.form.get('patient_national_id', None)
+        if session['register_later']['order']=='register':
+            session['noNationalID'] = False
+            if session['national_id'] == 'None':
+                session['national_id'] = ''
+                session['noNationalID'] = True
+        elif session['register_later']['order']=='edit':
+            db, cursor = get_db()
+            sql = '''SELECT name, surname, national_id, email, phone, sex, birthdate, job_position, province, address
+                    FROM user
+                    WHERE national_id=%s'''
+            val = (session['national_id'], )
+            cursor.execute(sql, val)
+            data = cursor.fetchone()
+            data['dob_day'] = data['birthdate'].day
+            data["dob_month"] = data['birthdate'].month
+            data["dob_year"] = data['birthdate'].year + 543
+        data['current_year'] = datetime.date.today().year # set the current Thai Year to the global variable
+        return render_template("patient_register.html", data=data)
+    
     session['sender_mode'] = role
     if role=='patient':
         target_template = "patient_register.html"
@@ -62,6 +93,7 @@ def register(role):
             data["national_id"] = request.form["national_id"]
             data["email"] = request.form["email"]
             data["phone"] = request.form["phone"]
+            
             data['sex'] = request.form['sex']
             data['dob_day'] = request.form["dob_day"]
             data["dob_month"] = request.form["dob_month"]
@@ -69,7 +101,7 @@ def register(role):
             data["job_position"] = request.form["job_position"]
             data["province"] = request.form["province"]
             data['address'] = request.form['address']
-
+            
             data["valid_national_id"] = True
             data["valid_phone"] = True
             data["valid_province_name"] = True
@@ -77,11 +109,16 @@ def register(role):
             # this section validate the input data, if fails, redirect back to the form
             # If the validation fails, automatically redirect to the target template
             duplicate_users = []
-            valid_func_list = [validate_national_id,
-                               validate_province_name,
-                               validate_duplicate_users,
-                               validate_duplicate_phone,
-                               validate_duplicate_national_id]
+            if 'register_later' in session and session['register_later']['order']=='edit':
+                valid_func_list = [validate_province_name,
+                                validate_duplicate_phone]
+            else:    
+                valid_func_list = [validate_national_id,
+                                validate_province_name,
+                                validate_duplicate_users,
+                                validate_duplicate_phone,
+                                validate_duplicate_national_id]
+            
             for valid_func in valid_func_list:
                 args = {'data': data, 'form': request.form, 'duplicate_users': duplicate_users}
                 valid_check, data, duplicate_users = valid_func(args)
@@ -101,7 +138,8 @@ def register(role):
 
             # Create new account if there is no duplicate account, else merge the accounts
             db, cursor = get_db()
-            if 'user_id' not in session or request.form.get('create_new_account'): # new account or user confirms that the duplicate account is not theirs
+            # new account or user confirms that the duplicate account is not theirs, or register_later is defined
+            if ('register_later' in session and session['register_later']['order']=='register') or ('user_id' not in session) or (request.form.get('create_new_account')):
                 sql = "INSERT INTO user (name, surname, national_id, email, phone, sex, birthdate, job_position, province, address, is_patient) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
                 val = (data["name"], data["surname"], data["national_id"], data["email"], data["phone"], data["sex"], dob_obj, data["job_position"], data["province"], data['address'], True)
                 cursor.execute(sql, val)
@@ -109,9 +147,22 @@ def register(role):
                 # Load the newly registered user to the session (using national_id and is_patient flag)
                 cursor.execute('SELECT id FROM user where national_id = %s AND is_patient=TRUE', (data["national_id"],))
                 new_user = cursor.fetchone()
-                session['user_id'] = new_user['id']
-                load_logged_in_user()
-
+                if 'register_later' not in session:
+                    session['user_id'] = new_user['id']
+                    load_logged_in_user()
+                elif session['noNationalID']: # If the record has no national_id of the patient, add it here
+                    sql = "UPDATE submission_record SET patient_id=%s, patient_national_id=%s WHERE id=%s"
+                    val = (new_user['id'], data["national_id"], session['register_later']['img_id'])
+                    cursor.execute(sql, val)
+                else:
+                    # Retrospectively update the all empty sender_id records with patient_national_id
+                    sql = "UPDATE submission_record SET patient_id=%s WHERE patient_national_id=%s"
+                    val = (new_user['id'], data["national_id"])
+                    cursor.execute(sql, val)
+            elif ('register_later' in session and session['register_later']['order']=='edit'):
+                sql = "UPDATE user SET name=%s, surname=%s, email=%s, phone=%s, sex=%s, birthdate=%s,  province=%s, address=%s, updated_at=%s WHERE national_id=%s"
+                val = (data["name"], data["surname"], data["email"], data["phone"], data["sex"], dob_obj, data["province"], data['address'], datetime.datetime.now(), data["national_id"])
+                cursor.execute(sql, val)
             else: # Merge account
                 sql = "UPDATE user SET name=%s, surname=%s, national_id=%s, email=%s, phone=%s, sex=%s, birthdate=%s,  province=%s, address=%s, is_patient=%s WHERE id=%s"
                 val = (data["name"], data["surname"], data["national_id"], data["email"], data["phone"], data["sex"], dob_obj, data["province"], data['address'], True, session['user_id'])
@@ -121,8 +172,16 @@ def register(role):
             # After the registration is complete, this (sensitive) variable should be deleted
             if 'national_id' in session:  
                 session.pop('national_id',None)  
-                
-            return redirect(url_for('image.upload_image', role='patient'))
+            
+            if 'register_later' not in session:
+                return redirect(url_for('image.upload_image', role='patient'))
+            elif session['register_later']['return_page'] == 'diagnosis':
+                role = session['register_later']['sender_mode']
+                session['sender_mode'] = role
+                img_id = session['register_later']['img_id']
+                session.pop('register_later', None)
+                session.pop('noNationalID', None)
+                return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
         else:
             return render_template(target_template, data=data)
     elif role=='osm':
@@ -245,8 +304,22 @@ def register(role):
     else:
         return redirect('/')
 
+#region cancel_register
+@bp.route('/cancel_register', methods=('GET', ))
+def cancel_register():
+    if 'national_id' in session:  
+        session.pop('national_id', None)
+    if 'register_later' not in session:
+        return redirect('/logout')
+    elif session['register_later']['return_page'] == 'diagnosis':
+        role = session['register_later']['sender_mode']
+        session['sender_mode'] = role
+        img_id = session['register_later']['img_id']
+        session.pop('register_later', None)
+        return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
 # Helper functions
 
+# region remove_prefix
 def remove_prefix(input_str):
     prefixes = ["นาย", "นางสาว", "นาง", "น.ส.", "นส.", "น.",  "ทพญ.", "ทพ.", "ดร."]
     for prefix in prefixes:
@@ -254,6 +327,7 @@ def remove_prefix(input_str):
             return input_str[len(prefix):].strip()
     return input_str
 
+# region validate_national_id
 # National ID validation: National ID must follow the CheckSum rule (disable if international)
 # if given, cfnational_id must match national_id (inputs on the form)
 def validate_national_id(args):
@@ -285,6 +359,7 @@ def validate_national_id(args):
             return False, data, []
     return True, data, []
 
+# region validate_phone
 # Phone number validation: Number number must follow the 9-10 digits rule (should be disabled if international)
 def validate_phone(args):
     data = args['data']
@@ -298,6 +373,7 @@ def validate_phone(args):
             return False, data, []
     return True, data, []
 
+# region validate_province_name
 # Thai province name must match the texts in thai_provinces database
 # กรุงเทพมหานคร must be spelled exactly as this
 def validate_province_name(args):
@@ -319,6 +395,7 @@ def validate_province_name(args):
         return False, data, []
     return True, data, []
     
+# region validate_duplicate_users
 # Duplicate user validation: Check if there is a duplicate user with the same name and surname but different phone
 # If found, ask user to merge the account
 # If found with the same phone number, force merging the accounts
@@ -349,6 +426,7 @@ def validate_duplicate_users(args):
         return True, data, duplicate_users
     return True, data, duplicate_users
     
+# region validate_duplicate_phone
 # Generally, duplicate phone number is not allowed.
 # Except in the process of merging duplicated accounts, the validation will be bypassed.
 # validate_duplicate_users must be called first to get duplicate_users before running this function
@@ -358,8 +436,8 @@ def validate_duplicate_phone(args):
     duplicate_users = args['duplicate_users']
     if "phone" in data and (len(duplicate_users)==0 or form.get('create_new_account')): 
         db, cursor = get_db()
-        cursor.execute('SELECT id FROM user WHERE phone=%s',
-                        (data["phone"], ))
+        cursor.execute('SELECT id FROM user WHERE phone=%s AND national_id!=%s',
+                        (data["phone"], data["national_id"]))
         row = cursor.fetchall() # Result in list of dicts
         if len(row) > 0:
             error_msg = "เบอร์โทรศัพท์นี้ถูกใช้ในการลงทะเบียนบัญชีอื่นแล้ว กรุณาใช้เบอร์โทรศัพท์อื่น"
@@ -368,6 +446,7 @@ def validate_duplicate_phone(args):
             return False, data, duplicate_users
     return True, data, duplicate_users
 
+# region validate_duplicate_national_id
 # Generally, duplicate national_id number is not allowed.
 # Except in the process of merging duplicated accounts, the validation will be bypassed.
 # validate_duplicate_users must be called first to get duplicate_users before running this function
@@ -380,12 +459,13 @@ def validate_duplicate_national_id(args):
         cursor.execute('SELECT id FROM user WHERE national_id=%s', (data["national_id"], ))
         row = cursor.fetchall() # Result in list of dicts
         if len(row) > 0:
-            error_msg = "เลขบัตรประจำตัวประชาชนนี้ถูกลงทะเบียนแล้ว ... กรุณาติดต่อเจ้าหน้าที่เพื่อแก้ไขข้อมูล"
+            error_msg = "เลขประจำตัวประชาชนนี้ถูกลงทะเบียนแล้ว ... กรุณาติดต่อเจ้าหน้าที่เพื่อแก้ไขข้อมูล"
             data["valid_national_id"] = False
             flash(error_msg)
             return False, data, duplicate_users
     return True, data, duplicate_users
 
+# region validate_cf_password
 # Confirmation validation: the confirmation password must match
 def validate_cf_password(args):
     data = args['data']
@@ -398,6 +478,7 @@ def validate_cf_password(args):
         return False, data, []
     return True, data, []
 
+# region validate_username
 # Username validation: duplicate username is not allowed
 def validate_username(args):
     data = args['data']

@@ -65,9 +65,10 @@ def role_validation(view):
     def wrapped_view(**kwargs):
         allowed_roles = ['patient', 'osm', 'dentist', 'specialist']
         isUserDefinedInSession = 'user' in session and session['user'] is not None
+        byPassValidation = 'register_later' in session
         if ('role' not in kwargs) or (kwargs['role'] not in allowed_roles) or \
-            (kwargs['role']=='osm' and isUserDefinedInSession and session['user']['is_osm']==0) or \
-            (kwargs['role']=='patient' and isUserDefinedInSession and session['user']['is_patient']==0) or \
+            (not byPassValidation and kwargs['role']=='osm' and isUserDefinedInSession and session['user']['is_osm']==0) or \
+            (not byPassValidation and kwargs['role']=='patient' and isUserDefinedInSession and session['user']['is_patient']==0) or \
             (kwargs['role']=='specialist' and isUserDefinedInSession and session['user']['is_specialist']==0) or \
             (kwargs['role']=='dentist' and isUserDefinedInSession and session['user']['username'] is None) \
         :
@@ -91,7 +92,7 @@ def login(role):
         )
         user = cursor.fetchone()
         if user is None:
-            error_msg = "กรุณาลงทะเบียน เลขบัตรประจำตัวประชาชนนี้ยังไม่ถูกลงทะเบียนในระบบ"
+            error_msg = "กรุณาลงทะเบียน เลขประจำตัวประชาชนนี้ยังไม่ถูกลงทะเบียนในระบบ"
             session['national_id'] = national_id
             flash(error_msg)
             return redirect(url_for('user.register', role='patient'))

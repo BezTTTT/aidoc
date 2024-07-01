@@ -294,7 +294,7 @@
                         <textarea class="form-control" id="OtherCommentTextarea" rows="3" name="OtherCommentTextarea"></textarea>
                     </div>
 
-                    <input class="btn btn-outline-success mt-3" type="submit" value="บันทึกคำวินิจฉัย">
+                    <input class="btn btn-outline-primary mt-3" type="submit" value="บันทึกคำวินิจฉัย">
 
                     <script>
                         var dt_comment_list = document.getElementsByName("dt_comment_option");
@@ -383,7 +383,7 @@
                         <textarea class="form-control" id="BiopsyCommentTextarea" rows="3" name="biopsy_comment"></textarea>
                     </div>
 
-                    <input class="btn btn-outline-success mt-3" type="submit" value="บันทึก">
+                    <input class="btn btn-outline-success mt-3" type="submit" value="บันทึกผลการตรวจชิ้นเนื้อ">
                 </form>
             </div>
         </div>
@@ -399,19 +399,20 @@
                 {% else %}
                     <p>ไม่มีข้อมูลผู้ป่วย</p>
                 {% endif %}
-                <form id="newPatientForm" action="{{ url_for('user.register', role='patient') }}" method="post" >
+                <form id="newPatientForm" action="{{ url_for('user.register', role='specialist') }}" method="post" >
+                    <input name="order" type="hidden" value="register">
                     <input name="return_page" type="hidden" value="diagnosis">
-                    <input name="return_role" type="hidden" value="specialist">
+                    <input name="role" type="hidden" value="specialist">
                     <input name="img_id" type="hidden" value="{{data['img_id']}}">
                     <input name="patient_national_id" type="hidden" value="{{data['patient_national_id']}}">
-                    <div id="submitbtn" class="btn btn-success mb-2">คลิกเพื่อลงทะเบียนข้อมูลคนไข้</div>
+                    <button id="submitbtn" class="btn btn-success mb-2" type="submit">คลิกเพื่อลงทะเบียนข้อมูลคนไข้</button>
                 </form>
             {% else %}
                 <p>ชื่อ-สกุล: {{data['patient_name']}} {{data['patient_surname']}}</p>
                 <p>เพศ: {{data['sex']}}</p>
                 <p>อายุ: {{data['patient_age']}} ปี</p>
                 <p>อาชีพ: {{data['job_position']}}</p>
-                <p>รหัสประจำตัวประชาชน: {{data['national_id']}}</p>
+                <p>รหัสประจำตัวประชาชน: {{data['patient_national_id']}}</p>
                 {% if data['email'] is not none %}
                     <p>อีเมล: {{data['email']}}</p>
                 {% endif %}
@@ -420,6 +421,14 @@
                 {% endif %}
                 <p>ที่อยู่ (ที่พักปัจจุบัน): {{data['address']}}</p>
                 <p>จังหวัด (ที่พักปัจจุบัน): {{data['province']}}</p>
+                <form id="editPatientForm" action="{{ url_for('user.register', role='specialist') }}" method="post" >
+                    <input name="order" type="hidden" value="edit">
+                    <input name="return_page" type="hidden" value="diagnosis">
+                    <input name="role" type="hidden" value="specialist">
+                    <input name="img_id" type="hidden" value="{{data['img_id']}}">
+                    <input name="patient_national_id" type="hidden" value="{{data['patient_national_id']}}">
+                    <button id="submitbtn" class="btn btn-outline-success mb-2" type="submit">คลิกเพื่อแก้ไขข้อมูลคนไข้</button>
+                </form>
             {% endif %}
         </div>
     </div>

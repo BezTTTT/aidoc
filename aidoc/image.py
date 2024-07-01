@@ -5,10 +5,10 @@ from werkzeug.utils import secure_filename
 
 ####### Disable this section if you are not using the prediction model for speeding up the development process ##########
 
-import tensorflow as tf
-import oralLesionNet
-# Load the oralLesionNet model to the global variable
-model = oralLesionNet.load_model()
+# import tensorflow as tf
+# import oralLesionNet
+# # Load the oralLesionNet model to the global variable
+# model = oralLesionNet.load_model()
 
 #########################################################################################################################
 
@@ -427,7 +427,7 @@ def diagnosis(role, img_id):
     # Further process the data
     data['ai_scores'] = json.loads(data['ai_scores'])
 
-    if role=='patient' and data['sender_id'] is None: # If an unregistered osm submit the data, the data will be stored with patient_id
+    if role=='patient' and data['sender_id'] is None: # If an unregistered osm submit the data via the patient system, the data will be stored in the patient_id folder
         data['sender_id'] = data['patient_id']
 
     if role=='specialist':
