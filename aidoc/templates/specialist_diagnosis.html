@@ -393,10 +393,19 @@
         <div class="card-body">
             <h5 class="card-title text-start mb-4">ประวัติผู้ป่วย</h5>
             {%if data['patient_id'] is none %}
-                <p>ไม่มีข้อมูลผู้ป่วย</p>
-            {% elif data['patient_name'] is none %}
-                <p>รหัสประจำตัวประชาชน: {{data['patient_national_id']}}</p>
-                <p>ผู้ป่วยยังไม่ถูกลงทะเบียนในระบบ</p>
+                {% if data['patient_national_id'] is not none %}
+                    <p>รหัสประจำตัวประชาชน: {{data['patient_national_id']}}</p>
+                    <p>ผู้ป่วยยังไม่ถูกลงทะเบียนในระบบ</p>
+                {% else %}
+                    <p>ไม่มีข้อมูลผู้ป่วย</p>
+                {% endif %}
+                <form id="newPatientForm" action="{{ url_for('user.register', role='patient') }}" method="post" >
+                    <input name="return_page" type="hidden" value="diagnosis">
+                    <input name="return_role" type="hidden" value="specialist">
+                    <input name="img_id" type="hidden" value="{{data['img_id']}}">
+                    <input name="patient_national_id" type="hidden" value="{{data['patient_national_id']}}">
+                    <div id="submitbtn" class="btn btn-success mb-2">คลิกเพื่อลงทะเบียนข้อมูลคนไข้</div>
+                </form>
             {% else %}
                 <p>ชื่อ-สกุล: {{data['patient_name']}} {{data['patient_surname']}}</p>
                 <p>เพศ: {{data['sex']}}</p>

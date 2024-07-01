@@ -64,11 +64,12 @@ def role_validation(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
         allowed_roles = ['patient', 'osm', 'dentist', 'specialist']
+        isUserDefinedInSession = 'user' in session and session['user'] is not None
         if ('role' not in kwargs) or (kwargs['role'] not in allowed_roles) or \
-            (kwargs['role']=='osm' and session['user'] is not None and session['user']['is_osm']==0) or \
-            (kwargs['role']=='patient' and session['user'] is not None and session['user']['is_patient']==0) or \
-            (kwargs['role']=='specialist' and session['user'] is not None and session['user']['is_specialist']==0) or \
-            (kwargs['role']=='dentist' and session['user'] is not None and session['user']['username'] is None) \
+            (kwargs['role']=='osm' and isUserDefinedInSession and session['user']['is_osm']==0) or \
+            (kwargs['role']=='patient' and isUserDefinedInSession and session['user']['is_patient']==0) or \
+            (kwargs['role']=='specialist' and isUserDefinedInSession and session['user']['is_specialist']==0) or \
+            (kwargs['role']=='dentist' and isUserDefinedInSession and session['user']['username'] is None) \
         :
             session.pop('sender_mode', None)
             return render_template('unauthorized_access.html', error_msg='คุณไม่มีสิทธิ์เข้าถึงข้อมูล Unauthorized Access [role_validation]')
@@ -90,7 +91,7 @@ def login(role):
         )
         user = cursor.fetchone()
         if user is None:
-            error_msg = "กรุณาลงทะเบียน เลขบัตรประจำตัวประชาชนของท่านยังไม่ถูกลงทะเบียนในระบบ"
+            error_msg = "กรุณาลงทะเบียน เลขบัตรประจำตัวประชาชนนี้ยังไม่ถูกลงทะเบียนในระบบ"
             session['national_id'] = national_id
             flash(error_msg)
             return redirect(url_for('user.register', role='patient'))
@@ -99,7 +100,7 @@ def login(role):
             load_logged_in_user()
             return redirect(url_for('image.upload_image', role='patient'))
         else: # Duplicate account found, ask for merging
-            error_msg = "พบข้อมูลเบื้องต้นของท่านในระบบ แต่ท่านยังไม่ได้ถูกลงทะเบียนในฐานะคนไข้ กรุณาลงทะเบียนก่อน"
+            error_msg = "พบข้อมูลเบื้องต้นในระบบ แต่ท่านยังไม่ได้ถูกลงทะเบียนในฐานะคนไข้ กรุณาลงทะเบียนก่อน"
             session['user_id'] = user['id']
             flash(error_msg)
 

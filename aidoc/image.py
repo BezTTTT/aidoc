@@ -386,7 +386,7 @@ def diagnosis(role, img_id):
     db, cursor = get_db()
     if role=='specialist':
         sql = '''SELECT submission_record.id AS img_id, case_id, fname, special_request,
-                    patient_id, patient.name AS patient_name, patient.surname AS patient_surname, patient.national_id, patient.birthdate,
+                    patient_id, patient.name AS patient_name, patient.surname AS patient_surname, patient_national_id, patient.birthdate,
                     patient.sex, patient.job_position, patient.email, patient.phone AS patient_phone, patient.address, patient.province,
                     sender_id, sender.name AS sender_name, sender.surname AS sender_surname, sender.hospital AS sender_hospital, sender.province AS sender_province,
                     sender.phone AS sender_phone_db, sender_phone,
