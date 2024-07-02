@@ -62,27 +62,47 @@ def register(role):
         session['register_later']['return_page'] = request.form.get('return_page', None)
         session['register_later']['sender_mode'] = request.form.get('role', None)
         session['register_later']['img_id'] = request.form.get('img_id', None)
-        session['register_later']['user_id'] = request.form.get('patient_id', None)
-        session['national_id'] = request.form.get('patient_national_id', None)
 
-        if session['register_later']['order']=='register':
-            session['noNationalID'] = False
-            if session['national_id'] == 'None':
-                session['national_id'] = ''
-                session['noNationalID'] = True
-        elif session['register_later']['order']=='edit' or session['register_later']['order']=='link':
+        if session['register_later']['order']=='register-osm':
+
+            # Check if any user uses the same phone, if yes, use the info as the initial info.
+            data['phone'] = request.form.get('sender_phone', None)
             db, cursor = get_db()
-            sql = '''SELECT name, surname, national_id, email, phone, sex, birthdate, job_position, province, address
+            sql = '''SELECT name, surname, national_id, job_position, province, phone, hospital
                     FROM user
-                    WHERE national_id=%s'''
-            val = (session['national_id'], )
+                    WHERE phone=%s'''
+            val = (data['phone'], )
             cursor.execute(sql, val)
             data = cursor.fetchone()
-            data['dob_day'] = data['birthdate'].day
-            data["dob_month"] = data['birthdate'].month
-            data["dob_year"] = data['birthdate'].year + 543
-        data['current_year'] = datetime.date.today().year # set the current Thai Year to the global variable
-        return render_template("patient_register.html", data=data)
+            if data is None:
+                data = {}
+                data['phone'] = request.form.get('sender_phone', None)
+            else:
+                if data['hospital'] == None:
+                    data['hospital'] = ''
+            return render_template("osm_register.html", data=data)
+        else:
+            session['register_later']['user_id'] = request.form.get('patient_id', None)
+            session['national_id'] = request.form.get('patient_national_id', None)
+
+            if session['register_later']['order']=='register-patient':
+                session['noNationalID'] = False
+                if session['national_id'] == 'None':
+                    session['national_id'] = ''
+                    session['noNationalID'] = True
+            elif session['register_later']['order']=='edit-patient' or session['register_later']['order']=='link-patient':
+                db, cursor = get_db()
+                sql = '''SELECT name, surname, national_id, email, phone, sex, birthdate, job_position, province, address
+                        FROM user
+                        WHERE national_id=%s'''
+                val = (session['national_id'], )
+                cursor.execute(sql, val)
+                data = cursor.fetchone()
+                data['dob_day'] = data['birthdate'].day
+                data["dob_month"] = data['birthdate'].month
+                data["dob_year"] = data['birthdate'].year + 543
+            data['current_year'] = datetime.date.today().year # set the current Thai Year to the global variable
+            return render_template("patient_register.html", data=data)
     
     session['sender_mode'] = role
     if role=='patient':
@@ -111,7 +131,7 @@ def register(role):
             # this section validate the input data, if fails, redirect back to the form
             # If the validation fails, automatically redirect to the target template
             duplicate_users = []
-            if 'register_later' in session and session['register_later']['order']=='edit':
+            if 'register_later' in session and session['register_later']['order']=='edit-patient':
                 valid_func_list = [validate_province_name,
                                 validate_duplicate_phone]
             else:    
@@ -141,7 +161,7 @@ def register(role):
             # Create new account if there is no duplicate account, else merge the accounts
             db, cursor = get_db()
             # new account or user confirms that the duplicate account is not theirs, or register_later is defined
-            if ('register_later' in session and session['register_later']['order']=='register') or ('user_id' not in session) or (request.form.get('create_new_account')):
+            if ('register_later' in session and session['register_later']['order']=='register-patient') or ('user_id' not in session) or (request.form.get('create_new_account')):
                 sql = "INSERT INTO user (name, surname, national_id, email, phone, sex, birthdate, job_position, province, address, is_patient) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
                 val = (data["name"], data["surname"], data["national_id"], data["email"], data["phone"], data["sex"], dob_obj, data["job_position"], data["province"], data['address'], True)
                 cursor.execute(sql, val)
@@ -161,11 +181,11 @@ def register(role):
                     sql = "UPDATE submission_record SET patient_id=%s WHERE patient_national_id=%s"
                     val = (new_user['id'], data["national_id"])
                     cursor.execute(sql, val)
-            elif ('register_later' in session and session['register_later']['order']=='edit'):
+            elif ('register_later' in session and session['register_later']['order']=='edit-patient'):
                 sql = "UPDATE user SET name=%s, surname=%s, email=%s, phone=%s, sex=%s, birthdate=%s,  province=%s, address=%s, updated_at=%s WHERE national_id=%s"
                 val = (data["name"], data["surname"], data["email"], data["phone"], data["sex"], dob_obj, data["province"], data['address'], datetime.datetime.now(), data["national_id"])
                 cursor.execute(sql, val)
-            elif ('register_later' in session and session['register_later']['order']=='link'): # Linking data does not update the patient info
+            elif ('register_later' in session and session['register_later']['order']=='link-patient'): # Linking data does not update the patient info
                 sql = "UPDATE submission_record SET patient_id=%s, patient_national_id=%s WHERE id=%s"
                 val = (session['register_later']['user_id'], data["national_id"], session['register_later']['img_id'])
                 cursor.execute(sql, val)
@@ -237,15 +257,32 @@ def register(role):
                 # Load the newly registered user to the session (using national_id and phone and is_osm flag)
                 cursor.execute('SELECT id FROM user WHERE national_id=%s AND phone=%s AND is_osm=TRUE', (data["national_id"], data["phone"]))
                 new_user = cursor.fetchone()
-                session['user_id'] = new_user['id']
-                load_logged_in_user()     
+                if 'register_later' not in session:
+                    session['user_id'] = new_user['id']
+                    load_logged_in_user()
+                else: # If the record has no national_id of the patient, add it here
+                    sql = "UPDATE submission_record SET sender_id=%s WHERE id=%s"
+                    val = (new_user['id'], session['register_later']['img_id'])
+                    cursor.execute(sql, val)
                 
             else: # merge account
                 sql = "UPDATE user SET name=%s, surname=%s, national_id=%s, phone=%s, osm_job=%s, hospital=%s, province=%s, license=%s, is_osm=%s WHERE id=%s"
                 val = (data["name"], data["surname"], data["national_id"], data["phone"], data["osm_job"], data["hospital"], data["province"], data["license"], True, session['user_id'])
                 cursor.execute(sql, val)
-                
-            return redirect('/')
+
+                if 'register_later' in session:
+                    sql = "UPDATE submission_record SET sender_id=%s WHERE id=%s"
+                    val = (session['user_id'], session['register_later']['img_id'])
+                    cursor.execute(sql, val)
+            
+            if 'register_later' not in session:
+                return redirect('/')
+            elif session['register_later']['return_page'] == 'diagnosis':
+                role = session['register_later']['sender_mode']
+                session['sender_mode'] = role
+                img_id = session['register_later']['img_id']
+                session.pop('register_later', None)
+                return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
         else:
             return render_template(target_template, data=data)
     elif role=='dentist':

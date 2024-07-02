@@ -17,8 +17,8 @@
             justify-content: center; /* Center horizontally */
             overflow: hidden;
           ">
-                <a href="{{ url_for('image.load_image', folder='upload', user_id=data['sender_id'], imagename=data['fname']) }}" target="_blank">
-                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=data['sender_id'], imagename=data['fname']) }}" alt=""
+                <a href="{{ url_for('image.load_image', folder='upload', user_id=data['owner_id'], imagename=data['fname']) }}" target="_blank">
+                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=data['owner_id'], imagename=data['fname']) }}" alt=""
                         style="height: 100%; max-width: 100%; width: auto" />
                 </a>
             </div>
@@ -36,8 +36,8 @@
             justify-content: center; /* Center horizontally */
             overflow: hidden;
           ">
-                <a href="{{ url_for('image.load_image', folder='outlined', user_id=data['sender_id'], imagename=data['fname']) }}" target="_blank">
-                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=data['sender_id'], imagename=data['fname']) }}" alt=""
+                <a href="{{ url_for('image.load_image', folder='outlined', user_id=data['owner_id'], imagename=data['fname']) }}" target="_blank">
+                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=data['owner_id'], imagename=data['fname']) }}" alt=""
                         style="height: 100%; max-width: 100%; width: auto" />
                 </a>
             </div>
@@ -68,18 +68,18 @@
         </div>
         <div class="col-md-2 text-center mt-2 px-1">
             <a class="btn btn-outline-success btn-block" style="width: 100%; margin: 0;"
-                href="/download_image/{{data['sender_id']}}/{{data['fname']}}" download>Download</a>
+                href="/download_image/{{data['owner_id']}}/{{data['fname']}}" download>Download</a>
         </div>
         <div class="col-md-2 text-center mt-2 px-1">
             <form action="{{url_for('image.rotate_image', return_page='diagnosis', role='specialist', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
-                <input name="user_id" type="hidden" value="{{data['sender_id']}}">
+                <input name="user_id" type="hidden" value="{{data['owner_id']}}">
                 <input name="imagename" type="hidden" value="{{data['fname']}}">
                 <input class="btn btn-outline-success" type="submit" style="width: 100%; margin: 0;" value="หมุนรูปไปทางขวา" />
             </form>
         </div>
         <div class="col-md-2 text-center mt-2 px-1">
             <form action="{{url_for('image.recompute_image', return_page='diagnosis', role='specialist', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
-                <input name="user_id" type="hidden" value="{{data['sender_id']}}">
+                <input name="user_id" type="hidden" value="{{data['owner_id']}}">
                 <input name="imagename" type="hidden" value="{{data['fname']}}">
                 <input class="btn btn-outline-success" type="submit" style="width: 100%; margin: 0;" value="Recompute" />
             </form>
@@ -180,6 +180,16 @@
                 <p>ผู้นำส่งรูป: {{data['sender_description']}}</p>
                 {% if data['sender_hospital'] is not none%}
                     <p>โรงพยาบาลที่สังกัด: {{data['sender_hospital']}} จ.{{data['sender_province']}}</p>
+                {% endif %}
+                {% if data['sender_name'] is none %}
+                    <form id="newOSMForm" action="{{ url_for('user.register', role='specialist') }}" method="post" >
+                        <input name="order" type="hidden" value="register-osm">
+                        <input name="return_page" type="hidden" value="diagnosis">
+                        <input name="role" type="hidden" value="specialist">
+                        <input name="img_id" type="hidden" value="{{data['img_id']}}">
+                        <input name="sender_phone" type="hidden" value="{{data['sender_phone']}}">
+                        <button id="submitbtn" class="btn btn-outline-success my-2" type="submit">คลิกเพื่อลงทะเบียนผู้นำส่งข้อมูล</button>
+                    </form>
                 {% endif %}
             </div>
         </div>
@@ -397,7 +407,7 @@
                     <p>เลขประจำตัวประชาชน: {{data['saved_patient_national_id']}}</p>
                     <p>ผู้ป่วยยังไม่ถูกลงทะเบียนในระบบ</p>
                     <form id="newPatientForm" action="{{ url_for('user.register', role='specialist') }}" method="post" >
-                        <input name="order" type="hidden" value="register">
+                        <input name="order" type="hidden" value="register-patient">
                         <input name="return_page" type="hidden" value="diagnosis">
                         <input name="role" type="hidden" value="specialist">
                         <input name="img_id" type="hidden" value="{{data['img_id']}}">
@@ -407,7 +417,7 @@
                 {% else %}
                     <p>ไม่มีข้อมูลผู้ป่วย</p>
                     <form id="newPatientForm" action="{{ url_for('user.register', role='specialist') }}" method="post" >
-                        <input id='register_order' name="order" type="hidden" value="register">
+                        <input id='register_order' name="order" type="hidden" value="register-patient">
                         <input name="return_page" type="hidden" value="diagnosis">
                         <input name="role" type="hidden" value="specialist">
                         <input name="img_id" type="hidden" value="{{data['img_id']}}">
@@ -434,7 +444,7 @@
                 <p>ที่อยู่ (ที่พักปัจจุบัน): {{data['address']}}</p>
                 <p>จังหวัด (ที่พักปัจจุบัน): {{data['province']}}</p>
                 <form id="editPatientForm" action="{{ url_for('user.register', role='specialist') }}" method="post" >
-                    <input name="order" type="hidden" value="edit">
+                    <input name="order" type="hidden" value="edit-patient">
                     <input name="return_page" type="hidden" value="diagnosis">
                     <input name="role" type="hidden" value="specialist">
                     <input name="img_id" type="hidden" value="{{data['img_id']}}">
@@ -541,12 +551,12 @@
                     patientInfoContainer.style.color = 'green'
                     patientInfoContainer.innerHTML = "พบข้อมูลผู้ป่วยชื่อ " + patientInfo.name + " " + patientInfo.surname + " <br> ท่านต้องการเชื่อมโยงข้อมูลหรือไม่?"
                     patient_id.value = patientInfo.patient_id
-                    orderInput.value = 'link'
+                    orderInput.value = 'link-patient'
                 } else {
                     patientInfoContainer.style.color = 'red'
                     patientInfoContainer.innerHTML = "ไม่พบข้อมูลผู้ป่วยในระบบ (คลิกเชื่อมโยงข้อมูลคนไข้เพื่อลงทะเบียนผู้ป่วยใหม่)"
                     patient_id.value = ""
-                    orderInput.value = 'register'
+                    orderInput.value = 'register-patient'
                 }
             }
             // Send the input value to the server
@@ -555,7 +565,7 @@
             patientInfoContainer.style.display = 'none'
             patientInfoContainer.innerHTML = ""
             patient_id.value = ""
-            orderInput.value = 'register'
+            orderInput.value = 'register-patient'
         }
     }
 </script>

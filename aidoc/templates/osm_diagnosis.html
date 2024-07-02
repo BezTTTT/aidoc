@@ -13,8 +13,8 @@
                 style="border-color: red; border-width: 3px;"
             {% endif %}>
             <div class="mx-2 mt-2" style="display: inline-flex; align-items: center; justify-content: center; ">
-                <a href="{{ url_for('image.load_image', folder='upload', user_id=session['user_id'], imagename=data['fname']) }}" target="_blank">
-                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=session['user_id'], imagename=data['fname']) }}"
+                <a href="{{ url_for('image.load_image', folder='upload', user_id=data['owner_id'], imagename=data['fname']) }}" target="_blank">
+                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=data['owner_id'], imagename=data['fname']) }}"
                         class="card-img-top" alt="" style="max-height: 512px" />
                 </a>
             </div>
@@ -29,8 +29,8 @@
                 style="border-color: red; border-width: 3px;"
             {% endif %}>
             <div class="mx-2 mt-2" style="display: inline-flex; align-items: center; justify-content: center; ">
-                <a href="{{ url_for('image.load_image', folder='outlined', user_id=session['user_id'], imagename=data['fname']) }}" target="_blank">
-                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=session['user_id'], imagename=data['fname']) }}"
+                <a href="{{ url_for('image.load_image', folder='outlined', user_id=data['owner_id'], imagename=data['fname']) }}" target="_blank">
+                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=data['owner_id'], imagename=data['fname']) }}"
                         class="card-img-top"  alt="" style="max-height: 512px" />
                 </a>
             </div>
@@ -64,14 +64,14 @@
         </div>
         <div class="col-md-2 text-center mt-2 px-1">
             <form action="{{url_for('image.rotate_image', return_page='diagnosis', role='osm', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
-                <input name="user_id" type="hidden" value="{{data['sender_id']}}">
+                <input name="user_id" type="hidden" value="{{data['owner_id']}}">
                 <input name="imagename" type="hidden" value="{{data['fname']}}">
                 <input class="btn btn-outline-success" type="submit" style="width: 100%; margin: 0;" value="หมุนรูปไปทางขวา" />
             </form>
         </div>
         <div class="col-md-2 text-center mt-2 px-1">
             <form action="{{url_for('image.recompute_image', return_page='diagnosis', role='osm', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
-                <input name="user_id" type="hidden" value="{{data['sender_id']}}">
+                <input name="user_id" type="hidden" value="{{data['owner_id']}}">
                 <input name="imagename" type="hidden" value="{{data['fname']}}">
                 <input class="btn btn-outline-success" type="submit" style="width: 100%; margin: 0;" value="Recompute" />
             </form>

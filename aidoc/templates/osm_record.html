@@ -54,8 +54,8 @@
                     {% endif %}
                     >
                         <div style="display: inline-flex; align-items: center; justify-content: center; ">
-                            <a href="{{ url_for('image.load_image', folder='upload', user_id=session['user_id'], imagename=item['fname']) }}" target="_blank">
-                                <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=session['user_id'], imagename=item['fname']) }}" 
+                            <a href="{{ url_for('image.load_image', folder='upload', user_id=item['owner_id'], imagename=item['fname']) }}" target="_blank">
+                                <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=item['owner_id'], imagename=item['fname']) }}" 
                                     class="card-img-top mt-2" alt="" style="max-height: 256px" />
                             </a>
                         </div>

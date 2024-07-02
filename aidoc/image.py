@@ -431,12 +431,18 @@ def diagnosis(role, img_id):
         data['sender_id'] = data['patient_id']
 
     if role=='specialist':
+
+        if data['sender_phone'] != None or data['sender_id'] == None:
+            data['owner_id'] = data['patient_id']
+        else:
+            data['owner_id'] = data['sender_id']
+
         if data['patient_id']!=data['sender_id']:
             if data['sender_name'] is not None:
                 data['sender_description'] = f"{data['sender_name']} {data['sender_surname']} (เจ้าหน้าที่ผู้นำส่งข้อมูล, เบอร์โทรติดต่อ: {data['sender_phone_db']})"
 
             else:
-                data['sender_description'] = f"(เจ้าหน้าที่ผู้นำส่งข้อมูล, เบอร์โทรติดต่อ: {data['sender_phone_db']})"
+                data['sender_description'] = f"เจ้าหน้าที่ผู้นำส่งข้อมูล เบอร์โทรติดต่อ: {data['sender_phone']} (ยังไม่ได้ลงทะเบียน)"
         else:
             data['sender_description'] = f"{data['sender_name']} {data['sender_surname']} (ผู้ป่วยนำส่งรูปด้วยตัวเอง)"
 
@@ -494,15 +500,25 @@ def record(role): # Submission records
     db, cursor = get_db()
     if role=='specialist':
         sql = '''SELECT submission_record.id, case_id, fname, patient_user.name, patient_user.surname, patient_user.birthdate,
-                    sender_id, patient_id, dentist_id, special_request, patient_user.province,
+                    sender_id, patient_id, dentist_id, sender_phone, special_request, patient_user.province,
                     dentist_feedback_comment,dentist_feedback_code,
                     ai_prediction, submission_record.created_at
                 FROM submission_record
                 INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
-                LEFT JOIN user AS sender_user ON submission_record.sender_id = sender_user.id
-                LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
-                WHERE sender_user.is_patient = TRUE OR sender_user.is_osm = TRUE'''
+                LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id'''
         cursor.execute(sql)
+    elif role=='osm':
+        sql = '''SELECT submission_record.id, fname,
+                    patient_user.name, patient_user.surname, patient_user.birthdate, patient_user.province,
+                    sender_id, patient_id, dentist_id, special_request, 
+                    dentist_feedback_comment,dentist_feedback_code,
+                    ai_prediction, submission_record.created_at
+                FROM submission_record
+                LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
+                LEFT JOIN user AS sender_user ON submission_record.sender_phone = sender_user.phone
+                WHERE sender_id = %s OR submission_record.sender_phone != NULL'''
+        val = (session["user_id"],)
+        cursor.execute(sql, val)
     else:
         sql = '''SELECT submission_record.id, fname, name, surname, birthdate,
                     sender_id, patient_id, dentist_id, special_request, province,
@@ -559,8 +575,12 @@ def record(role): # Submission records
     end_idx = start_idx + PER_PAGE
     paginated_data = filtered_data[start_idx:end_idx]
     
-    # Format the date in the desired format
+    # Process each item in paginated_data
     for item in paginated_data:
+        if 'sender_phone' in item and (item['sender_phone'] != None or item['sender_id'] == None):
+            item['owner_id'] = item['patient_id']
+        else:
+            item['owner_id'] = item['sender_id']
         item["formatted_created_at"] = item["created_at"].strftime("%d/%m/%Y %H:%M")
         if ("birthdate" in item and item["birthdate"]):
             item["age"] = calculate_age(item["birthdate"])
