@@ -148,6 +148,8 @@
                             <input class="btn btn-success" style="width: 100%;" type="submit" 
                                 {% if 'register_later' in session and session['register_later']['order']=='edit' %}
                                     value="ยืนยันการแก้ไข"
+                                {% elif 'register_later' in session and session['register_later']['order']=='link' %}
+                                    value="ยืนยันการเชื่อมโยง"
                                 {% else %}
                                     value="ลงทะเบียน"
                                 {% endif %}

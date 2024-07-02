@@ -86,7 +86,7 @@
                   <label id="checkboxNo" style="display: block;" class="btn btn-outline-danger" for="checkbox"> ยกเลิก </label>
                 </div>
                 <div id="inputPhoneContainer" class="col-8" style="display: block;">
-                  <input class="form-control" placeholder="เบอร์โทร..." maxlength="10" type="text" name="inputPhone" id="inputPhone" required
+                  <input class="form-control col-6" placeholder="เบอร์โทร..." maxlength="10" type="text" name="inputPhone" id="inputPhone" required
                     {% if session['user']['default_sender_phone'] %}
                       value="{{session['user']['default_sender_phone'] }}"
                     {% endif %}

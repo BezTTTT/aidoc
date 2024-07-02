@@ -62,13 +62,15 @@ def register(role):
         session['register_later']['return_page'] = request.form.get('return_page', None)
         session['register_later']['sender_mode'] = request.form.get('role', None)
         session['register_later']['img_id'] = request.form.get('img_id', None)
+        session['register_later']['user_id'] = request.form.get('patient_id', None)
         session['national_id'] = request.form.get('patient_national_id', None)
+
         if session['register_later']['order']=='register':
             session['noNationalID'] = False
             if session['national_id'] == 'None':
                 session['national_id'] = ''
                 session['noNationalID'] = True
-        elif session['register_later']['order']=='edit':
+        elif session['register_later']['order']=='edit' or session['register_later']['order']=='link':
             db, cursor = get_db()
             sql = '''SELECT name, surname, national_id, email, phone, sex, birthdate, job_position, province, address
                     FROM user
@@ -162,6 +164,10 @@ def register(role):
             elif ('register_later' in session and session['register_later']['order']=='edit'):
                 sql = "UPDATE user SET name=%s, surname=%s, email=%s, phone=%s, sex=%s, birthdate=%s,  province=%s, address=%s, updated_at=%s WHERE national_id=%s"
                 val = (data["name"], data["surname"], data["email"], data["phone"], data["sex"], dob_obj, data["province"], data['address'], datetime.datetime.now(), data["national_id"])
+                cursor.execute(sql, val)
+            elif ('register_later' in session and session['register_later']['order']=='link'): # Linking data does not update the patient info
+                sql = "UPDATE submission_record SET patient_id=%s, patient_national_id=%s WHERE id=%s"
+                val = (session['register_later']['user_id'], data["national_id"], session['register_later']['img_id'])
                 cursor.execute(sql, val)
             else: # Merge account
                 sql = "UPDATE user SET name=%s, surname=%s, national_id=%s, email=%s, phone=%s, sex=%s, birthdate=%s,  province=%s, address=%s, is_patient=%s WHERE id=%s"
