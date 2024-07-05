@@ -80,7 +80,7 @@
                                 <h6 class="image-name">จังหวัด  : <i>ไม่มีข้อมูล</i> </h6>
                             {% endif%}
                             <h6 class="image-name" >ช่องทาง :
-                                {% if item['sender_phone'] is not none %}
+                                {% if item['sender_phone'] is none %}
                                     ระบบเจ้าหน้าที่ผู้ตรวจคัดกรอง
                                 {% else %}
                                     ระบบประชาชน

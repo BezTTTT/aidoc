@@ -107,10 +107,8 @@ def upload_image(role):
                         session['patient_id'] = request.form.get('patient_id')
                     else:
                         session['patient_id'] = None
-                if 'sender_id' not in session or session['sender_id']==None:
-                    upload_submission_module(target_user_id=session['user_id'])
-                else:
-                    upload_submission_module(target_user_id=session['sender_id']) # Upload files to the sender folders, not patient's
+                upload_submission_module(target_user_id=session['user_id'])
+
                 lastImageName = list(session['imageNameList'])[-1]
                 db, cursor = get_db()
                 sql = "SELECT id FROM submission_record WHERE fname=%s"
@@ -426,7 +424,8 @@ def diagnosis(role, img_id):
 
     # Further process the data
     data['ai_scores'] = json.loads(data['ai_scores'])
-
+    data['owner_id'] = data['sender_id']
+    
     if role=='patient' and data['sender_id'] is None: # If an unregistered osm submit the data via the patient system, the data will be stored in the patient_id folder
         data['sender_id'] = data['patient_id']
 
@@ -434,8 +433,6 @@ def diagnosis(role, img_id):
 
         if data['sender_phone'] != None or data['sender_id'] == None:
             data['owner_id'] = data['patient_id']
-        else:
-            data['owner_id'] = data['sender_id']
 
         if data['patient_id']!=data['sender_id']:
             if data['sender_name'] is not None:
@@ -510,13 +507,14 @@ def record(role): # Submission records
     elif role=='osm':
         sql = '''SELECT submission_record.id, fname,
                     patient_user.name, patient_user.surname, patient_user.birthdate, patient_user.province,
-                    sender_id, patient_id, dentist_id, special_request, 
+                    case_id, sender_id, patient_id, dentist_id, special_request, sender_phone, 
                     dentist_feedback_comment,dentist_feedback_code,
                     ai_prediction, submission_record.created_at
                 FROM submission_record
+                INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
                 LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
                 LEFT JOIN user AS sender_user ON submission_record.sender_phone = sender_user.phone
-                WHERE sender_id = %s OR submission_record.sender_phone != NULL'''
+                WHERE sender_id = %s OR submission_record.sender_phone is not NULL'''
         val = (session["user_id"],)
         cursor.execute(sql, val)
     else:

@@ -213,6 +213,9 @@ def register(role):
     elif role=='osm':
         target_template = "osm_register.html"
         if request.method == 'POST':
+            
+            session.pop('user_id', None) # User id will later be used to check duplicate users
+
             # This section extract the submitted form to 
             data["name"] = remove_prefix(request.form["name"])
             data["surname"] = request.form["surname"]
@@ -274,7 +277,7 @@ def register(role):
                     sql = "UPDATE submission_record SET sender_id=%s WHERE id=%s"
                     val = (session['user_id'], session['register_later']['img_id'])
                     cursor.execute(sql, val)
-            
+
             if 'register_later' not in session:
                 return redirect('/')
             elif session['register_later']['return_page'] == 'diagnosis':
@@ -282,6 +285,7 @@ def register(role):
                 session['sender_mode'] = role
                 img_id = session['register_later']['img_id']
                 session.pop('register_later', None)
+                session['user_id'] = session['user']['id'] 
                 return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
         else:
             return render_template(target_template, data=data)
@@ -305,6 +309,7 @@ def register(role):
             data["valid_username"] = True
             data["valid_province_name"] = True
 
+            data["national_id"] = None # Dummy variable for validate_duplicate_phone
             # this section validate the input data, if fails, redirect back to the form
             duplicate_users = []
             valid_func_list = [validate_cf_password,
@@ -452,7 +457,7 @@ def validate_duplicate_users(args):
     if "create_new_account" not in form and "merge_account" not in form:
         if len(duplicate_users)>0:
             duplicate_users = duplicate_users[-1] # Select only the last matched user
-            session['user_id'] = duplicate_users['id'] # Same name and same phone must be merged automatically
+            session['user_id'] = duplicate_users['id'] # Same name and same surname must be merged automatically
             if duplicate_users['phone']!=data["phone"]: # Same name but different phone (or null), will ask the user 
                 if duplicate_users['is_patient']:
                     error_msg = "ตรวจพบข้อมูลผู้ใช้ที่ชื่อตรงกันกับท่านใน [ระบบประชาชน] ... ท่านต้องการรวมบัญชีหรือไม่? กดปุ่มสีเขียวเพื่อรวมบัญชี กดปุ่มสีเหลืองเพื่อสร้างบัญชีใหม่แยก"

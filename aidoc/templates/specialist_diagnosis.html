@@ -218,7 +218,7 @@
                     background-color: rgb(196, 196, 196);
                     width: fit-content;
                     margin-left: 1.25rem;
-                    ">ดูประวัติการแก้ไขคำวินิจฉัยทั้งหมด
+                    " disabled>ดูประวัติการแก้ไขคำวินิจฉัยทั้งหมด
                 </button>
                 <div id="dentist-feedback-history-history-container" style="display: none; height: fit-content">
                     <div class="card mb-3 mx-3" style="height: fit-content">
@@ -384,16 +384,16 @@
                 <form class="p-3" action="/biopsy_upload" method="post" enctype="multipart/form-data">
                     <div class="row d-flex justify-content-center align-items-center text-center mb-3">
                         <div class="col-8 col-xs-2 d-flex justify-content-center align-items-center">
-                            <input id="file-upload" type="file" name="biopsy_file" required>
+                            <input id="file-upload" type="file" name="biopsy_file" required disabled>
                         </div>
                     </div>
                     
                     <div id="BiopsyCommentBox">
                         <label for="BiopsyCommentTextarea" class="form-label mt-2">กรุณาพิมพ์ความคิดเห็นต่อผลการตรวจชิ้นเนื้อ</label>
-                        <textarea class="form-control" id="BiopsyCommentTextarea" rows="3" name="biopsy_comment"></textarea>
+                        <textarea class="form-control" id="BiopsyCommentTextarea" rows="3" name="biopsy_comment" disabled></textarea>
                     </div>
 
-                    <input class="btn btn-outline-success mt-3" type="submit" value="บันทึกผลการตรวจชิ้นเนื้อ">
+                    <input class="btn btn-outline-success mt-3" type="submit" value="บันทึกผลการตรวจชิ้นเนื้อ" disabled>
                 </form>
             </div>
         </div>
