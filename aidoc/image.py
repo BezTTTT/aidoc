@@ -397,6 +397,16 @@ def diagnosis(role, img_id):
                 LEFT JOIN user AS patient ON submission_record.patient_id = patient.id
                 LEFT JOIN user AS dentist ON submission_record.dentist_id = dentist.id
                 WHERE submission_record.id=%s'''
+    elif role=='osm':
+        sql = '''SELECT submission_record.id AS img_id, case_id, fname, special_request, sender_id, patient_id, sender_phone, sender.phone AS osm_phone, 
+                    patient.name AS patient_name, patient.surname AS patient_surname, patient_national_id as saved_patient_national_id, patient.national_id AS db_patient_national_id, patient.birthdate,
+                    patient.sex, patient.job_position, patient.email, patient.phone AS patient_phone, patient.address, patient.province,
+                    ai_prediction, ai_scores, submission_record.created_at
+                FROM submission_record
+                INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id
+                LEFT JOIN user AS sender ON submission_record.sender_phone = sender.phone
+                LEFT JOIN user AS patient ON submission_record.patient_id = patient.id
+                WHERE submission_record.id=%s'''
     elif role=='dentist':
         sql = '''SELECT submission_record.id AS img_id, fname, sender_id,
                     dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location,
@@ -404,7 +414,7 @@ def diagnosis(role, img_id):
                 FROM submission_record
                 WHERE id=%s'''
     else:
-        sql = '''SELECT submission_record.id AS img_id, case_id, fname, special_request, sender_id, patient_id,
+        sql = '''SELECT submission_record.id AS img_id, case_id, fname, special_request, sender_id, patient_id, sender_phone, 
                     ai_prediction, ai_scores, submission_record.created_at
                 FROM submission_record
                 INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id
@@ -419,8 +429,9 @@ def diagnosis(role, img_id):
         return render_template('unauthorized_access.html', error_msg='ไม่พบข้อมูลที่ร้องขอ Data Not Found')
     elif (session['sender_mode']!=role) or \
         (role=='patient' and (session['user_id']!=data['patient_id'])) or \
-        ((role=='osm' or role=='dentist') and (session['user_id']!=data['sender_id'])):
-        return render_template('unauthorized_access.html', error_msg='คุณไม่มีสิทธิ์เข้าถึงข้อมูล Unauthorized Access')
+        (role=='osm' and session['user_id']!=data['sender_id'] and data['sender_phone']!=data['osm_phone']) or \
+        (role=='dentist' and session['user_id']!=data['sender_id']):
+            return render_template('unauthorized_access.html', error_msg='คุณไม่มีสิทธิ์เข้าถึงข้อมูล Unauthorized Access')
 
     # Further process the data
     data['ai_scores'] = json.loads(data['ai_scores'])
@@ -429,21 +440,26 @@ def diagnosis(role, img_id):
     if role=='patient' and data['sender_id'] is None: # If an unregistered osm submit the data via the patient system, the data will be stored in the patient_id folder
         data['sender_id'] = data['patient_id']
 
-    if role=='specialist':
-
+    if role=='osm' or role=='specialist':
         if data['sender_phone'] != None or data['sender_id'] == None:
             data['owner_id'] = data['patient_id']
+        
+        data['thai_datetime'] = format_thai_datetime(data['created_at'])
 
-        if data['patient_id']!=data['sender_id']:
-            if data['sender_name'] is not None:
-                data['sender_description'] = f"{data['sender_name']} {data['sender_surname']} (เจ้าหน้าที่ผู้นำส่งข้อมูล, เบอร์โทรติดต่อ: {data['sender_phone_db']})"
-
+        if role=='specialist':
+            if data['patient_id']!=data['sender_id']:
+                if 'sender_name' in data and data['sender_name'] is not None:
+                    data['sender_description'] = f"{data['sender_name']} {data['sender_surname']} (เจ้าหน้าที่ผู้นำส่งข้อมูล, เบอร์โทรติดต่อ: {data['sender_phone_db']})"
+                else:
+                    data['sender_description'] = f"เจ้าหน้าที่ผู้นำส่งข้อมูล เบอร์โทรติดต่อ: {data['sender_phone']} (ยังไม่ได้ลงทะเบียน)"
             else:
-                data['sender_description'] = f"เจ้าหน้าที่ผู้นำส่งข้อมูล เบอร์โทรติดต่อ: {data['sender_phone']} (ยังไม่ได้ลงทะเบียน)"
-        else:
-            data['sender_description'] = f"{data['sender_name']} {data['sender_surname']} (ผู้ป่วยนำส่งรูปด้วยตัวเอง)"
+                data['sender_description'] = f"{data['sender_name']} {data['sender_surname']} (ผู้ป่วยนำส่งรูปด้วยตัวเอง)"
+        else: # osm
+            data['sender_description'] = f"{session['user']['name']} {session['user']['surname']} (โทรศัพท์: {session['user']['phone']})"
+            data['sender_hospital'] = session['user']['hospital']
+            data['sender_province'] = session['user']['province']
 
-        if data['birthdate'] is not None:
+        if 'birthdate' in data and data['birthdate'] is not None:
             data['patient_age'] = calculate_age(data['birthdate'])
             if data['sex']=='M':
                 data['sex']='ชาย'
@@ -528,7 +544,7 @@ def record(role): # Submission records
         val = (session["user_id"],)
         cursor.execute(sql, val)
     db_query = cursor.fetchall()
-
+    
     # Filter data if search query is provided
     search_query = request.args.get("search", "") 
     agree = request.args.get("agree", "") 
@@ -856,3 +872,15 @@ def calculate_age(born):
         born = parse(born)
     today = date.today()
     return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+
+def format_thai_datetime(x):
+    month_list_th = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน','กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
+    output_thai_datetime_str = '{} {} {} {}:{}'.format(
+        x.strftime('%d'),
+        month_list_th[int(x.strftime('%m'))+1],
+        int(x.strftime('%Y'))+543,
+        x.strftime('%H'),
+        x.strftime('%M')
+    )
+    return output_thai_datetime_str
+    

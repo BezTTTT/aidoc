@@ -8,7 +8,7 @@
 <h4 class="text-center"> (Artificial Intelligent System for Detecting and Analyzing PMDs and Oral Cancer)</h4>
 
 <div class="row d-flex justify-content-center text-center">
-    <div class="col-md-4">
+    <div class="col-md-4 mt-2">
         <div class="card">
             <div class="mx-2 mt-2" style="
             height: 300px;
@@ -27,7 +27,7 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-4 mt-2">
         <div class="card">
             <div class="mx-2 mt-2" style="
             height: 300px;
@@ -112,17 +112,15 @@
     
             <div id="hiddenContent" class="m-2">
                 <div class="row d-flex justify-content-center">
-                    <div class="col-1 d-flex justify-content-end" style="width: 33%">
-                        {% if data['ai_prediction'] == 0 %}
-                            <input class="" type="checkbox" checked />
-                        {% else %}
-                            <input class="" type="checkbox" />
-                        {% endif %}
+                    <div id="normal-check-box-col1" class="col-1 d-flex justify-content-end" style="width: 33%">
+                        <input class="form-check-input" type="radio" name="ai_prediction" disabled
+                            {% if data['ai_prediction'] == 0 %} checked {% endif %}
+                        >
                     </div>
-                    <div class="col-2" style="width: 33%">
+                    <div id="normal-check-box-col2" class="col-2" style="width: 33%">
                         <p class="card-text">ความน่าจะเป็นที่จะไม่มีรอยโรค</p>
                     </div>
-                    <div class="col-3" style="width: 33%">
+                    <div id="normal-check-box-col3" class="col-3" style="width: 33%">
                         <p class="card-text">
                             {{'%0.2f'| format(data['ai_scores'][0]*100 | float)}} %
                         </p>
@@ -130,17 +128,15 @@
                 </div>
             
                 <div class="row justify-content-center" style="width: auto">
-                    <div class="col-1 d-flex justify-content-end" style="width: 33%">
-                        {% if data['ai_prediction'] == 1 %}
-                            <input class="mt-2" type="checkbox" checked />
-                        {% else %}
-                            <input class="mt-2" type="checkbox" />
-                        {% endif %}
+                    <div id="opmd-check-box-col1" class="col-1 d-flex justify-content-end" style="width: 33%">
+                        <input class="form-check-input" type="radio" name="ai_prediction" disabled
+                            {% if data['ai_prediction'] == 1 %} checked {% endif %}
+                        >
                     </div>
-                    <div class="col-2" style="width: 33%">
+                    <div id="opmd-check-box-col2" class="col-2" style="width: 33%">
                         <p class="card-text">ความน่าจะเป็นของการมีรอยโรค OPMD</p>
                     </div>
-                    <div class="col-3" style="width: 33%">
+                    <div id="opmd-check-box-col3" class="col-3" style="width: 33%">
                         <p class="card-text">
                             {{'%0.2f'| format(data['ai_scores'][1]*100 | float)}} %
                         </p>
@@ -148,17 +144,15 @@
                 </div>
             
                 <div class="row justify-content-center" style="width: auto">
-                    <div class="col-1 d-flex justify-content-end" style="width: 33%">
-                        {% if data['ai_prediction'] == 2 %}
-                            <input class="mt-2" type="checkbox" checked />
-                        {% else %}
-                            <input class="mt-2 mb-2" type="checkbox" />
-                        {% endif %}
+                    <div id="oscc-check-box-col1" class="col-1 d-flex justify-content-end" style="width: 33%">
+                        <input class="form-check-input" type="radio" name="ai_prediction" disabled
+                            {% if data['ai_prediction'] == 2 %} checked {% endif %}
+                        >
                     </div>
-                    <div class="col-2" style="width: 33%">
+                    <div id="oscc-check-box-col2" class="col-2" style="width: 33%">
                         <p class="card-text">ความน่าจะเป็นของการมีรอยโรค OSCC</p>
                     </div>
-                    <div class="col-3" style="width: 33%">
+                    <div id="oscc-check-box-col3" class="col-3" style="width: 33%">
                         <p class="card-text">
                             {{'%0.2f'| format(data['ai_scores'][2]*100 | float)}} %
                         </p>
@@ -176,7 +170,7 @@
                 <h5 class="card-title text-start mb-3">ข้อมูลภาพ</h5>
                 <p>Case ID: {{data['case_id']}}</p>
                 <p>ชื่อไฟล์: {{data['fname']}}</p>
-                <p>วันที่นำส่ง: {{data['created_at']}}</p>
+                <p>วันที่นำส่ง: {{data['thai_datetime']}}</p>
                 <p>ผู้นำส่งรูป: {{data['sender_description']}}</p>
                 {% if data['sender_hospital'] is not none%}
                     <p>โรงพยาบาลที่สังกัด: {{data['sender_hospital']}} จ.{{data['sender_province']}}</p>
@@ -401,7 +395,7 @@
 
     <div id="patient-container" class="card" style="width: 49.5%; margin-left: 0.5%">
         <div class="card-body">
-            <h5 class="card-title text-start mb-4">ประวัติผู้ป่วย</h5>
+            <h5 class="card-title text-start mb-4">เวชระเบียนผู้ป่วย</h5>
             {%if data['patient_id'] is none %}
                 {% if data['saved_patient_national_id'] is not none %}
                     <p>เลขประจำตัวประชาชน: {{data['saved_patient_national_id']}}</p>
@@ -411,7 +405,7 @@
                         <input name="return_page" type="hidden" value="diagnosis">
                         <input name="role" type="hidden" value="specialist">
                         <input name="img_id" type="hidden" value="{{data['img_id']}}">
-                        <input name="patient_national_id" type="hidden" value="{{data['saved_patient_national_id']}}">
+                        <input name="saved_patient_national_id" type="hidden" value="{{data['saved_patient_national_id']}}">
                         <button id="submitbtn" class="btn btn-success mb-2" type="submit">คลิกเพื่อลงทะเบียนข้อมูลคนไข้</button>
                     </form>
                 {% else %}
@@ -491,16 +485,19 @@
         const biopsyContainer = document.getElementById("biopsy-container");
 
         const patientContainer = document.getElementById("patient-container");
-  
+
         // Move the containers outside the inner-left-container to outer-container (which placed after the patient-container)
-        innerLeftContainer.removeChild(dentistFeedbackHistoryContainer);
+        if (dentistFeedbackHistoryContainer != null)
+            innerLeftContainer.removeChild(dentistFeedbackHistoryContainer);
         innerLeftContainer.removeChild(dentistFeedbackContainer);
         innerLeftContainer.removeChild(biopsyContainer);
-        outerContainer.appendChild(dentistFeedbackHistoryContainer); 
+        if (dentistFeedbackHistoryContainer != null)
+            outerContainer.appendChild(dentistFeedbackHistoryContainer); 
         outerContainer.appendChild(dentistFeedbackContainer);
         outerContainer.appendChild(biopsyContainer);
 
-        dentistFeedbackHistoryContainer.style.padding = 0;  // Set pading to 0 (left justify)
+        if (dentistFeedbackHistoryContainer != null)
+            dentistFeedbackHistoryContainer.style.padding = 0;  // Set pading to 0 (left justify)
         dentistFeedbackContainer.style.padding = 0; 
         biopsyContainer.style.padding = 0; 
 
@@ -510,7 +507,17 @@
         patientContainer.style.width = "100%"; // Restore the width of patient-container to 100%
         patientContainer.style.margin = 0;  // Set left margin to 0 (instead of 0.5% left margin)
         patientContainer.style.marginBottom = "16px"; // Create down margin for the patient-container (dentist-feedback-history-container is next)
-
+        
+        document.getElementById("patientIDContainer").style.width = "100%"
+        document.getElementById("normal-check-box-col1").style.width = "10%"
+        document.getElementById("normal-check-box-col2").style.width = "65%"
+        document.getElementById("normal-check-box-col3").style.width = "25%"
+        document.getElementById("opmd-check-box-col1").style.width = "10%"
+        document.getElementById("opmd-check-box-col2").style.width = "65%"
+        document.getElementById("opmd-check-box-col3").style.width = "25%"
+        document.getElementById("oscc-check-box-col1").style.width = "10%"
+        document.getElementById("oscc-check-box-col2").style.width = "65%"
+        document.getElementById("oscc-check-box-col3").style.width = "25%"
     }
 </script>
 

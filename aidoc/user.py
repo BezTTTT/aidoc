@@ -81,15 +81,16 @@ def register(role):
                 if data['hospital'] == None:
                     data['hospital'] = ''
             return render_template("osm_register.html", data=data)
-        else:
+        else: # patient register-later
             session['register_later']['user_id'] = request.form.get('patient_id', None)
             session['national_id'] = request.form.get('patient_national_id', None)
 
             if session['register_later']['order']=='register-patient':
                 session['noNationalID'] = False
-                if session['national_id'] == 'None':
-                    session['national_id'] = ''
+                if request.form.get('saved_patient_national_id', None) == None: # Check if the the submission has a patient_national_id
                     session['noNationalID'] = True
+                else:
+                    session['national_id'] = request.form.get('saved_patient_national_id', None)
             elif session['register_later']['order']=='edit-patient' or session['register_later']['order']=='link-patient':
                 db, cursor = get_db()
                 sql = '''SELECT name, surname, national_id, email, phone, sex, birthdate, job_position, province, address
@@ -101,6 +102,10 @@ def register(role):
                 data['dob_day'] = data['birthdate'].day
                 data["dob_month"] = data['birthdate'].month
                 data["dob_year"] = data['birthdate'].year + 543
+                if data['email'] == None:
+                    data['email'] = ''
+                if data['phone'] == None:
+                    data['phone'] = ''
             data['current_year'] = datetime.date.today().year # set the current Thai Year to the global variable
             return render_template("patient_register.html", data=data)
     
@@ -360,6 +365,7 @@ def cancel_register():
     if 'register_later' not in session:
         return redirect('/logout')
     elif session['register_later']['return_page'] == 'diagnosis':
+        session['user_id'] = session['user']['id'] 
         role = session['register_later']['sender_mode']
         session['sender_mode'] = role
         img_id = session['register_later']['img_id']
