@@ -23,7 +23,7 @@ from datetime import datetime, date
 from dateutil.parser import parse
 
 from aidoc.db import get_db
-from aidoc.auth import login_required, role_validation
+from aidoc.auth import login_required, role_validation, load_logged_in_user
 
 # 'image' blueprint manages Image upload, AI prediction, and the Diagnosis
 bp = Blueprint('image', __name__)
@@ -381,6 +381,8 @@ def diagnosis(role, img_id):
                    img_id)
             cursor.execute(sql, val)
 
+    dentistCommentFlag = request.args.get('dentistComment', None)
+
     db, cursor = get_db()
     if role=='specialist':
         sql = '''SELECT submission_record.id AS img_id, case_id, fname, special_request,
@@ -414,7 +416,14 @@ def diagnosis(role, img_id):
                 FROM submission_record
                 WHERE id=%s'''
     else:
-        sql = '''SELECT submission_record.id AS img_id, case_id, fname, special_request, sender_id, patient_id, sender_phone, 
+        if dentistCommentFlag and dentistCommentFlag=='true':
+            sql = '''SELECT submission_record.id AS img_id, case_id, fname, special_request, sender_id, patient_id, sender_phone, 
+                    dentist_feedback_code, dentist_feedback_comment, dentist_feedback_date, ai_prediction, ai_scores, submission_record.created_at
+                FROM submission_record
+                INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id
+                WHERE submission_record.id=%s'''
+        else:
+            sql = '''SELECT submission_record.id AS img_id, case_id, fname, special_request, sender_id, patient_id, sender_phone, 
                     ai_prediction, ai_scores, submission_record.created_at
                 FROM submission_record
                 INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id
@@ -439,6 +448,29 @@ def diagnosis(role, img_id):
     
     if role=='patient' and data['sender_id'] is None: # If an unregistered osm submit the data via the patient system, the data will be stored in the patient_id folder
         data['sender_id'] = data['patient_id']
+
+    if dentistCommentFlag:
+        data['dentistCommentFlag'] = dentistCommentFlag
+        if data['ai_prediction']==0 and data['dentist_feedback_code']=='NORMAL':
+            data['dentistCommentAgreeCode'] = 'TN'
+        elif data['ai_prediction']==0 and (data['dentist_feedback_code']=='OPMD' or data['dentist_feedback_code']=='OSCC'):
+            data['dentistCommentAgreeCode'] = 'FN'
+        elif data['ai_prediction']!=0 and (data['dentist_feedback_code']=='OPMD' or data['dentist_feedback_code']=='OSCC'):
+            data['dentistCommentAgreeCode'] = 'TP'
+        elif data['ai_prediction']!=0 and data['dentist_feedback_code']=='NORMAL':
+            data['dentistCommentAgreeCode'] = 'FP'
+        else:
+            data['dentistCommentAgreeCode'] = 'Error'
+            if data['dentist_feedback_comment'] == 'NON_STANDARD':
+                data['dentistComment'] = 'มุมมองไม่ได้มาตรฐาน'
+            elif data['dentist_feedback_comment'] == 'BLUR':
+                data['dentistComment'] = 'ภาพเบลอ ไม่ชัด'
+            elif data['dentist_feedback_comment'] == 'DARK':
+                data['dentistComment'] = 'ภาพช่องปากมืดเกินไป ขอเปิดแฟลชด้วย'
+            elif data['dentist_feedback_comment'] == 'SMALL':
+                data['dentistComment'] = 'ช่องปากเล็กเกินไป ขอนำกล้องเข้าใกล้ปากมากกว่านี้'
+    else:
+        data['dentistCommentFlag'] = 'false'
 
     if role=='osm' or role=='specialist':
         if data['sender_phone'] != None or data['sender_id'] == None:
@@ -782,16 +814,19 @@ def upload_submission_module(target_user_id):
                     sql = "UPDATE user SET default_sender_phone=%s, default_zip_code=%s WHERE id=%s"
                     val = (session['sender_phone'], session['zip_code'], session['user_id'])
                     cursor.execute(sql, val)
+                    load_logged_in_user()
                 
                 if (session['user']['default_sender_phone'] and ('sender_phone' not in session or session['sender_phone'] is None)):
                     sql = "UPDATE user SET default_sender_phone=NULL WHERE id=%s"
                     val = (session['user_id'], )
                     cursor.execute(sql, val)
+                    load_logged_in_user()
 
                 if (session['user']['default_zip_code'] and ('zip_code' not in session or session['zip_code'] is None)):
                     sql = "UPDATE user SET default_zip_code=NULL WHERE id=%s"
                     val = (session['user_id'], )
                     cursor.execute(sql, val)
+                    load_logged_in_user()
 
                 sql = '''INSERT INTO submission_record 
                         (fname,

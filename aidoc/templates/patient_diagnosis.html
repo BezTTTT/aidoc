@@ -22,10 +22,13 @@
                     align-items: center;        /* Center vertically */
                     justify-content: center;    /* Center horizontally */
                     overflow: hidden;">
-            <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=data['sender_id'], imagename=data['fname']) }}" alt="">
+            <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=data['patient_id'], imagename=data['fname']) }}" alt="">
             </div>
             <div class="card-body">
                 <p class="card-text">ภาพถ่ายช่องปาก</p>
+                {% if data['special_request']!=0 %}
+                    <p class="card-text" style="color: red;">***ส่งคำขอตรวจสอบพิเศษเรียบร้อยแล้ว***</p>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -41,13 +44,62 @@
     </div>
 </div>
 
-<div class="p-3 text-center d-flex justify-content-center">
-    <div class="col-md-4">
-        <div class="col-md-4 d-flex justify-content-center" style="width: auto; margin-bottom: 5%;">
-            <a class="btn btn-success" href="/upload_image/patient">นำส่งภาพถ่ายช่องปากเพิ่มเติม</a>
+{% if 'dentistCommentFlag' in data and data['dentistCommentFlag']=='true' %}
+    <div class="row d-flex justify-content-center text-align-left my-4" style="width: auto">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">ผลการวินิจฉัยโดยทันตเเพทย์</h5>
+                {% if data['dentist_feedback_code'] is none %}
+                    <div class="card-subtitle card shadow-lg my-3 py-3 fs-2 text-dark text-center" style="background-color: lightgrey;">
+                        <h6 class="fs-2"> ⏳รอผลการวินิจฉัยจากทันตแพทย์... </h6>
+                    </div>
+                {% elif data['dentist_feedback_code']=='OTHER' %}
+                    <div class="card-subtitle card shadow-lg bg-primary my-3 py-3 ms-4 text-white text-center">
+                        <h6 class="fs-2"> ทันตแพทย์แจ้งว่า {{data['dentist_feedback_comment']}}</h6>
+                        <h6 class="fs-6"> กรุณาส่งภาพถ่ายช่องปากมุมมองอื่น ๆ มาให้ตรวจสอบด้วย หรือถ่ายซ้ำด้วยกล้องคุณภาพที่ดีขึ้น</h6>
+                    </div>
+                    <h6 class="card-subtitle mt-1">วันที่ตรวจ: {{data['dentist_feedback_date']}}</h6>
+                {% else %}
+                    {% if data['dentistCommentAgreeCode'] == 'TN' %}
+                        <div class="card-subtitle card shadow-lg bg-primary my-3 py-3 ms-4 text-white text-center">
+                            <h6 class="fs-2"> ยืนยันว่าช่องปากของคุณไม่พบรอยโรค <br></h6>
+                            <h6 class="fs-6"> กรุณาส่งภาพถ่ายช่องปากมุมมองอื่น ๆ มาให้ตรวจสอบด้วย หรือถ่ายซ้ำด้วยกล้องคุณภาพที่ดีขึ้น</h6>
+                        </div>
+                    {% elif data['dentistCommentAgreeCode'] == 'TP' %}
+                        <div class="card-subtitle card shadow-lg bg-primary my-3 py-3 ms-4 text-white text-center">
+                            <h6 class="fs-2"> ตรวจสอบแล้วพบว่าช่องปากของคุณอาจมีรอยโรคจริง <br></h6>
+                            <h6 class="fs-6"> ขอให้คนไข้เข้าพบแพทย์หรือทันตแพทย์เพื่อรับการตรวจเพิ่มเติม</h6>
+                        </div>
+                    {% elif data['dentistCommentAgreeCode'] == 'FP' %}
+                        <div class="card-subtitle card shadow-lg bg-primary my-3 py-3 ms-4 text-white text-center">
+                            <h6 class="fs-2"> ตรวจสอบแล้วพบว่าช่องปากของคุณไม่น่าจะมีรอยโรค แต่ AI อาจทำงานผิดพลาด กราบขออภัยท่านมา ณ ที่นี้</h6>
+                            <h6 class="fs-6"> กรุณาส่งภาพถ่ายช่องปากมุมมองอื่น ๆ มาให้ตรวจสอบด้วย หรือถ่ายซ้ำด้วยกล้องคุณภาพที่ดีขึ้น</h6>
+                        </div>
+                    {% elif data['dentistCommentAgreeCode'] == 'FN' %}
+                        <div class="card-subtitle card shadow-lg bg-primary my-3 py-3 ms-4 text-white text-center">
+                            <h6 class="fs-2"> ตรวจสอบแล้วพบว่าช่องปากของคุณน่าจะมีรอยโรคจริง แต่ AI อาจทำงานผิดพลาด กราบขออภัยท่านมา ณ ที่นี้</h6>
+                            <h6 class="fs-6"> กรุณาส่งภาพถ่ายช่องปากมุมมองอื่น ๆ มาให้ตรวจสอบด้วย หรือถ่ายซ้ำด้วยกล้องคุณภาพที่ดีขึ้น</h6>
+                        </div>
+                    {% elif data['dentistCommentAgreeCode'] == 'Error' %}
+                        <div class="card-subtitle card shadow-lg bg-primary my-3 py-3 ms-4 text-white text-center">
+                            <h6 class="fs-2"> ภาพถ่ายช่องปากไม่ผ่านมาตรฐาน ทำให้วินิจฉัยไม่ได้: {{data['dentistComment']}}</h6>
+                            <h6 class="fs-6"> กรุณาส่งใหม่ หรือถ่ายซ้ำด้วยกล้องคุณภาพที่ดีขึ้น</h6>
+                        </div>
+                    {% endif %}
+                    <h6 class="card-subtitle mt-1">วันที่ตรวจ: {{data['dentist_feedback_date']}}</h6>
+                {% endif %}
+            </div>
         </div>
     </div>
-</div>
+{% else %}
+    <div class="p-3 text-center d-flex justify-content-center">
+        <div class="col-md-4">
+            <div class="col-md-4 d-flex justify-content-center" style="width: auto; margin-bottom: 5%;">
+                <a class="btn btn-success" href="/upload_image/patient">นำส่งภาพถ่ายช่องปากเพิ่มเติม</a>
+            </div>
+        </div>
+    </div>
+{% endif %}
 
 <div class="row d-flex justify-content-center text-align-left" style="width: auto">
     <div class="card">
@@ -82,7 +134,7 @@
                     (คำขอตรวจสอบภาพกรณีพิเศษใช้กับกรณีที่ท่านตรวจพบรอยโรคในภาพแล้วเท่านั้น)
                 </p>
                 <div class="row mt-2 justify-content-center">
-                    <div class="col-2">
+                    <div class="col-3">
                         <button type="button" class="btn btn-outline-primary mx-1" style="width: 100%"
                             data-bs-toggle="modal" data-bs-target="#specialRequestModal">
                             ใช่
@@ -110,14 +162,6 @@
             </div>
         </div>
     </div>
-{% else %}
-    <div class="row d-flex justify-content-center my-4">
-        <div class="card" style="width: 100%;">
-            <div class="card-body">
-                <h4 class="card-title text-center"> ส่งคำขอตรวจสอบพิเศษเรียบร้อยแล้ว </h4>
-            </div>
-        </div>
-    </div>    
 {% endif %}
 
 <div class="row d-flex justify-content-center my-4">
