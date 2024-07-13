@@ -1,0 +1,97 @@
+{% extends "./base.html" %}
+
+{% block title %} RiskOCA | Patient Records {% endblock %}
+
+{% block content %}
+
+<div class="col-12">
+  <h2>ประวัติการนำส่งข้อมูลภาพถ่ายช่องปากพร้อมคำวินิจฉัยยืนยันจากทันตแพทย์ผู้เชี่ยวชาญ</h2>
+  <p>{{ session['user']['name'] }} {{ session['user']['surname'] }} ({{ session['user']['job_position_th'] }})</p>
+</div>
+<div class="col-12 my-5">
+  <a class="btn btn-outline-success" style="width: 100%" type="submit"
+    href="{{ url_for('image.upload_image', role='patient') }}">คลิกเพื่อนำส่งภาพถ่ายช่องปากเพื่อวิเคราะห์รอยโรคใหม่</a>
+</div>
+<p class="text-center">กดที่ Case ID เพื่อดูรายละเอียดการนำส่ง</p>
+<div class="row row-cols-1 row-cols-md-2 g-4">
+  {% for item in data %}
+    <div class="col">
+      <div class="card text-bg-light h-100" style="width: 100%">
+        <div class="card-header"><b>วันที่นำส่งรูป {{ item['thai_datetime'] }}</b></div>
+        <div class="card-body">
+          <h5 class="card-title">
+            <form id="form_{{ item.id }}" action="{{ url_for('image.diagnosis', role='patient', img_id=item['id'], dentistComment='true') }}" method="post" enctype="multipart/form-data">
+              <input class="btn btn-secondary" type="submit" value="Case ID: {{ item['case_id'] }}">
+            </form>
+            {% if item['special_request'] == 1 %}
+              <span style="color: rgb(128, 128, 200)">[มีคำขอตรวจสอบพิเศษ]</span>
+            {% endif %}
+          </h5>
+          <p class="card-text">
+            <div class="row">
+              <div class="col-4">
+                <b>ผู้นำส่ง:</b>
+              </div>
+              <div class="col-8">
+                {% if item['sender_id']!=item['patient_id'] %}
+                  เจ้าหน้าที่นำส่งข้อมูล
+                {% else %}
+                  ผู้ป่วยเป็นผู้นำส่งเอง
+                {% endif %}
+              </div>
+            </div>
+          </p>
+          <p class="card-text">
+            <div class="row">
+              <div class="col-4">
+                <b>การพยากรณ์ของ AI:</b>
+              </div>
+              <div class="col-8">
+                {% if item['ai_prediction']==0 %}
+                  ไม่พบรอยโรค<span class="dot bg-success"></span>
+                {% elif item['ai_prediction']==1 %}
+                  <b>พบรอยโรค!</b><span class="dot" style="background-color: #ffa31a"></span>
+                {% else %}
+                  <b>พบรอยโรค!!</b><span class="dot bg-danger"></span>
+                {% endif %}
+              </div>
+            </div>
+          </p>
+          <p class="card-text">
+            <div class="row">
+              <div class="col-4">
+                <b>ความเห็นของทันตแพทย์:</b>
+              </div>
+              <div class="col-8">
+                {% if item['dentist_feedback_code'] is none %}
+                  <span style="color: darkgrey">รอผลการวินิจฉัยจากทันตแพทย์...</span>
+                {% elif item['dentist_feedback_code']=='OTHER' %}
+                  {{item['dentist_feedback_comment']}}
+                {% else %}
+                  {% if item['dentistCommentAgreeCode'] == 'TN' %}
+                    ยืนยันว่าไม่พบรอยโรค
+                  {% elif item['dentistCommentAgreeCode'] == 'TP' %}
+                    อาจมีรอยโรคจริง
+                  {% elif item['dentistCommentAgreeCode'] == 'FP' %}
+                    ไม่น่าจะมีรอยโรค แต่ AI อาจทำงานผิดพลาด
+                  {% elif item['dentistCommentAgreeCode'] == 'FN' %}
+                    น่าจะมีรอยโรคจริง แต่ AI อาจทำงานผิดพลาด
+                  {% elif item['dentistCommentAgreeCode'] == 'Error' %}
+                    ภาพไม่ได้มาตรฐาน วินิจฉัยไม่ได้: {{item['dentistComment']}}
+                  {% endif %}
+                {% endif %}
+              </div>
+            </div>
+          </p>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+</div>
+
+<style>
+  .card-body p {
+    margin-bottom: 0.5rem; /* Apply margin bottom equivalent to mb-1 */
+  }
+</style>
+{% endblock %}

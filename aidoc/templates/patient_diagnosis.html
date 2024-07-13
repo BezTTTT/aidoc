@@ -45,13 +45,20 @@
 </div>
 
 {% if 'dentistCommentFlag' in data and data['dentistCommentFlag']=='true' %}
-    <div class="row d-flex justify-content-center text-align-left my-4" style="width: auto">
+    <div class="p-3 text-center d-flex justify-content-center">
+        <div class="col-md-4">
+            <div class="col-md-4 d-flex justify-content-center" style="width: auto; margin-bottom: 5%;">
+                <a class="btn btn-success" href="/record/patient">ย้อนกลับหน้าประวัติ</a>
+            </div>
+        </div>
+    </div>
+    <div class="row d-flex justify-content-center text-align-left mb-4" style="width: auto">
         <div class="card">
             <div class="card-body">
                 <h5 class="card-title">ผลการวินิจฉัยโดยทันตเเพทย์</h5>
                 {% if data['dentist_feedback_code'] is none %}
                     <div class="card-subtitle card shadow-lg my-3 py-3 fs-2 text-dark text-center" style="background-color: lightgrey;">
-                        <h6 class="fs-2"> ⏳รอผลการวินิจฉัยจากทันตแพทย์... </h6>
+                        <h6 class="fs-2"> ⏳ รอผลการวินิจฉัยจากทันตแพทย์... </h6>
                     </div>
                 {% elif data['dentist_feedback_code']=='OTHER' %}
                     <div class="card-subtitle card shadow-lg bg-primary my-3 py-3 ms-4 text-white text-center">

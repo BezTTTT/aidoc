@@ -1,0 +1,176 @@
+{% extends "./base_patient_record.html" %}
+
+{% block title %} RiskOCA | Patient Records {% endblock %}
+
+{% block content %}
+<style>
+  .comment-cell {
+    max-width: 200px; /* Adjust the maximum width as needed */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .container {
+    overflow-x: auto;
+  }
+
+  tr>th:first-child,
+  tr>td:first-child {
+    position: sticky;
+    left: 0;
+  }
+
+  tr:nth-child(odd) td {
+    background: white;
+  }
+
+  tr:nth-child(even) td {
+    background: rgb(234, 234, 234);
+  }
+
+  table.dataTable thead th {
+    background-color: #ffffff;
+    border-top: 1px solid #dddddd;
+    border-bottom: 1px solid #dddddd;
+  }
+
+  table.dataTable tbody tr:nth-child(even) {
+    background-color: #f2f2f2;
+  }
+
+  .dataTable label {
+    background-color: #f2f2f2;
+    /* Change the background color */
+    border: 1px solid #ccc;
+    /* Change the border */
+    border-radius: 5px;
+    /* Add border radius for rounded corners */
+    padding: 0px;
+    /* Add padding for better spacing */
+  }
+
+  .dataTable {
+    padding-top: 0rem;
+  }
+</style>
+<style>
+  tr:hover {
+    cursor: pointer;
+    color: blue;
+  }
+</style>
+<style>
+  #prev_history_wrapper {
+    margin-top: 0;
+    /* Adjust the margin-top as needed */
+  }
+</style>
+
+
+<div class="col-12">
+    <h2>ประวัติการนำส่งข้อมูลภาพถ่ายช่องปากพร้อมคำวินิจฉัยยืนยันจากทันตแพทย์ผู้เชี่ยวชาญ</h2>
+    <p>{{ session['user']['name'] }} {{ session['user']['surname'] }} ({{ session['user']['job_position_th'] }})</p>
+</div>
+<div class="col-12 my-5">
+    <a class="btn btn-outline-success" style="width: 100%" type="submit"
+        href="{{ url_for('image.upload_image', role='patient') }}">คลิกเพื่อนำส่งภาพถ่ายช่องปากเพื่อวิเคราะห์รอยโรคใหม่</a>
+</div>
+
+<div>
+    <table id="prev_history" class="dataTable">
+        <thead>
+            <tr class="text-dark">
+                <th>CaseID</th>
+                <th>วันที่นำส่งรูป</th>
+                <th>ผู้นำส่ง</th>
+                <th>คำวินิจฉัย AI</th>
+                <th>ความเห็นของทันตแพทย์</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Populate the table rows using Jinja2 templating -->
+            {% for item in data %}
+              <tr onclick="submitForm('{{ item.id }}')">
+                  <td>
+                      <form id="form_{{ item.id }}" action="{{ url_for('image.diagnosis', role='patient', img_id=item['id'], dentistComment='true') }}" method="post" enctype="multipart/form-data">
+                          {% if item['special_request'] == 1 %}
+                              <input class="btn btn-outline-primary" style="width: 50%; height: 25px; line-height: 15px" type="submit" value="{{ item['id'] }}" />
+                          {% else %}
+                              <input class="btn btn-outline-secondary" style="width: 50%; height: 25px; line-height: 15px" type="submit" value="{{ item['id'] }}" />
+                          {% endif %}
+                      </form>
+                  </td>
+                  <td>
+                    {{ item['created_at'] }}
+                  </td>
+                  <td class="comment-cell">
+                    {% if item['sender_id']!=item['patient_id'] %}
+                      เจ้าหน้าที่นำส่งข้อมูล
+                    {% else %}
+                      นำส่งเอง
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if item['ai_prediction']==0 %}
+                      ไม่พบรอยโรค<span class="dot bg-success"></span>
+                    {% elif item['ai_prediction']==1 %}
+                      <b>พบรอยโรค!</b><span class="dot" style="background-color: #ffa31a"></span>
+                    {% else %}
+                      <b>พบรอยโรค!!</b><span class="dot bg-danger"></span>
+                    {% endif %}
+                  </td>
+                  <td class="comment-cell">
+                    {% if item['dentist_feedback_code'] is none %}
+                      <span style="color: darkgrey">รอผลการวินิจฉัยจากทันตแพทย์...</span>
+                    {% elif item['dentist_feedback_code']=='OTHER' %}
+                      {{item['dentist_feedback_comment']}}
+                    {% else %}
+                      {% if item['dentistCommentAgreeCode'] == 'TN' %}
+                        ยืนยันว่าไม่พบรอยโรค
+                      {% elif item['dentistCommentAgreeCode'] == 'TP' %}
+                        อาจมีรอยโรคจริง
+                      {% elif item['dentistCommentAgreeCode'] == 'FP' %}
+                        ไม่น่าจะมีรอยโรค แต่ AI อาจทำงานผิดพลาด
+                      {% elif item['dentistCommentAgreeCode'] == 'FN' %}
+                        น่าจะมีรอยโรคจริง แต่ AI อาจทำงานผิดพลาด
+                      {% elif item['dentistCommentAgreeCode'] == 'Error' %}
+                        ภาพไม่ได้มาตรฐาน วินิจฉัยไม่ได้: {{item['dentistComment']}}
+                      {% endif %}
+                    {% endif %}
+                  </td>
+              </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script>
+      $(document).ready(function () {
+        $("#prev_history").DataTable({
+          initComplete: function (settings, json) {
+            $("#DataTableID").wrap(
+              "<div style='overflow:auto; width:100%;position:relative;'></div>"
+            );
+          },
+          fixedColumns: true,
+          order: [[1, "desc"]],
+          pageLength: 25,
+          searching: false,
+          columnDefs: [
+            { className: "text-center", width: "10%", targets: [0] }, // Adjust the width of the first column (CaseID)
+            { className: "text-center", width: "15%", targets: [1] }, // Adjust the width of the second column (วันที่นำส่งรูป)
+            { className: "text-center", width: "7%", targets: [2] }, // Adjust the width of the third column (ผู้นำส่ง)
+            { className: "text-center", width: "12%", targets: [3] }, // delete 4,5
+            { className: "text-center", targets: [4] }, //change back to 4
+          ],
+        });
+      });
+    </script>
+<script>
+    function submitForm(id) {
+      document.getElementById("form_" + id).submit();
+    }
+</script>
+{% endblock %}

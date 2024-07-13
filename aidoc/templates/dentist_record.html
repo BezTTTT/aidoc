@@ -48,7 +48,7 @@
         <div class="row">
             {% for item in pagination %}
                 <div class="col-md-3 mb-4">
-                    <div class="card">
+                    <div class="card h-100">
                         <div style="display: inline-flex; align-items: center; justify-content: center; ">
                             <a href="{{ url_for('image.load_image', folder='upload', user_id=session['user_id'], imagename=item['fname']) }}" target="_blank">
                                 <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=session['user_id'], imagename=item['fname']) }}" 

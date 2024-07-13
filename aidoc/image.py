@@ -538,8 +538,8 @@ def diagnosis(role, img_id):
 def record(role): # Submission records
    
     session['sender_mode'] = role
-    if role=='patient': # Not available for patient
-        return render_template('unauthorized_access.html', error_msg='ไม่พบข้อมูลที่ร้องขอ Data Not Found')
+    # if role=='patient': # Not available for patient
+    #    return render_template('unauthorized_access.html', error_msg='ไม่พบข้อมูลที่ร้องขอ Data Not Found')
 
     # Reload the record every time the page is reloaded
     db, cursor = get_db()
@@ -565,6 +565,15 @@ def record(role): # Submission records
                 WHERE sender_id = %s OR submission_record.sender_phone is not NULL'''
         val = (session["user_id"],)
         cursor.execute(sql, val)
+    elif role=='patient':
+        sql = '''SELECT submission_record.id, case_id, special_request, sender_id, patient_id, sender_phone, 
+                    dentist_feedback_code, dentist_feedback_comment, dentist_feedback_date, ai_prediction, ai_scores, submission_record.created_at
+                FROM submission_record
+                INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id
+                WHERE patient_id=%s
+                ORDER BY case_id DESC'''
+        val = (session["user_id"],)
+        cursor.execute(sql, val)
     else:
         sql = '''SELECT submission_record.id, fname, name, surname, birthdate,
                     sender_id, patient_id, dentist_id, special_request, province,
@@ -577,6 +586,31 @@ def record(role): # Submission records
         cursor.execute(sql, val)
     db_query = cursor.fetchall()
     
+    # patient's record page is a special case (no pagination)
+    if role=='patient':
+        data=db_query
+        for item in data:
+            item['thai_datetime'] = format_thai_datetime(item['created_at'])
+            if item['ai_prediction']==0 and item['dentist_feedback_code']=='NORMAL':
+                item['dentistCommentAgreeCode'] = 'TN'
+            elif item['ai_prediction']==0 and (item['dentist_feedback_code']=='OPMD' or item['dentist_feedback_code']=='OSCC'):
+                item['dentistCommentAgreeCode'] = 'FN'
+            elif item['ai_prediction']!=0 and (item['dentist_feedback_code']=='OPMD' or item['dentist_feedback_code']=='OSCC'):
+                item['dentistCommentAgreeCode'] = 'TP'
+            elif item['ai_prediction']!=0 and item['dentist_feedback_code']=='NORMAL':
+                item['dentistCommentAgreeCode'] = 'FP'
+            else:
+                item['dentistCommentAgreeCode'] = 'Error'
+                if item['dentist_feedback_comment'] == 'NON_STANDARD':
+                    item['dentistComment'] = 'มุมมองไม่ได้มาตรฐาน'
+                elif item['dentist_feedback_comment'] == 'BLUR':
+                    item['dentistComment'] = 'ภาพเบลอ ไม่ชัด'
+                elif item['dentist_feedback_comment'] == 'DARK':
+                    item['dentistComment'] = 'ภาพช่องปากมืดเกินไป ขอเปิดแฟลชด้วย'
+                elif item['dentist_feedback_comment'] == 'SMALL':
+                    item['dentistComment'] = 'ช่องปากเล็กเกินไป ขอนำกล้องเข้าใกล้ปากมากกว่านี้'
+        return render_template("patient_record.html", data=data)
+
     # Filter data if search query is provided
     search_query = request.args.get("search", "") 
     agree = request.args.get("agree", "") 
@@ -606,7 +640,7 @@ def record(role): # Submission records
 
     # Sort the filtered data
     filtered_data = sorted(filtered_data, key=lambda x: x["created_at"], reverse=True)
-
+   
     # Pagination
     page = request.args.get("page", 1, type=int)
     if request.method == "POST":
