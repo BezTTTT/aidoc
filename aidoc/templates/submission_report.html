@@ -1,0 +1,224 @@
+{% extends "./base.html" %}
+
+{% block title %} RiskOCA | Submission Report {% endblock %}
+
+{% block content %}
+
+<h2>รายงานสรุปการนำส่งรูปรายจังหวัด</h2>
+<label class="my-4" for="selectProvince">กรุณาเลือกจังหวัดที่ต้องการ</label>
+<select name="selectProvince" id="selectProvince">
+  {%for item in data['province_list']%}
+    <option value="{{item}}card">{{item}}</option>
+  {%endfor%}
+</select>
+
+<div class="card p-3 m-3" id="{{item['name']}}card" style="display: none;">
+  <h5 class="card-title">{{item['name']}}</h5>
+  <!-- <h6>รูปที่นำส่งโดยประชาชนทั่วไป</h6> -->
+  <br>
+  <div class="table-responsive">
+    <table id="patientHistTable" class="table table-bordered" >
+      <thead>
+        <tr class="text-dark" style="width: 100%;">
+          <th rowspan="2" class="align-middle" style="width: 10%;">รูปที่นำส่งโดยประชาชนทั่วไป</th>
+          <th rowspan="2" class="align-middle text-center" style="width: 10%;">จำนวนภาพ</th>
+          <th colspan="3" class="text-center" style="width: 20%;">ผลคำวินิจฉัยโดย AI</th>
+          <th colspan="7" class="text-center" style="width: 60%;">ความคิดเห็นของทันตแพทย์ที่เข้าร่วมโครงการ</th>
+        </tr>
+        <tr>
+          <th class="text-center align-middle">OPMD</th>
+          <th class="text-center align-middle">OSCC</th>
+          <th class="text-center align-middle">NORMAL</th>
+
+          <th class="text-center align-middle" style="width: 8.5%;">OPMD</th>
+          <th class="text-center align-middle" style="width: 8.5%;">OSCC</th>
+          <th class="text-center align-middle" style="width: 8.5%;">NORMAL</th>
+          <th class="text-center align-middle" style="width: 8.5%;">ภาพไม่ได้มาตรฐาน</th>
+          <th class="text-center align-middle" style="width: 8.5%;">อื่น ๆ</th>
+          <th class="text-center align-middle" style="width: 8.5%;">ความแม่นยำ</th>
+          <th class="text-center align-middle" style="width: 9%;">ภาพที่ยังไม่ได้ตรวจ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for i in range( item['patient_hist_img_count'] | length) %}
+        <tr>
+          <td>{{item['patient_hist_img_count'][i]['uploader']}} </td>
+          <td class="text-center">{{item['patient_hist_img_count'][i]['img_count']}} </td>
+          <td class="text-center">{{item['patient_hist_class_count'][i]['OPMD']}} </td>
+          <td class="text-center">{{item['patient_hist_class_count'][i]['OSCC']}} </td>
+          <td class="text-center">{{item['patient_hist_class_count'][i]['NM']}} </td>
+
+          <td class="text-center">{{item['patient_hist_dent_comment'][i]['OPMD']}}</td>
+          <td class="text-center">{{item['patient_hist_dent_comment'][i]['OSCC']}}</td>
+          <td class="text-center">{{item['patient_hist_dent_comment'][i]['NM']}}</td>
+          <td class="text-center">{{item['patient_hist_dent_comment'][i]['BAD_IMG']}}</td>
+          <td class="text-center">{{item['patient_hist_dent_comment'][i]['OTHER']}}</td>
+          <td class="text-center">{{item['patient_hist_dent_comment'][i]['accuracy']}}%</td>
+          <td class="text-center">{{item['patient_hist_dent_comment'][i]['NOCOMMENT']}}</td>
+        </tr>
+        {%endfor%}
+        <tr>
+          <td>รวม</td>
+          <td class="text-center">{{item['summary_patient_hist']['img_count']}}</td>
+          <td class="text-center">{{item['summary_patient_hist']['ai_class']['opmd']}}</td>
+          <td class="text-center">{{item['summary_patient_hist']['ai_class']['oscc']}}</td>
+          <td class="text-center">{{item['summary_patient_hist']['ai_class']['normal']}}</td>
+          <td class="text-center">{{item['summary_patient_hist']['dent_comment']['opmd']}}</td>
+          <td class="text-center">{{item['summary_patient_hist']['dent_comment']['oscc']}}</td>
+          <td class="text-center">{{item['summary_patient_hist']['dent_comment']['normal']}}</td>
+          <td class="text-center">{{item['summary_patient_hist']['dent_comment']['bad_img']}}</td>
+          <td class="text-center">{{item['summary_patient_hist']['dent_comment']['other']}}</td>
+          <td class="text-center">{{item['summary_patient_hist']['dent_comment']['accuracy']}}%</td>
+          <td class="text-center">{{item['summary_patient_hist']['dent_comment']['nocomment']}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  {% if item['hist_img_count']%}
+  <!-- <h6>ทันตบุคลากร</h6> -->
+  <br>
+  <div class="table-responsive">
+    <table id="histTable" class="table table-bordered" >
+      <thead>
+        <tr class="text-dark" style="width: 100%;">
+          <th rowspan="2" class="align-middle" style="width: 30%;">ทันตบุคลากร</th>
+          <th rowspan="2" class="align-middle text-center" style="width: 10%;">จำนวนภาพ</th>
+          <th colspan="3" class="text-center" style="width: 30%;">ผลคำวินิจฉัยโดย AI</th>
+          <th colspan="3" class="text-center" style="width: 30%;">ความคิดเห็นของผู้ส่ง ต่อคำวินิจฉัยของ AI</th>
+        </tr>
+        <tr>
+          <th class="text-center" style="width: 10%;">OPMD</th>
+          <th class="text-center" style="width: 10%;">OSCC</th>
+          <th class="text-center" style="width: 10%;">NORMAL</th>
+
+          <th class="text-center" style="width: 10%;">เห็นด้วย</th>
+          <th class="text-center" style="width: 10%;">ไม่เห็นด้วย</th>
+          <th class="text-center" style="width: 10%;">ไม่มีความคิดเห็น</th>
+
+        </tr>
+      </thead>
+      <tbody>
+        {% for i in range( item['hist_img_count'] | length) %}
+        <tr>
+          <td>{{item['hist_img_count'][i]['work']}} </td>
+          <td class="text-center">{{item['hist_img_count'][i]['img_count']}} </td>
+          <td class="text-center">{{item['hist_class_count'][i]['OPMD']}} </td>
+          <td class="text-center">{{item['hist_class_count'][i]['OSCC']}} </td>
+          <td class="text-center">{{item['hist_class_count'][i]['NM']}} </td>
+
+          <td class="text-center">{{item['hist_comment'][i]['AGREE']}}</td>
+          <td class="text-center">{{item['hist_comment'][i]['DISAGREE']}}</td>
+          <td class="text-center">{{item['hist_comment'][i]['NOCOMMENT']}}</td>
+
+        </tr>
+        {%endfor%}
+        <tr>
+          <td>รวม</td>
+          <td class="text-center">{{item['summary_hist']['img_count']}}</td>
+          <td class="text-center">{{item['summary_hist']['ai_class']['opmd']}}</td>
+          <td class="text-center">{{item['summary_hist']['ai_class']['oscc']}}</td>
+          <td class="text-center">{{item['summary_hist']['ai_class']['normal']}}</td>
+          <td class="text-center">{{item['summary_hist']['user_comment']['agree']}}</td>
+          <td class="text-center">{{item['summary_hist']['user_comment']['disagree']}}</td>
+          <td class="text-center">{{item['summary_hist']['user_comment']['nocomment']}}</td>
+          
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  {%endif%}
+  
+  {%if item['hist_img_count'] or item['patient_hist_img_count'] %}
+    <!-- <h6>สรุปจำนวนรูปทั้งหมด ที่นำส่งโดยประชาชนทั่วไปและทันตบุคลากร</h6> -->
+    <br>
+    <div class="table-responsive">
+      <table id="summaryTable" class="table table-bordered" >
+        <thead>
+          <tr class="text-dark" style="width: 100%;">
+            <th rowspan="2" style="width: 40%;" class="align-middle">สรุปจำนวนรูปทั้งหมด ที่นำส่งโดยประชาชนทั่วไปและทันตบุคลากร</th>
+            <th rowspan="2" style="width: 20%;" class="align-middle text-center">จำนวนภาพ</th>
+            <th colspan="3" style="width: 40%;" class="text-center">ผลคำวินิจฉัยโดย AI</th>
+          </tr>
+          <tr>
+            <th class="text-center">OPMD</th>
+            <th class="text-center">OSCC</th>
+            <th class="text-center">NORMAL</th>
+          </tr>
+        </thead>
+        <tbody> 
+          <tr>
+            <td>รวม</td>
+            <td class="text-center">{{item['summary_all_pic']['img_count']}} </td>
+            <td class="text-center">{{item['summary_all_pic']['ai_class']['opmd']}} </td>
+            <td class="text-center">{{item['summary_all_pic']['ai_class']['oscc']}} </td>
+            <td class="text-center">{{item['summary_all_pic']['ai_class']['normal']}} </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    {%endif%}
+
+  {% if item['all_user_count']%}
+  <!-- <h6>จำนวนบัญชีผู้ใช้งานทั้งหมด</h6> -->
+  <br>
+  <div class="table-responsive">
+    <table id="userTable" class="table table-bordered" >
+      <thead >
+        <tr class="text-dark" style="width: 100%;">
+          <th rowspan="2" style="width: 40%;" class="align-middle">จำนวนบัญชีผู้ใช้งานทั้งหมด</th>
+          <th rowspan="2" style="width: 20%;" class="align-middle text-center">จำนวนบัญชี</th>
+          <th colspan="2" style="width: 40%;" class="text-center">สถานะการใช้งาน</th>
+        </tr>
+        <tr >
+          <th style="width: 20%;" class="text-center">บัญชีผู้ใช้ที่เคยส่งรูป</th>
+          <th style="width: 20%;" class="text-center">บัญชีผู้ใช้ที่ยังไม่เคยส่งรูป</th>
+
+        </tr>
+      </thead>
+      <tbody>
+        {% for i in range( item['all_user_count'] | length) %}
+        <tr>
+          <td>{{item['all_user_count'][i]['work']}} </td>
+          <td class="text-center">{{item['all_user_count'][i]['amount']}} </td>
+          
+          <td class="text-center">{{item['all_user_count'][i]['active']}}</td>
+          <td class="text-center">{{item['all_user_count'][i]['inactive']}}</td>
+        </tr>
+        {%endfor%}
+        <tr>
+          <td>รวม</td>
+          <td class="text-center">{{item['summary_user']['amount']}}</td>
+          <td class="text-center">{{item['summary_user']['active']}}</td>
+          <td class="text-center">{{item['summary_user']['inactive']}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  {%endif%}
+
+
+</div>
+{% endfor %}
+<script>
+  //initial
+  const allDataSum = document.getElementById('ประเทศไทยcard')
+  allDataSum.style.display = 'block'
+  const selectProvince = document.getElementById('selectProvince')
+  let previousSelected = 'ประเทศไทยcard'
+  selectProvince.addEventListener('change',()=>{
+    
+    const currentSelected = selectProvince.value
+    // console.log('current:',selectProvince.value,' previous:',previousSelected)
+
+    if(previousSelected!=undefined || previousSelected != null){
+      const previousCard = document.getElementById(previousSelected)
+      previousCard.style.display = 'none'
+    }
+    const currentCard = document.getElementById(currentSelected)
+    currentCard.style.display = 'block'
+
+    previousSelected = currentSelected
+  })
+</script>
+{% endblock %}

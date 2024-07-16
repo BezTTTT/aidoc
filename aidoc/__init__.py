@@ -1,10 +1,6 @@
 from flask import Flask
 import os
 
-import logging
-logger = logging.getLogger('waitress')
-logger.setLevel(logging.DEBUG)
-
 # Application Factory
 def create_app(test_config=None):
     # create and configure the app

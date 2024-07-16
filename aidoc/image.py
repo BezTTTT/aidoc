@@ -678,6 +678,24 @@ def record(role): # Submission records
                 current_page=page,
                 total_pages=total_pages)
 
+# region report
+@bp.route('/report', methods=('GET', 'POST'))
+@login_required
+@role_validation
+def report():
+    data = {}
+    province = request.args.get('province', default=None, type=str)
+    if province is None:
+        sql = '''SELECT case_id, sender_id, sender_phone, patient_id, patient_user.province, name, surname, 
+            patient_national_id, dentist_feedback_code, ai_prediction
+            FROM submission_record
+            INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
+            LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id'''
+    else:
+        print()
+    return render_template("submission_report.html",
+                           data=data)
+
 # Helper functions
 # region create_thumbnail
 def create_thumbnail(pil_img):
@@ -839,8 +857,8 @@ def upload_submission_module(target_user_id):
             db, cursor = get_db()
             
             if session['sender_mode']=='dentist':
-                sql = "INSERT INTO submission_record (fname, sender_id, ai_prediction, ai_scores) VALUES (%s,%s,%s,%s)"
-                val = (filename, session['user_id'], ai_predictions[i], ai_scores[i])
+                sql = "INSERT INTO submission_record (fname, sender_id, ai_prediction, ai_scores, channel) VALUES (%s,%s,%s,%s,%s)"
+                val = (filename, session['user_id'], ai_predictions[i], ai_scores[i], 'DENTIST')
                 cursor.execute(sql, val)
             elif session['sender_mode']=='patient':
 
@@ -869,15 +887,17 @@ def upload_submission_module(target_user_id):
                         zip_code,
                         patient_id,
                         ai_prediction,
-                        ai_scores)
-                        VALUES (%s,%s,%s,%s,%s,%s,%s)'''
+                        ai_scores,
+                        channel)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)'''
                 val = (filename,
                         session['sender_id'],
                         session['sender_phone'],
                         session['zip_code'],
                         session['user_id'],
                         ai_predictions[i],
-                        ai_scores[i])
+                        ai_scores[i],
+                        'PATIENT')
                 cursor.execute(sql, val)
                 
                 cursor.execute("SELECT LAST_INSERT_ID()")
@@ -900,15 +920,17 @@ def upload_submission_module(target_user_id):
                         patient_id,
                         patient_national_id,
                         ai_prediction,
-                        ai_scores)
-                        VALUES (%s,%s,%s,%s,%s,%s,%s)'''
+                        ai_scores,
+                        channel)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s)'''
                 val = (filename,
                         session['user_id'],
                         session['zip_code'],
                         session['patient_id'],
                         session['patient_national_id'],
                         ai_predictions[i],
-                        ai_scores[i])
+                        ai_scores[i],
+                        'OSM')
                 cursor.execute(sql, val)
 
                 cursor.execute("SELECT LAST_INSERT_ID()")

@@ -34,6 +34,8 @@ CREATE TABLE `user` (
 ) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;
 
 /*
+  channel: 'PATIENT', 'OSM', 'DENTIST' (general submission is in a separate table)
+
   For dentist system,
   dentist_feedback_code (in the dentist general system, type: string): AGREE, DISAGREE
   dentist_feedback_lesion (int): 1.White 2.Red 3.White and Red 4.Abrasion 5.Tumor
@@ -48,6 +50,7 @@ CREATE TABLE `user` (
 
 CREATE TABLE `submission_record` (
   `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `channel` varchar(255) NOT NULL,
   `fname` varchar(255) NOT NULL,
   `sender_id` int DEFAULT NULL,
   `sender_phone` varchar(255) DEFAULT NULL,
