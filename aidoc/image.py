@@ -681,18 +681,45 @@ def record(role): # Submission records
 # region report
 @bp.route('/report', methods=('GET', 'POST'))
 @login_required
-@role_validation
+#@role_validation
 def report():
     data = {}
+    data['public_submission'] = {}
+    data['public_submission']['patient'] = {}
+    data['public_submission']['osm'] = {}
     province = request.args.get('province', default=None, type=str)
     if province is None:
-        sql = '''SELECT case_id, sender_id, sender_phone, patient_id, patient_user.province, name, surname, 
-            patient_national_id, dentist_feedback_code, ai_prediction
-            FROM submission_record
-            INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
-            LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id'''
+        db, cursor = get_db()
+
+        senders = ['PATIENT', 'OSM']
+        
+        sql = "SET @sender_mode := %s; "
+        sql += "SELECT COUNT(id) as count FROM submission_record WHERE channel=@sender_mode; "
+        sql += "SELECT COUNT(id) as count FROM submission_record WHERE channel=@sender_mode AND ai_prediction=0; "
+        sql += "SELECT COUNT(id) as count FROM submission_record WHERE channel=@sender_mode AND ai_prediction=1; "
+        sql += "SELECT COUNT(id) as count FROM submission_record WHERE channel=@sender_mode AND ai_prediction=2; "
+        sql += "SELECT COUNT(id) as count FROM submission_record WHERE channel=@sender_mode AND dentist_feedback_code='OPMD'; "
+        sql += "SELECT COUNT(id) as count FROM submission_record WHERE channel=@sender_mode AND dentist_feedback_code='OSCC'; "
+        sql += "SELECT COUNT(id) as count FROM submission_record WHERE channel=@sender_mode AND dentist_feedback_code='NORMAL'; "
+        sql += "SELECT COUNT(id) as count FROM submission_record WHERE channel=@sender_mode AND dentist_feedback_code='BAD_IMG'; "
+        sql += "SELECT COUNT(id) as count FROM submission_record WHERE channel=@sender_mode AND dentist_feedback_code='OTHER'; "
+        sql += "SELECT COUNT(id) as count FROM submission_record WHERE channel=@sender_mode AND dentist_feedback_code IS NULL; "
+        sql += '''SELECT COUNT(id) as count FROM submission_record WHERE channel=@sender_mode AND (
+            (dentist_feedback_code='NORMAL' AND ai_prediction=0) OR
+            (dentist_feedback_code='OPMD' AND ai_prediction=1) OR
+            (dentist_feedback_code='OSCC' AND ai_prediction=2)
+            ); '''
+        
+        # Consider using GROUP BY and CASE
+
+        for sender in senders:
+            print(sender)
+            for result in cursor.execute(sql, params=(sender,), multi=True):
+                if result.with_rows:
+                    print(result.statement, '--->', (result.fetchone())['count'])
     else:
         print()
+    
     return render_template("submission_report.html",
                            data=data)
 

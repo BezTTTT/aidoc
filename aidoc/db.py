@@ -33,6 +33,7 @@ def init_db():
         close_db()
 
         db, cursor = get_db()
+        cursor.execute(current_app.config['ADMIN_USER_INSERT_SQL']) # Insert Admin user into the user table
         cursor.execute("SHOW TABLES")
         if cursor.fetchone() is None:
             click.echo('... Failed to initialize the database.')
