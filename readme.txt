@@ -1,3 +1,4 @@
+0. create python environment using requirements.txt
 1. Git clone patiwet/aidoc/main to WSL home folder (aidoc folder will be automatically created)
 2. Copy the oralLesionNet folder to aidoc\ (rename to oralLesionNet)
 3. Double check path variable in the file __init__.py
@@ -11,6 +12,3 @@
 (pip install --upgrade pip)
 (pip install waitress)
 waitress-serve --host 127.0.0.1 --port 85 --call aidoc:create_app
-
------ create pip requirements.txt, run the following command in the aidoc/aidoc folder
-pipreqs --force
