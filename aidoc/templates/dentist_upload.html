@@ -1,4 +1,4 @@
-{% extends "./base.html"%}
+{% extends "./base_earthchie.html"%}
 
 {% block title %} RiskOCA | Upload {% endblock %}
 
@@ -46,6 +46,34 @@
         </form>
         <form id="submitimgForm" action="{{ url_for('image.upload_image', role='dentist', submission='true') }}" method="post" enctype="multipart/form-data" >
           <div id="submitbtn" onclick="disableButton()" class="btn btn-success mb-2">ยืนยัน</div>
+          <div class="border p-3 rounded-3 my-2">
+            <div class="card-body">
+              <div class="justify-content-center">
+                <div class="d-flex align-items-center justify-content-start">
+                  <p class="card-title text-start"> 
+                    <span  style="color: red; font-weight: bold;">สำคัญ: </span>
+                    ขอความร่วมมือแจ้งสถานที่ถ่ายรูป โดยกรอกอย่างใดอย่างหนึ่ง ตำบล, อำเภอ, จังหวัด หรือรหัสไปรษณีย์ แล้วเลือกสถานที่
+                  </p>
+                </div>
+                <div class="mt-2">
+                  <input class="form-control" placeholder="ค้นหาตาม ตำบล, อำเภอ, จังหวัด หรือ รหัสไปรษณีย์" type="text" name="locationSearch" id="locationSearch" required>
+                  <input type="hidden" id="location" name="location"
+                    {% if session['user']['default_location']  %}
+                      value="{{ session['user']['default_location'] }}"
+                    {% endif %}
+                  >
+                </div>
+                <div class="mt-3 d-flex row justify-content-center align-items-center" id="locationContainer" style="color: green">
+                  {% if data['default_location_text']  %}
+                      {{ data['default_location_text'] }} 
+                    <span style="color: black">
+                      (หากไม่ใช่สถานที่ถ่ายรูปที่ถูกต้อง หรือต้องการเพิ่มข้อมูล ตำบล/อำเภอ ให้แก้ไขจากช่องค้นหาด้านบน)
+                    </span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
         </form>
       </div>
     </div>
@@ -56,6 +84,19 @@
 {% endblock %}
 
 {% block script %}
+<script>
+  // Call earthchie/jquery.Thailand.js to auto-complete these fields
+  const patientLocationContainer = document.getElementById('locationContainer')
+  const patientLocation = document.getElementById('location')
+  $.Thailand({ 
+    $search: $('#locationSearch'), // input ของช่องค้นหา
+    onDataFill: function(data){ // callback เมื่อเกิดการ auto complete ขึ้น
+        const myJSON = JSON.stringify(data); 
+        patientLocationContainer.innerHTML = "สถานที่คัดกรอง: ตำบล"+data['district'] +" อำเภอ"+data['amphoe'] + " จังหวัด"+data['province'] + " " + data['zipcode'];
+        patientLocation.value = myJSON;
+    }
+  });
+</script>
 <script>           
   function disableButton() {
     document.getElementById("submitbtn").disabled = true

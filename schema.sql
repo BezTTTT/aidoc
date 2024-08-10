@@ -30,7 +30,7 @@ CREATE TABLE `user` (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `default_sender_phone` varchar(255) DEFAULT NULL,
-  `default_zip_code` varchar(255) DEFAULT NULL
+  `default_location` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;
 
 /*
@@ -55,7 +55,6 @@ CREATE TABLE `submission_record` (
   `sender_id` int DEFAULT NULL,
   `sender_phone` varchar(255) DEFAULT NULL,
   `special_request` tinyint NOT NULL DEFAULT 0,
-  `zip_code` varchar(255) DEFAULT NULL,
   `patient_id` int DEFAULT NULL,
   `patient_national_id` varchar(255) DEFAULT NULL,
   `dentist_id` int DEFAULT NULL,
@@ -68,6 +67,10 @@ CREATE TABLE `submission_record` (
   `biopsy_comment` varchar(255) DEFAULT NULL,
   `ai_prediction` int DEFAULT NULL,
   `ai_scores` varchar(255) DEFAULT NULL,
+  `location_district` varchar(255) DEFAULT NULL,
+  `location_amphoe` varchar(255) DEFAULT NULL,
+  `location_province` varchar(255) DEFAULT NULL,
+  `location_zipcode` varchar(255) DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;
