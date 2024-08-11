@@ -110,6 +110,7 @@
                 <p>Case ID: {{data['case_id']}} </p>
                 <p>ชื่อไฟล์: {{data['fname']}}</p>
                 <p>วันที่นำส่ง: {{data['thai_datetime']}}</p>
+                <p>สถานที่คัดกรอง: {{data['location_text']}}</p>
                 <p>ช่องทางการนำส่งรูป:
                     {% if data['sender_phone'] is none %}
                         ระบบเจ้าหน้าที่ผู้ตรวจคัดกรอง

@@ -70,7 +70,7 @@ CREATE TABLE `submission_record` (
   `location_district` varchar(255) DEFAULT NULL,
   `location_amphoe` varchar(255) DEFAULT NULL,
   `location_province` varchar(255) DEFAULT NULL,
-  `location_zipcode` varchar(255) DEFAULT NULL,
+  `location_zipcode` int DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;

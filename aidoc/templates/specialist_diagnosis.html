@@ -171,6 +171,7 @@
                 <p>Case ID: {{data['case_id']}}</p>
                 <p>ชื่อไฟล์: {{data['fname']}}</p>
                 <p>วันที่นำส่ง: {{data['thai_datetime']}}</p>
+                <p>สถานที่คัดกรอง: {{data['location_text']}}</p>
                 <p>ผู้นำส่งรูป: {{data['sender_description']}}</p>
                 {% if data['sender_hospital'] is not none%}
                     <p>โรงพยาบาลที่สังกัด: {{data['sender_hospital']}} จ.{{data['sender_province']}}</p>

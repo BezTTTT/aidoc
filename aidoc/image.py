@@ -12,7 +12,9 @@ model = oralLesionNet.load_model()
 
 #########################################################################################################################
 
-from PIL import Image, ImageFilter
+from PIL import Image, ImageFilter, ImageStat
+import cv2
+import numpy as np
 
 import os
 import glob
@@ -403,6 +405,7 @@ def diagnosis(role, img_id):
                     sender.phone AS sender_phone_db, sender_phone,
                     dentist_id, dentist.name AS dentist_name, dentist.surname AS dentist_surname,
                     dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location, dentist_feedback_date,
+                    location_district, location_amphoe, location_province, location_zipcode,
                     ai_prediction, ai_scores, submission_record.created_at
                 FROM submission_record
                 INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
@@ -414,6 +417,7 @@ def diagnosis(role, img_id):
         sql = '''SELECT submission_record.id AS img_id, case_id, fname, special_request, sender_id, patient_id, sender_phone, sender.phone AS osm_phone, 
                     patient.name AS patient_name, patient.surname AS patient_surname, patient_national_id as saved_patient_national_id, patient.national_id AS db_patient_national_id, patient.birthdate,
                     patient.sex, patient.job_position, patient.email, patient.phone AS patient_phone, patient.address, patient.province,
+                    location_district, location_amphoe, location_province, location_zipcode,
                     ai_prediction, ai_scores, submission_record.created_at
                 FROM submission_record
                 INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id
@@ -489,6 +493,11 @@ def diagnosis(role, img_id):
         
         data['thai_datetime'] = format_thai_datetime(data['created_at'])
 
+        if data['location_district']:
+            data['location_text'] = "ตำบล"+data['location_district']+" อำเภอ"+data['location_amphoe']+" จังหวัด"+data['location_province']+" " +str(data['location_zipcode'])
+        else:
+            data['location_text'] = "จังหวัด"+data['location_province']
+
         if role=='specialist':
             if data['patient_id']!=data['sender_id']:
                 if 'sender_name' in data and data['sender_name'] is not None:
@@ -556,7 +565,8 @@ def record(role): # Submission records
     db, cursor = get_db()
     if role=='specialist':
         sql = '''SELECT submission_record.id, case_id, fname, patient_user.name, patient_user.surname, patient_user.birthdate,
-                    sender_id, patient_id, dentist_id, sender_phone, special_request, patient_user.province,
+                    sender_id, patient_id, dentist_id, sender_phone, special_request,
+                    location_province, location_zipcode, 
                     dentist_feedback_comment,dentist_feedback_code,
                     ai_prediction, submission_record.created_at
                 FROM submission_record
@@ -567,6 +577,7 @@ def record(role): # Submission records
         sql = '''SELECT submission_record.id, fname,
                     patient_user.name, patient_user.surname, patient_user.birthdate, patient_user.province,
                     case_id, sender_id, patient_id, dentist_id, special_request, sender_phone, 
+                    location_province, location_zipcode, 
                     dentist_feedback_comment,dentist_feedback_code,
                     ai_prediction, submission_record.created_at
                 FROM submission_record
@@ -689,7 +700,7 @@ def record(role): # Submission records
                 current_page=page,
                 total_pages=total_pages)
 
-# region report
+# region report [INCOMPLETE]
 @bp.route('/report', methods=('GET', 'POST'))
 @login_required
 #@role_validation
@@ -835,15 +846,31 @@ def oral_lesion_prediction(imgPath):
     output_mask = output_mask[0]
 
     predictionMask = tf.math.not_equal(output_mask, 0)
+    
+    ### The Connected Component Analysis, requires OpenCV ##########
+    analysis = cv2.connectedComponentsWithStats(predictionMask.numpy().astype(dtype='uint8'), 4, cv2.CV_32S)
+    (numLabels, labels, stats, centroid) = analysis
+    output = np.zeros((342, 512), dtype="uint8")
+    maxArea = 0
+    for i in range(1, numLabels):
+        area = stats[i, cv2.CC_STAT_AREA]
+        maxArea = max(maxArea, area)
+        if area > 500: 
+            componentMask = (labels == i).astype("uint8")*255
+            output = cv2.bitwise_or(output, componentMask) 
+    predictionMask = tf.convert_to_tensor(output)
+    predictionMask = tf.math.equal(predictionMask, 255)
+    predictionMask = predictionMask[..., tf.newaxis]
+    ################################################################
 
     pred_mask = tf.squeeze(pred_mask, axis=0)  # Remove batch dimension
     backgroundChannel = pred_mask[:,:,0]
     opmdChannel = pred_mask[:,:,1]
     osccChannel = pred_mask[:,:,2]
     
-    predictionMaskSum = tf.reduce_sum(tf.cast(predictionMask,  tf.int64)) # Count number of pixels in prediction mask
+    #predictionMaskSum = tf.reduce_sum(tf.cast(predictionMask,  tf.int64)) # Count number of pixels in prediction mask
     predictionIndexer = tf.squeeze(predictionMask, axis=-1) # Remove singleton dimension (last index)
-    if predictionMaskSum>200: # Threshold to cut noises are 200 pixels
+    if maxArea>500: # Threshold to cut noises are 500 pixels
         opmdScore = tf.reduce_mean(opmdChannel[predictionIndexer])
         osccScore = tf.reduce_mean(osccChannel[predictionIndexer])
         backgroundScore = tf.reduce_mean(backgroundChannel[predictionIndexer])
@@ -858,6 +885,8 @@ def oral_lesion_prediction(imgPath):
         backgroundScore = tf.reduce_mean(backgroundChannel[backgroundIndexer])
         predictClass = 0
 
+    # Pillow is used to create the boundary
+    # Pillow has a very strong relationship with tensorflow
     output = tf.keras.utils.array_to_img(predictionMask)
     edge_img = output.filter(ImageFilter.FIND_EDGES)
     dilation_img = edge_img.filter(ImageFilter.MaxFilter(3))
@@ -968,7 +997,7 @@ def upload_submission_module(target_user_id):
                        session['location']['district'],
                        session['location']['amphoe'],
                        session['location']['province'],
-                       str(session['location']['zipcode']),
+                       session['location']['zipcode'],
                        ai_predictions[i],
                        ai_scores[i],
                        'DENTIST')
@@ -982,7 +1011,6 @@ def upload_submission_module(target_user_id):
                     val = (str(session['location']), session['user_id'])
                     cursor.execute(sql, val)
                     load_logged_in_user()
-
 
                 if 'sender_phone' in session and session['sender_phone']:
                     sql = "UPDATE user SET default_sender_phone=%s WHERE id=%s"
@@ -1015,7 +1043,7 @@ def upload_submission_module(target_user_id):
                         session['location']['district'],
                         session['location']['amphoe'],
                         session['location']['province'],
-                        str(session['location']['zipcode']),
+                        session['location']['zipcode'],
                         session['user_id'],
                         ai_predictions[i],
                         ai_scores[i],
@@ -1054,7 +1082,7 @@ def upload_submission_module(target_user_id):
                         session['location']['district'],
                         session['location']['amphoe'],
                         session['location']['province'],
-                        str(session['location']['zipcode']),
+                        session['location']['zipcode'],
                         session['patient_id'],
                         session['patient_national_id'],
                         ai_predictions[i],

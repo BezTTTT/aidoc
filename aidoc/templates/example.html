@@ -1,0 +1,37 @@
+{% extends "./base.html"%}
+
+{% block title %} RiskOCA | Image Example {% endblock %}
+
+{% block content %}
+<div class="container-fluid pb-2">
+  <div class="d-flex justify-content-center">
+    <p><b>ตัวอย่างการทำนายรอยโรค</b></p>
+  </div>
+  <div class="d-flex justify-content-center">
+    <p>
+      ภาพถ่ายที่มีประสิทธิภาพต่อการทำนายรอยโรคของระบบปัญญาประดิษฐ์ฯ
+      ที่ยังผลให้มีความแม่นยำสูง ควรมีรายละเอียด คุณภาพและคุณลักษณะ
+      ดังตัวอย่างต่อไปนี้
+    </p>
+  </div>
+  {% for i in range(data['imgs_name'] | length) %}
+    <div class="d-flex justify-content-center my-2">
+      <div class="card mt-2 align-items-center" style="width: 100%">
+        <img src={{ url_for('static', filename='examples/' ~ data['imgs_name'][i] )}} style="width: 100%; max-width: 1024px;" class="card-img-top" alt={{data['texts'][i]}}>
+        <div class="card-body">
+          <p class="card-text">{{data['texts'][i]}}</p>
+        </div>
+      </div>
+    </div>
+  {% endfor %}
+  <p class="text-center">
+    สำหรับภาพถ่ายช่องปากอื่น ๆ ที่ระบบปัญญาประดิษฐ์ฯ
+    ยังไม่สามารถประมวลผลได้ถูกต้อง ทางคณะทำงานฯ ขอกราบขออภัยมา ณ
+    โอกาสนี้และขออนุญาต นำข้อมูลของท่านไปใช้เพื่อฝึกสอนระบบปัญญาประดิษฐ์
+    ให้มีความฉลาดและถูกต้องแม่นยำมากขึ้นในลำดับต่อไป
+  </p>
+</div>
+<style>
+  
+</style>
+{% endblock %}

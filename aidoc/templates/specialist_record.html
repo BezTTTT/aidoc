@@ -62,11 +62,14 @@
                             </h6>
                             {% if item['name'] is not none %}
                                 <h6 class="image-name">ชื่อผู้ป่วย : {{ item['name'] }} {{ item['surname'] }} ( {{ item["age"] }} ปี )</h6>
-                                <h6 class="image-name">ภูมิลำเนา : {{ item['province'] }} </h6>
                             {% else %}
                                 <h6 class="image-name">ชื่อผู้ป่วย : <i>ไม่มีข้อมูล</i> </h6>
-                                <h6 class="image-name">ภูมิลำเนา : <i>ไม่มีข้อมูล</i> </h6>
                             {% endif%}
+                            {% if item['location_zipcode'] is not none %}
+                                <h6 class="image-name">สถานที่คัดกรอง : จ.{{ item['location_province'] }} ({{ item['location_zipcode'] }})</h6>
+                            {% else %}
+                                <h6 class="image-name">สถานที่คัดกรอง : จ.{{ item['location_province'] }} </h6>
+                            {% endif %}
                             <h6 class="image-name" >ช่องทาง :
                                 {% if item['sender_id']!=item['patient_id'] %}
                                     นำส่งโดยเจ้าหน้าที่ผู้ตรวจคัดกรอง
