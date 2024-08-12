@@ -12,21 +12,42 @@
 
     <!-- Search Box -->
     <div class="col-12 mt-3">
-        <p>ค้นหาผลลัพธ์ตามคำสำคัญ</p>
+        <p>ค้นหาผลลัพธ์ตามคำสำคัญ <i>เช่น ชื่อคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC ชื่อผู้คัดกรอง ความคิดเห็นพิเศษของทันตแพทย์</i></p>
     </div>
     <form action="/record/specialist" method="get">
         <div class="input-group mb-3">
-            <input type="text" class="form-control" name="search" placeholder="Search" value="{{ data['search'] }}" />
+            <input type="text" class="form-control" name="search" placeholder="ชื่อคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC ชื่อผู้คัดกรอง ความคิดเห็นพิเศษของทันตแพทย์" value="{{ data['search'] }}" />
             <button class="btn btn-outline-primary" type="submit" value="{{ data['search'] }}"> Search </button>
         </div>
     </form>
-    <div class="d-flex justify-content-end mb-3">
+    <div class="d-flex justify-content-between m-2">
         <div class="mx-2">
-            <form action="/record/specialist" method="get" id="agreeForm">
-                <select name="agree" id="agree" class="btn btn-light border border-1">
+            <form action="/record/specialist" method="get" id="filterForm">
+                <label for="filterPriority">ระดับความสำคัญ:</label>
+                <select name="filterPriority" id="filterPriority" class="btn btn-light border border-1 mx-1">
                     <option value="">ทั้งหมด</option>
-                    <option value="AGREE">เห็นด้วย</option>
-                    <option value="DISAGREE">ไม่เห็นด้วย</option>
+                    <option value="1">พิเศษ</option>
+                    <option value="0">ปกติ</option>
+                </select>
+                <label for="filterStatus">สถานะ:</label>
+                <select name="filterStatus" id="filterStatus" class="btn btn-light border border-1 mx-1">
+                    <option value="">ทั้งหมด</option>
+                    <option value="1">ตรวจแล้ว</option>
+                    <option value="0">ยังไม่ได้ตรวจ</option>
+                </select>
+                <label for="filterProvince">จังหวัดที่คัดกรอง:</label>
+                <select name="filterProvince" id="filterProvince" class="btn btn-light border border-1 mx-1">
+                    <option value="">ทั้งหมด</option>
+                    {% for item in data['province_name_list']%}
+                    <option value="{{item}}">{{item}}</option>
+                    {%endfor%}
+                </select>
+                <label for="filterSpecialist">ผู้ตรวจ:</label>
+                <select name="filterSpecialist" id="filterSpecialist" class="btn btn-light border border-1 mx-1">
+                    <option value="">ทั้งหมด</option>
+                    {% for item in data['specialist_list']%}
+                        <option value="{{item}}">{{item}}</option>
+                    {%endfor%}
                 </select>
             </form>
         </div>
@@ -37,7 +58,7 @@
         </div>
     {% endif %}
     <!-- Loop through paginated data -->
-    <div class="container">
+    <div class="container my-4">
         <div class="row">
             {% for item in pagination %}
                 <div class="col-md-3 mb-4">
@@ -156,17 +177,44 @@
 
 {% block script %}
 <script>
-    document.getElementById("agree").addEventListener("change", function () {
-        document.getElementById("agreeForm").submit();
+    const filterStatus = document.getElementById("filterStatus");
+    const filterPriority = document.getElementById("filterPriority");
+    const filterProvince = document.getElementById("filterProvince")
+    const filterSpecialist = document.getElementById("filterSpecialist")
+
+    filterStatus.addEventListener("change", function () {
+        document.getElementById("filterForm").submit();
+    });
+    filterPriority.addEventListener("change", function () {
+        document.getElementById("filterForm").submit();
+    });
+    filterProvince.addEventListener("change", function () {
+        document.getElementById("filterForm").submit();
+    });
+    filterSpecialist.addEventListener("change", function () {
+        document.getElementById("filterForm").submit();
     });
 
-    // Get the agree element and set its value from Flask
-    const agreeSelect = document.getElementById("agree");
-    const agreeValue = "{{ data['agree'] }}"; // Use the correct variable name
+    
+    // Get the filters element and set its value from Flask
+    const filterStatusValue     = "{{ filters[0] }}";
+    const filterPriorityValue   = "{{ filters[1] }}";
+    const filterProvinceValue   = "{{ filters[2] }}";
+    const filterSpecialistValue  = "{{ filters[3] }}";
 
-    // Set the selected agree value if it exists
-    if (agreeValue) {
-        agreeSelect.value = agreeValue;
+    // Set the selected filters value if it exists
+    if (filterStatusValue) {
+        filterStatus.value = filterStatusValue;
     }
+    if (filterPriorityValue) {
+        filterPriority.value = filterPriorityValue;
+    }
+    if (filterProvinceValue) {
+        filterProvince.value = filterProvinceValue;
+    }
+    if (filterSpecialistValue) {
+        filterSpecialist.value = filterSpecialistValue
+    }
+        
 </script>
 {% endblock %}

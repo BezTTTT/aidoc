@@ -89,6 +89,7 @@ def upload_image(role):
                             'province': session['user']['province'],
                             'zipcode': None}
                 data['default_location_text'] = "สถานที่คัดกรอง: จังหวัด"+location['province']
+            data['earthchieAPI'] = True # enable Earthchie's Thailand Address Auto-complete API
         elif submission=='true': # upload confirmation is submitted
             # Check if submission list is in the queue (session), if so submit them to the Submission Module and the AI Prediction Engine
             if 'imageNameList' in session and session['imageNameList']:
@@ -635,7 +636,11 @@ def record(role): # Submission records
 
     # Filter data if search query is provided
     search_query = request.args.get("search", "") 
-    agree = request.args.get("agree", "") 
+    agree = request.args.get("agree", "")
+    filterStatus = request.args.get("filterStatus", "") 
+    filterPriority = request.args.get("filterPriority", "") 
+    filterProvince = request.args.get("filterProvince", "") 
+    filterSpecialist = request.args.get("filterSpecialist", "")
 
     # # Initialize an empty list to store filtered results
     filtered_data = []
@@ -693,12 +698,30 @@ def record(role): # Submission records
     
     session['current_record_page'] = page
 
+    if role=='specialist' and request.method == 'GET': 
+        sql = 'SELECT location_province FROM submission_record GROUP BY location_province ORDER BY COUNT(location_province) DESC'
+        cursor.execute(sql)
+        dictList = cursor.fetchall()
+        data['province_name_list'] = [item['location_province'] for item in dictList]
+        
+        sql = '''SELECT name, surname, license
+            FROM submission_record
+            LEFT JOIN user ON submission_record.dentist_id=user.id
+            WHERE submission_record.dentist_id IS NOT NULL
+            GROUP BY user.id
+            ORDER BY COUNT(user.id) DESC'''
+        cursor.execute(sql)
+        dictList = cursor.fetchall()
+        data['specialist_list'] = [ f"{item['name']} {item['surname']} ({item['license']})" for item in dictList]
+
     return render_template(
                 role + "_record.html",
                 data=data,
                 pagination=paginated_data,
                 current_page=page,
-                total_pages=total_pages)
+                total_pages=total_pages,
+                search_query=search_query,
+                filters=[filterStatus,filterPriority,filterProvince,filterSpecialist])
 
 # region report [INCOMPLETE]
 @bp.route('/report', methods=('GET', 'POST'))
