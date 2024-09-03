@@ -53,10 +53,13 @@
         <a class="btn btn-outline-warning mb-2" href="/upload_image/osm">เปลี่ยนรูป</a>
         <form action="{{ url_for('image.upload_image', role='osm', submission='false') }}" method="post" enctype="multipart/form-data">
           <input name="uploadedImage" type="text" value="{{data['uploadedImage']}}" hidden />
-          <input name="rotation_submitted" type="submit" class="btn btn-outline-primary mb-2" value="คนไข้ควรหัวตั้งขึ้น หรือ กดปุ่มนี้เพื่อหมุนรูป"/>
+          <button name="rotation_submitted" type="submit" class="btn btn-outline-primary mb-2" value="true">
+            <span>คนไข้ควรหัวตั้งขึ้น</span><br>
+            <span>หรือ กดปุ่มนี้เพื่อหมุนรูป</span>
+          </button>
         </form>
         <form id="submitimgForm" action="{{ url_for('image.upload_image', role='osm', submission='true') }}" method="post" enctype="multipart/form-data" >
-          <div id="submitbtn" onclick="dataSubmission()" class="btn btn-success mb-2">ยืนยัน</div>
+          <button id="submitbtn" onclick="dataSubmission()" class="btn btn-success mb-2 btn-lg">ยืนยัน</button>
           <div id="errorBox" class="alert alert-danger" role="alert" style="display: none;"></div>
           <div class="border p-3 rounded-3 my-2">
             <div class="card-body">

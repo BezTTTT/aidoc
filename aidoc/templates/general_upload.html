@@ -41,11 +41,14 @@
       <div class="my-3">
         <a class="btn btn-outline-warning mb-2" href="/general/upload">Change image</a>
         <form action="{{ url_for('general.general_upload', submission='false') }}" method="post" enctype="multipart/form-data">
-          <input name="uploadedImage" type="text" value="{{data['uploadedImage']}}" hidden />
-          <input name="rotation_submitted" type="submit" class="btn btn-outline-primary mb-2" value="The patient head must be upright or click here to rotate"/>
+        <input name="uploadedImage" type="text" value="{{data['uploadedImage']}}" hidden />
+        <button name="rotation_submitted" type="submit" class="btn btn-outline-primary mb-2" value="true">
+          <span>The patient head must be upright</span><br>
+          <span>or click here to rotate</span>
+        </button>
         </form>
         <form id="submitimgForm" action="{{ url_for('general.general_upload', submission='true') }}" method="post" enctype="multipart/form-data" >
-          <div id="submitbtn" onclick="disableButton()" class="btn btn-success mb-2">Confirm</div>
+          <button id="submitbtn" onclick="disableButton()" class="btn btn-success mb-2 btn-lg">Confirm</button>
         </form>
       </div>
     </div>
