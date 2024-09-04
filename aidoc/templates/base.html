@@ -91,14 +91,24 @@
                                 <a class="nav-link active" aria-current="page" href="/record/patient">ประวัติการนำส่งข้อมูล</a>
                             </li>
                         {% endif %}
-
-                        <!-- navbar for everyone except the public -->
-                        <li class="nav-item">
-                            <a class="nav-link active" aria-current="page" href="/example">ตัวอย่างการทำนายรอยโรค</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link active" aria-current="page" href="/about">เกี่ยวกับ</a>
-                        </li>
+                        
+                        {% if session['general_user'] %}
+                            <!-- English Examples and About -->
+                            <li class="nav-item">
+                                <a class="nav-link active" aria-current="page" href="/example">Prediction Examples</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link active" aria-current="page" href="/about">About</a>
+                            </li>
+                        {% else %}
+                            <!-- Thai Examples and About -->
+                            <li class="nav-item">
+                                <a class="nav-link active" aria-current="page" href="/example">ตัวอย่างการทำนายรอยโรค</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link active" aria-current="page" href="/about">เกี่ยวกับ</a>
+                            </li>
+                        {% endif %}
                     {% endif %}
                 </ul>
 

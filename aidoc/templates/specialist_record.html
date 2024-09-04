@@ -20,38 +20,48 @@
             <button class="btn btn-outline-primary" type="submit" value="{{ data['search'] }}"> Search </button>
         </div>
     </form>
-    <div class="d-flex justify-content-between m-2">
-        <div class="mx-2">
-            <form action="/record/specialist" method="get" id="filterForm">
-                <label for="filterPriority">ระดับความสำคัญ:</label>
-                <select name="filterPriority" id="filterPriority" class="btn btn-light border border-1 mx-1">
-                    <option value="">ทั้งหมด</option>
-                    <option value="1">พิเศษ</option>
-                    <option value="0">ปกติ</option>
-                </select>
-                <label for="filterStatus">สถานะ:</label>
-                <select name="filterStatus" id="filterStatus" class="btn btn-light border border-1 mx-1">
-                    <option value="">ทั้งหมด</option>
-                    <option value="1">ตรวจแล้ว</option>
-                    <option value="0">ยังไม่ได้ตรวจ</option>
-                </select>
-                <label for="filterProvince">จังหวัดที่คัดกรอง:</label>
-                <select name="filterProvince" id="filterProvince" class="btn btn-light border border-1 mx-1">
-                    <option value="">ทั้งหมด</option>
-                    {% for item in data['province_name_list']%}
-                    <option value="{{item}}">{{item}}</option>
-                    {%endfor%}
-                </select>
-                <label for="filterSpecialist">ผู้ตรวจ:</label>
-                <select name="filterSpecialist" id="filterSpecialist" class="btn btn-light border border-1 mx-1">
-                    <option value="">ทั้งหมด</option>
-                    {% for item in data['specialist_list']%}
+    
+    <div class="container">
+        <form action="/record/specialist" method="get" id="filterForm">
+            <div class="row row-cols-auto">
+                <div class="col my-1">
+                    <label for="filterPriority">ระดับความสำคัญ:</label>
+                    <select name="filterPriority" id="filterPriority" class="btn btn-light border border-1 mx-1">
+                        <option value="">ทั้งหมด</option>
+                        <option value="1">พิเศษ</option>
+                        <option value="0">ปกติ</option>
+                    </select>
+                </div>
+                <div class="col my-1">
+                    <label for="filterStatus">สถานะ:</label>
+                    <select name="filterStatus" id="filterStatus" class="btn btn-light border border-1 mx-1">
+                        <option value="">ทั้งหมด</option>
+                        <option value="1">ตรวจแล้ว</option>
+                        <option value="0">ยังไม่ได้ตรวจ</option>
+                    </select>
+                </div>
+                <div class="col my-1">
+                    <label for="filterProvince">จังหวัดที่คัดกรอง:</label>
+                    <select name="filterProvince" id="filterProvince" class="btn btn-light border border-1 mx-1">
+                        <option value="">ทั้งหมด</option>
+                        {% for item in data['province_name_list']%}
                         <option value="{{item}}">{{item}}</option>
-                    {%endfor%}
-                </select>
-            </form>
-        </div>
+                        {%endfor%}
+                    </select>
+                </div>
+                <div class="col my-1">
+                    <label for="filterSpecialist">ผู้ตรวจ:</label>
+                    <select name="filterSpecialist" id="filterSpecialist" class="btn btn-light border border-1 mx-1">
+                        <option value="">ทั้งหมด</option>
+                        {% for item in data['specialist_list']%}
+                        <option value="{{item}}">{{item}}</option>
+                        {%endfor%}
+                    </select>
+                </div>
+            </div>
+        </form>
     </div>
+    
     {% if pagination|length == 0 %}
         <div class="col-12">
             <p class="text-center text-danger">ไม่พบข้อมูล</p>

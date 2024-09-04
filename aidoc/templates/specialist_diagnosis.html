@@ -300,7 +300,7 @@
                     </div>
 
                     <input class="btn btn-outline-primary mt-3" type="submit" value="บันทึกคำวินิจฉัย">
-
+                    <div class="mt-2"><i>คำวินิจฉัยของทันตแพทย์นี้ ผู้ป่วยจะสามารถมองเห็นได้ (หากวินิจฉัยว่ามีรอยโรค ผู้ป่วยจะทราบเพียงว่ามีรอยโรคหรือไม่)</i></div>
                     <script>
                         var dt_comment_list = document.getElementsByName("dt_comment_option");
                         var bad_img_select = document.getElementById("BadImgCommentSelection");
@@ -371,6 +371,20 @@
                       </script>
                 </div>
             </form>
+        </div>
+
+        <div id="case-report-container" class="card mt-3" style="width: 100%; height: fit-content">
+            <div class="card-body px-4">
+                <h5 class="card-title text-start mb-3">รายงานผู้ป่วย (Case Report)</h5>
+                <form action="{{url_for('image.diagnosis', role='specialist', img_id=data['img_id'], case_report='true')}}" method="post" enctype="multipart/form-data">                    
+                    <div id="CaseReportBox">
+                        <label for="CaseReportTextarea" class="form-label mt-2">สร้างรายงานผู้ป่วย หรือ ความคิดเห็น หรือ คำวินิจฉัยอื่น ๆ ที่ต้องการบันทึกเป็นประวัติไว้ หรือ รายงานต่อทันตแพทย์ผู้เชี่ยวชาญ</label>
+                        <textarea class="form-control" id="CaseReportTextarea" rows="3" name="case_report">{{data['case_report']}}</textarea>
+                    </div>
+                    <input class="btn btn-outline-primary mt-3" type="submit" value="บันทึกรายงานผู้ป่วย">
+                    <div class="mt-2"><i>รายงานผู้ป่วยนี้ ผู้ป่วยจะมองไม่เห็น เป็นข้อมูลสำหรับการสื่อสารระหว่างทันตแพทย์เท่านั้น</i></div>
+                </form>
+            </div>
         </div>
 
         <div id="biopsy-container" class="card mt-3" style="width: 100%; height: fit-content">
@@ -483,6 +497,7 @@
         const innerLeftContainer = document.getElementById("inner-left-container");
         const dentistFeedbackHistoryContainer = document.getElementById("dentist-feedback-history-container");
         const dentistFeedbackContainer = document.getElementById("dentist-feedback-container");
+        const caseReportContainer = document.getElementById("case-report-container");
         const biopsyContainer = document.getElementById("biopsy-container");
 
         const patientContainer = document.getElementById("patient-container");
@@ -491,15 +506,18 @@
         if (dentistFeedbackHistoryContainer != null)
             innerLeftContainer.removeChild(dentistFeedbackHistoryContainer);
         innerLeftContainer.removeChild(dentistFeedbackContainer);
+        innerLeftContainer.removeChild(caseReportContainer);
         innerLeftContainer.removeChild(biopsyContainer);
         if (dentistFeedbackHistoryContainer != null)
             outerContainer.appendChild(dentistFeedbackHistoryContainer); 
         outerContainer.appendChild(dentistFeedbackContainer);
+        outerContainer.appendChild(caseReportContainer);
         outerContainer.appendChild(biopsyContainer);
 
         if (dentistFeedbackHistoryContainer != null)
             dentistFeedbackHistoryContainer.style.padding = 0;  // Set pading to 0 (left justify)
         dentistFeedbackContainer.style.padding = 0; 
+        caseReportContainer.style.padding = 0; 
         biopsyContainer.style.padding = 0; 
 
         innerLeftContainer.style.width = "100%"; // Push patient-container down

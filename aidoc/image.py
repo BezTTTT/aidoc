@@ -395,6 +395,21 @@ def diagnosis(role, img_id):
                    img_id)
             cursor.execute(sql, val)
 
+        if role=='specialist' and request.args.get('case_report')=='true':
+            case_report = request.form.get('case_report')
+            sql = '''UPDATE submission_record SET
+                        dentist_id=%s,
+                        case_report=%s,
+                        dentist_feedback_date=%s,
+                        updated_at=%s
+                    WHERE id=%s'''
+            val = (session["user_id"],
+                   case_report,
+                   datetime.now(),
+                   datetime.now(),
+                   img_id)
+            cursor.execute(sql, val)
+
     dentistCommentFlag = request.args.get('dentistComment', None)
 
     db, cursor = get_db()
@@ -405,7 +420,7 @@ def diagnosis(role, img_id):
                     sender_id, sender.name AS sender_name, sender.surname AS sender_surname, sender.hospital AS sender_hospital, sender.province AS sender_province,
                     sender.phone AS sender_phone_db, sender_phone,
                     dentist_id, dentist.name AS dentist_name, dentist.surname AS dentist_surname,
-                    dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location, dentist_feedback_date,
+                    dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location, dentist_feedback_date, case_report,
                     location_district, location_amphoe, location_province, location_zipcode,
                     ai_prediction, ai_scores, submission_record.created_at
                 FROM submission_record
@@ -523,7 +538,7 @@ def diagnosis(role, img_id):
                                 'OPMD': 'น่าจะมีรอยโรคที่คล้ายกันกับ OPMD',
                                 'OSCC': 'น่าจะมีรอยโรคที่คล้ายกันกับ OSCC',
                                 'BAD_IMG': 'ภาพถ่ายที่ส่งมายังไม่ได้มาตรฐาน ทำให้วินิจฉัยไม่ได้',
-                                'OTHER': 'อื่น ๆ'
+                                'OTHER': 'ความเห็น/คำวินิจฉัย อื่น ๆ ที่ต้องการแจ้งกลับให้ผู้ป่วย'
                             }
     bad_image_map = {'NON_STANDARD': 'มุมมองไม่ได้มาตรฐาน',
                      'BLUR': 'ภาพเบลอ ไม่ชัด',
