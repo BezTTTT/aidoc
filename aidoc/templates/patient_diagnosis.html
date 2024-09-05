@@ -108,30 +108,46 @@
     </div>
 {% endif %}
 
-<div class="row d-flex justify-content-center text-align-left" style="width: auto">
-    <div class="card">
-        <div class="card-body">
-            <h5 class="card-title">ผลการพยากรณ์ของ AI</h5>
-            {% if data['ai_prediction'] == 0 %}
-                <div class="card-subtitle card shadow-lg bg-success my-3 py-3 ms-4 text-white text-center">
-                    <h6 class="fs-2"> ช่องปากของคุณไม่พบรอยโรค <br></h6>
-                    <h6 class="fs-6"> กรุณาส่งภาพถ่ายช่องปากมุมมองอื่น ๆ มาให้ตรวจสอบด้วย หรือถ่ายซ้ำด้วยกล้องคุณภาพที่ดีขึ้น</h6>
-                </div>
-            {% elif data['ai_prediction'] == 1 %}
-                <div class="card-subtitle card shadow-lg bg-warning my-3 pt-3 text-dark text-center">
-                    <h6 class="fs-2"> ช่องปากของคุณอาจจะมีรอยโรค <br></h6>
-                    <h6 class="fs-6"> ผลลัพธ์ที่แสดงเป็นเพียงผลการตรวจเบื้องต้น แนะนำให้ไปพบทันตแพทย์เพื่อรับการตรวจเพิ่มเติม เพื่อให้ได้การวินิจฉัยสุดท้าย </h6>
-                </div>
-            {% else %}
-                <div class="card-subtitle card shadow-lg bg-danger my-3 pt-3 ms-4 fs-2 text-white text-center">
-                    <h6 class="fs-2"> ช่องปากของคุณอาจจะมีรอยโรค <br></h6>
-                    <h6 class="fs-6"> ผลลัพธ์ที่แสดงเป็นเพียงผลการตรวจเบื้องต้น แนะนำให้ไปพบทันตแพทย์เพื่อรับการตรวจเพิ่มเติม เพื่อให้ได้การวินิจฉัยสุดท้าย </h6>
-                </div>
-            {% endif %}
+{% if data['dentist_feedback_code'] is not none %}
+<div class="row d-flex justify-content-center">
+    <button id="seeMoreButton" style="
+            padding: 5px 10px;
+            font-size: 15px;
+            width: 25%;
+            border-radius: 10px;
+            background-color: grey;
+            color: white;
+            border: none;
+        ">คลิกเพื่อดูผลการพยากรณ์ของ AI</button>
+</div>
+<div id="hiddenContent" class="m-2">
+{% else %}
+<div class="m-2">
+{% endif %}
+    <div class="row d-flex justify-content-center text-align-left" style="width: auto">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">ผลการพยากรณ์ของ AI</h5>
+                {% if data['ai_prediction'] == 0 %}
+                    <div class="card-subtitle card shadow-lg bg-success my-3 py-3 ms-4 text-white text-center">
+                        <h6 class="fs-2"> ช่องปากของคุณไม่พบรอยโรค <br></h6>
+                        <h6 class="fs-6"> กรุณาส่งภาพถ่ายช่องปากมุมมองอื่น ๆ มาให้ตรวจสอบด้วย หรือถ่ายซ้ำด้วยกล้องคุณภาพที่ดีขึ้น</h6>
+                    </div>
+                {% elif data['ai_prediction'] == 1 %}
+                    <div class="card-subtitle card shadow-lg bg-warning my-3 pt-3 text-dark text-center">
+                        <h6 class="fs-2"> ช่องปากของคุณอาจจะมีรอยโรค <br></h6>
+                        <h6 class="fs-6"> ผลลัพธ์ที่แสดงเป็นเพียงผลการตรวจเบื้องต้น แนะนำให้ไปพบทันตแพทย์เพื่อรับการตรวจเพิ่มเติม เพื่อให้ได้การวินิจฉัยสุดท้าย </h6>
+                    </div>
+                {% else %}
+                    <div class="card-subtitle card shadow-lg bg-danger my-3 pt-3 ms-4 fs-2 text-white text-center">
+                        <h6 class="fs-2"> ช่องปากของคุณอาจจะมีรอยโรค <br></h6>
+                        <h6 class="fs-6"> ผลลัพธ์ที่แสดงเป็นเพียงผลการตรวจเบื้องต้น แนะนำให้ไปพบทันตแพทย์เพื่อรับการตรวจเพิ่มเติม เพื่อให้ได้การวินิจฉัยสุดท้าย </h6>
+                    </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>
-
 {% if data['special_request']==0 %}
     <div class="row d-flex justify-content-center my-4">
         <div class="card" style="width: 100%;">
@@ -181,4 +197,25 @@
 </div>
 <br />
 {% endif %}
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  $(document).ready(function () {
+    $("#seeMoreButton").click(function () {
+      var hiddenContent = $("#hiddenContent");
+      var button = $("#seeMoreButton");
+
+      if (hiddenContent.is(":hidden")) {
+        hiddenContent.slideDown("slow", function () {
+          button.text("ปิดผลการพยากรณ์ของ AI");
+        });
+      } else {
+        hiddenContent.slideUp("slow", function () {
+          button.text("คลิกเพื่อดูผลการพยากรณ์ของ AI");
+        });
+      }
+    });
+  });
+</script>
+
 {% endblock %}

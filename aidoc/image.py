@@ -727,7 +727,12 @@ def record(role): # Submission records
             ORDER BY COUNT(user.id) DESC'''
         cursor.execute(sql)
         dictList = cursor.fetchall()
-        data['specialist_list'] = [ f"{item['name']} {item['surname']} ({item['license']})" for item in dictList]
+        data['specialist_list'] = []
+        for item in dictList:
+            if item['license'] is not None:
+                data['specialist_list'].append(f"{item['name']} {item['surname']} ({item['license']})")
+            else:
+                data['specialist_list'].append(f"{item['name']} {item['surname']}")
 
     return render_template(
                 role + "_record.html",
