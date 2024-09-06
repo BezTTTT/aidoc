@@ -240,6 +240,7 @@ def register(role):
             duplicate_users = []
             valid_func_list = [validate_national_id,
                                validate_phone,
+                               validate_license,
                                validate_province_name,
                                validate_duplicate_users,
                                validate_duplicate_phone,
@@ -319,6 +320,7 @@ def register(role):
             duplicate_users = []
             valid_func_list = [validate_cf_password,
                                validate_username,
+                               validate_license,
                                validate_province_name,
                                validate_duplicate_users,
                                validate_duplicate_phone]
@@ -357,6 +359,63 @@ def register(role):
     else:
         return redirect('/')
 
+#region forgot_password system
+@bp.route('/forgot', methods=('GET', 'POST'))
+def forgot():
+    data={}
+    if request.method == 'POST':
+        if request.args.get('validationCheck', type=str)=='false':
+            user_profile = {}
+            user_profile['name'] = request.form.get('name')
+            user_profile['surname'] = request.form.get('surname')
+            user_profile['national_id'] = request.form.get('national_id')
+            user_profile['job_position'] = request.form.get('job_position')
+            user_profile['osm_job'] = request.form.get('osm_job')
+            user_profile['license'] = request.form.get('license')
+            user_profile['hospital'] = request.form.get('hospital')
+            user_profile['province'] = request.form.get('province')
+            user_profile['phone'] = request.form.get('phone')
+            user_profile['email'] = request.form.get('email')
+            user_profile['username'] = request.form.get('username')
+
+            if all([x == '' for x in list(user_profile.values())]):
+                flash("กรุณากรอกข้อมูลให้ถูกต้องอย่างน้อย 5 ใน 9 รายการดังต่อไปนี้")
+                return render_template('forgot_password.html', data=data)
+
+            db, cursor = get_db()
+            sql = 'SELECT * FROM user WHERE (name=%s AND surname=%s) OR (national_id=%s) OR (license=%s) OR (phone=%s) OR (email=%s) OR (username=%s)'
+            cursor.execute(sql, (user_profile['name'], user_profile['surname'], user_profile['national_id'], user_profile['license'], user_profile['phone'], user_profile['email'], user_profile['username']))
+            users = cursor.fetchall() # Result in list of dicts
+            data['username'] = None
+            for user in users:
+                validation_count = 0
+                for identity in user_profile.keys():
+                    validation_count += int(user_profile[identity] == user[identity])
+                if validation_count>=6:
+                    data['username'] = user['username']
+                    break
+            if data['username']==None:
+                flash("ไม่พบข้อมูลของท่านในระบบ กรุณาลองใหม่ หรือ ติดต่อเจ้าหน้าที่ ศูนย์ทันตสาธารณสุขระหว่างประเทศ กรมอนามัยเพื่อแก้ไขข้อมูล")
+        if request.args.get('validationCheck', type=str)=='true':
+
+            # Validate the confirmation password
+            data["username"] = request.form["username_on_db"]
+            data["password"] = request.form["password"]
+            data["valid_password"] = True
+            args = {'data': data, 'form': request.form, 'duplicate_users': []}
+            valid_check, data, duplicate_users = validate_cf_password(args)
+            if not valid_check:
+                return render_template('forgot_password.html', data=data)
+
+            db, cursor = get_db()
+            sql = "UPDATE user SET password=%s WHERE username=%s"
+            val = (generate_password_hash(data["password"]), data["username"])
+            cursor.execute(sql, val)
+
+            return redirect('/dentist')
+
+    return render_template('forgot_password.html', data=data)
+
 #region cancel_register
 @bp.route('/cancel_register', methods=('GET', ))
 def cancel_register():
@@ -371,6 +430,7 @@ def cancel_register():
         img_id = session['register_later']['img_id']
         session.pop('register_later', None)
         return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
+
 # Helper functions
 
 # region remove_prefix
@@ -423,6 +483,20 @@ def validate_phone(args):
         if not phone_validation_flag:
             error_msg = "กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง"
             data["valid_phone"] = False
+            flash(error_msg)
+            return False, data, []
+    return True, data, []
+
+# region validate_license
+# License validation: License must be only numbers
+def validate_license(args):
+    data = args['data']
+    if "license" in data:
+        license_pattern = r'^[0-9]*$'
+        license_validation_flag = re.match(license_pattern, data["license"]) is not None
+        if not license_validation_flag:
+            error_msg = "กรุณาเลขที่ใบอนุญาตให้ถูกต้อง กรอกเฉพาะตัวเลข ไม่ต้องใส่ ท. หรือ พ."
+            data["valid_license"] = False
             flash(error_msg)
             return False, data, []
     return True, data, []

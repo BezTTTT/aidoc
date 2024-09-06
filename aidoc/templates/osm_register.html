@@ -9,15 +9,15 @@
             <h5 class="card-title">ลงทะเบียนเจ้าหน้าที่ผู้ตรวจคัดกรอง</h5>
             <form class="my-4" action="{{ url_for('user.register', role='osm') }}" method="post" enctype="multipart/form-data">
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">ชื่อ (ไม่ต้องใส่คำนำหน้าชื่อ) <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="ชื่อ..." name="name" value="{{data.name}}"required />
+                    <label class="mr-sm-2" for="name">ชื่อ (ไม่ต้องใส่คำนำหน้าชื่อ) <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="ชื่อ..." name="name" id="name" value="{{data.name}}"required />
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">นามสกุล <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="นามสกุล..." name="surname" value="{{data.surname}}" required />
+                    <label class="mr-sm-2" for="surname">นามสกุล <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="นามสกุล..." name="surname" id="surname" value="{{data.surname}}" required />
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">ตำแหน่งในทางสาธารณสุข <span style="color: red;">*</span></label>
+                    <label class="mr-sm-2" for="job_position">ตำแหน่งในทางสาธารณสุข <span style="color: red;">*</span></label>
                     <select id="job_position" name="job_position" class="form-control" value="{{data.job_position}}" required>
                         <option value="" {% if data.job_position is none %}selected{% endif %} hidden>ตำแหน่งในทางสาธารณสุข...</option>
                         <option value="OSM" {% if data.job_position=='OSM' %}selected{% endif %}>อสม.</option> 
@@ -34,35 +34,44 @@
                     </select>
                 </div>
                 <div class="form-group py-2" id="osm_job_div" style="display: none;">
-                    <label class="mr-sm-2">กรณีที่ท่านระบุตำแหน่งเป็น อสม. หรือ บุคคลทั่วไป กรุณาระบุอาชีพ <span style="color: red;">*</span></label>
+                    <label class="mr-sm-2" for="osm_job">กรณีที่ท่านระบุตำแหน่งเป็น อสม. หรือ บุคคลทั่วไป กรุณาระบุอาชีพ <span style="color: red;">*</span></label>
                     <input type="text" class="form-control" placeholder="กรุณาระบุอาชีพ..." name="osm_job" id="osm_job" value="{{data.osm_job}}" />
                 </div>
-                <div class="form-group py-2" id="license_div" style="display: none;">
-                    <label class="mr-sm-2">กรณีที่ท่านระบุตำแหน่งเป็น ทันตแพทย์ หรือ แพทย์ กรุณาระบุเลขที่ใบอนุญาตฯ <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="กรุณาระบุเลขที่ใบอนุญาตฯ..." name="license" id="license" value="{{data.license}}" />
+                <div class="form-group py-2" id="license_div" 
+                    {% if data.valid_license is defined and not data.valid_license %}
+                        style="display: block;"
+                    {% else %}
+                        style="display: none;"
+                    {% endif %}>
+                    <label class="mr-sm-2" for="license">กรณีที่ท่านระบุตำแหน่งเป็น ทันตแพทย์ หรือ แพทย์ กรุณาระบุเลขที่ใบอนุญาตฯ (เฉพาะตัวเลข)<span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="ระบุเฉพาะตัวเลขเท่านั้น ไม่ต้องใส่ ท. หรือ พ." name="license" id="license" value="{{data.license}}"
+                        {% if data.valid_license is defined and not data.valid_license %}
+                                style="border-color: rgba(244, 92, 92, 1);"
+                        {% endif %}>
+                    
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">โรงพยาบาลที่สังกัด <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="โรงพยาบาลที่สังกัด..." name="hospital" value="{{data.hospital}}" required />
+                    <label class="mr-sm-2" id="hospital">โรงพยาบาลที่สังกัด <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="โรงพยาบาลที่สังกัด..." name="hospital" id="hospital" value="{{data.hospital}}" required />
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">จังหวัด <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="จังหวัด..." name="province" value="{{data.province}}" required
+                    <label class="mr-sm-2" for="province">จังหวัด <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="จังหวัด..." name="province" id="province" value="{{data.province}}" required
                         {% if data.valid_province_name is defined and not data.valid_province_name %}
                             style="border-color: rgba(244, 92, 92, 1);"
                         {% endif %}>
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">เลขประจำตัวประชาชน <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="เลขประจำตัวประชาชน..." name="national_id"
+                    <label class="mr-sm-2" for="national_id">เลขประจำตัวประชาชน <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="เลขประจำตัวประชาชน..." name="national_id" id="national_id"
                         value="{{data.national_id}}" maxlength="13" required
                         {% if data.valid_national_id is defined and not data.valid_national_id %}
                             style="border-color: rgba(244, 92, 92, 1);"
                         {% endif %} />
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">เบอร์โทรศัพท์ <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="เบอร์โทรศัพท์..." name="phone"
+                    <label class="mr-sm-2" for="phone">เบอร์โทรศัพท์ <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="เบอร์โทรศัพท์..." name="phone" id="phone"
                         value="{{data.phone}}" maxlength="10" required
                         {% if  data.valid_phone is defined and not data.valid_phone %}
                             style="border-color: rgba(244, 92, 92, 1);"

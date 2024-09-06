@@ -9,16 +9,17 @@
             <h5 class="card-title">กรุณากรอกข้อมูลส่วนตัวของคนไข้</h5>
             <form class="my-4" action="{{ url_for('user.register', role='patient') }}" method="post" enctype="multipart/form-data">
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">ชื่อ (ไม่ต้องใส่คำนำหน้าชื่อ) <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="ชื่อ..." name="name" value="{{data.name}}"required>
+                    <label class="mr-sm-2" for="name">ชื่อ (ไม่ต้องใส่คำนำหน้าชื่อ) <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="ชื่อ..." name="name" id="name" value="{{data.name}}"required>
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">นามสกุล <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="นามสกุล..." name="surname" value="{{data.surname}}" required>
+                    <label class="mr-sm-2" for="surname">นามสกุล <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="นามสกุล..." name="surname" id="surname" value="{{data.surname}}" required>
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">เลขประจำตัวประชาชน <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="เลขประจำตัว ปชช. 13 หลัก ..." name="national_id" value="{{session['national_id'] or data.national_id}}" maxlength="13" required
+                    <label class="mr-sm-2" for="national_id">เลขประจำตัวประชาชน <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="เลขประจำตัว ปชช. 13 หลัก ..." name="national_id" id="national_id"
+                        value="{{session['national_id'] or data.national_id}}" maxlength="13" required
                         {% if data.valid_national_id is defined and not data.valid_national_id %}
                             style="border-color: rgba(244, 92, 92, 1);"
                         {% endif %}
@@ -28,9 +29,9 @@
                         >
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">ยืนยันเลขประจำตัวประชาชน <span style="color: red;">*</span></label>
+                    <label class="mr-sm-2" for="cfnational_id">ยืนยันเลขประจำตัวประชาชน <span style="color: red;">*</span></label>
                     <input type="text" class="form-control" placeholder="ยืนยันเลข ปชช. 13 หลัก ..."
-                        name="cfnational_id" maxlength="13" required
+                        name="cfnational_id" id="cfnational_id" maxlength="13" required
                         {% if data.valid_national_id is defined and not data.valid_national_id %}
                             style="border-color: rgba(244, 92, 92, 1);"
                         {% endif %}
@@ -43,8 +44,8 @@
                         >
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">อาชีพ <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="อาชีพ..." name="job_position" value="{{data.job_position}}" required>
+                    <label class="mr-sm-2" for="job_position">อาชีพ <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="อาชีพ..." name="job_position" id="job_position" value="{{data.job_position}}" required>
                 </div>
                 <div class="form-group py-2">
                     <label class="mr-sm-2">เพศ <span style="color: red;">*</span></label>
@@ -62,23 +63,23 @@
                     </div>
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">ที่อยู่ (ที่พักปัจจุบัน) <span style="color: red;">*</span></label>
-                    <textarea class="form-control" placeholder="บ้านเลขที่... หมู่... ตำบล... อำเภอ..." name="address" cols="50" required>{{data.address}}</textarea>
+                    <label class="mr-sm-2" for="address">ที่อยู่ (ที่พักปัจจุบัน) <span style="color: red;">*</span></label>
+                    <textarea class="form-control" placeholder="บ้านเลขที่... หมู่... ตำบล... อำเภอ..." name="address" id="address" cols="50" required>{{data.address}}</textarea>
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">จังหวัด (ที่พักปัจจุบัน) <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="จังหวัด..." name="province" value="{{data.province}}" required
+                    <label class="mr-sm-2" for="province">จังหวัด (ที่พักปัจจุบัน) <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="จังหวัด..." name="province" id="province" value="{{data.province}}" required
                         {% if data.valid_province_name is defined and not data.valid_province_name %}
                             style="border-color: rgba(244, 92, 92, 1);"
                         {% endif %}>
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">อีเมล (ถ้ามี)</label>
-                    <input type="text" class="form-control" placeholder="อีเมล..." name="email" value="{{data.email}}">
+                    <label class="mr-sm-2" for="email">อีเมล (ถ้ามี)</label>
+                    <input type="text" class="form-control" placeholder="อีเมล..." name="email" id="email" value="{{data.email}}">
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">เบอร์โทรศัพท์ (ถ้ามี)</label>
-                    <input type="text" class="form-control" placeholder="เบอร์โทรศัพท์..." name="phone" value="{{data.phone}}" maxlength="10"
+                    <label class="mr-sm-2" for="phone">เบอร์โทรศัพท์ (ถ้ามี)</label>
+                    <input type="text" class="form-control" placeholder="เบอร์โทรศัพท์..." name="phone" id="phone" value="{{data.phone}}" maxlength="10"
                         {% if data.valid_phone is defined and not data.valid_phone %}
                             style="border-color: rgba(244, 92, 92, 1);"
                         {% endif %}>

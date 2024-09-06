@@ -15,35 +15,35 @@
             </label><br><br>
             <form class="my-4" action="/general/register" method="post" enctype="multipart/form-data">
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">First name (no title) <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="First name..." name="name" value="{{data.name}}"required>
+                    <label class="mr-sm-2" for="name">First name (no title) <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="First name..." name="name" id="name" value="{{data.name}}"required>
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">Last name <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="Last name..." name="surname" value="{{data.surname}}" required>
+                    <label class="mr-sm-2" for="surname">Last name <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="Last name..." name="surname" id="surname" value="{{data.surname}}" required>
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">Email <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="Email..." name="email" value="{{data.email}}" required
+                    <label class="mr-sm-2" for="email">Email <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="Email..." name="email" id="email" value="{{data.email}}" required
                     {% if data.valid_email is defined and not data.valid_email %}
                         style="border-color: rgba(244, 92, 92, 1);"
                     {% endif %}>
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">Occupation <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="Occupation..." name="job_position" value="{{data.job_position}}" required>
+                    <label class="mr-sm-2" for="job_position">Occupation <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="Occupation..." name="job_position" id="job_position" value="{{data.job_position}}" required>
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">Worksplace or Organization <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="Workplace or Organization ..." name="workplace" value="{{data.workplace}}" required>
+                    <label class="mr-sm-2" for="workplace">Worksplace or Organization <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="Workplace or Organization ..." name="workplace" id="workplace" value="{{data.workplace}}" required>
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">City of the workspace <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="City of the worksplace ..." name="city" value="{{data.city}}" required>
+                    <label class="mr-sm-2" for="city">City of the workspace <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="City of the worksplace ..." name="city" id="city" value="{{data.city}}" required>
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2">Country <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="Country ..." name="country" value="Thailand" required>
+                    <label class="mr-sm-2" for="country">Country <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="Country ..." name="country" id="country" value="Thailand" required>
                 </div>
                 <div class="row d-flex justify-content-center my-2">
                     <div class="col d-flex justify-content-center">
