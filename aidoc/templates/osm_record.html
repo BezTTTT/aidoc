@@ -15,36 +15,53 @@
     </div>
 
     <!-- Search Box -->
-    <div class="col-12 mt-5">
-        <p>ค้นหาผลลัพธ์ตามคำสำคัญ</p>
+    <div class="col-12 mt-3">
+        <p>ค้นหาผลลัพธ์ตามคำสำคัญ <i>เช่น ชื่อ นามสกุลคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC ชื่อไฟล์ Case ID</i></p>
     </div>
-    <form action="/record/osm" method="get">
+    <form action="/record/osm" method="post">
         <div class="input-group mb-3">
-            <input type="text" class="form-control" name="search" placeholder="Search" value="{{ data['search'] }}" />
+            <input type="text" class="form-control" name="search" placeholder="ชื่อ นามสกุลคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC ชื่อไฟล์ Case ID" value="{{ data['search'] }}" />
             <button class="btn btn-outline-primary" type="submit" value="{{ data['search'] }}"> Search </button>
         </div>
     </form>
-    <div class="d-flex justify-content-end">
-        <div class="mx-2">
-            <form action="/record/osm" method="get" id="agreeForm">
-                <select name="agree" id="agree" class="btn btn-light border border-1">
-                    <option value="">ทั้งหมด</option>
-                    <option value="AGREE">เห็นด้วย</option>
-                    <option value="DISAGREE">ไม่เห็นด้วย</option>
-                </select>
-            </form>
-        </div>
+
+    <div class="container">
+        <form action="/record/osm" method="post" id="filterForm">
+            <div class="row row-cols-auto">
+                <div class="col my-1">
+                    <label for="filterPriority">ระดับความสำคัญ:</label>
+                    <select name="filterPriority" id="filterPriority" class="btn btn-light border border-1 mx-1">
+                        <option value="">ทั้งหมด</option>
+                        <option value="1">พิเศษ</option>
+                        <option value="0">ปกติ</option>
+                    </select>
+                </div>
+                <div class="col my-1">
+                    <label for="filterStatus">สถานะ:</label>
+                    <select name="filterStatus" id="filterStatus" class="btn btn-light border border-1 mx-1">
+                        <option value="">ทั้งหมด</option>
+                        <option value="1">ตรวจแล้ว</option>
+                        <option value="0">ยังไม่ได้ตรวจ</option>
+                    </select>
+                </div>
+            </div>
+        </form>
     </div>
+
     <div class="col-12 mt-5">
-        <p>ประวัติผลลัพธ์การวิเคราะห์รอยโรคในภาพถ่ายช่องปากวิเคราะห์</p>
+        <p>ประวัติการนำส่งภาพถ่ายช่องปากของคนไข้</p>
     </div>
     {% if pagination|length == 0 %}
-        <div class="col-12">
+        <div class="col-12 mt-4">
             <p class="text-center text-danger">ไม่พบข้อมูล</p>
+        </div>
+    {% else %}
+        <div>
+            จำนวนรายการทั้งหมด {{dataCount}} รายการ
         </div>
     {% endif %}
     <!-- Loop through paginated data -->
-    <div class="container">
+    <div class="container my-4">
         <div class="row">
             {% for item in pagination %}
                 <div class="col-md-3 mb-4">
@@ -155,17 +172,27 @@
 
 {% block script %}
 <script>
-    document.getElementById("agree").addEventListener("change", function () {
-        document.getElementById("agreeForm").submit();
+    const filterStatus = document.getElementById("filterStatus");
+    const filterPriority = document.getElementById("filterPriority");
+
+    filterStatus.addEventListener("change", function () {
+        document.getElementById("filterForm").submit();
+    });
+    filterPriority.addEventListener("change", function () {
+        document.getElementById("filterForm").submit();
     });
 
-    // Get the agree element and set its value from Flask
-    const agreeSelect = document.getElementById("agree");
-    const agreeValue = "{{ data['agree'] }}"; // Use the correct variable name
+    // Get the filters element and set its value from Flask
+    const filterStatusValue     = "{{ filters[0] }}";
+    const filterPriorityValue   = "{{ filters[1] }}";
 
-    // Set the selected agree value if it exists
-    if (agreeValue) {
-        agreeSelect.value = agreeValue;
+    // Set the selected filters value if it exists
+    if (filterStatusValue) {
+        filterStatus.value = filterStatusValue;
     }
+    if (filterPriorityValue) {
+        filterPriority.value = filterPriorityValue;
+    }
+        
 </script>
 {% endblock %}

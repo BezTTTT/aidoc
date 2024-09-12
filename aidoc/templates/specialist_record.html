@@ -12,17 +12,17 @@
 
     <!-- Search Box -->
     <div class="col-12 mt-3">
-        <p>ค้นหาผลลัพธ์ตามคำสำคัญ <i>เช่น ชื่อคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC ชื่อผู้คัดกรอง ความคิดเห็นพิเศษของทันตแพทย์</i></p>
+        <p>ค้นหาผลลัพธ์ตามคำสำคัญ <i>เช่น ชื่อ นามสกุลคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC คำสำคัญในรายงานผู้ป่วย ชื่อไฟล์ Case ID</i></p>
     </div>
-    <form action="/record/specialist" method="get">
+    <form action="/record/specialist" method="post">
         <div class="input-group mb-3">
-            <input type="text" class="form-control" name="search" placeholder="ชื่อคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC ชื่อผู้คัดกรอง ความคิดเห็นพิเศษของทันตแพทย์" value="{{ data['search'] }}" />
+            <input type="text" class="form-control" name="search" placeholder="ชื่อ นามสกุลคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC คำสำคัญในรายงานผู้ป่วย ชื่อไฟล์ Case ID" value="{{ data['search'] }}" />
             <button class="btn btn-outline-primary" type="submit" value="{{ data['search'] }}"> Search </button>
         </div>
     </form>
     
     <div class="container">
-        <form action="/record/specialist" method="get" id="filterForm">
+        <form action="/record/specialist" method="post" id="filterForm">
             <div class="row row-cols-auto">
                 <div class="col my-1">
                     <label for="filterPriority">ระดับความสำคัญ:</label>
@@ -53,8 +53,8 @@
                     <label for="filterSpecialist">ผู้ตรวจ:</label>
                     <select name="filterSpecialist" id="filterSpecialist" class="btn btn-light border border-1 mx-1">
                         <option value="">ทั้งหมด</option>
-                        {% for item in data['specialist_list']%}
-                        <option value="{{item}}">{{item}}</option>
+                        {% for (dentist_id, dentist_name) in data['specialist_list']%}
+                        <option value="{{dentist_id}}">{{dentist_name}}</option>
                         {%endfor%}
                     </select>
                 </div>
@@ -63,8 +63,12 @@
     </div>
     
     {% if pagination|length == 0 %}
-        <div class="col-12">
+        <div class="col-12 mt-4">
             <p class="text-center text-danger">ไม่พบข้อมูล</p>
+        </div>
+    {% else %}
+        <div class="mt-4">
+            จำนวนรายการทั้งหมด {{dataCount}} รายการ
         </div>
     {% endif %}
     <!-- Loop through paginated data -->

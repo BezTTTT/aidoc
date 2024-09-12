@@ -5,10 +5,10 @@ from werkzeug.utils import secure_filename
 
 ####### Disable this section if you are not using the prediction model for speeding up the development process ##########
 
-import tensorflow as tf
-import oralLesionNet
-# Load the oralLesionNet model to the global variable
-model = oralLesionNet.load_model()
+# import tensorflow as tf
+# import oralLesionNet
+# # Load the oralLesionNet model to the global variable
+# model = oralLesionNet.load_model()
 
 #########################################################################################################################
 
@@ -574,20 +574,19 @@ def diagnosis(role, img_id):
 def record(role): # Submission records
    
     session['sender_mode'] = role
-    # if role=='patient': # Not available for patient
-    #    return render_template('unauthorized_access.html', error_msg='ไม่พบข้อมูลที่ร้องขอ Data Not Found')
 
     # Reload the record every time the page is reloaded
     db, cursor = get_db()
     if role=='specialist':
         sql = '''SELECT submission_record.id, case_id, fname, patient_user.name, patient_user.surname, patient_user.birthdate,
                     sender_id, patient_id, dentist_id, sender_phone, special_request,
-                    location_province, location_zipcode, 
-                    dentist_feedback_comment,dentist_feedback_code,
+                    location_province, location_amphoe, location_district, location_zipcode, 
+                    dentist_feedback_comment,dentist_feedback_code,case_report,
                     ai_prediction, submission_record.created_at
                 FROM submission_record
                 INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
-                LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id'''
+                LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
+                ORDER BY case_id DESC'''
         cursor.execute(sql)
     elif role=='osm':
         sql = '''SELECT submission_record.id, fname,
@@ -600,7 +599,8 @@ def record(role): # Submission records
                 INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
                 LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
                 LEFT JOIN user AS sender_user ON submission_record.sender_phone = sender_user.phone
-                WHERE sender_id = %s OR submission_record.sender_phone is not NULL'''
+                WHERE sender_id = %s OR submission_record.sender_phone is not NULL
+                ORDER BY case_id DESC'''
         val = (session["user_id"],)
         cursor.execute(sql, val)
     elif role=='patient':
@@ -650,27 +650,111 @@ def record(role): # Submission records
         return render_template("patient_record.html", data=data)
 
     # Filter data if search query is provided
-    search_query = request.args.get("search", "") 
-    agree = request.args.get("agree", "")
-    filterStatus = request.args.get("filterStatus", "") 
-    filterPriority = request.args.get("filterPriority", "") 
-    filterProvince = request.args.get("filterProvince", "") 
-    filterSpecialist = request.args.get("filterSpecialist", "")
-
+    if 'record_filter' not in session:
+        session['record_filter'] = {}
+    if request.method == 'POST':
+        search_query = request.form.get("search", session['record_filter'].get('search_query', ""))
+        agree = request.form.get("agree", "")
+        filterStatus = request.form.get("filterStatus", "") 
+        filterPriority = request.form.get("filterPriority", "") 
+        filterProvince = request.form.get("filterProvince", "") 
+        filterSpecialist = request.form.get("filterSpecialist", "")
+        session['record_filter']['search_query'] = search_query
+        session['record_filter']['agree'] = agree
+        session['record_filter']['filterStatus'] = filterStatus
+        session['record_filter']['filterPriority'] = filterPriority
+        session['record_filter']['filterProvince'] = filterProvince
+        session['record_filter']['filterSpecialist'] = filterSpecialist
+    else:
+        search_query = session['record_filter'].get('search_query', "")
+        agree = session['record_filter'].get('agree', "")
+        filterStatus = session['record_filter'].get('filterStatus', "")
+        filterPriority = session['record_filter'].get('filterPriority', "")
+        filterProvince = session['record_filter'].get('filterProvince', "")
+        filterSpecialist = session['record_filter'].get('filterSpecialist', "")
+    
     # # Initialize an empty list to store filtered results
     filtered_data = []
 
     # Loop through the data and apply both search and filter criteria
+    # This section must be researched for the efficiency (and refactored), but for now just let it be
     for record in db_query:
         if role=='specialist':
-            record_comment = record.get("dentist_feedback_comment")
+            record_case_report = record.get("case_report")
             record_fname = record.get("fname").lower()
-            record_agree = record.get("dentist_feedback_code")
-            record_name = record.get("name")
-            record_surname = record.get("surname")
-            if (not search_query or search_query in record_comment or search_query in record_fname or \
-                    search_query in record_name or search_query in record_surname) and \
-                (not agree or agree==record_agree):
+            record_case_id = record.get("case_id")
+            record_feedback_code = record.get("dentist_feedback_code")
+            record_ai_prediction = record.get("ai_prediction")
+            record_patient_name = record.get("name")
+            record_patient_surname = record.get("surname")
+            record_special_request = record.get("special_request")
+            record_province = record.get("location_province")
+            record_district = record.get("location_district")
+            record_amphoe = record.get("location_amphoe")
+            record_zipcode = record.get("location_zipcode")
+            record_dentist_id = record.get("dentist_id")
+
+            if search_query!="" or filterStatus!="" or filterPriority!="" or filterProvince!="" or filterSpecialist!="":
+                cumulativeFilterFlag = True
+
+                if search_query!="":
+                    cumulativeFilterFlag &= (search_query in record_fname) or (str(record_case_id) == search_query) or \
+                        (record_patient_name is not None) and (record_patient_name in search_query or record_patient_surname in search_query) or \
+                        (record_case_report != '') and (search_query in record_case_report) or \
+                        (record_feedback_code is not None) and (record_feedback_code.lower() == search_query.lower()) or \
+                        (search_query.lower() == 'opmd') and (record_ai_prediction==1) or \
+                        (search_query.lower() == 'oscc') and (record_ai_prediction==2) or \
+                        (record_district is not None) and (search_query in record_district) or \
+                        (record_amphoe is not None) and (search_query in record_amphoe) or \
+                        (record_province is not None) and (search_query in record_province) or \
+                        (record_zipcode is not None) and (search_query == record_zipcode)
+                if filterStatus!="":
+                    cumulativeFilterFlag &= (filterStatus == "1" and record_feedback_code!=None) or (filterStatus == "0" and record_feedback_code==None)
+                if filterPriority!="":
+                    cumulativeFilterFlag &= (filterPriority=="1" and record_special_request==1) or (filterPriority=="0" and record_special_request==0)
+                if filterProvince!="":
+                    cumulativeFilterFlag &= filterProvince==record_province
+                if filterSpecialist!="":
+                    cumulativeFilterFlag &= int(filterSpecialist)==record_dentist_id
+                
+                if cumulativeFilterFlag:
+                    filtered_data.append(record)
+            else:
+                filtered_data.append(record)
+        elif role=='osm':
+            record_fname = record.get("fname").lower()
+            record_case_id = record.get("case_id")
+            record_feedback_code = record.get("dentist_feedback_code")
+            record_ai_prediction = record.get("ai_prediction")
+            record_patient_name = record.get("name")
+            record_patient_surname = record.get("surname")
+            record_special_request = record.get("special_request")
+            record_province = record.get("location_province")
+            record_district = record.get("location_district")
+            record_amphoe = record.get("location_amphoe")
+            record_zipcode = record.get("location_zipcode")
+
+            if search_query!="" or filterStatus!="" or filterPriority!="" or filterProvince!="":
+                cumulativeFilterFlag = True
+
+                if search_query!="":
+                    cumulativeFilterFlag &= (search_query in record_fname) or (str(record_case_id) == search_query) or \
+                        (record_patient_name is not None) and (record_patient_name in search_query or record_patient_surname in search_query) or \
+                        (record_feedback_code is not None) and (record_feedback_code.lower() == search_query.lower()) or \
+                        (search_query.lower() == 'opmd') and (record_ai_prediction==1) or \
+                        (search_query.lower() == 'oscc') and (record_ai_prediction==2) or \
+                        (record_district is not None) and (search_query in record_district) or \
+                        (record_amphoe is not None) and (search_query in record_amphoe) or \
+                        (record_province is not None) and (search_query in record_province) or \
+                        (record_zipcode is not None) and (search_query == record_zipcode)
+                if filterStatus!="":
+                    cumulativeFilterFlag &= (filterStatus == "1" and record_feedback_code!=None) or (filterStatus == "0" and record_feedback_code==None)
+                if filterPriority!="":
+                    cumulativeFilterFlag &= (filterPriority=="1" and record_special_request==1) or (filterPriority=="0" and record_special_request==0)
+                
+                if cumulativeFilterFlag:
+                    filtered_data.append(record)
+            else:
                 filtered_data.append(record)
         else:
             record_comment = record.get("dentist_feedback_comment")
@@ -679,9 +763,6 @@ def record(role): # Submission records
             if (not search_query or search_query in record_comment or search_query in record_fname) and \
                 (not agree or agree==record_agree):
                 filtered_data.append(record)
-
-    # Sort the filtered data
-    filtered_data = sorted(filtered_data, key=lambda x: x["created_at"], reverse=True)
    
     # Pagination
     page = request.args.get("page", 1, type=int)
@@ -713,16 +794,16 @@ def record(role): # Submission records
     
     session['current_record_page'] = page
 
-    if role=='specialist' and request.method == 'GET': 
-        sql = 'SELECT location_province FROM submission_record GROUP BY location_province ORDER BY COUNT(location_province) DESC'
+    if role=='specialist': 
+        sql = "SELECT location_province FROM submission_record WHERE channel != 'DENTIST' GROUP BY location_province ORDER BY COUNT(location_province) DESC;"
         cursor.execute(sql)
         dictList = cursor.fetchall()
         data['province_name_list'] = [item['location_province'] for item in dictList]
         
-        sql = '''SELECT name, surname, license
+        sql = '''SELECT name, surname, license, user.id
             FROM submission_record
             LEFT JOIN user ON submission_record.dentist_id=user.id
-            WHERE submission_record.dentist_id IS NOT NULL
+            WHERE submission_record.dentist_id IS NOT NULL AND channel != 'DENTIST'
             GROUP BY user.id
             ORDER BY COUNT(user.id) DESC'''
         cursor.execute(sql)
@@ -730,13 +811,14 @@ def record(role): # Submission records
         data['specialist_list'] = []
         for item in dictList:
             if item['license'] is not None:
-                data['specialist_list'].append(f"{item['name']} {item['surname']} ({item['license']})")
+                data['specialist_list'].append((item['id'], f"{item['name']} {item['surname']} ({item['license']})"))
             else:
-                data['specialist_list'].append(f"{item['name']} {item['surname']}")
+                data['specialist_list'].append((item['id'], f"{item['name']} {item['surname']}"))
 
     return render_template(
                 role + "_record.html",
                 data=data,
+                dataCount=len(filtered_data),
                 pagination=paginated_data,
                 current_page=page,
                 total_pages=total_pages,
