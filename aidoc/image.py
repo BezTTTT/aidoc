@@ -5,10 +5,10 @@ from werkzeug.utils import secure_filename
 
 ####### Disable this section if you are not using the prediction model for speeding up the development process ##########
 
-# import tensorflow as tf
-# import oralLesionNet
-# # Load the oralLesionNet model to the global variable
-# model = oralLesionNet.load_model()
+import tensorflow as tf
+import oralLesionNet
+# Load the oralLesionNet model to the global variable
+model = oralLesionNet.load_model()
 
 #########################################################################################################################
 
