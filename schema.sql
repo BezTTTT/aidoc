@@ -63,7 +63,7 @@ CREATE TABLE `submission_record` (
   `dentist_feedback_lesion` tinyint DEFAULT NULL,
   `dentist_feedback_location` tinyint DEFAULT NULL,
   `dentist_feedback_date` datetime DEFAULT NULL,
-  `case_report` text DEFAULT NULL,
+  `case_report` varchar(255) NOT NULL DEFAULT '',
   `biopsy_fname` varchar(255) DEFAULT NULL,
   `biopsy_comment` varchar(255) DEFAULT NULL,
   `ai_prediction` int DEFAULT NULL,

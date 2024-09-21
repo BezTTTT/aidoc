@@ -187,8 +187,8 @@ def register(role):
                     val = (new_user['id'], data["national_id"])
                     cursor.execute(sql, val)
             elif ('register_later' in session and session['register_later']['order']=='edit-patient'):
-                sql = "UPDATE user SET name=%s, surname=%s, email=%s, phone=%s, sex=%s, birthdate=%s,  province=%s, address=%s, updated_at=%s WHERE national_id=%s"
-                val = (data["name"], data["surname"], data["email"], data["phone"], data["sex"], dob_obj, data["province"], data['address'], datetime.datetime.now(), data["national_id"])
+                sql = "UPDATE user SET name=%s, surname=%s, email=%s, phone=%s, sex=%s, birthdate=%s, job_position=%s, province=%s, address=%s, updated_at=%s WHERE national_id=%s"
+                val = (data["name"], data["surname"], data["email"], data["phone"], data["sex"], dob_obj, data["job_position"], data["province"], data['address'], datetime.datetime.now(), data["national_id"])
                 cursor.execute(sql, val)
             elif ('register_later' in session and session['register_later']['order']=='link-patient'): # Linking data does not update the patient info
                 sql = "UPDATE submission_record SET patient_id=%s, patient_national_id=%s WHERE id=%s"
