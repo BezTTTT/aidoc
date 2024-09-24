@@ -69,9 +69,8 @@
         
                     <div id='cancel-button-id' class="canvas-cancel-button">
                         <!-- Cancel -->
-                        <form action="" method="post" enctype="multipart/form-data" class="canvas-cancel-form">
-                            <input style="width: 100%; background-color: transparent; border: none; color: rgb(255, 255, 255);"
-                                type="submit" value="Cancel" />
+                        <form action="{{ url_for('image.diagnosis', role=role, img_id=img_id) }}" method="post" enctype="multipart/form-data" class="canvas-cancel-form">
+                            <input style="width: 100%; background-color: transparent; border: none; color: rgb(255, 255, 255);" type="submit" value="Cancel">
                         </form>
                     </div>
         
@@ -899,16 +898,21 @@
                     const file = await response.blob()
 
                     const formContainer = document.createElement('form')
-                    formContainer.action = "/add_mask"
+                    formContainer.action = "{{ url_for('image.mask_editor', role=role, img_id=img_id) }}"
                     formContainer.method = "post"
                     formContainer.enctype = "multipart/form-data"
+                   
+                    const user_id_input = document.createElement('input')
+                    user_id_input.type = "hidden"
+                    user_id_input.name = "user_id"
+                    user_id_input.value = "{{data['owner_id']}}"
+                    formContainer.appendChild(user_id_input)
 
-                    const jsonData = JSON.stringify(data)
-                    const dataInputContainer  = document.createElement('input')
-                    dataInputContainer.type = "hidden"
-                    dataInputContainer.name = "all_data"
-                    dataInputContainer.value = jsonData
-                    formContainer.appendChild(dataInputContainer)
+                    const image_name_input = document.createElement('input')
+                    image_name_input.type = "hidden"
+                    image_name_input.name = "imagename"
+                    image_name_input.value = "{{data['fname']}}"
+                    formContainer.appendChild(image_name_input)
 
                     const fileInputContainer  = document.createElement('input')
                     fileInputContainer.type = "file"

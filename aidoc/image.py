@@ -267,29 +267,53 @@ def rotate_image(return_page, role, img_id):
     if return_page=='diagnosis':
         return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
 
-# region edit_mask
-@bp.route('/mask_editor', methods=('POST', ))
+# region mask_editor
+@bp.route('/mask_editor/<role>/<img_id>', methods=('POST', ))
 @login_required
-def mask_editor():
+def mask_editor(role, img_id):
+
     imagename = request.form.get('imagename')
     user_id = request.form.get('user_id')
-    uploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', user_id)
-    maskDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'mask', user_id)
-    
-    imagePath = os.path.join(uploadDir, imagename)
-    maskPath = os.path.join(maskDir, imagename)
 
-    outputImage = Image.open(maskPath)
-    externalCoordinates, holesCoordinates, outputOriginalShape = generateMark(outputImage)
+    maskDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'mask', user_id)
+    outlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', user_id)
+    thumbOutlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', 'thumbnail', user_id)
+    maskPath = os.path.join(maskDir, imagename)
+    outlinedPath = os.path.join(outlinedDir, imagename)
+    thumbOutlinedImagePath = os.path.join(thumbOutlinedDir, imagename)
+
+    if 'mask_file' in request.files:
+        mask_img_file = request.files['mask_file']
+        mask_img_file.save(maskPath)
+        
+        uploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', user_id)
+        imagePath = os.path.join(uploadDir, imagename)
+
+        output = Image.open(maskPath).convert('L')
+        edge_img = output.filter(ImageFilter.FIND_EDGES)
+        dilation_img = edge_img.filter(ImageFilter.MaxFilter(3))
+
+        input_img = Image.open(imagePath)
+
+        yellow_edge = Image.merge("RGB", (dilation_img, dilation_img, Image.new(mode="L", size=dilation_img.size)))
+        outlined_img = input_img.copy()
+        outlined_img.paste(yellow_edge, dilation_img)
+        outlined_img.save(outlinedPath)
+        thumb_img = create_thumbnail(outlined_img)
+        thumb_img.save(thumbOutlinedImagePath)
+
+        return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
+
+    externalCoordinates, holesCoordinates = convertMask2Cordinates(maskPath)
+    
     data = {}
     data['owner_id'] = user_id
     data['fname'] = imagename
     data['output_image'] = maskPath
     data['external_masking_path'] = externalCoordinates
     data['internal_masking_path'] = holesCoordinates
-    data['output_original_shape'] = outputOriginalShape
 
-    return render_template("mask_editor.html", data=data)
+    return render_template("mask_editor.html", data=data, role=role, img_id=img_id)
 
 # region rocompute_image
 @bp.route('/recompute_image/<return_page>/<role>/<img_id>', methods=('POST', ))
@@ -1282,13 +1306,15 @@ def format_thai_datetime(x):
     )
     return output_thai_datetime_str
     
-def generateMark(outputImage) :
-    # convert to numpy
-    outputArr = np.array(outputImage)
-    outputOriginalShape = outputArr.shape
+def convertMask2Cordinates(maskPath) :
+
+    img = cv2.imread(maskPath, cv2.IMREAD_GRAYSCALE)
+
+    # Threshold the image to create a binary image
+    _, thresholded = cv2.threshold(img,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
 
     # Find contours in the binary image with retrieval mode RETR_TREE
-    contours, hierarchy = cv2.findContours(outputArr, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+    contours, hierarchy = cv2.findContours(thresholded, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
 
     newContours = []
     newHierarchy = [[]]
@@ -1324,4 +1350,4 @@ def generateMark(outputImage) :
         holePath = np.squeeze(internalContour)
         holesCoordinates.append([{'x': int(x), 'y': int(y)} for x, y in holePath])
 
-    return externalCoordinates, holesCoordinates, outputOriginalShape
+    return externalCoordinates, holesCoordinates
