@@ -84,6 +84,13 @@
                 <input class="btn btn-outline-success" type="submit" style="width: 100%; margin: 0;" value="Recompute" />
             </form>
         </div>
+        <div class="col-md-2 text-center mt-2 px-1">
+            <form action="{{url_for('image.mask_editor')}}" method="post" enctype="multipart/form-data">
+                <input name="user_id" type="hidden" value="{{data['owner_id']}}">
+                <input name="imagename" type="hidden" value="{{data['fname']}}">
+                <input class="btn btn-outline-success" type="submit" style="width: 100%; margin: 0;" value="แก้ไขผลลัพธ์" />
+            </form>
+        </div>
     </div>
 </div>
 

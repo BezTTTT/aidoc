@@ -13,6 +13,7 @@ model = oralLesionNet.load_model()
 #########################################################################################################################
 
 from PIL import Image, ImageFilter, ImageStat
+from scipy.ndimage import zoom 
 import cv2
 import numpy as np
 
@@ -265,6 +266,30 @@ def rotate_image(return_page, role, img_id):
 
     if return_page=='diagnosis':
         return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
+
+# region edit_mask
+@bp.route('/mask_editor', methods=('POST', ))
+@login_required
+def mask_editor():
+    imagename = request.form.get('imagename')
+    user_id = request.form.get('user_id')
+    uploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', user_id)
+    maskDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'mask', user_id)
+    
+    imagePath = os.path.join(uploadDir, imagename)
+    maskPath = os.path.join(maskDir, imagename)
+
+    outputImage = Image.open(maskPath)
+    externalCoordinates, holesCoordinates, outputOriginalShape = generateMark(outputImage)
+    data = {}
+    data['owner_id'] = user_id
+    data['fname'] = imagename
+    data['output_image'] = maskPath
+    data['external_masking_path'] = externalCoordinates
+    data['internal_masking_path'] = holesCoordinates
+    data['output_original_shape'] = outputOriginalShape
+
+    return render_template("mask_editor.html", data=data)
 
 # region rocompute_image
 @bp.route('/recompute_image/<return_page>/<role>/<img_id>', methods=('POST', ))
@@ -1257,3 +1282,46 @@ def format_thai_datetime(x):
     )
     return output_thai_datetime_str
     
+def generateMark(outputImage) :
+    # convert to numpy
+    outputArr = np.array(outputImage)
+    outputOriginalShape = outputArr.shape
+
+    # Find contours in the binary image with retrieval mode RETR_TREE
+    contours, hierarchy = cv2.findContours(outputArr, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+
+    newContours = []
+    newHierarchy = [[]]
+
+    # Filter out small contours (noise) based on area
+    for i, contour in enumerate(contours):
+        if (cv2.contourArea(contour) > 10):
+            newContours.append(contour)
+            newHierarchy[0].append(hierarchy[0][i])
+
+    contours = newContours
+    hierarchy = newHierarchy
+
+    # Separate external perimeters and internal contours
+    externalContours = []
+    internalContours = []
+
+    for i, contour in enumerate(contours):
+        if hierarchy[0][i][3] == -1:
+            externalContours.append(contour)
+        else:
+            internalContours.append(contour)
+
+    # Convert the external perimeters to a list of numpy arrays
+    externalCoordinates = []
+    for externalContour in externalContours:
+        externalPath = np.squeeze(externalContour)
+        externalCoordinates.append([{'x': int(x), 'y': int(y)} for x, y in externalPath])
+
+    # Convert the internal contours to a list of numpy arrays
+    holesCoordinates = []
+    for internalContour in internalContours:
+        holePath = np.squeeze(internalContour)
+        holesCoordinates.append([{'x': int(x), 'y': int(y)} for x, y in holePath])
+
+    return externalCoordinates, holesCoordinates, outputOriginalShape

@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>AIDOC | Editing Mask</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,700;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,900&family=Prompt:wght@400;500;600&family=Radio+Canada:wght@300;400;500;600;700&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
+            rel="stylesheet" />
+        <!-- Include Font Awesome -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+        <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.no-icons.min.css" rel="stylesheet">
+        <link href="//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" rel="stylesheet">
+    </head>
+
+    <body>
+        <script>
+            // get data from flask response
+            data = {{data|tojson}}
+            let size = {width: 516, height: 340}
+            
+            function handleImageLoad (e) {
+                const img = new Image()
+                img.src = e.target.src
+
+                img.onload = () => {
+                    size.width = img.width
+                    size.height = img.height
+                }
+            }
+        </script>
+        {% block content %}
+        <div class="screen-container">
+            <div class="canvas-toolbar">
+                <div class='canvas-main-tool-container'>
+                    <div id="canvas-main-tool-id" class="canvas-main-tool">
+                        <div id="undo-tool" class="canvas-undo-redo-tool" data-toggle="tooltip" title="undo">
+                            <i class="fa fa-rotate-left"></i>
+                        </div>
+        
+                        <div id="redo-tool" class="canvas-undo-redo-tool" data-toggle="tooltip" title="redo">
+                            <i class="fa fa-rotate-right"></i>
+                        </div>
+        
+                        <div id="pan-tool" class="canvas-tool" data-toggle="tooltip" title="pan">
+                            <i class="far fa-hand-paper"></i>
+                        </div>
+        
+                        <div id="pencil-tool" class="canvas-tool" data-toggle="tooltip" title="pencil">
+                            <i class="fas fa-pen"></i>
+                        </div>
+        
+                        <div id='eraser-tool' class="canvas-tool" data-toggle="tooltip" title="eraser">
+                            <i class="fas fa-eraser"></i>
+                        </div>
+                    </div>
+                </div>
+        
+                <div class="canvas-function">
+                    <div id="zoom-tool" class="canvas-zoom-tool">
+                        <div class="canvas-zoom-tool-icon" data-toggle="tooltip" title="zoom">
+                        </div>
+                        <i class="icon-zoom-in"></i>
+                        <div id="percent-display-id" class="canvas-percent-display">
+                            100%
+                        </div>
+                    </div>
+        
+                    <div id='cancel-button-id' class="canvas-cancel-button">
+                        <!-- Cancel -->
+                        <form action="" method="post" enctype="multipart/form-data" class="canvas-cancel-form">
+                            <input style="width: 100%; background-color: transparent; border: none; color: rgb(255, 255, 255);"
+                                type="submit" value="Cancel" />
+                        </form>
+                    </div>
+        
+                    <div id='edit-button-id' class="canvas-edit-button">
+                        Edit
+                    </div>
+        
+                    <div id='save-button-id' class="canvas-save-button">
+                        Save
+                    </div>
+                </div>
+            </div>
+        
+            <!-- main canvas -->
+            <div id="canvas-container-id" class="canvas-container">
+                <div id="canvas-main-action-id" class="canvas-main-action-container">
+                    <div id="canvasBGImg" class="canvas-bg-img">
+                        <img id="BGImage" src="{{ url_for('image.load_image', folder='upload', user_id=data['owner_id'], imagename=data['fname']) }}" alt="background" onload="handleImageLoad(event)" />
+                    </div>
+        
+                    <div class="canvas-screen-container">
+                        <canvas id="canvas-id" class="canvas-screen"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endblock %}
+
+        <script type="module">
+            // >> class
+            import { Canvas } from '/static/script/canvas.js'
+
+            // >> initail
+            let canvas = null
+            let mode = 'idle'
+            let context = null
+            let actionScale = 1
+            let actionZoomElement = null
+            let actionStart = { x: 0, y: 0 }
+            let actionPoint = { x: 0, y: 0 }
+            let panOffset = { x: 0, y: 0 }
+            let bounding = { x: 0, y: 0 }
+            let scaleOffset = { x: 0, y: 0 }
+            let action = 'none' // drawing, panning, none
+            let tool = 'pan' // pencil, pan
+            let selectedElement = null
+            let currentMouse = { x: 0, y: 0 }
+            let isCloseAble = false
+            let isCloseByClick = false
+            let isHolding = false
+            let isFocus = false
+            let holdingElement = null
+            let scale = 1
+            let isSaving = false
+            const tools = ['pencil', 'eraser', 'pan']
+            const lineWidth = 1
+            const fillColor = 'rgb(0, 0, 0)'
+            const strokeColor = 'rgb(0, 0, 0)'
+            const canvasMainTool = document.getElementById('canvas-main-tool-id')
+            const percentDisplay = document.getElementById('percent-display-id')
+            const editButton = document.getElementById('edit-button-id')
+            const saveButton = document.getElementById('save-button-id')
+            const canvasMainAction = document.getElementById('canvas-main-action-id')
+            const canvasBox = document.getElementById('canvas-container-id')
+            const canvasContainer = document.getElementById('canvas-id')
+            const initialUndoTool = document.getElementById('undo-tool')
+            const initialRedoTool = document.getElementById('redo-tool')
+            const initialPanTool = document.getElementById('pan-tool')
+            const initialPencilTool = document.getElementById('pencil-tool')
+            const initialEraserTool = document.getElementById('eraser-tool')
+
+            const addEventToElement = () => {
+                canvasBox.addEventListener("mousemove", onUserMouseMove)
+                canvasBox.addEventListener("mousedown", onUserMouseDown)
+                canvasBox.addEventListener("wheel", onUserWheel)
+                canvasContainer.addEventListener("mousedown", handleMouseDown)
+                editButton.addEventListener("click", toggleMode)
+                initialUndoTool.addEventListener("click", () => undo())
+                initialRedoTool.addEventListener("click", () => redo())
+                initialPanTool.addEventListener("click", () => onUserSelectedTool('pan'))
+                initialPencilTool.addEventListener("click", () => onUserSelectedTool('pencil'))
+                initialEraserTool.addEventListener("click", () => onUserSelectedTool('eraser'))
+                saveButton.addEventListener("click", () => onUserSave())
+            }
+            
+            const createCanvas = () => {
+                if (!canvasContainer) return;
+                canvas = new Canvas(canvasContainer)
+            }
+
+            const getWidth = () => {
+                if (canvasContainer) {
+                    return canvasContainer.clientWidth
+                }
+                return 0
+            }
+
+            const getHeight = () => {
+                if (canvasContainer) {
+                    return canvasContainer.clientHeight
+                }
+                return 0
+            }
+
+            const updateCanvasSize = () => {
+                canvasContainer.width = size.width * actionScale
+                canvasContainer.height = size.height * actionScale
+            }
+
+            const initial = () => {
+                canvasMainTool.style.display = 'none'
+                editButton.style.display = 'flex'
+                saveButton.style.display = 'none'
+                initialPanTool.classList.add('canvas-tool-active')
+                canvasContainer.style.cursor = 'grab'
+                updateCanvasSize()
+                actionZoomElement = canvasMainAction
+                const canvasBoxWidth = canvasBox.clientWidth
+                const canvasBoxHeight = canvasBox.clientHeight
+                canvasMainAction.style.width = `${size.width}px`
+                canvasMainAction.style.height = `${size.height}px`
+                const translateX = (canvasBoxWidth - size.width * actionScale) / 2
+                const translateY = (canvasBoxHeight - size.height * actionScale) / 2
+                canvasMainAction.style.transform = `translate(${translateX}px, ${translateY}px)`
+                actionStart.x = (canvasBoxWidth - size.width * actionScale) / 2
+                actionStart.y = (canvasBoxHeight - size.height * actionScale) / 2
+                actionPoint.x = (canvasBoxWidth - size.width * actionScale) / 2
+                actionPoint.y = (canvasBoxHeight - size.height * actionScale) / 2
+                const bound = canvasBox.getBoundingClientRect()
+                bounding.x = bound.left
+                bounding.y = bound.top
+                createCanvas()
+            }
+
+            initial()
+
+            // >> function
+            // toggle mode
+            const toggleMode = () => {
+                if (mode === 'edit') {
+                    mode = 'idle'
+                    canvasMainTool.style.display = 'none'
+                    editButton.style.display = 'flex'
+                    saveButton.style.display = 'none'
+                } else if (mode === 'idle') {
+                    mode = 'edit'
+                    canvasMainTool.style.display = 'flex'
+                    editButton.style.display = 'none'
+                    saveButton.style.display = 'flex'
+                }
+            }
+
+            const handleScale = (scale, deltaY) => {
+                let indicator = deltaY > 0 ? -1 : 1
+
+                if (scale < 0.5) { // 10 - 50
+                    // delta = 10%
+                    return (0.1 * indicator) 
+                } else if (scale < 1) { // 50 - 100
+                    // delta = 25%
+                    if (scale === 0.5) {
+                        if (indicator < 0) {
+                            return (0.1 * indicator) 
+                        } else {
+                            return (0.25 * indicator)
+                        }
+                    }else {
+                        return (0.25 * indicator)
+                    }
+                } else if (scale < 3) { // 100 - 300
+                    // delta = 50%
+                    if (scale === 1) {
+                        if (indicator < 0) {
+                            return (0.25 * indicator)
+                        } else {
+                            return (0.5 * indicator)
+                        }
+                    } else {
+                        return (0.5 * indicator)
+                    }
+                } else if (scale < 5) { // 300 - 500
+                    // delta = 100%
+                    if (scale === 3) {
+                        if (indicator < 0) {
+                            return (0.5 * indicator)
+                        } else {
+                            return (1 * indicator)
+                        }
+                    } else {
+                        return (1 * indicator)
+                    }
+                } else if (scale < 8) { // 500 - 800
+                    // delta = 200%
+                    if (scale === 5) {
+                        if (indicator < 0) {
+                            return (1 * indicator)
+                        } else {
+                            return (2 * indicator)
+                        }
+                    } else {
+                        return (2 * indicator)
+                    }
+                } else if (scale < 16) { // 800 - 1600
+                    // delta = 400%
+                    if (scale === 8) {
+                        if (indicator < 0) {
+                            return (2 * indicator)
+                        } else {
+                            return (4 * indicator)
+                        }
+                    } else {
+                        return (4 * indicator)
+                    }
+                } else { // 1600+
+                    // delta = 400%
+                    return (4 * indicator)
+                }
+            }
+
+            function setTransform(PointX, PointY, scale) {
+                actionZoomElement.style.transform = `translate(${PointX}px, ${PointY}px)`
+                canvasMainAction.style.width = `${size.width * scale}px`
+                canvasMainAction.style.height = `${size.height * scale}px`
+            }
+
+            const onUserWheel = (event) => {
+                if (action === 'panning' || action === 'drawing') return
+                                
+                let xs = ((event.clientX - bounding.x) - actionPoint.x) / actionScale
+                let ys = ((event.clientY - bounding.y) - actionPoint.y) / actionScale
+                let scale = 1
+                let delta = handleScale(actionScale, event.deltaY)
+
+
+                scale = Math.min(Math.max((actionScale + delta), 0.10), 12)
+                actionScale = scale
+                updateCanvasSize()
+
+                let pointX = (event.clientX - bounding.x) - xs * scale
+                let pointY = (event.clientY - bounding.y) - ys * scale
+                actionPoint.x = pointX
+                actionPoint.y = pointY
+                setTransform(pointX, pointY, scale)
+                percentDisplay.innerHTML = `${new Intl.NumberFormat('en-GB', { style: 'percent'}).format(actionScale)}`
+                canvasRendering()
+            }
+
+            const onUserMouseDown = (event) => {
+                event.preventDefault()
+                if (event.button !== 0 && event.button !== 1) return
+                actionStart.x = (event.clientX - bounding.x) - actionPoint.x
+                actionStart.y = (event.clientY - bounding.y) - actionPoint.y
+
+                if (tool === 'pan') {
+                    action = 'panning'
+                }
+                canvasRendering()
+            }
+
+            const onUserMouseMove = (event) => {
+                event.preventDefault()
+                if (action !== 'panning') {
+                    return
+                }
+
+                let pointX = (event.clientX - bounding.x) - actionStart.x
+                let pointY = (event.clientY - bounding.y) - actionStart.y
+                actionPoint.x = pointX
+                actionPoint.y = pointY
+                setTransform(pointX, pointY, actionScale)
+            }
+
+            let historyIndex = 0
+            let historyState = [[]]
+            let elements = historyState[historyIndex]
+            
+            const setHistoryState = (action, overwrite = false) => {
+                const newState = typeof action === 'function' ? action(historyState[historyIndex]) : action
+                if (overwrite) {
+                    const historyCopy = [...historyState]
+                    historyCopy[historyIndex] = newState
+                    historyState = historyCopy
+                } else {
+                    const updateState = [...historyState].slice(0, historyIndex + 1)
+                    historyState = [...updateState, newState]
+                    historyIndex += 1
+                }
+                elements = historyState[historyIndex]
+                canvasRendering()
+            }
+
+            const isUndoAble = () => historyIndex > 0 ? true : false
+
+            const isRedoAble = () => historyIndex < historyState.length - 1 ? true : false
+
+            const undo = () => {
+                console.log('undo')
+                selectedElement = null
+                if (action === 'drawing' && !isHolding) return
+                if (historyIndex > 0) {
+                    const n = elements.length
+                    if (elements[n - 1] && historyState[historyIndex - 1].length <= elements.length) {
+                        const { id, pointState, type } = elements[n - 1]
+                        if ((type === 'eraser' || type === 'pencil') && pointState) {
+                            if (type === 'eraser') {
+                                onUserSelectedTool('eraser')
+                            }else {
+                                onUserSelectedTool('pencil')
+                            }
+                            
+                            if (pointState === 'start' || pointState === 'start-close') {
+                                // handle start, start-close
+                                action = 'none'
+                                isHolding = false
+                                isCloseAble = false
+                                isCloseByClick = false
+                                holdingElement = null
+                            }else if (pointState === 'close') {
+                                // handle close
+                                action = 'drawing'
+                                isHolding = true
+                                isCloseAble = false
+                                isCloseByClick = false
+                            }else {
+                                // handle middle
+                                const prevElement = historyState[historyIndex - 1]
+                                const { x2, y2 } = prevElement[prevElement.length - 1]
+                                holdingElement = {
+                                    x: x2,
+                                    y: y2, 
+                                    mouseX: currentMouse.x, 
+                                    mouseY: currentMouse.y
+                                }
+                                action = 'drawing'
+                                isHolding = true
+                                isCloseAble = false
+                                isCloseByClick = false
+                            }
+                        }
+                    }else {
+                        const prevElement = historyState[historyIndex - 1]
+                        const n = prevElement.length - 1
+                        const { pointState, type } = prevElement[n]
+                        if ((type === 'eraser' || type === 'pencil') && pointState) {
+                            if (type === 'eraser') {
+                                onUserSelectedTool('eraser')
+                            }else {
+                                onUserSelectedTool('pencil')
+                            }
+
+                            if (pointState === 'start') {
+                                // handle start, start-close
+                                action = 'drawing'
+                                isHolding = true
+                                isCloseAble = false
+                                isCloseByClick = false
+                                holdingElement = null
+                            }else {
+                                // handle middle
+                                action = 'drawing'
+                                isHolding = true
+                                isCloseAble = false
+                                isCloseByClick = false
+                                holdingElement = null
+                            }
+                        }
+                    }
+                    historyIndex -= 1
+                }
+                elements = historyState[historyIndex]
+                canvasRendering()
+            }
+
+            const redo = () => {
+                console.log('redo')
+                selectedElement = null
+                if (historyIndex < historyState.length - 1) { 
+                    const nextElement = historyState[historyIndex + 1]
+                    const n = nextElement.length
+                    if (nextElement[n - 1]) {
+                        const { pointState, type, x2, y2 } = nextElement[n - 1]
+                    
+                        if ((type === 'eraser' || type === 'pencil') && pointState) {
+                            if (type === 'eraser') {
+                                onUserSelectedTool('eraser')
+                            }else {
+                                onUserSelectedTool('pencil')
+                            }
+
+                            if (pointState === 'close' || pointState === 'start-close') {
+                                // handle close , start-close
+                                action = 'none'
+                                isHolding = false
+                                holdingElement = null
+                            }else if (pointState === 'start') {
+                                // handle start
+                                action = 'drawing'
+                                isHolding = true
+                            }else {
+                                // handle middle
+                                holdingElement = {
+                                    x: x2,
+                                    y: y2, 
+                                    mouseX: currentMouse.x, 
+                                    mouseY: currentMouse.y
+                                }
+                                action = 'drawing'
+                                isHolding = true
+                            }
+                        }
+                    } else {
+                        action = 'none'
+                        isHolding = false
+                        holdingElement = null
+                    }
+                    historyIndex += 1
+                }
+                elements = historyState[historyIndex]
+                canvasRendering()
+            }
+
+            const deactivatePencil = () => {
+                const lenHis = historyState.length
+                for (let i = historyIndex; i < lenHis; i--) {
+                    const lenEs = historyState[i].length - 1
+                    if (historyState[i][lenEs].pointState === 'start') {
+                        const elementsCopy = [...historyState[i - 1]]
+                        setHistoryState(elementsCopy)
+                        break
+                    }
+                }
+            }
+
+            const createElement = (
+                id,
+                x1, 
+                y1, 
+                x2, 
+                y2, 
+                type,
+                points,
+                pointState, // start, middle, close
+            ) => {
+                let element
+                switch (type) {
+                    case 'pencil' : 
+                    case 'eraser' : {
+                        return { id, type, x1, y1, x2, y2, element: points, pointState}
+                    }
+                    default : {
+                        throw new Error(`Type not recognised: ${type}`)
+                    }
+                }
+            }
+
+            const updateElement = (
+                id, 
+                x1, 
+                y1, 
+                x2, 
+                y2, 
+                type,
+                points,
+                pointState
+            ) => {
+                const newElement = createElement(id, x1, y1, x2, y2, type, points, pointState)
+                const elementsCopy = [...elements]
+                elementsCopy[id] = newElement
+                setHistoryState(elementsCopy, true)
+            }
+
+            const distance = (a, b) => Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2))
+
+            const nearpoint = (x, y, x1, y1, name) => {
+                return Math.abs(x - x1) < 5 / actionScale && Math.abs(y - y1) < 5 / actionScale ? name : null
+            }
+
+            const positionWithInElement = (x, y, element) => {
+                const { type, x1, x2, y1, y2 } = element
+                if (type == 'rectangle') {
+                    const topLeft = nearpoint(x, y, x1, y1, 'tl')
+                    const topRight = nearpoint(x, y, x2, y1, 'tr')
+                    const bottomLeft = nearpoint(x, y, x1, y2, 'bl')
+                    const bottomRight = nearpoint(x, y, x2, y2, 'br')
+                    const inside = x >= x1 && x <= x2 && y >= y1 && y <= y2 ? 'inside' : null
+
+                    return topLeft || topRight || bottomLeft || bottomRight || inside
+
+                } else {
+                    const a = { x: x1, y: y1 }
+                    const b = { x: x2, y: y2 }
+                    const c = { x, y }
+                    const offset = distance(a, b) - (distance(a, c) + distance(b, c))
+                    const start = nearpoint(x, y, x1, y1, 'start')
+                    const end = nearpoint(x, y, x2, y2, 'end')
+                    const inside = Math.abs(offset) < 1 ? 'inside' : null
+
+                    return start || end || inside
+                }
+            }
+
+            // get boundary value 
+            const getOutofLength = (value, axis) => {
+                if (axis === 'x') {
+                    const canWidth = getWidth()
+                    if (value < 0 - (panOffset.x * scale - scaleOffset.x) / scale / actionScale) {
+                        return 0 - (panOffset.x * scale - scaleOffset.x) / scale / actionScale
+                    } else if (value > (canWidth - (panOffset.x * scale - scaleOffset.x)) / scale / actionScale) {
+                        return (canWidth - (panOffset.x * scale - scaleOffset.x)) / scale / actionScale - 0
+                    } else {
+                        return value
+                    }
+                } else if (axis === 'y'){
+                    const canHeight = getHeight()
+                    if (value < 0 - (panOffset.y * scale - scaleOffset.y) / scale / actionScale) {
+                        return 0 - (panOffset.y * scale - scaleOffset.y) / scale / actionScale
+                    } else if (value > (canHeight - (panOffset.y * scale - scaleOffset.y)) / scale / actionScale) {
+                        return (canHeight - (panOffset.y * scale - scaleOffset.y)) / scale / actionScale - 0
+                    } else {
+                        return value
+                    }
+                }
+                return value
+            }
+
+            const getMouseCoordiantes = (x, y) => {
+                const mouseX = (x - panOffset.x * scale + scaleOffset.x) / scale / actionScale
+                const mouseY = (y - panOffset.y * scale + scaleOffset.y) / scale / actionScale
+
+                return { mouseX, mouseY }
+            }
+
+            const handleMouseDown = (event) => {
+                event.preventDefault()
+                if (event.button !== 0) return
+                const refClientX = event.clientX - canvasContainer.getBoundingClientRect().left
+                const refClientY = event.clientY - canvasContainer.getBoundingClientRect().top
+                const { mouseX, mouseY } = getMouseCoordiantes(refClientX, refClientY)
+                currentMouse.x = mouseX
+                currentMouse.y = mouseY
+
+                if (tool === 'pan') {
+                    return
+                }
+
+                if (tool === 'eraser' || tool === 'pencil') {
+                    if (isCloseAble) {
+                        const index = elements.length - 1
+                        const { x1, y1, element } = elements[index]
+                        let nextPointState = 'close'
+                        const currentElement = createElement(
+                            index, 
+                            x1,
+                            y1,
+                            x1, 
+                            y1, 
+                            tool,
+                            [...element, {x: x1, y: y1}],
+                            nextPointState
+                        )
+                        setHistoryState((prevState) => [...(prevState.slice(0, prevState.length - 1)), currentElement])
+                        action = 'none'
+                        isCloseAble = false
+                        isCloseByClick = true
+                        holdingElement = null
+                    }else {
+                        if (!isHolding) {
+                            const id = elements.length
+                            const element = createElement(
+                                id, 
+                                mouseX, 
+                                mouseY, 
+                                mouseX, 
+                                mouseY, 
+                                tool, 
+                                [{x: mouseX, y: mouseY}],
+                                'start'
+                            )
+                            setHistoryState((prevState) => [...prevState, element])
+                        }else {
+                            const id = elements.length - 1
+                            const { x1, y1, element } = elements[id]
+                            const currentElement = createElement(
+                                id, 
+                                x1,
+                                y1,
+                                mouseX, 
+                                mouseY, 
+                                tool,
+                                [...element, {x: mouseX - 1, y: mouseY - 1}, {x: mouseX, y: mouseY}],
+                                'middle'
+                            )
+                            setHistoryState((prevState) => [...(prevState.slice(0, prevState.length - 1)), currentElement])
+                        }
+                        action = 'drawing'
+                        isCloseByClick = false
+                    }
+                    isHolding = false
+                }else {
+                    const id = elements.length
+                    const element = createElement(id, mouseX, mouseY, mouseX, mouseY, tool)
+                    setHistoryState((prevState) => [...prevState, element])
+                }
+
+                if (tool !== 'pencil' && tool !== 'eraser') {
+                    action = 'drawing'
+                }
+                canvasRendering()
+            }
+
+            const handleMouseMove = (event) => {
+                if (action === 'panning') {
+                    return
+                }
+
+                const refClientX = event.clientX - canvasContainer?.getBoundingClientRect().left
+                const refClientY = event.clientY - canvasContainer?.getBoundingClientRect().top
+                let { mouseX, mouseY } = getMouseCoordiantes(refClientX, refClientY)
+                mouseX = getOutofLength(mouseX, 'x')
+                mouseY = getOutofLength(mouseY, 'y')
+                currentMouse.x = mouseX
+                currentMouse.y = mouseY
+
+                if (action === 'drawing') {
+                    if (tool === 'eraser' || tool === 'pencil') {
+                        const index = elements.length - 1
+                        const { x1, y1, element, pointState } = elements[index]
+                        if (!isHolding) {
+                            holdingElement = null
+                            updateElement(index, x1, y1, mouseX, mouseY, tool, [...element, {x: mouseX, y: mouseY}], pointState)
+                        }else {
+                            const n = element.length - 1
+                            holdingElement = {x: element[n].x, y: element[n].y, mouseX, mouseY}
+                        }
+
+                        const startPoint = nearpoint(mouseX, mouseY, x1, y1, 'closeAble')
+                        if (startPoint) {
+                            isCloseAble = true
+                        }else {
+                            isCloseAble = false
+                        }
+                        canvasRendering()
+                    } else {
+                        const index = elements.length - 1
+                        const { x1, y1 } = elements[index]
+                        updateElement(index, x1, y1, mouseX, mouseY, tool)
+                        canvasRendering()
+                    }
+                }
+            }
+
+            const handleMouseUp = (event) => {
+                const refClientX = event.clientX - canvasContainer?.getBoundingClientRect().left
+                const refClientY = event.clientY - canvasContainer?.getBoundingClientRect().top
+                const { mouseX, mouseY } = getMouseCoordiantes(refClientX, refClientY)
+                currentMouse.x = mouseX
+                currentMouse.y = mouseY
+
+                if (action === 'panning') {
+                    action = 'none'
+                    return
+                }
+
+                if (action === 'drawing') {
+                    if (tool === 'eraser' || tool === 'pencil') {
+                        if (!isCloseByClick) {
+                            if (isCloseAble) {
+                                const index = elements.length - 1
+                                const { x1, y1, element, pointState } = elements[index]
+                                let nextPointState = ''
+                                if (pointState !== 'start') {
+                                    nextPointState = 'close'
+                                }else {
+                                    nextPointState = 'start-close'
+                                }
+                                updateElement(index, x1, y1, x1, y1, tool, [...element, {x: x1, y: y1}], nextPointState)
+                                isHolding = false
+                                action = 'none'
+                                isCloseAble = false
+                            }else {
+                                isHolding = true
+                                action = 'drawing'
+                            }
+                        }
+                    }
+                } 
+                canvasRendering()
+            }
+
+            const handleKeyDown = (event) => {
+                if (event.ctrlKey && (event.key === 'z' || event.key === 'Z' || event.key === 'ผ')) {
+                    undo()
+                }else if (event.ctrlKey && (event.key === 'y' || event.key === 'Y' || event.key === 'ั')) {
+                    redo()
+                }else if (event.key === 'Escape') {
+                    if (tool === 'eraser' || tool === 'pencil') {
+                        if (action === 'drawing') {
+                            deactivatePencil()
+                            action = 'none'
+                            isHolding = false
+                            isCloseAble = false
+                            isCloseByClick = false
+                            holdingElement = null
+                        } 
+                    }
+                    onUserSelectedTool('pan')
+                }
+                canvasRendering()
+            }
+
+            const onUserSelectedTool = (type, isComplete = false) => {
+                if (type === tool || (action !== 'none' && !isComplete)) return
+                selectedElement = null
+                tool = type
+                canvasContainer.style.cursor = `default`
+
+                switch (type) {
+                    case 'pencil' : {
+                        const pencilTool = document.getElementById('pencil-tool')
+                        pencilTool.classList.add('canvas-tool-active')
+                        canvasContainer.style.cursor = `url(static/icons/pen-solid.svg) 0 36, auto`
+                    } break
+                    case 'eraser' : {
+                        const removePencilTool = document.getElementById('eraser-tool')
+                        removePencilTool.classList.add('canvas-tool-active')
+                        canvasContainer.style.cursor = `url(static/icons/eraser-solid.svg) 0 10, auto`
+                    } break
+                    case 'pan' : {
+                        const panTool = document.getElementById('pan-tool')
+                        panTool.classList.add('canvas-tool-active')
+                        canvasContainer.style.cursor = 'grab'
+                    } break
+                }
+
+                tools.forEach((e) => {
+                    if (e !== type) {
+                        const toolElement = document.getElementById(`${e}-tool`)
+                        toolElement.classList.remove('canvas-tool-active')
+                    }
+                })
+                canvasRendering()
+            }
+
+            const handleUndoRedoAble = () => {
+                const undoTool = document.getElementById('undo-tool')
+                const redoTool = document.getElementById('redo-tool')
+
+                if (isUndoAble()) {
+                    undoTool.classList.add('canvas-tool')
+                    undoTool.classList.remove('canvas-undo-redo-tool')
+                } else {
+                    undoTool.classList.add('canvas-undo-redo-tool')
+                    undoTool.classList.remove('canvas-tool')
+                }
+
+                if (isRedoAble()) {
+                    redoTool.classList.add('canvas-tool')
+                    redoTool.classList.remove('canvas-undo-redo-tool')
+                } else {
+                    redoTool.classList.add('canvas-undo-redo-tool')
+                    redoTool.classList.remove('canvas-tool')
+                }
+            }
+
+            const drawElement = (element, type, pointState) => {
+                switch (type) {
+                    case 'pencil' :
+                    case 'eraser' : {
+                        canvas.drawPencil(element, isCloseAble, type, 1 / actionScale, pointState, true)
+                    } break
+                    default : {
+                        throw new Error(`Type not recognised: ${type}`)
+                    }
+                }
+            }
+
+            const canvasRendering = () => {
+                createCanvas()
+                if (!canvas) return
+
+                handleUndoRedoAble()
+                canvas.clearRectangle( { 
+                    x: 0, 
+                    y: 0, 
+                    width: getWidth(), 
+                    height: getHeight() 
+                } )
+                canvas.save()
+
+                // add event listener
+                document.addEventListener('keydown', handleKeyDown)
+                window.addEventListener('mousemove', handleMouseMove)
+                window.addEventListener('mouseup', handleMouseUp)
+
+                // draw elements
+                data['external_masking_path'].forEach((element) => {
+                    if (element.length !== 0) {
+                        canvas.drawPencil(element, true, 'pencil', 1 / actionScale, 'start-close', true)
+                    }
+                })
+                data['internal_masking_path'].forEach((element) => {
+                    if (element.length !== 0) {
+                        canvas.drawPencil(element, true, 'eraser', 1 / actionScale, 'start-close', true)
+                    }
+                })
+                elements.forEach(({ element, type, pointState }) => {
+                    if (element) {
+                        drawElement(element, type, pointState)
+                    }
+                })
+                canvas.onFocus(selectedElement?.element)
+                canvas.holdingPencil(holdingElement, 1 / actionScale)
+                canvas.restore()
+            }
+
+            const onUserSave = async () => {
+                if (!isSaving) {
+                    isSaving = true
+                    saveButton.style.pointerEvents = 'none'
+                    saveButton.style.opacity = 0.5
+                    const url = canvasContainer.toDataURL()
+            
+                    // Convert data URL to Blob
+                    const response = await fetch(url)
+                    const file = await response.blob()
+
+                    const formContainer = document.createElement('form')
+                    formContainer.action = "/add_mask"
+                    formContainer.method = "post"
+                    formContainer.enctype = "multipart/form-data"
+
+                    const jsonData = JSON.stringify(data)
+                    const dataInputContainer  = document.createElement('input')
+                    dataInputContainer.type = "hidden"
+                    dataInputContainer.name = "all_data"
+                    dataInputContainer.value = jsonData
+                    formContainer.appendChild(dataInputContainer)
+
+                    const fileInputContainer  = document.createElement('input')
+                    fileInputContainer.type = "file"
+                    fileInputContainer.name = "mask_file"
+
+                    const splitedOutputImg = data['output_image'].split('/')
+                    const filename = splitedOutputImg[splitedOutputImg.length - 1]
+                    const fileInputName = filename
+                    const canvasFile = new File([file], fileInputName, { type: file.type })
+                    const dataTransfer = new DataTransfer()
+                    dataTransfer.items.add(canvasFile)
+                    fileInputContainer.files = dataTransfer.files
+                    formContainer.appendChild(fileInputContainer)
+
+                    document.body.appendChild(formContainer)
+
+                    formContainer.submit()
+        
+                    window.history.back()
+                }
+            }
+
+            addEventToElement()
+            canvasRendering()
+        </script>
+    </body>
+</html>
