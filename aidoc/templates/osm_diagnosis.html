@@ -50,11 +50,12 @@
     </div>
 </div>
 
-<div class="d-flex justify-content-center container-md">
+<div class="d-flex justify-content-center">
     <div class="row justify-content-center my-4" style="width: 90%;">
         <div class="col-md-2 text-center mt-2 px-1">
             <form action="/record/osm" method="post" enctype="multipart/form-data">
-                <input class="btn btn-outline-success btn-block nowrap" style="width: 100%; margin: 0;" type="submit" value="ย้อนกลับหน้าประวัติ">
+                <a class="btn btn-outline-success btn-block nowrap" style="width: 100%; margin: 0;"
+                    onclick='this.parentNode.submit(); return false;'>ย้อนกลับหน้าประวัติ</a>
             </form>
         </div>
         <div class="col-md-3 text-center mt-2 px-1">
@@ -65,14 +66,16 @@
             <form action="{{url_for('image.rotate_image', return_page='diagnosis', role='osm', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
                 <input name="user_id" type="hidden" value="{{data['owner_id']}}">
                 <input name="imagename" type="hidden" value="{{data['fname']}}">
-                <input class="btn btn-outline-success btn-block nowrap" type="submit" style="width: 100%; margin: 0;" value="หมุนรูปไปทางขวา" />
+                <a class="btn btn-outline-success btn-block nowrap" style="width: 100%; margin: 0;"
+                    onclick='this.parentNode.submit(); return false;'>หมุนรูปไปทางขวา</a>
             </form>
         </div>
         <div class="col-md-2 text-center mt-2 px-1">
             <form action="{{url_for('image.recompute_image', return_page='diagnosis', role='osm', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
                 <input name="user_id" type="hidden" value="{{data['owner_id']}}">
                 <input name="imagename" type="hidden" value="{{data['fname']}}">
-                <input class="btn btn-outline-success btn-block nowrap" type="submit" style="width: 100%; margin: 0;" value="Recompute" />
+                <a class="btn btn-outline-success btn-block nowrap" style="width: 100%; margin: 0;"
+                    onclick='this.parentNode.submit(); return false;'>Recompute</a>
             </form>
         </div>
     </div>

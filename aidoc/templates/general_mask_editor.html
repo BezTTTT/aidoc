@@ -69,7 +69,7 @@
         
                     <div id='cancel-button-id' class="canvas-cancel-button">
                         <!-- Cancel -->
-                        <form action="{{ url_for('image.diagnosis', role=role, img_id=img_id) }}" method="post" enctype="multipart/form-data" class="canvas-cancel-form">
+                        <form action="{{ url_for('general.general_diagnosis', img_id=img_id) }}" method="get" class="canvas-cancel-form">
                             <input style="width: 100%; background-color: transparent; border: none; color: rgb(255, 255, 255);" type="submit" value="Cancel">
                         </form>
                     </div>
@@ -88,7 +88,7 @@
             <div id="canvas-container-id" class="canvas-container">
                 <div id="canvas-main-action-id" class="canvas-main-action-container">
                     <div id="canvasBGImg" class="canvas-bg-img">
-                        <img id="BGImage" src="{{ url_for('image.load_image', folder='upload', user_id=data['owner_id'], imagename=data['fname']) }}" alt="background" onload="handleImageLoad(event)" />
+                        <img id="BGImage" src="{{ url_for('image.load_image', folder='upload', user_id='0', imagename=data['fname']) }}" alt="background" onload="handleImageLoad(event)" />
                     </div>
         
                     <div class="canvas-screen-container">
@@ -898,7 +898,7 @@
                     const file = await response.blob()
 
                     const formContainer = document.createElement('form')
-                    formContainer.action = "{{ url_for('image.mask_editor', role=role, img_id=img_id) }}"
+                    formContainer.action = "{{ url_for('general.mask_editor', img_id=img_id) }}"
                     formContainer.method = "post"
                     formContainer.enctype = "multipart/form-data"
                    

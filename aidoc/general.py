@@ -2,7 +2,7 @@ from flask import Blueprint, flash, redirect, render_template, request, session,
 
 from werkzeug.utils import secure_filename
 
-from PIL import Image
+from PIL import Image, ImageFilter
 
 import os
 import shutil
@@ -12,7 +12,7 @@ import re
 
 from aidoc.db import get_db
 from aidoc.auth import login_required, load_logged_in_user
-from aidoc.image import rotate_temp_image, allowed_file, create_thumbnail, oral_lesion_prediction, rename_if_duplicated, load_image
+from aidoc.image import rotate_temp_image, allowed_file, create_thumbnail, oral_lesion_prediction, rename_if_duplicated, convertMask2Cordinates
 
 bp = Blueprint('general', __name__)
 
@@ -209,6 +209,54 @@ def rotate_general_image(img_id):
     pil_img.save(maskPath)
 
     return redirect(url_for('general.general_diagnosis', img_id=img_id))
+
+# region mask_editor
+@bp.route('/general_mask_editor/<img_id>', methods=('POST', ))
+@login_required
+def mask_editor(img_id):
+
+    imagename = request.form.get('imagename')
+    user_id = '0'
+
+    maskDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'mask', user_id)
+    outlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', user_id)
+    thumbOutlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', 'thumbnail', user_id)
+    maskPath = os.path.join(maskDir, imagename)
+    outlinedPath = os.path.join(outlinedDir, imagename)
+    thumbOutlinedImagePath = os.path.join(thumbOutlinedDir, imagename)
+
+    if 'mask_file' in request.files:
+        mask_img_file = request.files['mask_file']
+        mask_img_file.save(maskPath)
+        
+        uploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', user_id)
+        imagePath = os.path.join(uploadDir, imagename)
+
+        output = Image.open(maskPath).convert('L')
+        edge_img = output.filter(ImageFilter.FIND_EDGES)
+        dilation_img = edge_img.filter(ImageFilter.MaxFilter(3))
+
+        input_img = Image.open(imagePath)
+
+        yellow_edge = Image.merge("RGB", (dilation_img, dilation_img, Image.new(mode="L", size=dilation_img.size)))
+        outlined_img = input_img.copy()
+        outlined_img.paste(yellow_edge, dilation_img)
+        outlined_img.save(outlinedPath)
+        thumb_img = create_thumbnail(outlined_img)
+        thumb_img.save(thumbOutlinedImagePath)
+
+        return redirect(url_for('general.general_diagnosis', img_id=img_id))
+
+    externalCoordinates, holesCoordinates = convertMask2Cordinates(maskPath)
+    
+    data = {}
+    data['owner_id'] = user_id
+    data['fname'] = imagename
+    data['output_image'] = maskPath
+    data['external_masking_path'] = externalCoordinates
+    data['internal_masking_path'] = holesCoordinates
+
+    return render_template("general_mask_editor.html", data=data, img_id=img_id)
 
 # region rocompute_image
 @bp.route('/recompute_general_image/<img_id>', methods=('POST', ))
