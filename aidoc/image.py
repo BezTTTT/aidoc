@@ -18,6 +18,7 @@ import cv2
 import numpy as np
 
 import os
+import io
 import glob
 import shutil
 import json
@@ -93,6 +94,8 @@ def upload_image(role):
             data['earthchieAPI'] = True # enable Earthchie's Thailand Address Auto-complete API
         elif submission=='true': # upload confirmation is submitted
             # Check if submission list is in the queue (session), if so submit them to the Submission Module and the AI Prediction Engine
+            print("submission submission submission submission submission")
+            print(f'role: {role}')
             if 'imageNameList' in session and session['imageNameList']:
                 if role=='patient':
                     if request.form.get('inputPhone') is not None and request.form.get('inputPhone')!='':
@@ -284,6 +287,15 @@ def mask_editor(role, img_id):
 
     if 'mask_file' in request.files:
         mask_img_file = request.files['mask_file']
+# >>>>>>>>>>>>>>>> Modified (start) <<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        mask_shape_json = request.form.get('mask_shape')
+        mask_shape = json.loads(mask_shape_json)
+        original_size = (mask_shape[1], mask_shape[0])
+        img = Image.open(io.BytesIO(mask_img_file.read()))
+        mask_img_file = img.resize(original_size)
+        if maskPath.lower().endswith(".jpg") or maskPath.lower().endswith(".jpeg"):
+            mask_img_file = mask_img_file.convert("RGB")
+# >>>>>>>>>>>>>>>> Modified (end) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         mask_img_file.save(maskPath)
         
         uploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', user_id)
@@ -305,13 +317,14 @@ def mask_editor(role, img_id):
         return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
 
     externalCoordinates, holesCoordinates = convertMask2Cordinates(maskPath)
-    
+
     data = {}
     data['owner_id'] = user_id
     data['fname'] = imagename
     data['output_image'] = maskPath
     data['external_masking_path'] = externalCoordinates
     data['internal_masking_path'] = holesCoordinates
+    data['mask_shape'] = np.array(Image.open(maskPath)).shape
 
     return render_template("mask_editor.html", data=data, role=role, img_id=img_id)
 
@@ -1009,7 +1022,12 @@ def oral_lesion_prediction(imgPath):
     
     #import tensorflow as tf
     
-    img = tf.keras.utils.load_img(imgPath, target_size=(342, 512, 3))
+    # img = tf.keras.utils.load_img(imgPath, target_size=(342, 512, 3))
+    # img = tf.expand_dims(img, axis=0)
+# >>>>>>>>>>>>>>>> Modified (start) <<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    img = tf.keras.utils.load_img(imgPath, target_size=(342, 512))
+    img = tf.keras.utils.img_to_array(img)
+# >>>>>>>>>>>>>>>> Modified (end) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     img = tf.expand_dims(img, axis=0)
 
     global model
