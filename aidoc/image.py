@@ -1,5 +1,5 @@
 from flask import (
-    Blueprint, flash, redirect, render_template, request, session, url_for, send_from_directory, send_file, current_app, jsonify
+    Blueprint, flash, redirect, render_template, request, session, url_for, send_from_directory, send_file, current_app, g
 )
 from werkzeug.utils import secure_filename
 
@@ -12,13 +12,12 @@ model = oralLesionNet.load_model()
 
 #########################################################################################################################
 
-from PIL import Image, ImageFilter, ImageStat
+from PIL import Image, ImageFilter
 from scipy.ndimage import zoom 
 import cv2
 import numpy as np
 
 import os
-import io
 import glob
 import shutil
 import json
@@ -79,8 +78,8 @@ def upload_image(role):
                 session.pop('imageNameList', None)
             if imageName:
                 data['uploadedImage'] = imageName # Send back path of the last submitted image (if sent for more than 1)
-            if session['user']['default_location']:
-                location = ast.literal_eval(session['user']['default_location'])
+            if g.user['default_location']:
+                location = ast.literal_eval(g.user['default_location'])
                 if location['district']:
                     data['default_location_text'] = "สถานที่คัดกรอง: ตำบล"+location['district']+" อำเภอ"+location['amphoe']+" จังหวัด"+location['province']+" " +str(location['zipcode'])
                 else:
@@ -88,7 +87,7 @@ def upload_image(role):
             else:
                 location = {'district': None,
                             'amphoe': None,
-                            'province': session['user']['province'],
+                            'province': g.user['province'],
                             'zipcode': None}
                 data['default_location_text'] = "สถานที่คัดกรอง: จังหวัด"+location['province']
             data['earthchieAPI'] = True # enable Earthchie's Thailand Address Auto-complete API
@@ -122,7 +121,7 @@ def upload_image(role):
                 else:
                     session['location'] = {'district': None,
                                            'amphoe': None,
-                                           'province': session['user']['province'],
+                                           'province': g.user['province'],
                                            'zipcode': None}
                 
                 upload_submission_module(target_user_id=session['user_id'])
@@ -201,12 +200,16 @@ def delete_image(role):
     img_id = request.form.get('img_id')
 
     db, cursor = get_db()
-    sql = "SELECT sender_id, fname FROM submission_record WHERE id=%s"
+    sql = "SELECT channel, sender_id, patient_id, fname FROM submission_record WHERE id=%s"
     val = (img_id, )
     cursor.execute(sql, val)
     result = cursor.fetchone()
 
-    user_id = str(result['sender_id'])
+    if result['channel']=='PATIENT':
+        user_id = str(result['patient_id'])
+    else:
+        user_id = str(result['sender_id'])
+    
     uploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', user_id)
     thumbUploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', 'thumbnail', user_id)
     outlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', user_id)
@@ -467,7 +470,7 @@ def diagnosis(role, img_id):
 
     db, cursor = get_db()
     if role=='specialist':
-        sql = '''SELECT submission_record.id AS img_id, case_id, fname, special_request,
+        sql = '''SELECT submission_record.id AS img_id, case_id, channel, fname, special_request,
                     patient_id, patient.name AS patient_name, patient.surname AS patient_surname, patient_national_id as saved_patient_national_id, patient.national_id AS db_patient_national_id, patient.birthdate,
                     patient.sex, patient.job_position, patient.email, patient.phone AS patient_phone, patient.address, patient.province,
                     sender_id, sender.name AS sender_name, sender.surname AS sender_surname, sender.hospital AS sender_hospital, sender.province AS sender_province,
@@ -483,7 +486,7 @@ def diagnosis(role, img_id):
                 LEFT JOIN user AS dentist ON submission_record.dentist_id = dentist.id
                 WHERE submission_record.id=%s'''
     elif role=='osm':
-        sql = '''SELECT submission_record.id AS img_id, case_id, fname, special_request, sender_id, patient_id, sender_phone, sender.phone AS osm_phone, 
+        sql = '''SELECT submission_record.id AS img_id, case_id, channel, fname, special_request, sender_id, patient_id, sender_phone, sender.phone AS osm_phone, 
                     patient.name AS patient_name, patient.surname AS patient_surname, patient_national_id as saved_patient_national_id, patient.national_id AS db_patient_national_id, patient.birthdate,
                     patient.sex, patient.job_position, patient.email, patient.phone AS patient_phone, patient.address, patient.province,
                     location_district, location_amphoe, location_province, location_zipcode,
@@ -501,13 +504,13 @@ def diagnosis(role, img_id):
                 WHERE id=%s'''
     else:
         if dentistCommentFlag and dentistCommentFlag=='true':
-            sql = '''SELECT submission_record.id AS img_id, case_id, fname, special_request, sender_id, patient_id, sender_phone, 
+            sql = '''SELECT submission_record.id AS img_id, case_id, channel, fname, special_request, sender_id, patient_id, sender_phone, 
                     dentist_feedback_code, dentist_feedback_comment, dentist_feedback_date, ai_prediction, ai_scores, submission_record.created_at
                 FROM submission_record
                 INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id
                 WHERE submission_record.id=%s'''
         else:
-            sql = '''SELECT submission_record.id AS img_id, case_id, fname, special_request, sender_id, patient_id, sender_phone, 
+            sql = '''SELECT submission_record.id AS img_id, case_id, channel, fname, special_request, sender_id, patient_id, sender_phone, 
                     ai_prediction, ai_scores, submission_record.created_at
                 FROM submission_record
                 INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id
@@ -528,10 +531,15 @@ def diagnosis(role, img_id):
 
     # Further process the data
     data['ai_scores'] = json.loads(data['ai_scores'])
-    data['owner_id'] = data['sender_id']
+    # data['owner_id'] = data['sender_id']
     
-    if role=='patient' and data['sender_id'] is None: # If an unregistered osm submit the data via the patient system, the data will be stored in the patient_id folder
-        data['sender_id'] = data['patient_id']
+    # if role=='patient' and data['sender_id'] is None: # If an unregistered osm submit the data via the patient system, the data will be stored in the patient_id folder
+    #     data['owner_id'] = data['patient_id']
+    if 'channel' in data and data['channel']=='PATIENT':
+        data['owner_id'] = data['patient_id']
+    else:
+        data['owner_id'] = data['sender_id']
+
 
     if dentistCommentFlag:
         data['dentistCommentFlag'] = dentistCommentFlag
@@ -557,8 +565,8 @@ def diagnosis(role, img_id):
         data['dentistCommentFlag'] = 'false'
 
     if role=='osm' or role=='specialist':
-        if data['sender_phone'] != None or data['sender_id'] == None:
-            data['owner_id'] = data['patient_id']
+        #if data['sender_phone'] != None or data['sender_id'] == None:
+        #    data['owner_id'] = data['patient_id']
         
         data['thai_datetime'] = format_thai_datetime(data['created_at'])
 
@@ -576,9 +584,9 @@ def diagnosis(role, img_id):
             else:
                 data['sender_description'] = f"{data['sender_name']} {data['sender_surname']} (ผู้ป่วยนำส่งรูปด้วยตัวเอง)"
         else: # osm
-            data['sender_description'] = f"{session['user']['name']} {session['user']['surname']} (โทรศัพท์: {session['user']['phone']})"
-            data['sender_hospital'] = session['user']['hospital']
-            data['sender_province'] = session['user']['province']
+            data['sender_description'] = f"{g.user['name']} {g.user['surname']} (โทรศัพท์: {g.user['phone']})"
+            data['sender_hospital'] = g.user['hospital']
+            data['sender_province'] = g.user['province']
 
         if 'birthdate' in data and data['birthdate'] is not None:
             data['patient_age'] = calculate_age(data['birthdate'])
@@ -631,7 +639,7 @@ def record(role): # Submission records
     # Reload the record every time the page is reloaded
     db, cursor = get_db()
     if role=='specialist':
-        sql = '''SELECT submission_record.id, case_id, fname, patient_user.name, patient_user.surname, patient_user.birthdate,
+        sql = '''SELECT submission_record.id, case_id, channel, fname, patient_user.name, patient_user.surname, patient_user.birthdate,
                     sender_id, patient_id, dentist_id, sender_phone, special_request,
                     location_province, location_amphoe, location_district, location_zipcode, 
                     dentist_feedback_comment,dentist_feedback_code,case_report,
@@ -642,7 +650,7 @@ def record(role): # Submission records
                 ORDER BY case_id DESC'''
         cursor.execute(sql)
     elif role=='osm':
-        sql = '''SELECT submission_record.id, fname,
+        sql = '''SELECT submission_record.id, channel, fname,
                     patient_user.name, patient_user.surname, patient_user.birthdate, patient_user.province,
                     case_id, sender_id, patient_id, dentist_id, special_request, sender_phone, 
                     location_province, location_zipcode, 
@@ -657,7 +665,7 @@ def record(role): # Submission records
         val = (session["user_id"],)
         cursor.execute(sql, val)
     elif role=='patient':
-        sql = '''SELECT submission_record.id, case_id, special_request, sender_id, patient_id, sender_phone, 
+        sql = '''SELECT submission_record.id, case_id, special_request, sender_id, patient_id, sender_phone, channel, 
                     dentist_feedback_code, dentist_feedback_comment, dentist_feedback_date, ai_prediction, ai_scores, submission_record.created_at
                 FROM submission_record
                 INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id
@@ -666,7 +674,7 @@ def record(role): # Submission records
         val = (session["user_id"],)
         cursor.execute(sql, val)
     else:
-        sql = '''SELECT submission_record.id, fname, name, surname, birthdate,
+        sql = '''SELECT submission_record.id, channel, fname, name, surname, birthdate,
                     sender_id, patient_id, dentist_id, special_request, province,
                     dentist_feedback_comment,dentist_feedback_code,
                     ai_prediction, submission_record.created_at
@@ -833,7 +841,7 @@ def record(role): # Submission records
     
     # Process each item in paginated_data
     for item in paginated_data:
-        if 'sender_phone' in item and (item['sender_phone'] != None or item['sender_id'] == None):
+        if item['channel']=='PATIENT':
             item['owner_id'] = item['patient_id']
         else:
             item['owner_id'] = item['sender_id']
@@ -1153,7 +1161,7 @@ def upload_submission_module(target_user_id):
             
             if session['sender_mode']=='dentist':
                 
-                if session['user']['default_location'] is None or str(session['user']['default_location'])!=str(session['location']):
+                if g.user['default_location'] is None or str(g.user['default_location'])!=str(session['location']):
                     sql = "UPDATE user SET default_location=%s WHERE id=%s"
                     val = (str(session['location']), session['user_id'])
                     cursor.execute(sql, val)
@@ -1184,7 +1192,7 @@ def upload_submission_module(target_user_id):
 
             elif session['sender_mode']=='patient':
 
-                if session['user']['default_location'] is None or str(session['user']['default_location'])!=str(session['location']):
+                if g.user['default_location'] is None or str(g.user['default_location'])!=str(session['location']):
                     sql = "UPDATE user SET default_location=%s WHERE id=%s"
                     val = (str(session['location']), session['user_id'])
                     cursor.execute(sql, val)
@@ -1196,7 +1204,7 @@ def upload_submission_module(target_user_id):
                     cursor.execute(sql, val)
                     load_logged_in_user()
                 
-                if (session['user']['default_sender_phone'] and ('sender_phone' not in session or session['sender_phone'] is None)):
+                if (g.user['default_sender_phone'] and ('sender_phone' not in session or session['sender_phone'] is None)):
                     sql = "UPDATE user SET default_sender_phone=NULL WHERE id=%s"
                     val = (session['user_id'], )
                     cursor.execute(sql, val)
@@ -1236,7 +1244,7 @@ def upload_submission_module(target_user_id):
 
             elif session['sender_mode']=='osm':
 
-                if session['user']['default_location'] is None or str(session['user']['default_location'])!=str(session['location']):
+                if g.user['default_location'] is None or str(g.user['default_location'])!=str(session['location']):
                     sql = "UPDATE user SET default_location=%s WHERE id=%s"
                     val = (str(session['location']), session['user_id'])
                     cursor.execute(sql, val)
@@ -1303,7 +1311,7 @@ def format_thai_datetime(x):
     month_list_th = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน','กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
     output_thai_datetime_str = '{} {} {} {}:{}'.format(
         x.strftime('%d'),
-        month_list_th[int(x.strftime('%m'))+1],
+        month_list_th[int(x.strftime('%m'))-1],
         int(x.strftime('%Y'))+543,
         x.strftime('%H'),
         x.strftime('%M')

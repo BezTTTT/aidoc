@@ -22,7 +22,7 @@
                     align-items: center;        /* Center vertically */
                     justify-content: center;    /* Center horizontally */
                     overflow: hidden;">
-            <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=data['patient_id'], imagename=data['fname']) }}" alt="">
+            <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=data['owner_id'], imagename=data['fname']) }}" alt="">
             </div>
             <div class="card-body">
                 <p class="card-text">ภาพถ่ายช่องปาก</p>

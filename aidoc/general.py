@@ -1,4 +1,4 @@
-from flask import Blueprint, flash, redirect, render_template, request, session, url_for, current_app
+from flask import Blueprint, flash, redirect, render_template, request, session, url_for, current_app, g
 
 from werkzeug.utils import secure_filename
 
@@ -19,10 +19,10 @@ bp = Blueprint('general', __name__)
 # region general index
 @bp.route('/general')
 def general_index():
-    if session.get('user') is None:
+    if g.user is None:
         session.clear() # logged out from everything
 
-    if 'user' in session and session['user']: # already logged in
+    if g.user: # already logged in
         if 'sender_mode' in session and session['sender_mode']=='general':
             return redirect('/general/upload')
     else:
@@ -42,7 +42,6 @@ def general_login():
         error_msg = "Please register the new user for the first time"
     if error_msg is None: # Logged in sucessfully
         session['user_id'] = user['id']
-        load_logged_in_user()
         return redirect('/general/upload')
     
     flash(error_msg)
@@ -82,7 +81,6 @@ def general_register():
         cursor.execute('SELECT id FROM general_user where email = %s', (data["email"],))
         new_user = cursor.fetchone()
         session['user_id'] = new_user['id']
-        load_logged_in_user()
         return redirect('/general/upload')
     else:
         return render_template("general_register.html", data=data)

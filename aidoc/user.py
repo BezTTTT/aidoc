@@ -1,5 +1,5 @@
 from flask import (
-    Blueprint, flash, redirect, render_template, request, session, url_for, jsonify
+    Blueprint, flash, redirect, render_template, request, session, url_for, jsonify, g
 )
 from werkzeug.security import generate_password_hash
 
@@ -291,7 +291,7 @@ def register(role):
                 session['sender_mode'] = role
                 img_id = session['register_later']['img_id']
                 session.pop('register_later', None)
-                session['user_id'] = session['user']['id'] 
+                session['user_id'] = g.user['id'] 
                 return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
         else:
             return render_template(target_template, data=data)
@@ -424,7 +424,7 @@ def cancel_register():
     if 'register_later' not in session:
         return redirect('/logout')
     elif session['register_later']['return_page'] == 'diagnosis':
-        session['user_id'] = session['user']['id'] 
+        session['user_id'] = g.user['id'] 
         role = session['register_later']['sender_mode']
         session['sender_mode'] = role
         img_id = session['register_later']['img_id']

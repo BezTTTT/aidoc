@@ -72,8 +72,8 @@
                 <div class="mt-2">
                   <input class="form-control" placeholder="ค้นหาตาม ตำบล, อำเภอ, จังหวัด หรือ รหัสไปรษณีย์" type="text" name="locationSearch" id="locationSearch" required>
                   <input type="hidden" id="location" name="location"
-                    {% if session['user']['default_location']  %}
-                      value="{{ session['user']['default_location'] }}"
+                    {% if g.user['default_location']  %}
+                      value="{{ g.user['default_location'] }}"
                     {% endif %}
                   >
                 </div>
@@ -102,13 +102,13 @@
                 </div>
                 <div id="inputPhoneContainer" class="col-8" style="display: block;">
                   <input class="form-control col-6" placeholder="เบอร์โทร..." maxlength="10" type="text" name="inputPhone" id="inputPhone" required
-                    {% if session['user']['default_sender_phone'] %}
-                      value="{{session['user']['default_sender_phone'] }}"
+                    {% if g.user['default_sender_phone'] %}
+                      value="{{g.user['default_sender_phone'] }}"
                     {% endif %}
                   /> 
                 </div>
                 <div class="mt-3 d-flex justify-content-center align-items-center" id="senderInfoContainer"
-                  {% if session['user']['default_sender_phone'] %}
+                  {% if g.user['default_sender_phone'] %}
                     style="display: none;"
                   {% endif %}>
                 </div>
@@ -161,7 +161,7 @@
   })
 
   function checkSenderPhone(phone){
-    if(phone.length == 10){
+    if(phone.length >= 9){
       // Make an AJAX request to Flask server
       var xhr = new XMLHttpRequest();
       xhr.open('POST', '/get_osm_info', true);
@@ -173,7 +173,7 @@
               senderInfoContainer.style.color = 'green'
               senderInfoContainer.innerHTML = "เจ้าหน้าที่ผู้คัดกรอง ชื่อ "+senderInfo.name+" "+senderInfo.surname
               senderIDInput.value = senderInfo.sender_id
-          }else{
+          }else if (phone.length==10){
             senderInfoContainer.style.color = 'red'
             senderInfoContainer.innerHTML="ไม่พบข้อมูลเจ้าหน้าที่ผู้คัดกรองในระบบ (กรุณาแจ้งให้เจ้าหน้าที่ดังกล่าว ลงทะเบียนภายหลัง)"
             senderIDInput.value = ""
@@ -196,7 +196,7 @@
   }
 
   function isValidPhoneNumber(phoneNumber) {
-    const phonePattern = /^\d{10}$/
+    const phonePattern = /^\d{9,10}$/
     return phonePattern.test(phoneNumber)
   }
 

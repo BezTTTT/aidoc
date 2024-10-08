@@ -61,8 +61,8 @@
                 <div class="mt-2">
                   <input class="form-control" placeholder="ค้นหาตาม ตำบล, อำเภอ, จังหวัด หรือ รหัสไปรษณีย์" type="text" name="locationSearch" id="locationSearch" required>
                   <input type="hidden" id="location" name="location"
-                    {% if session['user']['default_location']  %}
-                      value="{{ session['user']['default_location'] }}"
+                    {% if g.user['default_location']  %}
+                      value="{{ g.user['default_location'] }}"
                     {% endif %}
                   >
                 </div>
