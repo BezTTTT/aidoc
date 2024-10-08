@@ -287,25 +287,17 @@ def mask_editor(role, img_id):
 
     if 'mask_file' in request.files:
         mask_img_file = request.files['mask_file']
-# >>>>>>>>>>>>>>>> Modified (start) <<<<<<<<<<<<<<<<<<<<<<<<<<<<
-        mask_shape_json = request.form.get('mask_shape')
-        mask_shape = json.loads(mask_shape_json)
-        original_size = (mask_shape[1], mask_shape[0])
-        img = Image.open(io.BytesIO(mask_img_file.read()))
-        mask_img_file = img.resize(original_size)
-        if maskPath.lower().endswith(".jpg") or maskPath.lower().endswith(".jpeg"):
-            mask_img_file = mask_img_file.convert("RGB")
-# >>>>>>>>>>>>>>>> Modified (end) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         mask_img_file.save(maskPath)
         
         uploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', user_id)
         imagePath = os.path.join(uploadDir, imagename)
+        input_img = Image.open(imagePath)
 
         output = Image.open(maskPath).convert('L')
+        output = output.resize((512, 342)) # Resize the mask to the standard size
         edge_img = output.filter(ImageFilter.FIND_EDGES)
         dilation_img = edge_img.filter(ImageFilter.MaxFilter(3))
-
-        input_img = Image.open(imagePath)
+        dilation_img = dilation_img.resize(input_img.size) # Restore the mask size to the original size
 
         yellow_edge = Image.merge("RGB", (dilation_img, dilation_img, Image.new(mode="L", size=dilation_img.size)))
         outlined_img = input_img.copy()
@@ -324,7 +316,6 @@ def mask_editor(role, img_id):
     data['output_image'] = maskPath
     data['external_masking_path'] = externalCoordinates
     data['internal_masking_path'] = holesCoordinates
-    data['mask_shape'] = np.array(Image.open(maskPath)).shape
 
     return render_template("mask_editor.html", data=data, role=role, img_id=img_id)
 
@@ -1022,12 +1013,7 @@ def oral_lesion_prediction(imgPath):
     
     #import tensorflow as tf
     
-    # img = tf.keras.utils.load_img(imgPath, target_size=(342, 512, 3))
-    # img = tf.expand_dims(img, axis=0)
-# >>>>>>>>>>>>>>>> Modified (start) <<<<<<<<<<<<<<<<<<<<<<<<<<<<
-    img = tf.keras.utils.load_img(imgPath, target_size=(342, 512))
-    img = tf.keras.utils.img_to_array(img)
-# >>>>>>>>>>>>>>>> Modified (end) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    img = tf.keras.utils.load_img(imgPath, target_size=(342, 512, 3))
     img = tf.expand_dims(img, axis=0)
 
     global model

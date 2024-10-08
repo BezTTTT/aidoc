@@ -231,12 +231,13 @@ def mask_editor(img_id):
         
         uploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', user_id)
         imagePath = os.path.join(uploadDir, imagename)
+        input_img = Image.open(imagePath)
 
         output = Image.open(maskPath).convert('L')
+        output = output.resize((512, 342)) # Resize the mask to the standard size
         edge_img = output.filter(ImageFilter.FIND_EDGES)
         dilation_img = edge_img.filter(ImageFilter.MaxFilter(3))
-
-        input_img = Image.open(imagePath)
+        dilation_img = dilation_img.resize(input_img.size) # Restore the mask size to the original size
 
         yellow_edge = Image.merge("RGB", (dilation_img, dilation_img, Image.new(mode="L", size=dilation_img.size)))
         outlined_img = input_img.copy()
@@ -256,8 +257,7 @@ def mask_editor(img_id):
     data['external_masking_path'] = externalCoordinates
     data['internal_masking_path'] = holesCoordinates
 
-    # return render_template("general_mask_editor.html", data=data, img_id=img_id)
-    return render_template("mask_editor.html", data=data, img_id=img_id)
+    return render_template("general_mask_editor.html", data=data, img_id=img_id)
 
 # region rocompute_image
 @bp.route('/recompute_general_image/<img_id>', methods=('POST', ))

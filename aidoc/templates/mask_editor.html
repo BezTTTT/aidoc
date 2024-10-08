@@ -990,15 +990,6 @@
                     image_name_input.value = "{{data['fname']}}"
                     formContainer.appendChild(image_name_input)
 
-                    // >>>>>>>>>>>>>>>> Modified (start) <<<<<<<<<<<<<<<<<<<<<<<<<<<<
-                    const mask_shape_json = JSON.stringify(data['mask_shape'])
-                    const mask_shape_input = document.createElement('input')
-                    mask_shape_input.type = "hidden"
-                    mask_shape_input.name = "mask_shape"
-                    mask_shape_input.value = mask_shape_json
-                    formContainer.appendChild(mask_shape_input)
-                    // >>>>>>>>>>>>>>>> Modified (end) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
                     const fileInputContainer  = document.createElement('input')
                     fileInputContainer.type = "file"
                     fileInputContainer.name = "mask_file"
