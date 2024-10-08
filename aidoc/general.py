@@ -256,7 +256,8 @@ def mask_editor(img_id):
     data['external_masking_path'] = externalCoordinates
     data['internal_masking_path'] = holesCoordinates
 
-    return render_template("general_mask_editor.html", data=data, img_id=img_id)
+    # return render_template("general_mask_editor.html", data=data, img_id=img_id)
+    return render_template("mask_editor.html", data=data, img_id=img_id)
 
 # region rocompute_image
 @bp.route('/recompute_general_image/<img_id>', methods=('POST', ))
