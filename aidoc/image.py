@@ -13,7 +13,6 @@ model = oralLesionNet.load_model()
 #########################################################################################################################
 
 from PIL import Image, ImageFilter
-from scipy.ndimage import zoom 
 import cv2
 import numpy as np
 
@@ -680,7 +679,8 @@ def record(role): # Submission records
                     ai_prediction, submission_record.created_at
                 FROM submission_record
                 LEFT JOIN user ON submission_record.patient_id = user.id
-                WHERE sender_id = %s'''
+                WHERE sender_id = %s
+                ORDER BY id DESC'''
         val = (session["user_id"],)
         cursor.execute(sql, val)
     db_query = cursor.fetchall()

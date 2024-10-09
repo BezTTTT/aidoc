@@ -1,9 +1,9 @@
 [project]
-name = "oralLesionNet"
-version = "2.2.0"
-description = "Oral Lesion Segmentation Deep Learning Network."
+name = "aidoc"
+version = "3.0.0"
+description = "Artificial Intelligence system for Detecting Oral Cancer (AIDOC)"
 dependencies = [
-    "tensorflow",
+    "Flask", "mysql-connector-python", "tensorflow", "pillow", "opencv-python", "python-dateutil"
 ]
 
 [build-system]
