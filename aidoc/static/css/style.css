@@ -1,250 +1,92 @@
-/* editing mask */
-.screen-container  {
-  position: relative;
-  width: 100%;
-  height: calc(100vh - 48px);
+form {
+  margin: 0px;
+  padding: 0px;
+  display: inline;
 }
 
-.canvas-container {
-  position: relative;
-  background-color: rgb(24, 30, 35);
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-  
-
-.canvas-main-action-container {
-  position: relative;
-  width: 516px;
-  height: 340px;
-  transform-origin: 0px 0px;
-  transform: scale(1) translate(0px, 0px);
+#hiddenContent {
+    display: none;
 }
 
-.canvas-bg-img {
-  position: absolute;
-  width: 100%;
+body {
   height: 100%;
 }
 
-.canvas-bg-img img {
-  position: relative;
+.banner {
   width: 100%;
-  height: 100%;
+  height: auto;
+  background: rgb(84, 149, 247);
+  font-size: 0;
 }
 
-.canvas-screen-container {
-  position: absolute;
+.textAI {
+  font-size: 16;
+  text-align: center;
+}
+
+.banner img {
+  height: auto;
   width: 100%;
-  height: 100%;
 }
 
-.canvas-screen {
-  background-color: rgba(196, 196, 195, 0);
-  position: absolute;
-  z-index: 1;
+.img-responsive {
+  height: auto;
   width: 100%;
-  height: 100%;
 }
 
-.canvas-toolbar {
-  background-color: rgb(33, 39, 44);
-  display: flex;
-  align-items: center;
-  height: 48px;
-  padding-left: 8px;
-  padding-right: 0px;
-  z-index: 2;
-  justify-content: space-between;
-  /* display: none; */
+body {
+  font-family: "Prompt", sans-serif;
 }
 
-.canvas-tool {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  margin-right: 8px;
-  border-radius: 5px;
-  color: rgb(255, 255, 255);
-  background-color: transparent;
-  cursor: pointer;
+.navbar-toggler-icon {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%280, 0, 255, 1%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
 }
 
-.canvas-tool-active {
-  background-color: rgb(92, 170, 255) !important;
+.navbar-toggler {
+  color: blue;
+  background-color: skyblue;
+  border: 1px solid blue;
 }
 
-.canvas-tool svg {
-  width: 20px;
-  height: 20px;
+table.dataTable thead th {
+  background-color: #ffffff;
+  border-top: 1px solid #dddddd;
+  border-bottom: 1px solid #dddddd;
 }
 
-.canvas-tool:hover {
-  background-color: rgb(92, 170, 255) !important;
+table.dataTable tbody tr:nth-child(even) {
+  background-color: #f2f2f2;
 }
 
-.canvas-undo-redo-tool {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  margin-right: 8px;
-  border-radius: 5px;
-  color: rgb(157, 157, 157);
-  background-color: transparent;
-  cursor: default;
+.dataTable label {
+  background-color: #f2f2f2; /* Change the background color */
+  border: 1px solid #ccc; /* Change the border */
+  border-radius: 5px; /* Add border radius for rounded corners */
+  padding: 5px; /* Add padding for better spacing */
 }
 
-.stage-grab {
-  cursor: grab;
+.dataTable {
+  padding-top: 2rem;
 }
 
-.canvas-undo-redo-tool svg {
-  width: 20px;
-  height: 20px;
+#amount {
+  margin-left: 10px;
+  font-size: 60px;
+  /* color: #0d6efd; */
 }
 
-.canvas-undo-redo-tool-inactive {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  margin-right: 8px;
-  border-radius: 5px;
-  color: rgb(187, 187, 187);
-  cursor: default;
-}
-
-.canvas-percent-display {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 70px;
-  color: white;
-  /* background-color: blueviolet; */
-}
-
-.canvas-main-tool-container {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  /* background-color: rgb(126, 78, 106); */
-}
-
-.canvas-main-tool {
-  position: relative;
-  /* left: 15%; */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  /* background-color: aquamarine; */
-}
-
-.canvas-cancel-button {
-  position: relative;
-  width: 70px;
-  height: 36px;
-  margin-right: 8px;
-  border-radius: 5px;
-  background-color: rgb(240, 82, 82, 0);
-  cursor: pointer;
-  transition: .15s;
-}
-
-.canvas-cancel-button:hover {
-  background-color: rgb(240, 82, 82);
-}
-
-.canvas-cancel-form {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-}
-
-.canvas-save-button, .canvas-edit-button {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 70px;
-  height: 36px;
-  margin-right: 8px;
-  border-radius: 5px;
-  color: rgb(255, 255, 255);
-  cursor: pointer;
-}
-
-.canvas-save-button:hover, .canvas-edit-button:hover {
-  background-color: rgb(92, 170, 255);
-}
-
-.canvas-hide-button, .canvas-show-button {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 70px;
-  height: 36px;
-  margin-right: 8px;
-  border-radius: 5px;
-  color: rgb(255, 255, 255);
-  cursor: pointer;
-}
-
-.canvas-hide-button:hover, .canvas-show-button:hover {
-  background-color: rgb(92, 170, 255);
-}
-
-.canvas-zoom-tool {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100px;
-  height: 36px;
-  margin-right: 8px;
-  border-radius: 5px;
-  color: rgb(255, 255, 255);
-  background-color: transparent;
-}
-
-.canvas-zoom-tool-icon {
-  position: relative;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  /* background-color: aquamarine; */
-  cursor: pointer;
-}
-
-.canvas-zoom-tool svg {
-  width: 20px;
-  height: 20px;
-  /* margin-right: 16px; */
-}
-
-.credit-container {
-  position: absolute;
+#text {
+  margin-right: 10px;
   text-align: end;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  height: 20px;
-  padding: 8px;
-  color: rgb(255, 255, 255);
-  background-color: transparent;
+  font-size: larger;
+}
+
+/*add dot -> appling spans*/
+.dot {
+  display: inline-block;
+  width: 17px;
+  height: 17px;
+  border-radius: 100%;
+  margin-left: 5px;
+  vertical-align: middle;
 }
