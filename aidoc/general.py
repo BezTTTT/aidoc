@@ -7,7 +7,7 @@ from PIL import Image, ImageFilter
 import os
 import shutil
 import json
-import datetime
+from datetime import datetime
 import re
 
 from aidoc.db import get_db
