@@ -10,6 +10,9 @@ import oralLesionNet
 # Load the oralLesionNet model to the global variable
 model = oralLesionNet.load_model()
 
+import imageQualityChecker
+qualityChecker = imageQualityChecker.ImageQualityChecker()
+
 #########################################################################################################################
 
 from PIL import Image, ImageFilter
@@ -63,7 +66,17 @@ def upload_image(role):
                     imagePath = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', imageName)
                     imageFile.save(imagePath)
                     #Create the temp thumbnail
-                    pil_img = Image.open(imagePath) 
+                    pil_img = Image.open(imagePath).convert('RGB')
+
+                    # Check image quality
+                    global qualityChecker
+                    qualityResults = qualityChecker.predict(pil_img)
+                    if qualityResults['Class_ID'] == 0:
+                        flash('ระบบตรวจสอบพบว่า คุณภาพของรูปไม่ได้มาตรฐาน ภาพช่องปากอาจไม่ชัด (เบลอ) หรือมืดเกินไป (เปิดไฟส่องสว่างช่องปากด้วย) กรุณานำส่งรูปที่ได้คุณภาพเท่านั้น')
+                    elif qualityResults['Class_ID'] == 1:
+                        flash('ระบบตรวจสอบพบว่า ไม่ปรากฎช่องปากในภาพ กรุณานำส่งภาพถ่ายที่ได้มุมมองมาตรฐานตามตัวอย่างเท่านั้น')
+                    data['imageQuality'] = qualityResults['Class_ID']
+
                     pil_img = create_thumbnail(pil_img)
                     pil_img.save(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', 'thumb_' + imageName)) 
                     # Save the current filenames on session for the upcoming prediction
@@ -92,8 +105,6 @@ def upload_image(role):
             data['earthchieAPI'] = True # enable Earthchie's Thailand Address Auto-complete API
         elif submission=='true': # upload confirmation is submitted
             # Check if submission list is in the queue (session), if so submit them to the Submission Module and the AI Prediction Engine
-            print("submission submission submission submission submission")
-            print(f'role: {role}')
             if 'imageNameList' in session and session['imageNameList']:
                 if role=='patient':
                     if request.form.get('inputPhone') is not None and request.form.get('inputPhone')!='':

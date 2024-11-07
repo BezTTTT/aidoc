@@ -2,3 +2,4 @@ instance/*
 aidoc/__pycache__/*
 oralLesionNet/*
 imageData/*
+imageQualityChecker/imageQualityChecker.tflite

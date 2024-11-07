@@ -114,7 +114,17 @@ def general_upload():
                     imagePath = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', imageName)
                     imageFile.save(imagePath)
                     #Create the temp thumbnail
-                    pil_img = Image.open(imagePath) 
+                    pil_img = Image.open(imagePath).convert('RGB')
+
+                    # Check image quality
+                    global qualityChecker
+                    qualityResults = qualityChecker.predict(pil_img)
+                    if qualityResults['Class_ID'] == 0:
+                        flash('System detects that picture failed the quality test. The mouth can be too blury, too smaller, too dark (please use falsh light). Please send only the high quality images')
+                    elif qualityResults['Class_ID'] == 1:
+                        flash('System detects that picture does not contain mouth. Please follow the guideline below for taking the oral image.')
+                    data['imageQuality'] = qualityResults['Class_ID']
+
                     pil_img = create_thumbnail(pil_img)
                     pil_img.save(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', 'thumb_' + imageName)) 
                     # Save the current filenames on session for the upcoming prediction

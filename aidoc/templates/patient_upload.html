@@ -58,7 +58,11 @@
           </button>
         </form>
         <form id="submitimgForm" action="{{ url_for('image.upload_image', role='patient', submission='true') }}" method="post" enctype="multipart/form-data" >
-          <button id="submitbtn" onclick="dataSubmission()" class="btn btn-success mb-2 btn-lg">ยืนยัน</button>
+          {% if data['imageQuality']==2 %}
+            <button id="submitbtn" onclick="dataSubmission()" class="btn btn-success mb-2 btn-lg">ยืนยัน</button>
+          {% else %}
+            <button id="submitbtn" onclick="dataSubmission()" class="btn btn-outline-info mb-2">ยืนยัน</button>
+          {% endif %}
           <div id="errorBox" class="alert alert-danger" role="alert" style="display: none;"></div>
           <div class="border p-3 rounded-3 my-2">
             <div class="card-body">

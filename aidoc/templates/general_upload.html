@@ -48,7 +48,11 @@
         </button>
         </form>
         <form id="submitimgForm" action="{{ url_for('general.general_upload', submission='true') }}" method="post" enctype="multipart/form-data" >
-          <button id="submitbtn" onclick="disableButton()" class="btn btn-success mb-2 btn-lg">Confirm</button>
+          {% if data['imageQuality']==2 %}
+            <button id="submitbtn" onclick="disableButton()" class="btn btn-success mb-2 btn-lg">Confirm</button>
+          {% else %}
+            <button id="submitbtn" onclick="disableButton()" class="btn btn-outline-info mb-2">Confirm</button>
+          {% endif %}
         </form>
       </div>
     </div>
