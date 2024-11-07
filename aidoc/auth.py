@@ -129,7 +129,7 @@ def login(role):
         )
         user = cursor.fetchone()
         if user is None:
-            error_msg = "ไม่พบข้อมูลของเจ้าหน้าที่ผู้ตรวจคัดกรองในระบบ หากยังไม่ได้ลงทะเบียน กรุณาลงทะเบียนก่อนการใช้งาน"
+            error_msg = "ไม่พบข้อมูลของผู้ตรวจคัดกรองในระบบ หากยังไม่ได้ลงทะเบียน กรุณาลงทะเบียนก่อนการใช้งาน"
             session['national_id'] = national_id
             session['phone'] = phone
             session['sender'] = 'osm'

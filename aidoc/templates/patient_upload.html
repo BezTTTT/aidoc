@@ -92,7 +92,7 @@
             <div class="card-body text-start">
               <p class="card-title">
                 <span  style="color: red; font-weight: bold;">สำคัญ: </span>
-                หากภาพนี้ถูกนำส่งโดย เจ้าหน้าที่ผู้คัดกรอง กรุณากดใช่ เพื่อแจ้งเบอร์โทร ผู้คัดกรอง แต่หากท่านส่งภาพนี้ด้วยตัวท่านเอง กรุณากดยกเลิก
+                หากภาพนี้ถูกนำส่งโดย ผู้ตรวจคัดกรอง กรุณากดใช่ เพื่อแจ้งเบอร์โทร ผู้คัดกรอง แต่หากท่านส่งภาพนี้ด้วยตัวท่านเอง กรุณากดยกเลิก
               </p>
               <div class="row mt-2 justify-content-center">
                 <div class="col-4">
@@ -171,11 +171,11 @@
               var senderInfo = JSON.parse(xhr.responseText)
               senderInfoContainer.style.display = 'block'
               senderInfoContainer.style.color = 'green'
-              senderInfoContainer.innerHTML = "เจ้าหน้าที่ผู้คัดกรอง ชื่อ "+senderInfo.name+" "+senderInfo.surname
+              senderInfoContainer.innerHTML = "ผู้ตรวจคัดกรอง ชื่อ "+senderInfo.name+" "+senderInfo.surname
               senderIDInput.value = senderInfo.sender_id
           }else if (phone.length==10){
             senderInfoContainer.style.color = 'red'
-            senderInfoContainer.innerHTML="ไม่พบข้อมูลเจ้าหน้าที่ผู้คัดกรองในระบบ (กรุณาแจ้งให้เจ้าหน้าที่ดังกล่าว ลงทะเบียนภายหลัง)"
+            senderInfoContainer.innerHTML="ไม่พบข้อมูลผู้ตรวจคัดกรองในระบบ (กรุณาแจ้งให้บุคลากรดังกล่าว ลงทะเบียนภายหลัง)"
             senderIDInput.value = ""
           }
           isFirstOpen = false
