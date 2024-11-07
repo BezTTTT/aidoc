@@ -11,8 +11,11 @@ import datetime
 import re
 
 from aidoc.db import get_db
-from aidoc.auth import login_required, load_logged_in_user
+from aidoc.auth import login_required
 from aidoc.image import rotate_temp_image, allowed_file, create_thumbnail, oral_lesion_prediction, rename_if_duplicated, convertMask2Cordinates
+
+import imageQualityChecker
+qualityChecker = imageQualityChecker.ImageQualityChecker()
 
 bp = Blueprint('general', __name__)
 
@@ -120,9 +123,9 @@ def general_upload():
                     global qualityChecker
                     qualityResults = qualityChecker.predict(pil_img)
                     if qualityResults['Class_ID'] == 0:
-                        flash('System detects that picture failed the quality test. The mouth can be too blury, too smaller, too dark (please use falsh light). Please send only the high quality images')
+                        flash('System detects that the picture failed the quality test. The mouth might be too blury, too smaller, or too dark (please use flash light). Please send only the high quality images')
                     elif qualityResults['Class_ID'] == 1:
-                        flash('System detects that picture does not contain mouth. Please follow the guideline below for taking the oral image.')
+                        flash('System detects that the picture may not contain a mouth. Please follow the guidelines below for taking the oral images')
                     data['imageQuality'] = qualityResults['Class_ID']
 
                     pil_img = create_thumbnail(pil_img)
