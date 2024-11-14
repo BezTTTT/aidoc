@@ -71,10 +71,11 @@ def upload_image(role):
                     # Check image quality
                     global qualityChecker
                     qualityResults = qualityChecker.predict(pil_img)
+                    print(qualityResults['Class_Name'])
                     if qualityResults['Class_ID'] == 0:
-                        flash('ระบบตรวจสอบพบว่า คุณภาพของรูปไม่ได้มาตรฐาน ภาพช่องปากอาจไม่ชัด (เบลอ) หรือมืดเกินไป (เปิดไฟส่องสว่างช่องปากด้วย) กรุณานำส่งรูปที่ได้คุณภาพเท่านั้น')
+                        flash(f'ระบบตรวจสอบพบว่าไฟล์ {imageName} คุณภาพของรูปไม่ได้มาตรฐาน ภาพช่องปากอาจไม่ชัด (เบลอ) หรือมืดเกินไป (เปิดไฟส่องสว่างช่องปากด้วย) กรุณานำส่งรูปที่ได้คุณภาพเท่านั้น')
                     elif qualityResults['Class_ID'] == 1:
-                        flash('ระบบตรวจสอบพบว่า ไม่ปรากฎช่องปากในภาพ กรุณานำส่งภาพถ่ายที่ได้มุมมองมาตรฐานตามตัวอย่างเท่านั้น')
+                        flash(f'ระบบตรวจสอบพบว่าไฟล์ {imageName} ไม่ปรากฎช่องปากในภาพ กรุณานำส่งภาพถ่ายที่ได้มุมมองมาตรฐานตามตัวอย่างเท่านั้น')
                     data['imageQuality'] = qualityResults['Class_ID']
 
                     pil_img = create_thumbnail(pil_img)
@@ -82,7 +83,7 @@ def upload_image(role):
                     # Save the current filenames on session for the upcoming prediction
                     imageNameList.append(imageName)
                 else:
-                    flash('รับข้อมูลเฉพาะที่เป็นรูปภาพเท่านั้น')
+                    flash(f'ไฟล์ {imageName} ไม่ใช่ชนิดรูปภาพที่กำหนด ระบบรับข้อมูลเฉพาะที่เป็นชนิดรูปภาพที่กำหนดเท่านั้น')
             if len(imageList)>0:
                 # Save the current filenames on session for the upcoming prediction
                 session['imageNameList'] = imageNameList
