@@ -1,5 +1,5 @@
 from flask import (
-    Blueprint, flash, redirect, render_template, request, session, url_for, send_from_directory, send_file, current_app, g
+    Blueprint, flash, redirect, render_template, request, session, url_for, send_from_directory, send_file, current_app, g,
 )
 from werkzeug.utils import secure_filename
 
@@ -903,95 +903,8 @@ def record(role): # Submission records
 @login_required
 #@role_validation
 def report():
-    data = {}
-    data['public_submission'] = {}
-    data['public_submission']['patient'] = {}
-    data['public_submission']['osm'] = {}
-    province = request.args.get('province', default=None, type=str)
-    if province is None:
-        db, cursor = get_db()
-
-        senders = ['PATIENT', 'OSM']
-        
-        sql = "SET @sender_mode := %s; "
-        sql += "SELECT COUNT(id) as count FROM submission_record WHERE channel=@sender_mode; "
-        sql += "SELECT COUNT(id) as count FROM submission_record WHERE channel=@sender_mode AND ai_prediction=0; "
-        sql += "SELECT COUNT(id) as count FROM submission_record WHERE channel=@sender_mode AND ai_prediction=1; "
-        sql += "SELECT COUNT(id) as count FROM submission_record WHERE channel=@sender_mode AND ai_prediction=2; "
-        sql += "SELECT COUNT(id) as count FROM submission_record WHERE channel=@sender_mode AND dentist_feedback_code='OPMD'; "
-        sql += "SELECT COUNT(id) as count FROM submission_record WHERE channel=@sender_mode AND dentist_feedback_code='OSCC'; "
-        sql += "SELECT COUNT(id) as count FROM submission_record WHERE channel=@sender_mode AND dentist_feedback_code='NORMAL'; "
-        sql += "SELECT COUNT(id) as count FROM submission_record WHERE channel=@sender_mode AND dentist_feedback_code='BAD_IMG'; "
-        sql += "SELECT COUNT(id) as count FROM submission_record WHERE channel=@sender_mode AND dentist_feedback_code='OTHER'; "
-        sql += "SELECT COUNT(id) as count FROM submission_record WHERE channel=@sender_mode AND dentist_feedback_code IS NULL; "
-        sql += '''SELECT COUNT(id) as count FROM submission_record WHERE channel=@sender_mode AND (
-            (dentist_feedback_code='NORMAL' AND ai_prediction=0) OR
-            (dentist_feedback_code='OPMD' AND ai_prediction=1) OR
-            (dentist_feedback_code='OSCC' AND ai_prediction=2)
-            ); '''
-        
-        # Consider using GROUP BY and CASE
-
-        new_sql = '''
-            SELECT
-                channel,
-                COUNT(id) as total_cnt,
-                COUNT( CASE WHEN ai_prediction=0 THEN 1 END) as normal_ai_prediction_cnt,
-                COUNT( CASE WHEN ai_prediction=1 THEN 1 END) as opmd_ai_prediction_cnt,
-                COUNT( CASE WHEN ai_prediction=2 THEN 1 END) as oscc_ai_prediction_cnt,
-                COUNT( CASE WHEN dentist_feedback_code='OPMD' THEN 1 END) as opmd_dentist_feedback_cnt,
-                COUNT( CASE WHEN dentist_feedback_code='OSCC' THEN 1 END) as oscc_dentist_feedback_cnt,
-                COUNT( CASE WHEN dentist_feedback_code='NORMAL' THEN 1 END) as normal_dentist_feedback_cnt,
-                COUNT( CASE WHEN dentist_feedback_code='BAD_IMG' THEN 1 END) as bad_img_dentist_feedback_cnt,
-                COUNT( CASE WHEN dentist_feedback_code='OTHER' THEN 1 END) as other_dentist_feedback_cnt,
-                COUNT( CASE WHEN dentist_feedback_code IS NULL THEN 1 END) as null_dentist_feedback_cnt,
-                COUNT( CASE WHEN
-                        (dentist_feedback_code='NORMAL' AND ai_prediction=0) OR
-                        (dentist_feedback_code='OPMD' AND ai_prediction=1) OR
-                        (dentist_feedback_code='OSCC' AND ai_prediction=2)
-                    THEN 1 END) as correct_predictions_cnt
-            FROM submission_record
-            GROUP BY channel
-            '''
-
-        new_sql2 = '''
-            SELECT
-                job_position,
-                COUNT( DISTINCT submission_record.id) as total_cnt,
-                COUNT( CASE WHEN ai_prediction=0 THEN 1 END) as normal_ai_prediction_cnt,
-                COUNT( CASE WHEN ai_prediction=1 THEN 1 END) as opmd_ai_prediction_cnt,
-                COUNT( CASE WHEN ai_prediction=2 THEN 1 END) as oscc_ai_prediction_cnt,
-                COUNT( CASE WHEN dentist_feedback_code='AGREE' THEN 1 END) as agree_dentist_feedback_cnt,
-                COUNT( CASE WHEN dentist_feedback_code='DISAGREE' THEN 1 END) as disagree_dentist_feedback_cnt,
-                COUNT( CASE WHEN dentist_feedback_code IS NULL THEN 1 END) as null_dentist_feedback_cnt
-            FROM submission_record
-            LEFT JOIN user AS sender ON submission_record.sender_id = sender.id
-            WHERE channel = 'DENTIST'
-            GROUP BY job_position
-            ORDER BY job_position
-            '''
-
-        new_sql3 = '''
-            SELECT
-                job_position,
-                COUNT( DISTINCT user.id) as total_cnt,
-                COUNT( DISTINCT submission_record.sender_id) as active_user_cnt,
-                COUNT( CASE WHEN submission_record.sender_id IS NULL THEN 1 END) as passive_user_cnt
-            FROM user
-            LEFT JOIN submission_record ON submission_record.sender_id = user.id
-            GROUP BY job_position;
-            '''
-
-        for sender in senders:
-            print(sender)
-            for result in cursor.execute(sql, params=(sender,), multi=True):
-                if result.with_rows:
-                    print(result.statement, '--->', (result.fetchone())['count'])
-    else:
-        print()
     
-    return render_template("submission_report.html",
-                           data=data)
+    return render_template("submission_report.html")
 
 # Helper functions
 # region create_thumbnail

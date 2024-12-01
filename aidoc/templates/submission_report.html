@@ -5,7 +5,58 @@
 {% block content %}
 
 <h2>รายงานสรุปการนำส่งรูปรายจังหวัด</h2>
-<label class="my-4" for="selectProvince">กรุณาเลือกจังหวัดที่ต้องการ</label>
+<select name="selectedProvince" id="selectedProvince">
+  <option value="เชียงใหม่">เชียงใหม่</option>
+  <option value="กรุงเทพมหานคร">กรุงเทพมหานคร</option>
+</select>
+<input type="submit" value="getReport" id="submitButton">
+
+<!-- Element to display API response -->
+<p id="response"></p>
+
+<script>
+  // Function to get the report
+  function getReport(province) {
+    const role = 'admin'; // Example role value
+
+    // Make the API call with query parameter and custom header
+    fetch(`http://127.0.0.1:5000/report/?province=${province}`, {
+      method: 'GET',
+      headers: {
+        'x-role': role, // Custom header with role
+        'Content-Type': 'application/json', // Optional content type
+      },
+    })
+      .then((response) => response.json()) // Assuming the response is JSON
+      .then((data) => {
+        Object.keys(data).forEach((key1) => {
+      if (typeof data[key1] === 'object') {
+        Object.keys(data[key1]).forEach((key2) => {
+          if (typeof data[key1][key2] === 'object') {
+            Object.keys(data[key1][key2]).forEach((key3) => {
+              const element = document.getElementById(`${key1}_${key2}_${key3}`)
+              if (element) element.textContent = data[key1][key2][key3]
+              console.log(`${key1}_${key2}_${key3}`, data[key1][key2][key3])
+              })
+            }else{
+            const element = document.getElementById(`${key1}_${key2}`)
+            if (element) element.innerHTML = data[key1][key2]
+            }
+          })
+        }
+      })
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+      });
+  }
+
+  document.getElementById('submitButton').addEventListener('click', (event) => {
+    event.preventDefault(); // Prevent the default form submission behavior
+    const province = document.getElementById('selectedProvince').value; // Get the selected province value
+    report = getReport(province); // Call the function with the selected value
+  });
+</script>
 
 <div class="card p-3 m-3" id="xxxcard">
   <h5 class="card-title">xxx</h5>
@@ -14,7 +65,7 @@
     <table id="patientHistTable" class="table table-bordered" >
       <thead>
         <tr class="text-dark" style="width: 100%;">
-          <th rowspan="2" class="align-middle" style="width: 10%;">รูปที่นำส่งโดยประชาชนทั่วไป</th>
+          <th rowspan="2" class="align-middle" style="width: 10%;">ผู้นำส่ง</th>
           <th rowspan="2" class="align-middle text-center" style="width: 10%;">จำนวนภาพ</th>
           <th colspan="3" class="text-center" style="width: 20%;">ผลคำวินิจฉัยโดย AI</th>
           <th colspan="7" class="text-center" style="width: 60%;">ความคิดเห็นของทันตแพทย์ที่เข้าร่วมโครงการ</th>
@@ -29,39 +80,101 @@
           <th class="text-center align-middle" style="width: 8.5%;">NORMAL</th>
           <th class="text-center align-middle" style="width: 8.5%;">ภาพไม่ได้มาตรฐาน</th>
           <th class="text-center align-middle" style="width: 8.5%;">อื่น ๆ</th>
-          <th class="text-center align-middle" style="width: 8.5%;">ความแม่นยำ</th>
+          <th class="text-center align-middle" style="width: 8.5%;">ความแม่นยำ (%)</th>
           <th class="text-center align-middle" style="width: 9%;">ภาพที่ยังไม่ได้ตรวจ</th>
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td>xxx</td>
-          <td class="text-center">0 </td>
-          <td class="text-center">0 </td>
-          <td class="text-center">0 </td>
-          <td class="text-center">0 </td>
+        <tr id="patient">
+          <td>ประชาชน</td>
+          <td class="text-center"></td>
+          <td class="text-center" id = "patient_ai_predict_opmd"> </td>
+          <td class="text-center" id = "patient_ai_predict_oscc"> </td>
+          <td class="text-center" id = "patient_ai_predict_normal"></td>
 
-          <td class="text-center">0</td>
-          <td class="text-center">0</td>
-          <td class="text-center">0</td>
-          <td class="text-center">0</td>
-          <td class="text-center">0</td>
-          <td class="text-center">0%</td>
-          <td class="text-center">0</td>
+          <td class="text-center" id = "patient_dentist_diagnose_opmd"></td>
+          <td class="text-center" id = "patient_dentist_diagnose_oscc"></td>
+          <td class="text-center" id = "patient_dentist_diagnose_normal"></td>
+          <td class="text-center" id = "patient_dentist_diagnose_poor_image"></td>
+          <td class="text-center" id = "patient_dentist_diagnose_others"></td>
+          <td class="text-center" id = "patient_accuracy"></td>
+          <td class="text-center" id = "patient_dentist_diagnose_not_diagnosed"></td>
+        </tr>
+        <tr id="osm">
+          <td>อสม.</td>
+          <td class="text-center"></td>
+          <td class="text-center" id = "osm_ai_predict_opmd"> </td>
+          <td class="text-center" id = "osm_ai_predict_oscc"> </td>
+          <td class="text-center" id = "osm_ai_predict_normal"></td>
+
+          <td class="text-center" id = "osm_dentist_diagnose_opmd"></td>
+          <td class="text-center" id = "osm_dentist_diagnose_oscc"></td>
+          <td class="text-center" id = "osm_dentist_diagnose_normal"></td>
+          <td class="text-center" id = "osm_dentist_diagnose_poor_image"></td>
+          <td class="text-center" id = "osm_dentist_diagnose_others"></td>
+          <td class="text-center" id = "osm_accuracy"></td>
+          <td class="text-center" id = "osm_dentist_diagnose_not_diagnosed"></td>
+        </tr>
+        <tr id="dentist">
+          <td>ทันตแพทย์</td>
+          <td class="text-center"></td>
+          <td class="text-center" id = "dentist_ai_predict_opmd"> </td>
+          <td class="text-center" id = "dentist_ai_predict_oscc"> </td>
+          <td class="text-center" id = "dentist_ai_predict_normal"></td>
+
+          <td class="text-center" id = "dentist_dentist_diagnose_opmd"></td>
+          <td class="text-center" id = "dentist_dentist_diagnose_oscc"></td>
+          <td class="text-center" id = "dentist_dentist_diagnose_normal"></td>
+          <td class="text-center" id = "dentist_dentist_diagnose_poor_image"></td>
+          <td class="text-center" id = "dentist_dentist_diagnose_others"></td>
+          <td class="text-center" id = "dentist_accuracy"></td>
+          <td class="text-center" id = "dentist_dentist_diagnose_not_diagnosed"></td>
         </tr>
 
+        <tr id="total">
+          <td>รวม</td>
+          <td class="text-center"></td>
+          <td class="text-center" id = total_ai_predict_opmd></td>
+          <td class="text-center" id = total_ai_predict_oscc></td>
+          <td class="text-center" id = total_ai_predict_normal></td>
+          <td class="text-center" id = total_dentist_diagnose_opmd></td>
+          <td class="text-center" id = total_dentist_diagnose_oscc></td>
+          <td class="text-center" id = total_dentist_diagnose_normal></td>
+          <td class="text-center" id = total_dentist_diagnose_poor_image></td>
+          <td class="text-center" id = total_dentist_diagnose_others></td>
+          <td class="text-center" id = total_accuracy></td>
+          <td class="text-center" id = total_dentist_diagnose_not_diagnosed></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <br>
+  <div class="table-responsive">
+    <table id="userTable" class="table table-bordered" >
+      <thead >
+        <tr class="text-dark" style="width: 100%;">
+          <th rowspan="2" style="width: 40%;" class="align-middle">จำนวนบัญชีผู้ใช้งานทั้งหมด</th>
+          <th rowspan="2" style="width: 20%;" class="align-middle text-center">จำนวนบัญชี</th>
+          <th colspan="2" style="width: 40%;" class="text-center">สถานะการใช้งาน</th>
+        </tr>
+        <tr >
+          <th style="width: 20%;" class="text-center">บัญชีผู้ใช้ที่เคยส่งรูป</th>
+          <th style="width: 20%;" class="text-center">บัญชีผู้ใช้ที่ยังไม่เคยส่งรูป</th>
+
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>xxx </td>
+          <td class="text-center">0 </td>
+          
+          <td class="text-center">0</td>
+          <td class="text-center">0</td>
+        </tr>
         <tr>
           <td>รวม</td>
           <td class="text-center">0</td>
           <td class="text-center">0</td>
-          <td class="text-center">0</td>
-          <td class="text-center">0</td>
-          <td class="text-center">0</td>
-          <td class="text-center">0</td>
-          <td class="text-center">0</td>
-          <td class="text-center">0</td>
-          <td class="text-center">0</td>
-          <td class="text-center">0%</td>
           <td class="text-center">0</td>
         </tr>
       </tbody>
