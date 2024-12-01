@@ -29,23 +29,37 @@
     })
       .then((response) => response.json()) // Assuming the response is JSON
       .then((data) => {
-        Object.keys(data).forEach((key1) => {
-      if (typeof data[key1] === 'object') {
-        Object.keys(data[key1]).forEach((key2) => {
-          if (typeof data[key1][key2] === 'object') {
-            Object.keys(data[key1][key2]).forEach((key3) => {
-              const element = document.getElementById(`${key1}_${key2}_${key3}`)
-              if (element) element.textContent = data[key1][key2][key3]
-              console.log(`${key1}_${key2}_${key3}`, data[key1][key2][key3])
-              })
-            }else{
-            const element = document.getElementById(`${key1}_${key2}`)
-            if (element) element.innerHTML = data[key1][key2]
-            }
-          })
+    Object.keys(data).forEach((key1) => {
+        if (typeof data[key1] === 'object') {
+            Object.keys(data[key1]).forEach((key2) => {
+                if (key2 === 'total_pic') {
+                    // Special case for total_pic
+                    const element = document.getElementById(`${key1}`);
+                    if (element) element.textContent = data[key1][key2];
+                    console.log(`${key1}`, data[key1][key2]);
+                } else if (typeof data[key1][key2] === 'object') {
+                    Object.keys(data[key1][key2]).forEach((key3) => {
+                        if (key3 === 'ai_predict' || key3 === 'dentist_diagnose') {
+                            Object.keys(data[key1][key2][key3]).forEach((key4) => {
+                                const element = document.getElementById(`${key1}_${key2}_${key3}_${key4}`);
+                                if (element) element.textContent = data[key1][key2][key3][key4];
+                                console.log(`${key1}_${key2}_${key3}_${key4}`, data[key1][key2][key3][key4]);
+                            });
+                        } else {
+                            const element = document.getElementById(`${key1}_${key2}_${key3}`);
+                            if (element) element.textContent = data[key1][key2][key3];
+                            console.log(`${key1}_${key2}_${key3}`, data[key1][key2][key3]);
+                        }
+                    });
+                } else {
+                    const element = document.getElementById(`${key1}_${key2}`);
+                    if (element) element.textContent = data[key1][key2];
+                    console.log(`${key1}_${key2}`, data[key1][key2]);
+                }
+            });
         }
-      })
-      })
+    })
+  })
       .catch((error) => {
         console.error('Error:', error);
       });
@@ -59,7 +73,7 @@
 </script>
 
 <div class="card p-3 m-3" id="xxxcard">
-  <h5 class="card-title">xxx</h5>
+  <h5 class="card-title">ตารางสรุปการนำส่งของประชาชนทั่วไป</h5>
   <br>
   <div class="table-responsive">
     <table id="patientHistTable" class="table table-bordered" >
@@ -87,98 +101,133 @@
       <tbody>
         <tr id="patient">
           <td>ประชาชน</td>
-          <td class="text-center"></td>
-          <td class="text-center" id = "patient_ai_predict_opmd"> </td>
-          <td class="text-center" id = "patient_ai_predict_oscc"> </td>
-          <td class="text-center" id = "patient_ai_predict_normal"></td>
+          <td class="text-center" id = "patient_and_osm_patient_total_pic"></td>
+          <td class="text-center" id = "patient_and_osm_patient_ai_predict_opmd"> </td>
+          <td class="text-center" id = "patient_and_osm_patient_ai_predict_oscc"> </td>
+          <td class="text-center" id = "patient_and_osm_patient_ai_predict_normal"></td>
 
-          <td class="text-center" id = "patient_dentist_diagnose_opmd"></td>
-          <td class="text-center" id = "patient_dentist_diagnose_oscc"></td>
-          <td class="text-center" id = "patient_dentist_diagnose_normal"></td>
-          <td class="text-center" id = "patient_dentist_diagnose_poor_image"></td>
-          <td class="text-center" id = "patient_dentist_diagnose_others"></td>
-          <td class="text-center" id = "patient_accuracy"></td>
-          <td class="text-center" id = "patient_dentist_diagnose_not_diagnosed"></td>
+          <td class="text-center" id = "patient_and_osm_patient_dentist_diagnose_opmd"></td>
+          <td class="text-center" id = "patient_and_osm_patient_dentist_diagnose_oscc"></td>
+          <td class="text-center" id = "patient_and_osm_patient_dentist_diagnose_normal"></td>
+          <td class="text-center" id = "patient_and_osm_patient_dentist_diagnose_poor_image"></td>
+          <td class="text-center" id = "patient_and_osm_patient_dentist_diagnose_others"></td>
+          <td class="text-center" id = "patient_and_osm_patient_accuracy"></td>
+          <td class="text-center" id = "patient_and_osm_patient_dentist_diagnose_not_diagnosed"></td>
         </tr>
         <tr id="osm">
           <td>อสม.</td>
-          <td class="text-center"></td>
-          <td class="text-center" id = "osm_ai_predict_opmd"> </td>
-          <td class="text-center" id = "osm_ai_predict_oscc"> </td>
-          <td class="text-center" id = "osm_ai_predict_normal"></td>
+          <td class="text-center" id ="patient_and_osm_osm_total_pic"></td>
+          <td class="text-center" id = "patient_and_osm_osm_ai_predict_opmd"> </td>
+          <td class="text-center" id = "patient_and_osm_osm_ai_predict_oscc"> </td>
+          <td class="text-center" id = "patient_and_osm_osm_ai_predict_normal"></td>
 
-          <td class="text-center" id = "osm_dentist_diagnose_opmd"></td>
-          <td class="text-center" id = "osm_dentist_diagnose_oscc"></td>
-          <td class="text-center" id = "osm_dentist_diagnose_normal"></td>
-          <td class="text-center" id = "osm_dentist_diagnose_poor_image"></td>
-          <td class="text-center" id = "osm_dentist_diagnose_others"></td>
-          <td class="text-center" id = "osm_accuracy"></td>
-          <td class="text-center" id = "osm_dentist_diagnose_not_diagnosed"></td>
+          <td class="text-center" id = "patient_and_osm_osm_dentist_diagnose_opmd"></td>
+          <td class="text-center" id = "patient_and_osm_osm_dentist_diagnose_oscc"></td>
+          <td class="text-center" id = "patient_and_osm_osm_dentist_diagnose_normal"></td>
+          <td class="text-center" id = "patient_and_osm_osm_dentist_diagnose_poor_image"></td>
+          <td class="text-center" id = "patient_and_osm_osm_dentist_diagnose_others"></td>
+          <td class="text-center" id = "patient_and_osm_osm_accuracy"></td>
+          <td class="text-center" id = "patient_and_osm_osm_dentist_diagnose_not_diagnosed"></td>
         </tr>
-        <tr id="dentist">
-          <td>ทันตแพทย์</td>
-          <td class="text-center"></td>
-          <td class="text-center" id = "dentist_ai_predict_opmd"> </td>
-          <td class="text-center" id = "dentist_ai_predict_oscc"> </td>
-          <td class="text-center" id = "dentist_ai_predict_normal"></td>
-
-          <td class="text-center" id = "dentist_dentist_diagnose_opmd"></td>
-          <td class="text-center" id = "dentist_dentist_diagnose_oscc"></td>
-          <td class="text-center" id = "dentist_dentist_diagnose_normal"></td>
-          <td class="text-center" id = "dentist_dentist_diagnose_poor_image"></td>
-          <td class="text-center" id = "dentist_dentist_diagnose_others"></td>
-          <td class="text-center" id = "dentist_accuracy"></td>
-          <td class="text-center" id = "dentist_dentist_diagnose_not_diagnosed"></td>
-        </tr>
-
         <tr id="total">
           <td>รวม</td>
-          <td class="text-center"></td>
-          <td class="text-center" id = total_ai_predict_opmd></td>
-          <td class="text-center" id = total_ai_predict_oscc></td>
-          <td class="text-center" id = total_ai_predict_normal></td>
-          <td class="text-center" id = total_dentist_diagnose_opmd></td>
-          <td class="text-center" id = total_dentist_diagnose_oscc></td>
-          <td class="text-center" id = total_dentist_diagnose_normal></td>
-          <td class="text-center" id = total_dentist_diagnose_poor_image></td>
-          <td class="text-center" id = total_dentist_diagnose_others></td>
-          <td class="text-center" id = total_accuracy></td>
-          <td class="text-center" id = total_dentist_diagnose_not_diagnosed></td>
+          <td class="text-center" id = "patient_and_osm_total_total_pic"></td>
+          <td class="text-center" id = "patient_and_osm_total_ai_predict_opmd"></td>
+          <td class="text-center" id = "patient_and_osm_total_ai_predict_oscc"></td>
+          <td class="text-center" id = "patient_and_osm_total_ai_predict_normal"></td>
+          <td class="text-center" id = "patient_and_osm_total_dentist_diagnose_opmd"></td>
+          <td class="text-center" id = "patient_and_osm_total_dentist_diagnose_oscc"></td>
+          <td class="text-center" id = "patient_and_osm_total_dentist_diagnose_normal"></td>
+          <td class="text-center" id = "patient_and_osm_total_dentist_diagnose_poor_image"></td>
+          <td class="text-center" id = "patient_and_osm_total_dentist_diagnose_others"></td>
+          <td class="text-center" id = "patient_and_osm_total_accuracy"></td>
+          <td class="text-center" id = "patient_and_osm_total_dentist_diagnose_not_diagnosed"></td>
         </tr>
       </tbody>
     </table>
   </div>
   <br>
-  <div class="table-responsive">
-    <table id="userTable" class="table table-bordered" >
-      <thead >
-        <tr class="text-dark" style="width: 100%;">
-          <th rowspan="2" style="width: 40%;" class="align-middle">จำนวนบัญชีผู้ใช้งานทั้งหมด</th>
-          <th rowspan="2" style="width: 20%;" class="align-middle text-center">จำนวนบัญชี</th>
-          <th colspan="2" style="width: 40%;" class="text-center">สถานะการใช้งาน</th>
-        </tr>
-        <tr >
-          <th style="width: 20%;" class="text-center">บัญชีผู้ใช้ที่เคยส่งรูป</th>
-          <th style="width: 20%;" class="text-center">บัญชีผู้ใช้ที่ยังไม่เคยส่งรูป</th>
+</div>
+  <div class="card p-3 m-3" id="card">
+    <h5 class="card-title">ตารางสรุปการนำส่งของบุคลากรทางการแพทย์</h5>
+    <br>
+    <div class="table-responsive">
+      <table id="patientHistTable" class="table table-bordered" >
+        <thead>
+          <tr class="text-dark" style="width: 100%;">
+            <th rowspan="2" class="align-middle" style="width: 10%;">ผู้นำส่ง</th>
+            <th rowspan="2" class="align-middle text-center" style="width: 10%;">จำนวนภาพ</th>
+            <th colspan="3" class="text-center" style="width: 30%;">ผลคำวินิจฉัยโดย AI</th>
+            <th colspan="7" class="text-center" style="width: 50%;">ความคิดเห็นต่อผลการวินิจฉัยของ AI</th>
+          </tr>
+          <tr>
+            <th class="text-center align-middle">OPMD</th>
+            <th class="text-center align-middle">OSCC</th>
+            <th class="text-center align-middle">NORMAL</th>
+  
+            <th class="text-center align-middle" style="width: 30%;">Agree</th>
+            <th class="text-center align-middle" style="width: 30%;">Dissagree</th>
 
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>xxx </td>
-          <td class="text-center">0 </td>
-          
-          <td class="text-center">0</td>
-          <td class="text-center">0</td>
-        </tr>
-        <tr>
-          <td>รวม</td>
-          <td class="text-center">0</td>
-          <td class="text-center">0</td>
-          <td class="text-center">0</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
+          </tr>
+        </thead>
+        <tbody>
+          <tr id="ComputerTechnicalOfficer">
+            <td>Computer Technical Officer</td>
+            <td class="text-center" id = "specialist_Computer Technical Officer_total_pic"></td>
+            <td class="text-center" id = "specialist_Computer Technical Officer_ai_predict_opmd"> </td>
+            <td class="text-center" id = "specialist_Computer Technical Officer_ai_predict_oscc"> </td>
+            <td class="text-center" id = "specialist_Computer Technical Officer_ai_predict_normal"></td>
+  
+            <td class="text-center" id = "specialist_Computer Technical Officer_dentist_diagnose_agree"></td>
+            <td class="text-center" id = "specialist_Computer Technical Officer_dentist_diagnose_disagree"></td>
+          </tr>
+          <tr id="OralPathologist">
+            <td>Oral Pathologist</td>
+            <td class="text-center" id = "specialist_Oral Pathologist_total_pic"></td>
+            <td class="text-center" id = "specialist_Oral Pathologist_ai_predict_opmd"> </td>
+            <td class="text-center" id = "specialist_Oral Pathologist_ai_predict_oscc"> </td>
+            <td class="text-center" id = "specialist_Oral Pathologist_ai_predict_normal"></td>
+  
+            <td class="text-center" id = "specialist_Oral Pathologist_dentist_diagnose_agree"></td>
+            <td class="text-center" id = "specialist_Oral Pathologist_dentist_diagnose_disagree"></td>
+          </tr>
+          <tr id="specialisttotal">
+            <td>รวม</td>
+            <td class="text-center" id = "specialist_total_total_pic"></td>
+            <td class="text-center" id = "specialist_total_ai_predict_opmd"> </td>
+            <td class="text-center" id = "specialist_total_ai_predict_oscc"> </td>
+            <td class="text-center" id = "specialist_total_ai_predict_normal"></td>
+  
+            <td class="text-center" id = "specialist_total_dentist_diagnose_agree"></td>
+            <td class="text-center" id = "specialist_total_dentist_diagnose_disagree"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <br>
+    <div class="table-responsive">
+      <table id="summaryTable" class="table table-bordered" >
+        <thead>
+          <tr class="text-dark" style="width: 100%;">
+            <th rowspan="2" style="width: 40%;" class="align-middle">สรุปจำนวนรูปทั้งหมด ที่นำส่งโดยประชาชนทั่วไปและทันตบุคลากร</th>
+            <th rowspan="2" style="width: 20%;" class="align-middle text-center">จำนวนภาพ</th>
+            <th colspan="3" style="width: 40%;" class="text-center">ผลคำวินิจฉัยโดย AI</th>
+          </tr>
+          <tr>
+            <th class="text-center">OPMD</th>
+            <th class="text-center">OSCC</th>
+            <th class="text-center">NORMAL</th>
+          </tr>
+        </thead>
+        <tbody> 
+          <tr>
+            <td>รวม</td>
+            <td class="text-center" id = "total_pic"></td>
+            <td class="text-center" id = "total_pic_ai_predict_opmd"></td>
+            <td class="text-center" id = "total_pic_ai_predict_oscc"></td>
+            <td class="text-center" id = "total_pic_ai_predict_normal"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 {% endblock %}
