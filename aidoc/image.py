@@ -899,12 +899,29 @@ def record(role): # Submission records
                 filters=[filterStatus,filterPriority,filterProvince,filterSpecialist])
 
 # region report [INCOMPLETE]
-@bp.route('/report', methods=('GET', 'POST'))
+@bp.route('/report')
 @login_required
 #@role_validation
 def report():
-    
     return render_template("submission_report.html")
+
+@bp.route('/admin_page')
+@login_required
+#@role_validation
+def userManagement():
+    return render_template("user_management.html")
+
+@bp.route('/log_page')
+@login_required
+#@role_validation
+def log():
+    return render_template("log.html")
+
+@bp.route('/image_manage')
+@login_required
+#@role_validation
+def pictureManagement():
+    return render_template("picture_management.html")
 
 # Helper functions
 # region create_thumbnail

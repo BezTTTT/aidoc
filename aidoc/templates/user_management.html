@@ -1,0 +1,103 @@
+{% extends "./base.html" %}
+
+{% block title %} RiskOCA | Submission Records {% endblock %}
+
+{% block content %}
+<div class="my-5 d-flex justify-content-between">
+      <p class="fs-2">จัดการผู้ใช้งาน</p>
+    </div>
+
+    <table id="user_manage" class="dataTable">
+      <thead>
+        <tr class="text-dark">
+          <th>ชื่อ - นามสกุล</th>
+          <th>อีเมล</th>
+          <th>จังหวัด</th>
+          <th>Action ล่าสุด</th>
+          <th>จำนวนอัพโหลด (รูป)</th>
+          <th>แก้ไข</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Populate the table rows using Jinja2 templating -->
+        <tr>
+          <td>
+            <form action="/user_upload" method="post">
+              <input name="id"  />
+              <button style="border: none; background: none" type="submit">
+                
+              </button>
+            </form>
+          </td>
+          <td>
+            <form action="/user_upload" method="post">
+              <input name="id" />
+              <button style="border: none; background: none" type="submit">
+
+              </button>
+            </form>
+          </td>
+          <td>
+            <form action="/user_upload" method="post">
+              <input name="id" />
+              <button style="border: none; background: none" type="submit">
+
+              </button>
+            </form>
+          </td>
+          <td>
+            <form action="/user_upload" method="post">
+              <input name="id" />
+              <button style="border: none; background: none" type="submit">
+
+              </button>
+            </form>
+          </td>
+          <td>
+            <form action="/user_upload" method="post">
+              <input name="id" />
+              <button style="border: none; background: none" type="submit">
+                
+              </button>
+            </form>
+          </td>
+          <td>
+            <div class="d-flex justify-content-center">
+              <form action="/edit" method="post" class="mx-1">
+                <div class="">
+                  <input name="id" type="hidden" />
+                  <input
+                    class="btn btn-primary"
+                    style="width: 100%"
+                    type="submit"
+                    value="แก้ไข"
+                  />
+                </div>
+              </form>
+              <form
+                action="/admin/delete"
+                method="post"
+                onsubmit="return confirmDelete()"
+              >
+                <div class="">
+                  <input name="id" type="hidden"/>
+                  <input
+                    class="btn btn-danger"
+                    style="width: 100%"
+                    type="submit"
+                    value="ลบ"
+                  />
+                </div>
+              </form>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <!-- Include DataTables JS here -->
+    <script>
+      function confirmDelete() {
+        return confirm("คุณต้องการลบผู้ใช้นี้ใช่หรือไม่ ?");
+      }
+    </script>
+{% endblock %}

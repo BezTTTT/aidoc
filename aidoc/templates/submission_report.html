@@ -42,37 +42,9 @@
     })
       .then((response) => response.json()) // Assuming the response is JSON
       .then((data) => {
+        populateFirstTable(data)
         populateSpecialistTable(data)
-    Object.keys(data).forEach((key1) => {
-        if (typeof data[key1] === 'object') {
-            Object.keys(data[key1]).forEach((key2) => {
-                if (key2 === 'total_pic') {
-                    // Special case for total_pic
-                    const element = document.getElementById(`${key1}`);
-                    if (element) element.textContent = data[key1][key2];
-                    console.log(`${key1}`, data[key1][key2]);
-                } else if (typeof data[key1][key2] === 'object') {
-                    Object.keys(data[key1][key2]).forEach((key3) => {
-                        if (key3 === 'ai_predict' || key3 === 'dentist_diagnose') {
-                            Object.keys(data[key1][key2][key3]).forEach((key4) => {
-                                const element = document.getElementById(`${key1}_${key2}_${key3}_${key4}`);
-                                if (element) element.textContent = data[key1][key2][key3][key4];
-                                console.log(`${key1}_${key2}_${key3}_${key4}`, data[key1][key2][key3][key4]);
-                            });
-                        } else {
-                            const element = document.getElementById(`${key1}_${key2}_${key3}`);
-                            if (element) element.textContent = data[key1][key2][key3];
-                            console.log(`${key1}_${key2}_${key3}`, data[key1][key2][key3]);
-                        }
-                    });
-                } else {
-                    const element = document.getElementById(`${key1}_${key2}`);
-                    if (element) element.textContent = data[key1][key2];
-                    console.log(`${key1}_${key2}`, data[key1][key2]);
-                }
-            });
-        }
-    })
+        populatePictureCountTable(data)
   })
       .catch((error) => {
         console.error('Error:', error);
@@ -84,6 +56,39 @@
     report = getReport(province); // Call the function with the selected value
   });
 
+  function populateFirstTable(data){
+    const firstTable = document.getElementById('FirstTable');
+  firstTable.innerHTML = ''; // Clear existing rows if any
+
+  if (data.patient_and_osm) {
+    // Extract osm, patient, and total data
+    const { osm, patient, total } = data.patient_and_osm;
+
+    const createRow = (label, entry) => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${label}</td>
+        <td class="text-center">${entry.total_pic}</td>
+        <td class="text-center">${entry.ai_predict.opmd}</td>
+        <td class="text-center">${entry.ai_predict.oscc}</td>
+        <td class="text-center">${entry.ai_predict.normal}</td>
+        <td class="text-center">${entry.dentist_diagnose.opmd}</td>
+        <td class="text-center">${entry.dentist_diagnose.oscc}</td>
+        <td class="text-center">${entry.dentist_diagnose.normal}</td>
+        <td class="text-center">${entry.dentist_diagnose.poor_image}</td>
+        <td class="text-center">${entry.dentist_diagnose.others}</td>
+        <td class="text-center">${entry.accuracy}</td>
+        <td class="text-center">${entry.dentist_diagnose.not_diagnosed}</td>
+      `;
+      firstTable.appendChild(row);
+    };
+
+    // Add rows for osm, patient, and total
+    createRow('ประชาชน', osm);
+    createRow('อสม.', patient);
+    createRow('รวมทั้งหมด', total);
+    }
+  }
   function populateSpecialistTable(data) {
   const specialistTable = document.getElementById('specialistTable');
   specialistTable.innerHTML = ''; // Clear existing rows if any
@@ -95,13 +100,13 @@
 
       // Populate cells for the current specialist
       row.innerHTML = `
-        <td id="specialist_${index}_job">${isLastSpecialist ? 'รวม' : specialist.job || ''}</td>
-        <td class="text-center" id="specialist_${index}_total_pic">${specialist.total_pic || ''}</td>
-        <td class="text-center" id="specialist_${index}_ai_predict_opmd">${specialist.ai_predict.opmd || ''}</td>
-        <td class="text-center" id="specialist_${index}_ai_predict_oscc">${specialist.ai_predict.oscc || ''}</td>
-        <td class="text-center" id="specialist_${index}_ai_predict_normal">${specialist.ai_predict.normal || ''}</td>
-        <td class="text-center" id="specialist_${index}_dentist_diagnose_agree">${specialist.dentist_diagnose.agree || ''}</td>
-        <td class="text-center" id="specialist_${index}_dentist_diagnose_disagree">${specialist.dentist_diagnose.disagree || ''}</td>
+        <td>${isLastSpecialist ? 'รวมทั้งหมด' : specialist.job }</td>
+        <td class="text-center">${specialist.total_pic }</td>
+        <td class="text-center">${specialist.ai_predict.opmd }</td>
+        <td class="text-center">${specialist.ai_predict.oscc }</td>
+        <td class="text-center">${specialist.ai_predict.normal }</td>
+        <td class="text-center" >${specialist.dentist_diagnose.agree }</td>
+        <td class="text-center">${specialist.dentist_diagnose.disagree}</td>
       `;
 
       specialistTable.appendChild(row);
@@ -109,7 +114,22 @@
   }
 }
 
+ function populatePictureCountTable(data){
+  const pictureCountTable = document.getElementById('pictureCountTable')
+  pictureCountTable.innerHTML = ''
+  if(data.total_pic){
+    const row = document.createElement('tr')
+    row.innerHTML = `
+    <td>รวม</td>
+    <td class="text-center">${data.total_pic.total_pic}</td>
+    <td class="text-center">${data.total_pic.ai_predict.opmd }</td>
+    <td class="text-center">${data.total_pic.ai_predict.oscc }</td>
+    <td class="text-center">${data.total_pic.ai_predict.normal }</td>
+    `
 
+    pictureCountTable.appendChild(row);
+  }
+ }
 </script>
 
 <div class="card p-3 m-3" id="xxxcard">
@@ -138,51 +158,7 @@
           <th class="text-center align-middle" style="width: 9%;">ภาพที่ยังไม่ได้ตรวจ</th>
         </tr>
       </thead>
-      <tbody>
-        <tr id="patient">
-          <td>ประชาชน</td>
-          <td class="text-center" id = "patient_and_osm_patient_total_pic"></td>
-          <td class="text-center" id = "patient_and_osm_patient_ai_predict_opmd"> </td>
-          <td class="text-center" id = "patient_and_osm_patient_ai_predict_oscc"> </td>
-          <td class="text-center" id = "patient_and_osm_patient_ai_predict_normal"></td>
-
-          <td class="text-center" id = "patient_and_osm_patient_dentist_diagnose_opmd"></td>
-          <td class="text-center" id = "patient_and_osm_patient_dentist_diagnose_oscc"></td>
-          <td class="text-center" id = "patient_and_osm_patient_dentist_diagnose_normal"></td>
-          <td class="text-center" id = "patient_and_osm_patient_dentist_diagnose_poor_image"></td>
-          <td class="text-center" id = "patient_and_osm_patient_dentist_diagnose_others"></td>
-          <td class="text-center" id = "patient_and_osm_patient_accuracy"></td>
-          <td class="text-center" id = "patient_and_osm_patient_dentist_diagnose_not_diagnosed"></td>
-        </tr>
-        <tr id="osm">
-          <td>อสม.</td>
-          <td class="text-center" id ="patient_and_osm_osm_total_pic"></td>
-          <td class="text-center" id = "patient_and_osm_osm_ai_predict_opmd"> </td>
-          <td class="text-center" id = "patient_and_osm_osm_ai_predict_oscc"> </td>
-          <td class="text-center" id = "patient_and_osm_osm_ai_predict_normal"></td>
-
-          <td class="text-center" id = "patient_and_osm_osm_dentist_diagnose_opmd"></td>
-          <td class="text-center" id = "patient_and_osm_osm_dentist_diagnose_oscc"></td>
-          <td class="text-center" id = "patient_and_osm_osm_dentist_diagnose_normal"></td>
-          <td class="text-center" id = "patient_and_osm_osm_dentist_diagnose_poor_image"></td>
-          <td class="text-center" id = "patient_and_osm_osm_dentist_diagnose_others"></td>
-          <td class="text-center" id = "patient_and_osm_osm_accuracy"></td>
-          <td class="text-center" id = "patient_and_osm_osm_dentist_diagnose_not_diagnosed"></td>
-        </tr>
-        <tr id="total">
-          <td>รวม</td>
-          <td class="text-center" id = "patient_and_osm_total_total_pic"></td>
-          <td class="text-center" id = "patient_and_osm_total_ai_predict_opmd"></td>
-          <td class="text-center" id = "patient_and_osm_total_ai_predict_oscc"></td>
-          <td class="text-center" id = "patient_and_osm_total_ai_predict_normal"></td>
-          <td class="text-center" id = "patient_and_osm_total_dentist_diagnose_opmd"></td>
-          <td class="text-center" id = "patient_and_osm_total_dentist_diagnose_oscc"></td>
-          <td class="text-center" id = "patient_and_osm_total_dentist_diagnose_normal"></td>
-          <td class="text-center" id = "patient_and_osm_total_dentist_diagnose_poor_image"></td>
-          <td class="text-center" id = "patient_and_osm_total_dentist_diagnose_others"></td>
-          <td class="text-center" id = "patient_and_osm_total_accuracy"></td>
-          <td class="text-center" id = "patient_and_osm_total_dentist_diagnose_not_diagnosed"></td>
-        </tr>
+      <tbody id = FirstTable> 
       </tbody>
     </table>
   </div>
@@ -204,40 +180,33 @@
             <th class="text-center align-middle">OPMD</th>
             <th class="text-center align-middle">OSCC</th>
             <th class="text-center align-middle">NORMAL</th>
-  
             <th class="text-center align-middle" style="width: 30%;">Agree</th>
             <th class="text-center align-middle" style="width: 30%;">Dissagree</th>
-
           </tr>
         </thead>
         <tbody id="specialistTable">
         </tbody>
       </table>
     </div>
-    <br>
-    <div class="table-responsive">
-      <table id="summaryTable" class="table table-bordered" >
-        <thead>
-          <tr class="text-dark" style="width: 100%;">
-            <th rowspan="2" style="width: 40%;" class="align-middle">สรุปจำนวนรูปทั้งหมด ที่นำส่งโดยประชาชนทั่วไปและทันตบุคลากร</th>
-            <th rowspan="2" style="width: 20%;" class="align-middle text-center">จำนวนภาพ</th>
-            <th colspan="3" style="width: 40%;" class="text-center">ผลคำวินิจฉัยโดย AI</th>
-          </tr>
-          <tr>
-            <th class="text-center">OPMD</th>
-            <th class="text-center">OSCC</th>
-            <th class="text-center">NORMAL</th>
-          </tr>
-        </thead>
-        <tbody> 
-          <tr>
-            <td>รวม</td>
-            <td class="text-center" id = "total_pic"></td>
-            <td class="text-center" id = "total_pic_ai_predict_opmd"></td>
-            <td class="text-center" id = "total_pic_ai_predict_oscc"></td>
-            <td class="text-center" id = "total_pic_ai_predict_normal"></td>
-          </tr>
-        </tbody>
-      </table>
+  </div>
+    <div class="card p-3 m-3" id="card">
+      <div class="table-responsive">
+        <table id="summaryTable" class="table table-bordered" >
+          <thead>
+            <tr class="text-dark" style="width: 100%;">
+              <th rowspan="2" style="width: 40%;" class="align-middle">สรุปจำนวนรูปทั้งหมด ที่นำส่งโดยประชาชนทั่วไปและทันตบุคลากร</th>
+              <th rowspan="2" style="width: 20%;" class="align-middle text-center">จำนวนภาพ</th>
+              <th colspan="3" style="width: 40%;" class="text-center">ผลคำวินิจฉัยโดย AI</th>
+            </tr>
+            <tr>
+              <th class="text-center">OPMD</th>
+              <th class="text-center">OSCC</th>
+              <th class="text-center">NORMAL</th>
+            </tr>
+          </thead>
+          <tbody id="pictureCountTable"> 
+          </tbody>
+        </table>
+      </div>
     </div>
 {% endblock %}
