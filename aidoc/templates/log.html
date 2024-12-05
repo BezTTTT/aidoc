@@ -3,4 +3,56 @@
 {% block title %} RiskOCA | Submission Records {% endblock %}
 
 {% block content %}
+<div class="my-5 d-flex flex-wrap justify-content-around">
+    <div class="card text-primary mb-3" style="width: 18rem">
+      <div class="card-body">
+        <h5 class="card-title" id="amount">1</h5>
+        <p class="card-text" id="text">จำนวนผู้ใช้ทั้งหมด</p>
+      </div>
+    </div>
+    <div class="card text-secondary mb-3" style="width: 18rem">
+      <div class="card-body">
+        <h5 class="card-title" id="amount">1</h5>
+        <p class="card-text" id="text">จำนวนผู้ใช้วันนี้</p>
+      </div>
+    </div>
+    <div class="card text-danger mb-3" style="width: 18rem">
+      <div class="card-body">
+        <h5 class="card-title" id="amount">1</h5>
+        <p class="card-text" id="text">จำนวนผู้ใช้ใหม่</p>
+      </div>
+    </div>
+    <div class="card text-success mb-3" style="width: 18rem">
+      <div class="card-body">
+        <h5 class="card-title" id="amount">1</h5>
+        <p class="card-text" id="text">กำลังใช้งาน</p>
+      </div>
+    </div>
+  </div>
+  <div class="table-responsive">
+    <table id="example" class="table dataTable">
+      <thead>
+        <tr class="text-dark">
+          <th>ชื่อ - นามสกุล</th>
+          <th>Action</th>
+          <th>Action Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>flName Role</td>
+          <td class="text-danger">Action</td>
+          <td>actionTime</td>
+
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    $(document).ready(function () {
+      $("#example").DataTable({
+        order: [[2, "desc"]],
+      });
+    });
+  </script>
 {% endblock %}
