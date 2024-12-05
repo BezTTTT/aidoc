@@ -3,3 +3,6 @@ aidoc/__pycache__/*
 oralLesionNet/*
 imageData/*
 imageQualityChecker/imageQualityChecker.tflite
+imageQualityChecker/old/*
+imageQualityChecker/__pycache__/*
+imageQualityChecker/tutorial.ipynb

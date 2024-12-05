@@ -1097,7 +1097,7 @@ def oral_lesion_prediction(imgPath):
     outlined_img = full_img.copy()
     outlined_img.paste(yellow_edge, full_dilation_img)
     
-    scores = [backgroundScore.numpy(), opmdScore.numpy(), osccScore.numpy()]
+    scores = [backgroundScore.numpy().item(), opmdScore.numpy().item(), osccScore.numpy().item()]
     return outlined_img, predictClass, scores, mask
 
 # region upload_submission_module
