@@ -1,22 +1,23 @@
 {% extends "./base.html" %}
 
-{% block title %} RiskOCA | Submission Records {% endblock %}
+{% block title %} RiskOCA | Edit User {% endblock %}
 
 {% block content %}
 <div>
     <h3>ข้อมูลผู้ใช้</h3>
 </div>
 
-<div class="container-md">
-    <form action="/edit_user" method="post" class="row g-3 my-4">
 
-        <!-- fistname -->
+<div class="container-md">
+    <form id="editUserForm" action="/edit_page" method="POST" class="row g-3 my-4">
+        <input type="hidden" name="_method" value="PUT">  <!-- Hidden input to indicate PUT method -->
+        
+        <!-- Form fields as before -->
         <div class="col-md-6">
             <label for="firstname" class="form-label">Firstname</label>
             <input class="form-control" type="text" name="name" id="firstname" value="">
         </div>
 
-        <!-- lastname -->
         <div class="col-md-6">
             <label for="lastname" class="form-label">Lastname</label>
             <input class="form-control" type="text" name="surname" id="lastname" value="">
@@ -25,9 +26,22 @@
         <!-- work -->
         <div class="col-md-6">
             <label for="work" class="form-label">Work</label>
-            <input class="form-control" type="text" name="work" id="work" value="">
+            <select id="job_position" name="job_position" class="form-control" required>
+                <option value="" hidden></option>
+                <option value="OSM">อสม.</option>
+                <option value="Dental Nurse">ทันตาภิบาล/เจ้าพนักงานทันตสาธารณสุข</option>
+                <option value="Dentist">ทันตแพทย์</option>
+                <option value="Oral Pathologist">ทันตแพทย์เฉพาะทาง วิทยาการวินิจฉัยโรคช่องปาก</option>
+                <option value="Oral and Maxillofacial Surgeon">ทันตแพทย์เฉพาะทาง ศัลยศาสตร์ช่องปากและแม็กซิลโลเฟเชียล</option>
+                <option value="Physician">แพทย์</option>
+                <option value="Public Health Technical Officer">นักวิชาการสาธารณสุข</option>
+                <option value="Computer Technical Officer">นักวิชาการคอมพิวเตอร์/นักวิจัย/ผู้พัฒนาระบบ</option>
+                <option value="Other Public Health Officer">ข้าราชการ/เจ้าพนักงานกระทรวงสาธารณสุข</option>
+                <option value="Other Government Officer">เจ้าหน้าที่รัฐอื่น</option>
+                <option value="General Public">บุคคลทั่วไป</option>
+            </select>
         </div>
-
+        
         <!-- license -->
         <div class="col-md-6">
             <label for="license" class="form-label">License</label>
@@ -43,8 +57,20 @@
         <!-- province -->
         <div class="col-md-6">
             <label for="province" class="form-label">Province</label>
-            <input class="form-control" type="text" name="province" id="lastname" value="">
+            <input class="form-control" type="text" name="province" id="province" value="">
         </div>
+
+        <div class="col-md-6">
+            <label for="province" class="form-label">National ID</label>
+            <input class="form-control" type="text" name="nationalId" id="nationalId" value="">
+        </div>
+
+        <div class="col-md-6">
+            <label for="province" class="form-label">Phone</label>
+            <input class="form-control" type="text" name="phone" id="phone" value="">
+        </div>
+
+
 
         <div class="col-12">
             <label for="email" class="form-label">E-mail</label>
@@ -53,115 +79,123 @@
 
         <!-- role -->
         <fieldset class="row my-3">
-            <legend class="col-form-label col-sm-2 pt-0">Role</legend>
+            <legend class="col-form-label col-sm-2 pt-0">Permission</legend>
 
             <div class="col-sm-10">
-                {% if g.user['is_admin'] == 1%}
                 <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="role" id="admin" value="admin" checked>
-                    <label class="form-check-label" for="admin">
-                        Admin
-                    </label>
+                    <input class="form-check-input" type="checkbox" name="role" id="admin" value="admin" >
+                    <label class="form-check-label" for="admin">Admin</label>
                 </div>
                 <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="role" id="dentist" value="specialist">
-                    <label class="form-check-label" for="dentist">
-                        specialist
-                    </label>
+                    <input class="form-check-input" type="checkbox" name="role" id="specialist" value="specialist">
+                    <label class="form-check-label" for="dentist">Specialist</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="role" id="osm" value="osm">
+                    <label class="form-check-label" for="user">Osm</label>
                 </div>
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" name="role" id="user" value="user">
-                    <label class="form-check-label" for="user">
-                        User
-                    </label>
+                    <label class="form-check-label" for="user">User</label>
                 </div>
-                {% elif g.user['is_specialist'] == 1 %}
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="role" id="admin" value="admin" >
-                    <label class="form-check-label" for="admin">
-                        Admin
-                    </label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="role" id="dentist" value="specialist" checked>
-                    <label class="form-check-label" for="specialist">
-                        Specialist
-                    </label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="role" id="user" value="user">
-                    <label class="form-check-label" for="user">
-                        User
-                    </label>
-                </div>
-                {% else %}
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="role" id="admin" value="admin" >
-                    <label class="form-check-label" for="admin">
-                        Admin
-                    </label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="role" id="dentist" value="specialist" >
-                    <label class="form-check-label" for="specialist">
-                        specialist
-                    </label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="role" id="user" value="user" checked>
-                    <label class="form-check-label" for="user">
-                        User
-                    </label>
-                </div>
-
-                {% endif %}
-
             </div>
         </fieldset>
 
         <!-- submit button -->
         <div class="col-12 d-flex justify-content-end">
-            <button type="submit" class="btn btn-primary" name="id" value="">
-                Submit
-            </button>
+            <button type="submit" class="btn btn-primary" id="editUserForm">Submit</button>
         </div>
 
     </form>
 </div>
+
 <script>
-    function fetchUserData(){
-        const urlParams = new URLSearchParams(window.location.search)
-        const userId = urlParams.get('id'); // Get the user ID from the URL query parameter
-
-        if (!userId) {
-        console.error("User ID is missing!");
+    function fetchUserData() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const userId = urlParams.get('id'); // Get the user ID from the URL query parameter
+  
+      if (!userId) {
+        console.warn("User ID is missing in the query parameter.");
         return;
-        }
-
-        fetch(`http://127.0.0.1:5000/edit_user_info/?id=${userId}`,{
-            method: 'GET',
-            headers: {
-            'Content-Type': 'application/json', // Optional content type
+      }
+  
+      fetch(`http://127.0.0.1:5000/edit_user_info/?id=${userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        }).then((response)=> response.json())
-        .then((data)=>{
-            document.getElementById('firstname').value = data.name || '';
-            document.getElementById('lastname').value = data.surname || '';
-            document.getElementById('work').value = data.job_position || '';
-            document.getElementById('license').value = data.surname || '';
-            document.getElementById('hospital').value = data.hospital || '';
-            document.getElementById('email').value = data.email || '';
-            document.getElementById('province').value = data.province || '';
-
-            // Update roles checkboxes
-            document.getElementById('admin').checked = data.role === 'admin';
-            document.getElementById('dentist').checked = data.role === 'specialist';
-            document.getElementById('user').checked = data.role === 'user';
-        }).catch((error) => {
-        console.error('Error:', error);
-      });
-  }
-  console.log(fetchUserData())
-</script>
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          // Populate form fields with data
+          if (data.name) document.getElementById('firstname').value = data.name;
+          if (data.surname) document.getElementById('lastname').value = data.surname;
+          if (data.job_position) document.getElementById('job_position').value = data.job_position;
+          if (data.license) document.getElementById('license').value = data.license;
+          if (data.hospital) document.getElementById('hospital').value = data.hospital;
+          if (data.email) document.getElementById('email').value = data.email;
+          if (data.province) document.getElementById('province').value = data.province;
+          if (data.national_id) document.getElementById('nationalId').value = data.national_id;
+          if (data.phone) document.getElementById('phone').value = data.phone;
+  
+          // Update roles checkboxes
+          if (data.is_admin || data.is_osm || data.is_specialist || data.is_user) {
+            document.getElementById('admin').checked = data.is_admin === 1;
+            document.getElementById('specialist').checked = data.is_specialist === 1;
+            document.getElementById('osm').checked = data.is_osm === 1;
+            document.getElementById('user').checked = data.is_user === 1;
+          }
+        })
+        .catch((error) => {
+          console.error('Error fetching user data:', error);
+        });
+    }
+  
+    async function submitFormData(event) {
+      event.preventDefault();  // Prevent the default form submission
+  
+      const urlParams = new URLSearchParams(window.location.search);
+      const userId = urlParams.get('id'); // Get the user ID
+  
+      const formData = {
+        id: userId,
+        name: document.getElementById('firstname').value,
+        surname: document.getElementById('lastname').value,
+        job_position: document.getElementById('job_position').value,
+        license : document.getElementById('license').value,
+        hospital: document.getElementById('hospital').value,
+        province: document.getElementById('province').value,
+        email: document.getElementById('email').value,
+        national_id : document.getElementById('nationalId').value,
+        phone : document.getElementById('phone').value,
+        is_admin: document.getElementById('admin').checked ? 1 : 0,
+        is_specialist: document.getElementById('specialist').checked ? 1 : 0,
+        is_osm: document.getElementById('osm').checked ? 1 : 0,
+        is_patient: document.getElementById('user').checked ? 1 : 0,
+      };
+  
+      try {
+        const response = await fetch("http://127.0.0.1:5000/submit_info/", {
+          method: "PUT",  // Use PUT method for updating
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        });
+  
+        if (response.ok) {
+          alert("User information updated successfully!");
+        } else {
+          alert("Failed to update user information.");
+        }
+      } catch (error) {
+        console.error("Error submitting form data:", error);
+      }
+    }
+  
+    document.getElementById('editUserForm').addEventListener('submit', submitFormData);
+  
+    fetchUserData(); // Call the function when the page loads
+  </script>
 
 {% endblock %}
