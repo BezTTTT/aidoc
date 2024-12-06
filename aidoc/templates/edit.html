@@ -1,0 +1,167 @@
+{% extends "./base.html" %}
+
+{% block title %} RiskOCA | Submission Records {% endblock %}
+
+{% block content %}
+<div>
+    <h3>ข้อมูลผู้ใช้</h3>
+</div>
+
+<div class="container-md">
+    <form action="/edit_user" method="post" class="row g-3 my-4">
+
+        <!-- fistname -->
+        <div class="col-md-6">
+            <label for="firstname" class="form-label">Firstname</label>
+            <input class="form-control" type="text" name="name" id="firstname" value="">
+        </div>
+
+        <!-- lastname -->
+        <div class="col-md-6">
+            <label for="lastname" class="form-label">Lastname</label>
+            <input class="form-control" type="text" name="surname" id="lastname" value="">
+        </div>
+
+        <!-- work -->
+        <div class="col-md-6">
+            <label for="work" class="form-label">Work</label>
+            <input class="form-control" type="text" name="work" id="work" value="">
+        </div>
+
+        <!-- license -->
+        <div class="col-md-6">
+            <label for="license" class="form-label">License</label>
+            <input class="form-control" type="text" name="license" id="license" value="">
+        </div>
+
+        <!-- hospital -->
+        <div class="col-md-6">
+            <label for="hospital" class="form-label">Hospital</label>
+            <input class="form-control" type="text" name="hospital" id="hospital" value="">
+        </div>
+
+        <!-- province -->
+        <div class="col-md-6">
+            <label for="province" class="form-label">Province</label>
+            <input class="form-control" type="text" name="province" id="lastname" value="">
+        </div>
+
+        <div class="col-12">
+            <label for="email" class="form-label">E-mail</label>
+            <input class="form-control" type="text" name="email" id="email" value="">
+        </div>
+
+        <!-- role -->
+        <fieldset class="row my-3">
+            <legend class="col-form-label col-sm-2 pt-0">Role</legend>
+
+            <div class="col-sm-10">
+                {% if g.user['is_admin'] == 1%}
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="role" id="admin" value="admin" checked>
+                    <label class="form-check-label" for="admin">
+                        Admin
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="role" id="dentist" value="specialist">
+                    <label class="form-check-label" for="dentist">
+                        specialist
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="role" id="user" value="user">
+                    <label class="form-check-label" for="user">
+                        User
+                    </label>
+                </div>
+                {% elif g.user['is_specialist'] == 1 %}
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="role" id="admin" value="admin" >
+                    <label class="form-check-label" for="admin">
+                        Admin
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="role" id="dentist" value="specialist" checked>
+                    <label class="form-check-label" for="specialist">
+                        Specialist
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="role" id="user" value="user">
+                    <label class="form-check-label" for="user">
+                        User
+                    </label>
+                </div>
+                {% else %}
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="role" id="admin" value="admin" >
+                    <label class="form-check-label" for="admin">
+                        Admin
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="role" id="dentist" value="specialist" >
+                    <label class="form-check-label" for="specialist">
+                        specialist
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="role" id="user" value="user" checked>
+                    <label class="form-check-label" for="user">
+                        User
+                    </label>
+                </div>
+
+                {% endif %}
+
+            </div>
+        </fieldset>
+
+        <!-- submit button -->
+        <div class="col-12 d-flex justify-content-end">
+            <button type="submit" class="btn btn-primary" name="id" value="">
+                Submit
+            </button>
+        </div>
+
+    </form>
+</div>
+<script>
+    function fetchUserData(){
+        const urlParams = new URLSearchParams(window.location.search)
+        const userId = urlParams.get('id'); // Get the user ID from the URL query parameter
+
+        if (!userId) {
+        console.error("User ID is missing!");
+        return;
+        }
+
+        fetch(`http://127.0.0.1:5000/edit_user_info/?id=${userId}`,{
+            method: 'GET',
+            headers: {
+            'Content-Type': 'application/json', // Optional content type
+        },
+        }).then((response)=> response.json())
+        .then((data)=>{
+            document.getElementById('firstname').value = data.name || '';
+            document.getElementById('lastname').value = data.surname || '';
+            document.getElementById('work').value = data.job_position || '';
+            document.getElementById('license').value = data.surname || '';
+            document.getElementById('hospital').value = data.hospital || '';
+            document.getElementById('email').value = data.email || '';
+            document.getElementById('province').value = data.province || '';
+
+            // Update roles checkboxes
+            document.getElementById('admin').checked = data.role === 'admin';
+            document.getElementById('dentist').checked = data.role === 'specialist';
+            document.getElementById('user').checked = data.role === 'user';
+        }).catch((error) => {
+        console.error('Error:', error);
+      });
+  }
+  console.log(fetchUserData())
+</script>
+
+{% endblock %}

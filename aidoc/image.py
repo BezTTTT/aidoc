@@ -905,17 +905,11 @@ def record(role): # Submission records
 def report():
     return render_template("submission_report.html")
 
-@bp.route('/admin_page')
+@bp.route('/admin_page', methods=('GET','POST'))
 @login_required
 #@role_validation
 def userManagement():
     return render_template("user_management.html")
-
-@bp.route('/log_page')
-@login_required
-#@role_validation
-def log():
-    return render_template("log.html")
 
 @bp.route('/image_manage')
 @login_required
@@ -923,6 +917,10 @@ def log():
 def pictureManagement():
     return render_template("picture_management.html")
 
+@bp.route('/edit', methods=('GET','POST'))
+@login_required
+def edit():
+    return render_template("edit.html")
 # Helper functions
 # region create_thumbnail
 def create_thumbnail(pil_img):
