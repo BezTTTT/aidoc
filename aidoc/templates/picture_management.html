@@ -12,8 +12,8 @@
     <!-- Search Box -->
     <form action="/record/specialist" method="post">
         <div class="input-group mb-3">
-            <input type="text" class="form-control" name="search" placeholder="ชื่อ นามสกุลคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC คำสำคัญในรายงานผู้ป่วย ชื่อไฟล์ Case ID" value="{{ data['search'] }}" />
-            <button class="btn btn-outline-primary" type="submit" value="{{ data['search'] }}"> Search </button>
+            <input type="text" class="form-control" name="search" placeholder="ชื่อ นามสกุลคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC คำสำคัญในรายงานผู้ป่วย ชื่อไฟล์ Case ID" value="" />
+            <button class="btn btn-outline-primary" type="submit" value=""> Search </button>
         </div>
     </form>
     
@@ -40,189 +40,142 @@
                     <label for="filterProvince">จังหวัดที่คัดกรอง:</label>
                     <select name="filterProvince" id="filterProvince" class="btn btn-light border border-1 mx-1">
                         <option value="">ทั้งหมด</option>
-                        {% for item in data['province_name_list']%}
-                        <option value="{{item}}">{{item}}</option>
-                        {%endfor%}
+                       
+                        <option value=""></option>
+                        
                     </select>
                 </div>
                 <div class="col my-1">
                     <label for="filterSpecialist">ผู้ตรวจ:</label>
                     <select name="filterSpecialist" id="filterSpecialist" class="btn btn-light border border-1 mx-1">
                         <option value="">ทั้งหมด</option>
-                        {% for (dentist_id, dentist_name) in data['specialist_list']%}
-                        <option value="{{dentist_id}}">{{dentist_name}}</option>
-                        {%endfor%}
+                        
+                        <option value=""></option>
+                        
+                    </select>
+                </div>
+                <div class="col my-1">
+                    <label for="filterAi">ผลตรวจวินิจฉัยของ AI</label>
+                    <select name="filterAi" id="filterAi" class="btn btn-light border border-1 mx-1">
+                        <option value="">ทั้งหมด</option>
+                        
+                        <option value=""></option>
+                        
                     </select>
                 </div>
             </div>
         </form>
     </div>
-    
-    {% if pagination|length == 0 %}
-        <div class="col-12 mt-4">
-            <p class="text-center text-danger">ไม่พบข้อมูล</p>
-        </div>
-    {% else %}
-        <div class="mt-4">
-            จำนวนรายการทั้งหมด {{dataCount}} รายการ
-        </div>
-    {% endif %}
-    <!-- Loop through paginated data -->
+
     <div class="container my-4">
         <div class="row">
-            {% for item in pagination %}
-                <div class="col-md-3 mb-4">
-                    <div class="card h-100"
-                    {% if item['special_request']==1 %}
-                        style="border-color: red; border-width: 3px"
-                    {% endif %}
-                    >
-                        <div style="display: inline-flex; align-items: center; justify-content: center; ">
-                            <a href="{{ url_for('image.load_image', folder='upload', user_id=item['owner_id'], imagename=item['fname']) }}" target="_blank">
-                                <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=item['owner_id'], imagename=item['fname']) }}" 
-                                    class="card-img-top mt-2" alt="" style="max-height: 256px"/>
-                            </a>
-                        </div>
-
-                        <div class="card-body">                            
-                            <h6 class="image-name" >ชื่อไฟล์ : {{ item['fname'] }} </h6>
-                            <h6 class="image-name" >Case ID : {{ item['case_id'] }}
-                                {% if item['special_request']==1 %}
-                                    [มีคำขอตรวจพิเศษ]
-                                {% endif %}
-                            </h6>
-                            {% if item['name'] is not none %}
-                                <h6 class="image-name">ชื่อผู้ป่วย : {{ item['name'] }} {{ item['surname'] }} ( {{ item["age"] }} ปี )</h6>
-                            {% else %}
-                                <h6 class="image-name">ชื่อผู้ป่วย : <i>ไม่มีข้อมูล</i> </h6>
-                            {% endif%}
-                            {% if item['location_zipcode'] is not none %}
-                                <h6 class="image-name">สถานที่คัดกรอง : จ.{{ item['location_province'] }} ({{ item['location_zipcode'] }})</h6>
-                            {% else %}
-                                <h6 class="image-name">สถานที่คัดกรอง : จ.{{ item['location_province'] }} </h6>
-                            {% endif %}
-                            <h6 class="image-name" >ช่องทาง :
-                                {% if item['sender_id']!=item['patient_id'] %}
-                                    นำส่งโดยผู้ตรวจคัดกรอง
-                                {% else %}
-                                    ผู้ป่วยนำส่งข้อมูลเอง
-                                {% endif %}
-                            </h6>
-                            <h6 class="image-name">นำส่งวันที่ : {{ item['formatted_created_at'] }} น.</h6>
-                            <h6 class="fs-6 card-subtitle text-muted mb-2">
-                                ผลการพยากรณ์ของ AI :
-                                    {% if item['ai_prediction']==0 %}
-                                        Normal
-                                    {% elif item['ai_prediction']==1 %}
-                                        OPMD
-                                    {% else %}
-                                        OSCC
-                                    {% endif %}
-                            </h6>
-                            <h6 class="fs-6 card-subtitle text-muted mb-2">
-                                ผลการวินิจฉัยของทันตแพทย์: 
-                                {% if item['dentist_feedback_code'] is none %}
-                                    [ยังไม่ได้ตรวจ]
-                                {% else %}
-                                    {{item['dentist_feedback_code']}}
-                                {% endif %}
-                            </h6>
-                            <form action="{{ url_for('image.adminChecking', role='specialist', img_id=item['id']) }}" id="diagnosis_submit_id{{item['id']}}" method="get"></form>
-                            <form action="{{ url_for('image.quick_confirm', role='specialist', img_id=item['id'], ai_result=item['ai_prediction']) }}" id="quick_submit_id{{item['id']}}" method="post"></form>
-                            <div class="d-grid gap-2 d-md-block justify-content-md-center">
-                                <button class="btn btn-outline-success" type="submit" form="diagnosis_submit_id{{item['id']}}">ดูผลการวิเคราะห์</button>
-                                <button class="btn btn-outline-danger my-1" type="button" 
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#submissionDeleteModal{{ item['id'] }}" >ลบข้อมูล</button>
-                            </div>
-                        </div>
-
-                        <!-- Submission Delete Modal -->
-                        <div class="modal fade" id="submissionDeleteModal{{ item['id'] }}" tabindex="-1"
-                            aria-labelledby="submissionDeleteModalLabel" aria-hidden="true">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h1 class="modal-title fs-5" id="submissionDeleteModalLabel"> ลบข้อมูลการนำส่ง </h1>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body">คุณแน่ใจที่จะลบข้อมูลการนำส่งนี้ ใช่หรือไม่</div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> ยกเลิก </button>
-                                        <form action="{{ url_for('image.delete_image', role='specialist') }}" method="post" enctype="multipart/form-data">
-                                            <input name="img_id" type="text" value="{{ item['id'] }}" hidden />
-                                            <input class="btn btn-outline-danger" style="width: 100%" type="submit" value="ลบข้อมูล" />
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-
-        <!-- Pagination links -->
-        <div class="pagination d-flex justify-content-center align-items-center">
-            {% if current_page > 1 %}
-                <a href="?page=1" class="btn page-link m-2 text-secondary">&laquo; หน้าแรก</a>
-                <a href="?page={{ current_page - 1 }}" class="btn page-link m-2 text-secondary">&lsaquo; ก่อนหน้า</a>
-            {% endif %}
-            {% for page_num in range(1, total_pages + 1) %}
-                {% if page_num == current_page %}
-                    <span class="current-page page-link m-2 text-secondary">หน้าปัจจุบัน : {{ page_num }} จาก {{ total_pages }}</span>
-                {% endif %}
-            {% endfor %}
-            {% if current_page < total_pages %}
-                <a href="?page={{ current_page + 1 }}" class="btn page-link m-2 text-secondary">ถัดไป &rsaquo;</a>
-                <a href="?page={{ total_pages }}" class="btn page-link m-2 text-secondary">หลังสุด &raquo;</a>
-            {% endif %}
         </div>
     </div>
-</div>
 {% endblock %}
 
 {% block script %}
+
 <script>
-    const filterStatus = document.getElementById("filterStatus");
-    const filterPriority = document.getElementById("filterPriority");
-    const filterProvince = document.getElementById("filterProvince")
-    const filterSpecialist = document.getElementById("filterSpecialist")
+const baseUrl = "http://127.0.0.1:5000/image_manage/";
+const limit = 12;
+const page = 1;
+const priority = "";
+const dentist_checked = false; 
+const province = null;
+let FetchData = [];
+function fetchApi(base,params){
+    const queryParams = [];
 
-    filterStatus.addEventListener("change", function () {
-        document.getElementById("filterForm").submit();
-    });
-    filterPriority.addEventListener("change", function () {
-        document.getElementById("filterForm").submit();
-    });
-    filterProvince.addEventListener("change", function () {
-        document.getElementById("filterForm").submit();
-    });
-    filterSpecialist.addEventListener("change", function () {
-        document.getElementById("filterForm").submit();
+    // Add only non-null and non-undefined parameters
+    if (params.limit !== undefined) queryParams.push(`limit=${params.limit}`);
+    if (params.page !== undefined) queryParams.push(`page=${params.page}`);
+    if (params.priority) queryParams.push(`priority=${params.priority}`);
+    if (params.dentist_checked !== undefined) queryParams.push(`dentist_checked=${params.dentist_checked}`);
+    if (params.province) queryParams.push(`province=${params.province}`);
+
+    // Return the full URL with query string
+    return `${base}?${queryParams.join("&")}`;
+    }
+
+    // Build the API URL
+    const apiUrl = fetchApi(baseUrl, { limit, page, priority, dentist_checked, province });
+
+    // Fetch data from the constructed URL
+    fetch(apiUrl)
+    .then((response) => {
+    if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    return response.json();
+    })
+    .then((data) => {
+    console.log("Fetched data:", data.data[0])
+    populateCard(data)
+    })
+    .catch((error) => {
+    console.error("Fetch error:", error);
     });
 
-    
-    // Get the filters element and set its value from Flask
-    const filterStatusValue     = "{{ filters[0] }}";
-    const filterPriorityValue   = "{{ filters[1] }}";
-    const filterProvinceValue   = "{{ filters[2] }}";
-    const filterSpecialistValue  = "{{ filters[3] }}";
+function populateCard(imageData){
+    const row = document.querySelector('.row')
 
-    // Set the selected filters value if it exists
-    if (filterStatusValue) {
-        filterStatus.value = filterStatusValue;
-    }
-    if (filterPriorityValue) {
-        filterPriority.value = filterPriorityValue;
-    }
-    if (filterProvinceValue) {
-        filterProvince.value = filterProvinceValue;
-    }
-    if (filterSpecialistValue) {
-        filterSpecialist.value = filterSpecialistValue
-    }
-        
+    imageData.data.forEach((item)=>{
+        const card = document.createElement('div')
+        card.classList.add("col-md-3", "mb-4");
+        console.log(item.submission_id,item.file_name)
+    card.innerHTML = `
+      <div class="card h-100" style="border-color: ${item.is_special_req ? 'red' : ""}; border-width: 3px">
+        <div style="display: inline-flex; align-items: center; justify-content: center;">
+          <a href="" target="_blank">
+            <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', 
+            user_id="${item.sender_id}", imagename="${item.file_name}") }}"
+            class="card-img-top mt-2" alt="" style="max-height: 256px"/>
+          </a>
+        </div>
+        <div class="card-body">
+          <h6>ชื่อไฟล์: ${item.file_name}</h6>
+          <h6>ผู้ใช้งาน: ${item.sender_fullname}</h6>
+          <h6>วันที่: ${item.submission_date}</h6>
+          <h6 class="fs-6 card-subtitle text-muted mb-2">ผลการวินิจฉัยของ AI: ${item.ai_prediction}</h6>
+          <h6 class="fs-6 card-subtitle text-muted mb-2">ความคิดเห็นทันตแพทย์: ${item.dentist_comment || "ไม่มีความคิดเห็น"}</h6>
+          <div class="d-grid gap-2 d-md-block justify-content-md-center">
+            <form action="/admin_checking?id=${item.sender_id}" class="mx-1">
+              <input name="id" type="hidden" value="${item.sender_id}" />
+              <input
+                class="btn btn-outline-success"
+                type="submit"
+                value="ดูผลการวิเคราะห์"
+              />
+            </form>
+            <button class="btn btn-outline-danger my-1" type="button" data-bs-toggle="modal" data-bs-target="#deleteModal-${item.submission_id}">
+              ลบข้อมูล
+            </button>
+          </div>
+        </div>
+        <!-- Modal for deletion -->
+        <div class="modal fade" id="deleteModal-${item.submission_id}" tabindex="-1" aria-labelledby="deleteModalLabel-${item.submission_id}" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel-${item.submission_id}">ลบข้อมูล</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">คุณแน่ใจที่จะลบข้อมูลนี้หรือไม่?</div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                <form action="/record/specialist/delete" method="post">
+                  <input type="hidden" name="submission_id" value="${item.submission_id}">
+                  <button type="submit" class="btn btn-outline-danger">ลบข้อมูล</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    row.appendChild(card);
+  });
+}
+
 </script>
 {% endblock %}
