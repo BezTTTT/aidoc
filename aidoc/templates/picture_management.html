@@ -3,22 +3,19 @@
 {% block title %} RiskOCA | Submission Records {% endblock %}
 
 {% block content %}
-
 <div class="row">
     <div class="col-12">
         <h2>ประวัติผลลัพธ์การวิเคราะห์ภาพถ่ายช่องปากวิเคราะห์รอยโรค</h2>
     </div>
 
     <!-- Search Box -->
-    <form action="/record/specialist" method="post">
-        <div class="input-group mb-3">
-            <input type="text" class="form-control" name="search" placeholder="ชื่อ นามสกุลคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC คำสำคัญในรายงานผู้ป่วย ชื่อไฟล์ Case ID" value="" />
-            <button class="btn btn-outline-primary" type="submit" value=""> Search </button>
-        </div>
-    </form>
-    
+    <div class="input-group mb-3">
+        <input type="text" class="form-control" name="search" placeholder="ชื่อ นามสกุลคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC คำสำคัญในรายงานผู้ป่วย ชื่อไฟล์ Case ID" id="searchInput" value="" />
+        <button class="btn btn-outline-primary" type="button" id="searchButton"> Search </button>
+    </div>
+
     <div class="container">
-        <form action="/record/specialist" method="post" id="filterForm">
+        <form action="" method="post" id="filterForm" onsubmit="handleFormSubmit(event)">
             <div class="row row-cols-auto">
                 <div class="col my-1">
                     <label for="filterPriority">ระดับความสำคัญ:</label>
@@ -32,35 +29,31 @@
                     <label for="filterStatus">สถานะ:</label>
                     <select name="filterStatus" id="filterStatus" class="btn btn-light border border-1 mx-1">
                         <option value="">ทั้งหมด</option>
-                        <option value="1">ตรวจแล้ว</option>
-                        <option value="0">ยังไม่ได้ตรวจ</option>
+                        <option value="true">ตรวจแล้ว</option>
+                        <option value="false">ยังไม่ได้ตรวจ</option>
                     </select>
                 </div>
                 <div class="col my-1">
                     <label for="filterProvince">จังหวัดที่คัดกรอง:</label>
                     <select name="filterProvince" id="filterProvince" class="btn btn-light border border-1 mx-1">
                         <option value="">ทั้งหมด</option>
-                       
-                        <option value=""></option>
-                        
+                        <!-- Provinces dynamically populated -->
                     </select>
                 </div>
                 <div class="col my-1">
                     <label for="filterSpecialist">ผู้ตรวจ:</label>
                     <select name="filterSpecialist" id="filterSpecialist" class="btn btn-light border border-1 mx-1">
                         <option value="">ทั้งหมด</option>
-                        
-                        <option value=""></option>
-                        
+                        <!-- Specialists dynamically populated -->
                     </select>
                 </div>
                 <div class="col my-1">
                     <label for="filterAi">ผลตรวจวินิจฉัยของ AI</label>
                     <select name="filterAi" id="filterAi" class="btn btn-light border border-1 mx-1">
                         <option value="">ทั้งหมด</option>
-                        
-                        <option value=""></option>
-                        
+                        <option value="0">NORMAL</option>
+                        <option value="1">OSCC</option>
+                        <option value="2">OPMD</option>
                     </select>
                 </div>
             </div>
@@ -68,114 +61,168 @@
     </div>
 
     <div class="container my-4">
-        <div class="row">
+        <div class="row" id="resultRow">
+            <!-- Cards will be dynamically populated here -->
         </div>
     </div>
 {% endblock %}
 
 {% block script %}
-
 <script>
 const baseUrl = "http://127.0.0.1:5000/image_manage/";
 const limit = 12;
 const page = 1;
-const priority = "";
-const dentist_checked = false; 
-const province = null;
-let FetchData = [];
-function fetchApi(base,params){
+let searchQuery = "";
+let priority = "";
+let dentist_checked = "";
+let province = "";
+let specialist = "";
+let ai_prediction = "";
+let isProvincePopulated = false;
+let isDentistPopulated = false;
+
+document.getElementById('searchButton').addEventListener('click', handleSearchClick);
+document.getElementById('filterForm').addEventListener('change', handleFilterChange);
+
+function handleFormSubmit(event) {
+    event.preventDefault(); // Prevent page refresh
+}
+
+function handleSearchClick() {
+    searchQuery = document.getElementById('searchInput').value; // Get the search query
+    fetchData();
+}
+
+function handleFilterChange() {
+    priority = document.getElementById('filterPriority').value;
+    dentist_checked = document.getElementById('filterStatus').value;
+    province = document.getElementById('filterProvince').value;
+    specialist = document.getElementById('filterSpecialist').value;
+    ai_prediction = document.getElementById('filterAi').value;
+    fetchData();
+}
+
+function createApi(base, params) {
     const queryParams = [];
 
-    // Add only non-null and non-undefined parameters
+    if (params.search) queryParams.push(`search=${params.search}`);
     if (params.limit !== undefined) queryParams.push(`limit=${params.limit}`);
     if (params.page !== undefined) queryParams.push(`page=${params.page}`);
     if (params.priority) queryParams.push(`priority=${params.priority}`);
-    if (params.dentist_checked !== undefined) queryParams.push(`dentist_checked=${params.dentist_checked}`);
+    if (params.dentist_checked) queryParams.push(`dentist_checked=${params.dentist_checked}`);
     if (params.province) queryParams.push(`province=${params.province}`);
+    if (params.specialist) queryParams.push(`specialist=${params.specialist}`);
+    if (params.ai_prediction) queryParams.push(`ai=${params.ai_prediction}`);
 
-    // Return the full URL with query string
     return `${base}?${queryParams.join("&")}`;
-    }
+}
 
-    // Build the API URL
-    const apiUrl = fetchApi(baseUrl, { limit, page, priority, dentist_checked, province });
-
-    // Fetch data from the constructed URL
-    fetch(apiUrl)
-    .then((response) => {
-    if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-    return response.json();
-    })
-    .then((data) => {
-    console.log("Fetched data:", data.data[0])
-    populateCard(data)
-    })
-    .catch((error) => {
-    console.error("Fetch error:", error);
+function fetchData() {
+    const apiUrl = createApi(baseUrl, {
+        search: searchQuery,
+        limit,
+        page,
+        priority,
+        dentist_checked,
+        province,
+        specialist,
+        ai_prediction
     });
 
-function populateCard(imageData){
-    const row = document.querySelector('.row')
+    fetch(apiUrl)
+        .then(response => response.json())
+        .then(data => {
+            populateCard(data);
+            if (!isProvincePopulated && data) {
+              dropDownProvince(data);
+            }
+            if (!isDentistPopulated && data) {
+              populateDropdownDentist(data);
+            }
+        })
+        .catch(error => {
+            console.error("Fetch error:", error);
+        });
+}
 
-    imageData.data.forEach((item)=>{
-        const card = document.createElement('div')
+function populateCard(imageData) {
+    const row = document.getElementById('resultRow');
+    row.innerHTML = ""; // Clear previous results
+
+    imageData.data.forEach((item) => {
+        const card = document.createElement('div');
         card.classList.add("col-md-3", "mb-4");
-        console.log(item.submission_id,item.file_name)
-    card.innerHTML = `
-      <div class="card h-100" style="border-color: ${item.is_special_req ? 'red' : ""}; border-width: 3px">
-        <div style="display: inline-flex; align-items: center; justify-content: center;">
-          <a href="" target="_blank">
-            <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', 
-            user_id="${item.sender_id}", imagename="${item.file_name}") }}"
-            class="card-img-top mt-2" alt="" style="max-height: 256px"/>
-          </a>
-        </div>
-        <div class="card-body">
-          <h6>ชื่อไฟล์: ${item.file_name}</h6>
-          <h6>ผู้ใช้งาน: ${item.sender_fullname}</h6>
-          <h6>วันที่: ${item.submission_date}</h6>
-          <h6 class="fs-6 card-subtitle text-muted mb-2">ผลการวินิจฉัยของ AI: ${item.ai_prediction}</h6>
-          <h6 class="fs-6 card-subtitle text-muted mb-2">ความคิดเห็นทันตแพทย์: ${item.dentist_comment || "ไม่มีความคิดเห็น"}</h6>
-          <div class="d-grid gap-2 d-md-block justify-content-md-center">
-            <form action="/admin_checking?id=${item.sender_id}" class="mx-1">
-              <input name="id" type="hidden" value="${item.sender_id}" />
-              <input
-                class="btn btn-outline-success"
-                type="submit"
-                value="ดูผลการวิเคราะห์"
-              />
-            </form>
-            <button class="btn btn-outline-danger my-1" type="button" data-bs-toggle="modal" data-bs-target="#deleteModal-${item.submission_id}">
-              ลบข้อมูล
-            </button>
-          </div>
-        </div>
-        <!-- Modal for deletion -->
-        <div class="modal fade" id="deleteModal-${item.submission_id}" tabindex="-1" aria-labelledby="deleteModalLabel-${item.submission_id}" aria-hidden="true">
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title" id="deleteModalLabel-${item.submission_id}">ลบข้อมูล</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-              </div>
-              <div class="modal-body">คุณแน่ใจที่จะลบข้อมูลนี้หรือไม่?</div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                <form action="/record/specialist/delete" method="post">
-                  <input type="hidden" name="submission_id" value="${item.submission_id}">
-                  <button type="submit" class="btn btn-outline-danger">ลบข้อมูล</button>
+        card.innerHTML = `
+          <div class="card h-100" style="border-color: ${item.is_special_req ? 'red' : ""}; border-width: 3px">
+            <div style="display: inline-flex; align-items: center; justify-content: center;">
+              <a href="" target="_blank">
+                <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id='${item.sender_id}', imagename='${item.file_name}') }}"
+                     class="card-img-top mt-2" alt="" style="max-height: 256px"/>
+              </a>
+            </div>
+            <div class="card-body">
+              <h6>ชื่อไฟล์: ${item.file_name}</h6>
+              <h6>ผู้ใช้งาน: ${item.sender_fullname}</h6>
+              <h6>วันที่: ${item.submission_date}</h6>
+              <h6 class="fs-6 card-subtitle text-muted mb-2">ผลการวินิจฉัยของ AI: ${item.ai_prediction}</h6>
+              <h6 class="fs-6 card-subtitle text-muted mb-2">ความคิดเห็นทันตแพทย์: ${item.dentist_comment}</h6>
+              <div class="d-grid gap-2 d-md-block justify-content-md-center">
+                <form action="/admin_checking/specialist/${item.submission_id}" method="POST" class="mx-1">
+                    <input class="btn btn-outline-success" type="submit" value="ดูผลการวิเคราะห์"/>
                 </form>
+                <button class="btn btn-outline-danger my-1" type="button" data-bs-toggle="modal" data-bs-target="#deleteModal-${item.submission_id}">
+                  ลบข้อมูล
+                </button>
+              </div>
+            </div>
+            <!-- Modal for deletion -->
+            <div class="modal fade" id="deleteModal-${item.submission_id}" tabindex="-1" aria-labelledby="deleteModalLabel-${item.submission_id}" aria-hidden="true">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h5 class="modal-title" id="deleteModalLabel-${item.submission_id}">ลบข้อมูล</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">คุณแน่ใจที่จะลบข้อมูลนี้หรือไม่?</div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <form action="/record/specialist/delete" method="post">
+                      <input type="hidden" name="submission_id" value="${item.submission_id}">
+                      <button type="submit" class="btn btn-outline-danger">ลบข้อมูล</button>
+                    </form>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
-    `;
-    row.appendChild(card);
-  });
+        `;
+        row.appendChild(card);
+    });
 }
+
+function dropDownProvince(fetchProvince){
+  const provinceDropdown = document.getElementById('filterProvince');
+  fetchProvince.povince_dropdown_list.forEach(province => {
+        const option = document.createElement('option');
+        option.value = province;
+        option.textContent = province;
+        provinceDropdown.appendChild(option);
+    });
+    isProvincePopulated = true;
+
+  }
+  
+  function populateDropdownDentist(fetchDentist){
+    const dentistDropdown = document.getElementById('filterSpecialist');
+    fetchDentist.dentist_dropdown_list.forEach(dentist =>{
+      const option = document.createElement('option');
+      option.value = dentist.dentist_fullname;
+      option.textContent = dentist.dentist_fullname + "(" + dentist.dentist_license + ")";
+      dentistDropdown.appendChild(option);
+    })
+    isDentistPopulated = true;
+  }
+fetchData()
 
 </script>
 {% endblock %}
