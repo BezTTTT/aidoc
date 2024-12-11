@@ -10,7 +10,8 @@
 
     <!-- Search Box -->
     <div class="input-group mb-3">
-        <input type="text" class="form-control" name="search" placeholder="ชื่อ นามสกุลคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC คำสำคัญในรายงานผู้ป่วย ชื่อไฟล์ Case ID" id="searchInput" value="" />
+        <input type="text" class="form-control" name="search" placeholder="ชื่อ นามสกุลคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC คำสำคัญในรายงานผู้ป่วย ชื่อไฟล์ Case ID" 
+        id="searchInput" onkeypress="handleKeypress(event)"/>
         <button class="btn btn-outline-primary" type="button" id="searchButton"> Search </button>
     </div>
 
@@ -65,18 +66,21 @@
             <!-- Cards will be dynamically populated here -->
         </div>
     </div>
+    <div class="pagination d-flex justify-content-center align-items-center" id = "pagination">
+        <!-- pagination will be dynamically populated here -->
+    </div>
 {% endblock %}
 
 {% block script %}
 <script>
 const baseUrl = "http://127.0.0.1:5000/image_manage/";
 const limit = 12;
-const page = 1;
+let page = 1;
 let searchQuery = "";
 let priority = "";
 let dentist_checked = "";
 let province = "";
-let specialist = "";
+let dentist_id = "";
 let ai_prediction = "";
 let isProvincePopulated = false;
 let isDentistPopulated = false;
@@ -88,50 +92,60 @@ function handleFormSubmit(event) {
     event.preventDefault(); // Prevent page refresh
 }
 
+function handleKeypress(event){
+  page = 1
+  if(event.key === "Enter" || event.keyCode === 13){
+    searchQuery = document.getElementById('searchInput').value; // Get the search query
+    fetchData();
+  }
+}
+
 function handleSearchClick() {
+  page = 1
     searchQuery = document.getElementById('searchInput').value; // Get the search query
     fetchData();
 }
 
 function handleFilterChange() {
+  page = 1
     priority = document.getElementById('filterPriority').value;
     dentist_checked = document.getElementById('filterStatus').value;
     province = document.getElementById('filterProvince').value;
-    specialist = document.getElementById('filterSpecialist').value;
+    dentist_id = document.getElementById('filterSpecialist').value;
     ai_prediction = document.getElementById('filterAi').value;
     fetchData();
 }
 
 function createApi(base, params) {
     const queryParams = [];
-
-    if (params.search) queryParams.push(`search=${params.search}`);
     if (params.limit !== undefined) queryParams.push(`limit=${params.limit}`);
     if (params.page !== undefined) queryParams.push(`page=${params.page}`);
     if (params.priority) queryParams.push(`priority=${params.priority}`);
     if (params.dentist_checked) queryParams.push(`dentist_checked=${params.dentist_checked}`);
     if (params.province) queryParams.push(`province=${params.province}`);
-    if (params.specialist) queryParams.push(`specialist=${params.specialist}`);
-    if (params.ai_prediction) queryParams.push(`ai=${params.ai_prediction}`);
+    if (params.dentist_id) queryParams.push(`dentist_id=${params.dentist_id}`);
+    if (params.ai_prediction) queryParams.push(`ai_prediction=${params.ai_prediction}`);
+    if (params.searchQuery) queryParams.push(`search_term=${params.searchQuery}`);
 
     return `${base}?${queryParams.join("&")}`;
 }
 
 function fetchData() {
     const apiUrl = createApi(baseUrl, {
-        search: searchQuery,
         limit,
         page,
         priority,
         dentist_checked,
         province,
-        specialist,
-        ai_prediction
+        dentist_id,
+        ai_prediction,
+        searchQuery,
     });
 
     fetch(apiUrl)
         .then(response => response.json())
         .then(data => {
+          console.log(data.data.length)
             populateCard(data);
             if (!isProvincePopulated && data) {
               dropDownProvince(data);
@@ -139,6 +153,7 @@ function fetchData() {
             if (!isDentistPopulated && data) {
               populateDropdownDentist(data);
             }
+            generatePagination(data)
         })
         .catch(error => {
             console.error("Fetch error:", error);
@@ -209,19 +224,85 @@ function dropDownProvince(fetchProvince){
         provinceDropdown.appendChild(option);
     });
     isProvincePopulated = true;
-
   }
   
-  function populateDropdownDentist(fetchDentist){
+  function populateDropdownDentist(fetchDentist) {
     const dentistDropdown = document.getElementById('filterSpecialist');
-    fetchDentist.dentist_dropdown_list.forEach(dentist =>{
-      const option = document.createElement('option');
-      option.value = dentist.dentist_fullname;
-      option.textContent = dentist.dentist_fullname + "(" + dentist.dentist_license + ")";
-      dentistDropdown.appendChild(option);
-    })
+    fetchDentist.dentist_dropdown_list.forEach(dentist => {
+        const option = document.createElement('option');
+        option.value = dentist.dentist_id;
+        option.textContent = dentist.dentist_license
+            ? `${dentist.dentist_fullname} (${dentist.dentist_license})`
+            : dentist.dentist_fullname; // Skip parentheses if no license
+        dentistDropdown.appendChild(option);
+    });
     isDentistPopulated = true;
   }
+
+  function generatePagination(data) {
+    const paginationDiv = document.getElementById('pagination');
+    paginationDiv.innerHTML = ""; // Clear previous pagination
+
+    const totalPages = data.pagination.total_pages>0 ? data.pagination.total_pages: 1 ; // Adjust based on your API response
+    const currentPage = data.pagination.page;
+    
+    // Add previous button
+    if (currentPage > 1) {
+      const firstButton = document.createElement('button');
+        firstButton.classList.add('btn', 'page-link', 'm-2', 'text-secondary');
+        firstButton.textContent = 'หน้าแรก';
+        firstButton.onclick = () => {
+            page = 1; // Go to the first page
+            fetchData();
+        };
+        paginationDiv.appendChild(firstButton);
+        
+        const prevButton = document.createElement('button');
+        prevButton.classList.add('btn', 'page-link', 'm-2', 'text-secondary');
+        prevButton.textContent = 'ก่อนหน้า';
+        prevButton.onclick = () => {
+            page = currentPage - 1;
+            fetchData();
+        };
+        paginationDiv.appendChild(prevButton);
+    }
+    if (data.data.length){
+      const currentPageSpan = document.createElement('span');
+      currentPageSpan.classList.add('current-page', 'page-link', 'm-2', 'text-secondary');
+      currentPageSpan.textContent = `หน้าปัจจุบัน : ${currentPage} จาก ${totalPages}`;
+      paginationDiv.appendChild(currentPageSpan);
+    }
+
+    if (!data.data.length){
+      const currentPageSpan = document.createElement('span');
+      currentPageSpan.classList.add('current-page', 'm-2', 'text-danger');
+      currentPageSpan.textContent = `ไม่พบข้อมูล`
+      paginationDiv.appendChild(currentPageSpan);
+    }
+
+
+    // Add next button
+    if (currentPage < totalPages) {
+        const nextButton = document.createElement('button');
+        nextButton.classList.add('btn', 'page-link', 'm-2', 'text-secondary');
+        nextButton.textContent = 'ถัดไป';
+        nextButton.onclick = () => {
+            page = currentPage + 1;
+            fetchData();
+        };
+        paginationDiv.appendChild(nextButton);
+
+        const lastButton = document.createElement('button');
+        lastButton.classList.add('btn', 'page-link', 'm-2', 'text-secondary');
+        lastButton.textContent = 'หลังสุด';
+        lastButton.onclick = () => {
+            page = totalPages; // Go to the last page
+            fetchData();
+        };
+        paginationDiv.appendChild(lastButton);
+    }
+}
+
 fetchData()
 
 </script>
