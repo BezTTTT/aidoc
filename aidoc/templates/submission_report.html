@@ -5,11 +5,11 @@
 {% block content %}
 
 <h2>รายงานสรุปการนำส่งรูปรายจังหวัด</h2>
-<select name="selectedProvince" id="selectedProvince"></select>
-<input type="submit" value="getReport" id="submitButton">
+<select name="selectedProvince" id="selectedProvince" onchange="handleProvinceChange()"></select>
 <script>
-  getReport('')
+  getReport("ทั้งประเทศ")
   const provinces = [
+    "ทั้งประเทศ",
     "กรุงเทพมหานคร", "กระบี่", "กาญจนบุรี", "กาฬสินธุ์", "กำแพงเพชร", "ขอนแก่น",
     "จันทบุรี", "ฉะเชิงเทรา", "ชลบุรี", "ชัยนาท", "ชัยภูมิ", "ชุมพร", "เชียงราย", "เชียงใหม่",
     "ตรัง", "ตราด", "ตาก", "นครนายก", "นครปฐม", "นครพนม", "นครราชสีมา", "นครศรีธรรมราช",
@@ -31,30 +31,40 @@
   // Function to get the report
   function getReport(province) {
     const role = 'admin'; // Example role value
-
-    // Make the API call with query parameter and custom header
-    fetch(`http://127.0.0.1:5000/report/?province=${province}`, {
+    let fetchReport = ""
+    if(province == "ทั้งประเทศ"){
+      fetchReport = fetch(`http://127.0.0.1:5000/report/`, {
       method: 'GET',
       headers: {
         'x-role': role, // Custom header with role
         'Content-Type': 'application/json', // Optional content type
       },
     })
-      .then((response) => response.json()) // Assuming the response is JSON
+    }else{
+      fetchReport = fetch(`http://127.0.0.1:5000/report/?province=${province}`, {
+      method: 'GET',
+      headers: {
+        'x-role': role, // Custom header with role
+        'Content-Type': 'application/json', // Optional content type
+      },
+    })
+  }
+      fetchReport.then((response) => response.json()) // Assuming the response is JSON
       .then((data) => {
         populateFirstTable(data)
         populateSpecialistTable(data)
-        populatePictureCountTable(data)
-  })
+        populatePictureCountTable(data) 
+    })
       .catch((error) => {
         console.error('Error:', error);
       });
   }
-  document.getElementById('submitButton').addEventListener('click', (event) => {
-    event.preventDefault(); // Prevent the default form submission behavior
-    const province = document.getElementById('selectedProvince').value; // Get the selected province value
-    report = getReport(province); // Call the function with the selected value
-  });
+  
+  function handleProvinceChange() {
+  const province = document.getElementById('selectedProvince').value;
+  getReport(province);
+}
+
 
   function populateFirstTable(data){
     const firstTable = document.getElementById('FirstTable');
