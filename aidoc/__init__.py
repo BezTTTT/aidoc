@@ -50,6 +50,10 @@ def create_app(test_config=None):
     app.register_blueprint(user.bp)
     from . import general
     app.register_blueprint(general.bp)
+    from .API import report
+    app.register_blueprint(report.routes.report_bp)
+    from .API import admin
+    app.register_blueprint(admin.routes.admin_bp)
 
     # Add special endpoints
     app.add_url_rule('/', endpoint='index')

@@ -10,7 +10,8 @@
   <thead>
     <tr class="text-dark" >
       <th>ชื่อ - นามสกุล</th>
-      <th >อีเมล</th>
+      <th>ตำแหน่ง</th>
+      <th>วิชาชีพ</th>
       <th>จังหวัด</th>
       <th>จำนวนอัพโหลด (รูป)</th>
       <th>แก้ไข</th>
@@ -24,7 +25,7 @@
   let dataTableInstance = null; // DataTables instance
 
   function fetchAdminPage() {
-    fetch(`http://127.0.0.1:5000/admin_page/`, {
+    fetch(`http://127.0.0.1:5000/admin_page_api/`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -49,17 +50,29 @@
     const tbody = document.querySelector("#user_manage tbody");
     tbody.innerHTML = ""; // Clear existing rows
 
+   
     data.forEach((user) => {
       const row = document.createElement("tr");
-
+      const roleIcons = user.role
+      .map((role) => {
+      switch (role.toLowerCase()) {
+        case "admin":
+          return "🤴";
+        case "osm":
+          return "👨‍🚒";
+        case "specialist":
+          return "⚕️";
+        case "patient":
+          return "👨‍🦽";
+        default:
+          return "👨‍⚕️"; // Default icon for unknown roles
+      }
+    })
+    .join(" "); // Join icons with a space for display
       row.innerHTML = `
-        <td>
-          <form action="/user_upload" method="post">
-            <input name="id" type="hidden" value="${user.id}" />
-              ${user.name} ${user.surname} (${user.role}, ${user.job_position})
-          </form>
-        </td>
-        <td>${user.email}</td>
+        <td> ${user.name} ${user.surname}</td>
+        <td> ${roleIcons}</td>
+        <td> ${user.job_position}</td>
         <td>${user.province}</td>
         <td>${user.total_submit}</td>
         <td>
@@ -129,7 +142,7 @@
 
     const formData = { id: userId }; // Construct the payload
 
-    fetch(`http://127.0.0.1:5000/delete_user/`, {
+    fetch(`http://127.0.0.1:5000/delete_user_api/`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
