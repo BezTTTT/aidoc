@@ -6,3 +6,6 @@ imageQualityChecker/imageQualityChecker.tflite
 imageQualityChecker/old/*
 imageQualityChecker/__pycache__/*
 imageQualityChecker/tutorial.ipynb
+aidoc/API/admin/__pycache__/*
+aidoc/API/common/__pycache__/*
+aidoc/API/report/__pycache__/*
