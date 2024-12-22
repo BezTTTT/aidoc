@@ -1,0 +1,169 @@
+{% extends "./base.html" %}
+
+{% block title %} RiskOCA | Submission Records {% endblock %}
+
+{% block content %}
+<div class="my-5 d-flex justify-content-between">
+  <p class="fs-2">จัดการผู้ใช้งาน</p>
+</div>
+<table id="user_manage" class="dataTable">
+  <thead>
+    <tr class="text-dark" >
+      <th>ชื่อ - นามสกุล</th>
+      <th>ตำแหน่ง</th>
+      <th>วิชาชีพ</th>
+      <th>จังหวัด</th>
+      <th>จำนวนอัพโหลด (รูป)</th>
+      <th>แก้ไข</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+  let fetchedData = []; // Store fetched data globally
+  let dataTableInstance = null; // DataTables instance
+
+  function fetchAdminPage() {
+    fetch(`http://127.0.0.1:5000/admin_page_api/`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        fetchedData = data; // Save fetched data
+        renderTable(fetchedData); // Render the table initially
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  }
+
+  function renderTable(data) {
+    const tbody = document.querySelector("#user_manage tbody");
+    tbody.innerHTML = ""; // Clear existing rows
+
+   
+    data.forEach((user) => {
+      const row = document.createElement("tr");
+      const roleIcons = user.role
+      .map((role) => {
+      switch (role.toLowerCase()) {
+        case "admin":
+          return "🤴";
+        case "osm":
+          return "👨‍🚒";
+        case "specialist":
+          return "⚕️";
+        case "patient":
+          return "👨‍🦽";
+        default:
+          return "👨‍⚕️"; // Default icon for unknown roles
+      }
+    })
+    .join(" "); // Join icons with a space for display
+      row.innerHTML = `
+        <td> ${user.name} ${user.surname}</td>
+        <td> ${roleIcons}</td>
+        <td> ${user.job_position}</td>
+        <td>${user.province}</td>
+        <td>${user.total_submit}</td>
+        <td>
+          <div class="d-flex">
+            <form action="/edit?id=${user.id}" class="mx-1">
+              <input name="id" type="hidden" value="${user.id}" />
+              <input
+                class="btn btn-primary"
+                style="width: 100%"
+                type="submit"
+                value="แก้ไข"
+              />
+            </form>
+            <button
+              class="btn btn-danger"
+              style="width: 100%"
+              onclick="confirmAndDelete('${user.id}')"
+            >
+              ลบ
+            </button>
+          </div>
+        </td>
+      `;
+
+      tbody.appendChild(row);
+    });
+
+    // Reinitialize DataTables to ensure proper pagination
+    if (dataTableInstance) {
+      dataTableInstance.destroy(); // Destroy existing instance
+    }
+    dataTableInstance = $("#user_manage").DataTable({
+      order: [[3, "desc"]],
+      pageLength: 10, // Items per page
+      language: {
+        search: "ค้นหา:",
+        lengthMenu: "แสดง _MENU_ รายการต่อหน้า",
+        info: "แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ",
+        paginate: {
+          first: "หน้าแรก",
+          last: "หน้าสุดท้าย",
+          next: "ถัดไป",
+          previous: "ก่อนหน้า",
+        },
+      },
+    });
+  }
+
+  function filterTable() {
+    const searchValue = document
+      .getElementById("searchInput")
+      .value.toLowerCase();
+
+    // Filter data based on search input
+    const filteredData = fetchedData.filter((user) =>
+      Object.values(user)
+        .join(" ")
+        .toLowerCase()
+        .includes(searchValue)
+    );
+
+    renderTable(filteredData); // Re-render the table with filtered data
+  }
+
+  function confirmAndDelete(userId) {
+    if (!confirm("คุณต้องการลบผู้ใช้นี้ใช่หรือไม่ ?")) return;
+
+    const formData = { id: userId }; // Construct the payload
+
+    fetch(`http://127.0.0.1:5000/delete_user_api/`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData), // Pass the ID in the body
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Failed to delete user: ${response.statusText}`);
+        }
+        alert("ผู้ใช้ถูกลบสำเร็จ!");
+        fetchAdminPage(); // Refresh the table after deletion
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        alert("เกิดข้อผิดพลาดในการลบผู้ใช้");
+      });
+  }
+
+
+  fetchAdminPage(); // Fetch data and render table on page load
+</script>
+
+{% endblock %}

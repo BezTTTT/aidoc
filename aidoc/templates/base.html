@@ -28,6 +28,17 @@
         <script type="text/javascript" src="https://earthchie.github.io/jquery.Thailand.js/jquery.Thailand.js/dist/jquery.Thailand.min.js"></script>
     {% endif %}
     
+    <!-- CDN link for DataTables CSS -->
+    <link
+    rel="stylesheet"
+    href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css"
+    />
+    <!-- CDN link for jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- CDN link for DataTables JS -->
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+
     <!-- CSS Style -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
@@ -72,7 +83,41 @@
                                     <a class="nav-link active" aria-current="page" href="/record/specialist">ระบบผู้เชี่ยวชาญ</a>
                                 </li>
                             {% endif %}
-                        
+                            {% if g.user['is_admin']==1%}
+                            <li class="nav-item">
+                                <a class="nav-link active" aria-current="page" href="/report">รายงาน</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a
+                                class="nav-link dropdown-toggle active"
+                                id="userManagementDropdown"
+                                role="button"
+                                data-bs-toggle="dropdown"
+                                aria-expanded="false"
+                                >
+                                ระบบดูแลผู้ใช้งาน
+                                </a>
+                                <ul
+                                class="dropdown-menu"
+                                aria-labelledby="userManagementDropdown"
+                                >
+                                <li>
+                                    <a
+                                    class="dropdown-item"
+                                    href="/admin_page"
+                                    >จัดการผู้ใช้งาน</a
+                                    >
+                                </li>
+                                <li>
+                                    <a
+                                    class="dropdown-item"
+                                    href="/image_manage"
+                                    >จัดการรูปภาพ</a
+                                    >
+                                </li>
+                                </ul>
+                            </li>
+                            {% endif %}
                         <!--  osm navbar -->
                         {% elif g.user['is_osm']==1 %}
                             <li class="nav-item">

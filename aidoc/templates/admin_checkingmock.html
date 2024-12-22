@@ -1,0 +1,583 @@
+{% extends "./base.html"%}
+
+{% block title %} RiskOCA | Specialist Diagnosis {% endblock %}
+
+{% block content %}
+
+<h2 class="text-center"> ระบบปัญญาประดิษฐ์ที่ช่วยในการค้นหาและวิเคราะห์รอยโรคก่อนมะเร็งและมะเร็งช่องปาก</h2>
+<h4 class="text-center"> (Artificial Intelligent System for Detecting and Analyzing PMDs and Oral Cancer)</h4>
+
+<div class="row d-flex justify-content-center text-center">
+    <div class="col-md-4 mt-2">
+        <div class="card">
+            <div class="mx-2 mt-2" style="
+            height: 300px;
+            display: inline-flex; /* Use inline-flex to center horizontally */
+            align-items: center; /* Center vertically */
+            justify-content: center; /* Center horizontally */
+            overflow: hidden;
+          ">
+                <a href="{{ url_for('image.load_image', folder='upload', user_id=data['owner_id'], imagename=data['fname']) }}" target="_blank">
+                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=data['owner_id'], imagename=data['fname']) }}" alt=""
+                        style="height: 100%; max-width: 100%; width: auto" />
+                </a>
+            </div>
+            <div class="card-body">
+                <p class="card-text">ภาพถ่ายช่องปาก</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mt-2">
+        <div class="card">
+            <div class="mx-2 mt-2" style="
+            height: 300px;
+            display: inline-flex; /* Use inline-flex to center horizontally */
+            align-items: center; /* Center vertically */
+            justify-content: center; /* Center horizontally */
+            overflow: hidden;
+          ">
+                <a href="{{ url_for('image.load_image', folder='outlined', user_id=data['owner_id'], imagename=data['fname']) }}" target="_blank">
+                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=data['owner_id'], imagename=data['fname']) }}" alt=""
+                        style="height: 100%; max-width: 100%; width: auto" />
+                </a>
+            </div>
+            <div class="card-body">
+                <p class="card-text">ภาพ AI ระบุรอยโรค</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row d-flex justify-content-center text-center mt-2" style="width: auto">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <p class="card-text">[คำแนะนำ] [1. กดที่รูป เพื่อดูภาพความละเอียดสูง] [2. หากศรีษะของคนไข้ไม่อยู่ในทิศทางตั้งขึ้น เพื่อให้ AI ทำงานได้แม่นยำที่สุด กรุณากดหมุนรูป แล้วกด Recompute เพื่อให้ AI ประมวลผลอีกครั้ง] [3. เนื่องจาก AI อาจมีการปรับปรุงตัวเป็นรุ่นใหม่ ผู้ใช้อาจกด Recompute เพื่อขอให้ AI รุ่นล่าสุดพิจารณาภาพนี้อีกครั้ง]</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-center">
+    <div class="row justify-content-center my-4" style="width: 90%;">
+        <div class="col-md-2 text-center mt-2 px-1">
+            <form action="{{url_for('image.record', role='specialist', page=session['current_record_page'])}}" method="post" enctype="multipart/form-data">
+                <a class="btn btn-outline-success btn-block nowrap" style="width: 100%; margin: 0;"
+                    onclick='this.parentNode.submit(); return false;'>ย้อนกลับ</a>
+            </form>
+        </div>
+        <div class="col-md-2 text-center mt-2 px-1">
+            <a class="btn btn-outline-success btn-block" style="width: 100%; margin: 0;"
+                href="/download_image/{{data['owner_id']}}/{{data['fname']}}" download>Download</a>
+        </div>
+        <div class="col-md-2 text-center mt-2 px-1">
+            <form action="{{url_for('image.rotate_image', return_page='diagnosis', role='specialist', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
+                <input name="user_id" type="hidden" value="{{data['owner_id']}}">
+                <input name="imagename" type="hidden" value="{{data['fname']}}">
+                <a class="btn btn-outline-success btn-block nowrap" style="width: 100%; margin: 0;"
+                    onclick='this.parentNode.submit(); return false;'>หมุนรูปไปทางขวา</a>
+            </form>
+        </div>
+        <div class="col-md-2 text-center mt-2 px-1">
+            <form action="{{url_for('image.recompute_image', return_page='diagnosis', role='specialist', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
+                <input name="user_id" type="hidden" value="{{data['owner_id']}}">
+                <input name="imagename" type="hidden" value="{{data['fname']}}">
+                <a class="btn btn-outline-success btn-block nowrap" style="width: 100%; margin: 0;"
+                    onclick='this.parentNode.submit(); return false;'>Recompute</a>
+            </form>
+        </div>
+        <div class="col-md-2 text-center mt-2 px-1">
+            <form action="{{url_for('image.mask_editor', role='specialist', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
+                <input name="user_id" type="hidden" value="{{data['owner_id']}}">
+                <input name="imagename" type="hidden" value="{{data['fname']}}">
+                <a class="btn btn-outline-success btn-block nowrap" style="width: 100%; margin: 0;"
+                    onclick='this.parentNode.submit(); return false;'>แก้ไขผลลัพธ์</a>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="row d-flex justify-content-center text-align-left my-4" style="width: auto">
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">ผลการพยากรณ์ของ AI</h5>
+            {% if data['ai_prediction'] == 0 %}
+                <h6 class="card-subtitle card shadow-lg bg-success my-3 py-3 ms-4 fs-4 text-white text-center">
+                    ภาพช่องปากไม่น่าจะมีรอยโรค
+                </h6>
+            {% elif data['ai_prediction'] == 1 %}
+                <h6 class="card-subtitle card shadow-lg bg-warning my-3 py-3 fs-4 text-dark text-center">
+                    ภาพถ่ายช่องปากอาจมีรอยโรคที่มีลักษณะคล้ายกันกับ OPMD (Oral Potentially Malignant Disorders)
+                </h6>
+            {% else %}
+                <h6 class="card-subtitle card shadow-lg bg-danger my-3 py-3 ms-4 fs-4 text-white text-center">
+                    ภาพถ่ายช่องปากอาจมีรอยโรคที่มีลักษณะคล้ายกันกับ OSCC (Oral Squamous Cell Carcinoma)
+                </h6>
+            {% endif %}
+        
+            <button id="seeMoreButton" class="btn btn-light"
+                style="padding: 5px 10px; font-size: 13px;background-color:rgb(196, 196, 196);">
+                <span class="bi bi-plus">คลิกเพื่อดูความน่าจะเป็นของการพยากรณ์ด้วย AI</span>
+            </button>
+    
+            <div id="hiddenContent" class="m-2">
+                <div class="row d-flex justify-content-center">
+                    <div id="normal-check-box-col1" class="col-1 d-flex justify-content-end" style="width: 33%">
+                        <input class="form-check-input" type="radio" name="ai_prediction" disabled
+                            {% if data['ai_prediction'] == 0 %} checked {% endif %}
+                        >
+                    </div>
+                    <div id="normal-check-box-col2" class="col-2" style="width: 33%">
+                        <p class="card-text">ความน่าจะเป็นที่จะไม่มีรอยโรค</p>
+                    </div>
+                    <div id="normal-check-box-col3" class="col-3" style="width: 33%">
+                        <p class="card-text">
+                            {{'%0.2f'| format(data['ai_scores'][0]*100 | float)}} %
+                        </p>
+                    </div>
+                </div>
+            
+                <div class="row justify-content-center" style="width: auto">
+                    <div id="opmd-check-box-col1" class="col-1 d-flex justify-content-end" style="width: 33%">
+                        <input class="form-check-input" type="radio" name="ai_prediction" disabled
+                            {% if data['ai_prediction'] == 1 %} checked {% endif %}
+                        >
+                    </div>
+                    <div id="opmd-check-box-col2" class="col-2" style="width: 33%">
+                        <p class="card-text">ความน่าจะเป็นของการมีรอยโรค OPMD</p>
+                    </div>
+                    <div id="opmd-check-box-col3" class="col-3" style="width: 33%">
+                        <p class="card-text">
+                            {{'%0.2f'| format(data['ai_scores'][1]*100 | float)}} %
+                        </p>
+                    </div>
+                </div>
+            
+                <div class="row justify-content-center" style="width: auto">
+                    <div id="oscc-check-box-col1" class="col-1 d-flex justify-content-end" style="width: 33%">
+                        <input class="form-check-input" type="radio" name="ai_prediction" disabled
+                            {% if data['ai_prediction'] == 2 %} checked {% endif %}
+                        >
+                    </div>
+                    <div id="oscc-check-box-col2" class="col-2" style="width: 33%">
+                        <p class="card-text">ความน่าจะเป็นของการมีรอยโรค OSCC</p>
+                    </div>
+                    <div id="oscc-check-box-col3" class="col-3" style="width: 33%">
+                        <p class="card-text">
+                            {{'%0.2f'| format(data['ai_scores'][2]*100 | float)}} %
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="outer-container" class="row d-flex justify-content-start my-4 pb-3">
+    <div id="inner-left-container" class="p-0" style="width: 49.5%; margin-right: 0.5%">
+        <div id="image-info-container" class="card mb-3" style="width: 100%">
+            <div class="card-body px-4">
+                <h5 class="card-title text-start mb-3">ข้อมูลภาพ</h5>
+                <p>Case ID: {{data['case_id']}}</p>
+                <p>ชื่อไฟล์: {{data['fname']}}</p>
+                <p>วันที่นำส่ง: {{data['thai_datetime']}}</p>
+                <p>สถานที่คัดกรอง: {{data['location_text']}}</p>
+                <p>ผู้นำส่งรูป: {{data['sender_description']}}</p>
+                {% if data['sender_hospital'] is not none%}
+                    <p>โรงพยาบาลที่สังกัด: {{data['sender_hospital']}} จ.{{data['sender_province']}}</p>
+                {% endif %}
+                {% if data['sender_name'] is none %}
+                    <form id="newOSMForm" action="{{ url_for('user.register', role='specialist') }}" method="post" >
+                        <input name="order" type="hidden" value="register-osm">
+                        <input name="return_page" type="hidden" value="diagnosis">
+                        <input name="role" type="hidden" value="specialist">
+                        <input name="img_id" type="hidden" value="{{data['img_id']}}">
+                        <input name="sender_phone" type="hidden" value="{{data['sender_phone']}}">
+                        <button id="submitbtn" class="btn btn-outline-success my-2" type="submit">คลิกเพื่อลงทะเบียนผู้นำส่งข้อมูล</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+        {% if data['dentist_id'] is not none %}
+            <div id="dentist-feedback-history-container" class="card mb-3" style="width: 100%; height: fit-content">
+                <div class="card-body px-4">
+                    <h5 class="card-title text-start mb-3">ประวัติคำวินิจฉัย</h5>
+                    <p>ความคิดเห็นของทันตแพทย์: {{maps['dentist_diagnosis_map'][data['dentist_feedback_code']]}}</p>
+                    {% if data['dentist_feedback_code']!= 'NORMAL' %}
+                        {% if (data['dentist_feedback_code']== 'OPMD' or data['dentist_feedback_code']== 'OSCC') and data['dentist_feedback_lesion'] is not none %}
+                            <p>ชนิดรอยโรค: {{maps['lesion_type_map'][data['dentist_feedback_lesion']]}} </p>
+                            <p>ตำแหน่งที่พบรอยโรค: {{maps['lesion_location_map'][data['dentist_feedback_location']]}}</p>
+                        {% elif data['dentist_feedback_code']== 'BAD_IMG' %}
+                            <p>ความคิดเห็นเพิ่มเติม: {{maps['bad_image_map'][data['dentist_feedback_comment']]}} </p>
+                        {% elif data['dentist_feedback_comment'] != '' %}
+                            <p>ความคิดเห็นเพิ่มเติม: {{data['dentist_feedback_comment']}} </p>
+                        {% endif %}
+                    {% endif %}
+                    <p>ทันตแพทย์ผู้ตรวจ: {{data['dentist_name']}} {{data['dentist_surname']}} </p>
+                    <p>วันที่: {{data['dentist_feedback_date']}} </p>
+                </div>
+                <button id="dentistFeedbackHistBtn" class="btn btn-light mb-3"
+                    style="
+                    padding: 5px 10px;
+                    font-size: 13px;
+                    background-color: rgb(196, 196, 196);
+                    width: fit-content;
+                    margin-left: 1.25rem;
+                    " disabled>ดูประวัติการแก้ไขคำวินิจฉัยทั้งหมด
+                </button>
+                <script>
+                    const dentistFeedbackHistBtn = document.getElementById("dentistFeedbackHistBtn");
+                    const dentistFeedbackHistHistContainer = document.getElementById("dentist-feedback-history-history-container");
+            
+                    let displayToggle = false;
+                    dentistFeedbackHistBtn.addEventListener("click", () => {
+                    if (!displayToggle) {
+                        dentistFeedbackHistHistContainer.style.display = "block";
+                        dentistFeedbackHistBtn.innerText = "ปิด";
+                    } else {
+                        dentistFeedbackHistHistContainer.style.display = "none";
+                        dentistFeedbackHistBtn.innerText = "ดูประวัติการแก้ไขคำวินิจฉัยทั้งหมด";
+                    }
+                    displayToggle = !displayToggle;
+                    });
+                </script>
+            </div>
+        {% endif %}
+        <div id="dentist-feedback-container" class="card" style="width: 100%; height: fit-content">
+            <form action="{{url_for('image.diagnosis', role='specialist', img_id=data['img_id'], specialist_feedback='true')}}" method="post" enctype="multipart/form-data">
+                <div class="card-body px-4">
+                    <h5 class="card-title">สำหรับทันตแพทย์ที่เข้าร่วมโครงการ ท่านจะวินิจฉัยภาพนี้ให้เข้ากรณีใด</h5>
+                    {% for key, value in maps['dentist_diagnosis_map'].items() %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="dt_comment_option" id="dt_comment_option{{loop.index}}" value="{{key}}" required>
+                            <label class="form-check-label" for="dt_comment_option{{loop.index}}">{{value}}</label>
+                        </div>
+                    {% endfor %}
+                    <div id="BadImgCommentSelection" style="display: none">
+                        <h6>ตัวเลือก</h6>
+                        <div class="ms-4">
+                            {% for key, value in maps['bad_image_map'].items() %}
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="BadImgCommentSelectOptions" id="bad_img_option{{loop.index}}" value="{{key}}">
+                                    <label class="form-check-label" for="bad_img_option{{loop.index}}">{{value}}</label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div id="OSCCOPMDSelection" style="display: none">
+                        <div>
+                            <h6>ตำแหน่งที่ตรวจพบรอยโรค</h6>
+                            <div class="ms-4">
+                                {% for key, value in maps['lesion_location_map'].items() %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="LesionLocationSelection" id="lesion_location{{loop.index}}" value="{{key}}">
+                                        <label class="form-check-label" for="lesion_location{{loop.index}}">{{value}}</label>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div>
+                            <div>
+                                <div>
+                                    <h6>ชนิดรอยโรค</h6>
+                                    <div class="ms-4">
+                                        {% for key, value in maps['lesion_type_map'].items() %}
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="LesionTypeSelection" id="lesion_type{{loop.index}}" value="{{key}}">
+                                                <label class="form-check-label" for="lesion_type{{loop.index}}">{{value}}</label>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="OtherCommentBox" style="display: none">
+                        <label for="OtherCommentTextarea" class="form-label" style="font-weight: bold">กรุณาพิมพ์ความคิดเห็นในช่องด้านล่าง (ไม่เกิน 255 ตัวอักษร)</label>
+                        <textarea class="form-control" id="OtherCommentTextarea" rows="3" maxlength="255" name="OtherCommentTextarea"></textarea>
+                    </div>
+
+                    <input class="btn btn-outline-primary mt-3" type="submit" value="บันทึกคำวินิจฉัย">
+                    <div class="mt-2"><i>คำวินิจฉัยของทันตแพทย์นี้ ผู้ป่วยจะสามารถมองเห็นได้ (หากวินิจฉัยว่ามีรอยโรค ผู้ป่วยจะทราบเพียงว่ามีรอยโรคหรือไม่)</i></div>
+                    <script>
+                        var dt_comment_list = document.getElementsByName("dt_comment_option");
+                        var bad_img_select = document.getElementById("BadImgCommentSelection");
+                        var bad_img_option_list = document.getElementsByName("BadImgCommentSelectOptions");
+                        var lesion_select = document.getElementById("OSCCOPMDSelection");
+                        var lesion_pos_list = document.getElementsByName("LesionLocationSelection");
+                        var lesion_type_list = document.getElementsByName("LesionTypeSelection");
+                        var commentBox = document.getElementById("OtherCommentBox");
+                        var commentTextArea = document.getElementById("OtherCommentTextarea");
+            
+                        const closeCommentBox = () => {
+                            commentBox.style.display = "none";
+                            commentTextArea.required = false;
+                            commentTextArea.value = null;
+                        };
+            
+                        const closeBadImgOption = () => {
+                            bad_img_option_list.forEach((option) => {
+                                option.required = false;
+                                option.checked = false;
+                            });
+                            bad_img_select.style.display = "none";
+                        };
+            
+                        const closeLesionOption = () => {
+                            lesion_pos_list.forEach((option) => {
+                                option.required = false;
+                                option.checked = false;
+                            });
+                            lesion_type_list.forEach((option) => {
+                                option.required = false;
+                                option.checked = false;
+                            });
+                            lesion_select.style.display = "none";
+                        };
+            
+                        for (var i = 0; i < dt_comment_list.length; i++) {
+                            dt_comment_list[i].addEventListener("change", function () {
+                                if (this.value == "BAD_IMG") {
+                                    bad_img_select.style.display = "block";
+                                    bad_img_option_list.forEach((option) => {
+                                        option.required = true;
+                                    });
+                                    closeLesionOption();
+                                    closeCommentBox();
+                                } else if (this.value == "OTHER") {
+                                    commentBox.style.display = "block";
+                                    commentTextArea.required = true;
+                                    closeLesionOption();
+                                    closeBadImgOption();
+                                } else if (this.value == "OSCC" || this.value == "OPMD") {
+                                    lesion_select.style.display = "block";
+                                    lesion_pos_list.forEach((option) => {
+                                        option.required = true;
+                                    });
+                                    lesion_type_list.forEach((option) => {
+                                        option.required = true;
+                                    });
+                                    closeBadImgOption();
+                                    closeCommentBox();
+                                } else {
+                                    closeLesionOption();
+                                    closeBadImgOption();
+                                    closeCommentBox();
+                                }
+                            });
+                        }
+                      </script>
+                </div>
+            </form>
+        </div>
+
+        <div id="biopsy-container" class="card mt-3" style="width: 100%; height: fit-content">
+            <div class="card-body px-4">
+                <h5 class="card-title text-start mb-3">ผลการตรวจชิ้นเนื้อ (Biopsy)</h5>
+                <form class="p-3" action="/biopsy_upload" method="post" enctype="multipart/form-data">
+                    <div class="row d-flex justify-content-center align-items-center text-center mb-3">
+                        <div class="col-8 col-xs-2 d-flex justify-content-center align-items-center">
+                            <input id="file-upload" type="file" name="biopsy_file" required disabled>
+                        </div>
+                    </div>
+                    
+                    <div id="BiopsyCommentBox">
+                        <label for="BiopsyCommentTextarea" class="form-label mt-2">กรุณาพิมพ์ความคิดเห็นต่อผลการตรวจชิ้นเนื้อ</label>
+                        <textarea class="form-control" id="BiopsyCommentTextarea" rows="3" name="biopsy_comment" disabled></textarea>
+                    </div>
+
+                    <input class="btn btn-outline-success mt-3" type="submit" value="บันทึกผลการตรวจชิ้นเนื้อ" disabled>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="patient-container" class="card" style="width: 49.5%; margin-left: 0.5%">
+        <div class="card-body">
+            <h5 class="card-title text-start mb-4">เวชระเบียนผู้ป่วย</h5>
+            {%if data['patient_id'] is none %}
+                {% if data['saved_patient_national_id'] is not none %}
+                    <p>เลขประจำตัวประชาชน: {{data['saved_patient_national_id']}}</p>
+                    <p>ผู้ป่วยยังไม่ถูกลงทะเบียนในระบบ</p>
+                    <form id="newPatientForm" action="{{ url_for('user.register', role='specialist') }}" method="post" >
+                        <input name="order" type="hidden" value="register-patient">
+                        <input name="return_page" type="hidden" value="diagnosis">
+                        <input name="role" type="hidden" value="specialist">
+                        <input name="img_id" type="hidden" value="{{data['img_id']}}">
+                        <input name="saved_patient_national_id" type="hidden" value="{{data['saved_patient_national_id']}}">
+                        <button id="submitbtn" class="btn btn-success mb-2" type="submit">คลิกเพื่อลงทะเบียนข้อมูลคนไข้</button>
+                    </form>
+                {% else %}
+                    <p>ไม่มีข้อมูลผู้ป่วย</p>
+                    <form id="newPatientForm" action="{{ url_for('user.register', role='specialist') }}" method="post" >
+                        <input id='register_order' name="order" type="hidden" value="register-patient">
+                        <input name="return_page" type="hidden" value="diagnosis">
+                        <input name="role" type="hidden" value="specialist">
+                        <input name="img_id" type="hidden" value="{{data['img_id']}}">
+                        <div id="patientIDContainer" class="col-6" style="display: block;">
+                            <input id="patientIDInput" class="form-control" placeholder="เลขประจำตัว ปชช. ผู้ป่วย 13 หลัก (ถ้าทราบ) " maxlength="13" type="text" name="patient_national_id"> 
+                        </div>
+                        <button id="submitbtn" class="btn btn-outline-success my-2" type="submit">เชื่อมโยงข้อมูลคนไข้</button>
+                        <input id="patient_id" name="patient_id" type="hidden">
+                        <div id="patientInfoContainer" class="mt-3 d-flex"></div>
+                    </form>
+                {% endif %}
+            {% else %}
+                <p>ชื่อ-สกุล: {{data['patient_name']}} {{data['patient_surname']}}</p>
+                <p>เพศ: {{data['sex']}}</p>
+                <p>อายุ: {{data['patient_age']}} ปี</p>
+                <p>อาชีพ: {{data['job_position']}}</p>
+                <p>เลขประจำตัวประชาชน: {{data['db_patient_national_id']}}</p>
+                {% if data['email'] is not none %}
+                    <p>อีเมล: {{data['email']}}</p>
+                {% endif %}
+                {% if data['patient_phone'] is not none %}
+                    <p>เบอร์โทรศัพท์: {{data['patient_phone']}}</p>
+                {% endif %}
+                <p>ที่อยู่ (ที่พักปัจจุบัน): {{data['address']}}</p>
+                <p>จังหวัด (ที่พักปัจจุบัน): {{data['province']}}</p>
+                <form id="editPatientForm" action="{{ url_for('user.register', role='specialist') }}" method="post" >
+                    <input name="order" type="hidden" value="edit-patient">
+                    <input name="return_page" type="hidden" value="diagnosis">
+                    <input name="role" type="hidden" value="specialist">
+                    <input name="img_id" type="hidden" value="{{data['img_id']}}">
+                    <input name="patient_national_id" type="hidden" value="{{data['db_patient_national_id']}}">
+                    <button id="submitbtn" class="btn btn-outline-success mb-2" type="submit">คลิกเพื่อแก้ไขข้อมูลคนไข้</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  $(document).ready(function () {
+    $("#seeMoreButton").click(function () {
+      var hiddenContent = $("#hiddenContent");
+      var button = $("#seeMoreButton");
+
+      if (hiddenContent.is(":hidden")) {
+        hiddenContent.slideDown("slow", function () {
+          button.text("ปิด");
+        });
+      } else {
+        hiddenContent.slideUp("slow", function () {
+          button.text("คลิกเพื่อดูความน่าจะเป็นของการพยากรณ์ด้วย AI");
+        });
+      }
+    });
+  });
+</script>
+
+<script>
+    const windowWidth = window.innerWidth;
+  
+    if (windowWidth < 920) {
+        const outerContainer = document.getElementById("outer-container");
+        
+        const innerLeftContainer = document.getElementById("inner-left-container");
+        const dentistFeedbackHistoryContainer = document.getElementById("dentist-feedback-history-container");
+        const dentistFeedbackContainer = document.getElementById("dentist-feedback-container");
+        const caseReportContainer = document.getElementById("case-report-container");
+        const biopsyContainer = document.getElementById("biopsy-container");
+
+        const patientContainer = document.getElementById("patient-container");
+
+        // Move the containers outside the inner-left-container to outer-container (which placed after the patient-container)
+        if (dentistFeedbackHistoryContainer != null)
+            innerLeftContainer.removeChild(dentistFeedbackHistoryContainer);
+        innerLeftContainer.removeChild(dentistFeedbackContainer);
+        innerLeftContainer.removeChild(caseReportContainer);
+        innerLeftContainer.removeChild(biopsyContainer);
+        if (dentistFeedbackHistoryContainer != null)
+            outerContainer.appendChild(dentistFeedbackHistoryContainer); 
+        outerContainer.appendChild(dentistFeedbackContainer);
+        outerContainer.appendChild(caseReportContainer);
+        outerContainer.appendChild(biopsyContainer);
+
+        if (dentistFeedbackHistoryContainer != null)
+            dentistFeedbackHistoryContainer.style.padding = 0;  // Set pading to 0 (left justify)
+        dentistFeedbackContainer.style.padding = 0; 
+        caseReportContainer.style.padding = 0; 
+        biopsyContainer.style.padding = 0; 
+
+        innerLeftContainer.style.width = "100%"; // Push patient-container down
+        innerLeftContainer.style.margin = 0;
+        
+        patientContainer.style.width = "100%"; // Restore the width of patient-container to 100%
+        patientContainer.style.margin = 0;  // Set left margin to 0 (instead of 0.5% left margin)
+        patientContainer.style.marginBottom = "16px"; // Create down margin for the patient-container (dentist-feedback-history-container is next)
+        
+        document.getElementById("patientIDContainer").style.width = "100%"
+        document.getElementById("normal-check-box-col1").style.width = "10%"
+        document.getElementById("normal-check-box-col2").style.width = "65%"
+        document.getElementById("normal-check-box-col3").style.width = "25%"
+        document.getElementById("opmd-check-box-col1").style.width = "10%"
+        document.getElementById("opmd-check-box-col2").style.width = "65%"
+        document.getElementById("opmd-check-box-col3").style.width = "25%"
+        document.getElementById("oscc-check-box-col1").style.width = "10%"
+        document.getElementById("oscc-check-box-col2").style.width = "65%"
+        document.getElementById("oscc-check-box-col3").style.width = "25%"
+    }
+</script>
+
+<style>
+    input[type="radio"] {
+      border: 1px solid rgb(0, 0, 0);
+    }
+  
+    #image-info-container p {
+      margin-bottom: 0.25rem; /* Apply margin bottom equivalent to mb-1 */
+    }
+    #dentist-feedback-history-container p {
+      margin-bottom: 0.25rem; /* Apply margin bottom equivalent to mb-1 */
+    }
+</style>
+
+<script>
+    const patientIDInput = document.getElementById('patientIDInput')
+    const patientInfoContainer = document.getElementById('patientInfoContainer')
+    const orderInput = document.getElementById('register_order')
+    const patient_id = document.getElementById('patient_id')
+
+    patientIDInput.addEventListener('input',function(e){
+        checkPatientProfile( patientID = e.target.value)
+    })
+
+    function checkPatientProfile(patientID) {
+        const idPattern = /^\d{13}$/;
+        if (patientID.length == 13 && idPattern.test(patientID)) {
+            // Make an AJAX request to Flask server
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/get_patient_info', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onreadystatechange = function () {
+                patientInfoContainer.style.display = 'block';
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var patientInfo = JSON.parse(xhr.responseText)
+                    patientInfoContainer.style.color = 'green'
+                    patientInfoContainer.innerHTML = "พบข้อมูลผู้ป่วยชื่อ " + patientInfo.name + " " + patientInfo.surname + " <br> ท่านต้องการเชื่อมโยงข้อมูลหรือไม่?"
+                    patient_id.value = patientInfo.patient_id
+                    orderInput.value = 'link-patient'
+                } else {
+                    patientInfoContainer.style.color = 'red'
+                    patientInfoContainer.innerHTML = "ไม่พบข้อมูลผู้ป่วยในระบบ (คลิกเชื่อมโยงข้อมูลคนไข้เพื่อลงทะเบียนผู้ป่วยใหม่)"
+                    patient_id.value = ""
+                    orderInput.value = 'register-patient'
+                }
+            }
+            // Send the input value to the server
+            xhr.send('patient_id=' + patientID);
+        } else {
+            patientInfoContainer.style.display = 'none'
+            patientInfoContainer.innerHTML = ""
+            patient_id.value = ""
+            orderInput.value = 'register-patient'
+        }
+    }
+</script>
+
+{% endblock %}
