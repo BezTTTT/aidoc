@@ -73,7 +73,7 @@
 
 {% block script %}
 <script>
-const baseUrl = "http://127.0.0.1:5000/image_manage/";
+const baseUrl = "/image_manage_api/";
 const limit = 12;
 let page = 1;
 let searchQuery = "";
@@ -242,7 +242,7 @@ function dropDownProvince(fetchProvince){
   function generatePagination(data) {
     const paginationDiv = document.getElementById('pagination');
     paginationDiv.innerHTML = ""; // Clear previous pagination
-
+c
     const totalPages = data.pagination.total_pages>0 ? data.pagination.total_pages: 1 ; // Adjust based on your API response
     const currentPage = data.pagination.page;
     

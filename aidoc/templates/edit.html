@@ -119,7 +119,7 @@
         return;
       }
   
-      fetch(`http://127.0.0.1:5000/edit_user_info_api/?id=${userId}`, {
+      fetch(`/edit_user_info_api/?id=${userId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -175,7 +175,7 @@
       };
   
       try {
-        const response = await fetch("http://127.0.0.1:5000/submit_info_api/", {
+        const response = await fetch("/submit_info_api/", {
           method: "PUT",  // Use PUT method for updating
           headers: {
             "Content-Type": "application/json",
