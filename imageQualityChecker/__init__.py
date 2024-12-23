@@ -20,17 +20,14 @@ class ImageQualityChecker:
         self.output_details = self.model.get_output_details()
         
     def predict(self, image):
-        '''
-        # check transparency channel
-        print(image.mode)
+        
+        # check the transparency channel and convert to RGB
         if image.mode in ('RGBA', 'LA') or (image.mode == 'P' and 'transparency' in image.info):
-            alpha = image.convert('RGBA').split()[-1]
-            new_image = Image.new("RGBA", image.size, (255, 255, 255) + (255,))
-            new_image.paste(image, mask=alpha)
-            new_image.convert('RGB')
-            image = new_image
-        print(image.mode)
-        '''
+            image.load()
+            alpha = Image.new("RGB", image.size, (255, 255, 255))
+            alpha.paste(image, mask=image.split()[3]) # 3 is the alpha channel
+            image = alpha
+
         # pre-process the image
         resized_image = image.resize((640, 640))
         input_data = np.array(resized_image).astype(np.float32) / 255.0 # for narm image

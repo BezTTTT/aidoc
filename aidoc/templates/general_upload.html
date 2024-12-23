@@ -51,7 +51,25 @@
           {% if data['imageQuality']==2 %}
             <button id="submitbtn" onclick="disableButton()" class="btn btn-success mb-2 btn-lg">Confirm</button>
           {% else %}
-            <button id="submitbtn" onclick="disableButton()" class="btn btn-outline-info mb-2">Confirm</button>
+            <button id="confirmButton" input type="button" class="btn btn-outline-info mb-2" data-bs-toggle="modal" data-bs-target="#qualityCheckerModal">Confirm</button>
+            <!-- Bad Image Warning Modal -->
+            <div class="modal fade" id="qualityCheckerModal" tabindex="-1" aria-labelledby="qualityCheckerModalLabel" aria-hidden="true">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="qualityCheckerModalLabel">Image did not meet quality standard</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body text-start">
+                    The system detects that the image fails the quality test ... If you insist to submit the image, the AI result will not be accurate ... Please retake the image ... The mouth should be sufficiently large, with high resolution, and sufficient brightness (See examples below)
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submitbtn" class="btn btn-danger" onclick="disableButton()" form="submitimgForm">Insist submission</button>
+                  </div>
+                </div>
+              </div>
+            </div>
           {% endif %}
         </form>
       </div>

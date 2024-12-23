@@ -171,7 +171,7 @@ function populateCard(imageData) {
           <div class="card h-100" style="border-color: ${item.is_special_req ? 'red' : ""}; border-width: 3px">
             <div style="display: inline-flex; align-items: center; justify-content: center;">
               <a href="" target="_blank">
-                <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id='${item.sender_id}', imagename='${item.file_name}') }}"
+                <img src="/load_image/outlined_thumbnail/${item.sender_id}/${item.file_name}"
                      class="card-img-top mt-2" alt="" style="max-height: 256px"/>
               </a>
             </div>
@@ -242,7 +242,6 @@ function dropDownProvince(fetchProvince){
   function generatePagination(data) {
     const paginationDiv = document.getElementById('pagination');
     paginationDiv.innerHTML = ""; // Clear previous pagination
-c
     const totalPages = data.pagination.total_pages>0 ? data.pagination.total_pages: 1 ; // Adjust based on your API response
     const currentPage = data.pagination.page;
     

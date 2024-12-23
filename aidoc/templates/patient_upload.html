@@ -61,7 +61,25 @@
           {% if data['imageQuality']==2 %}
             <button id="submitbtn" onclick="dataSubmission()" class="btn btn-success mb-2 btn-lg">ยืนยัน</button>
           {% else %}
-            <button id="submitbtn" onclick="dataSubmission()" class="btn btn-outline-info mb-2">ยืนยัน</button>
+            <button id="confirmButton" input type="button" class="btn btn-outline-info mb-2" data-bs-toggle="modal" data-bs-target="#qualityCheckerModal">ยืนยัน</button>
+            <!-- Bad Image Warning Modal -->
+            <div class="modal fade" id="qualityCheckerModal" tabindex="-1" aria-labelledby="qualityCheckerModalLabel" aria-hidden="true">
+              <div class="modal-dialog">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="qualityCheckerModalLabel">ภาพถ่ายไม่ได้มาตรฐาน</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body text-start">
+                    ระบบตรวจพบว่าภาพถ่ายไม่ได้มาตรฐาน ... หากท่านยืนยันที่จะส่งข้อมูล ผลลัพธ์ของ AI จะทำงานผิดพลาด ... กรุณาถ่ายใหม่ ... ให้เห็นช่องปากที่มีขนาดใหญ่ รายละเอียดชัดเจนและมีแสงสว่างเพียงพอ (ดูตัวอย่างการถ่ายภาพด้านล่าง)
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="submitbtn" class="btn btn-danger" onclick="disableButton()" form="submitimgForm">ยืนยันการส่งข้อมูล</button>
+                  </div>
+                </div>
+              </div>
+            </div>
           {% endif %}
           <div id="errorBox" class="alert alert-danger" role="alert" style="display: none;"></div>
           <div class="border p-3 rounded-3 my-2">
