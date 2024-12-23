@@ -93,7 +93,7 @@
                   </p>
                 </div>
                 <div class="mt-2">
-                  <input class="form-control" placeholder="ค้นหาตาม ตำบล, อำเภอ, จังหวัด หรือ รหัสไปรษณีย์" type="text" name="locationSearch" id="locationSearch" required>
+                  <input class="form-control" placeholder="ค้นหาตาม ตำบล, อำเภอ, จังหวัด หรือ รหัสไปรษณีย์" type="text" name="locationSearch" id="locationSearch">
                   <input type="hidden" id="location" name="location"
                     {% if g.user['default_location']  %}
                       value="{{ g.user['default_location'] }}"

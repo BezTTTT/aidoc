@@ -92,7 +92,7 @@
                   </p>
                 </div>
                 <div class="mt-2">
-                  <input class="form-control" placeholder="ค้นหาตาม ตำบล, อำเภอ, จังหวัด หรือ รหัสไปรษณีย์" type="text" name="locationSearch" id="locationSearch" required>
+                  <input class="form-control" placeholder="ค้นหาตาม ตำบล, อำเภอ, จังหวัด หรือ รหัสไปรษณีย์" type="text" name="locationSearch" id="locationSearch">
                   <input type="hidden" id="location" name="location"
                     {% if g.user['default_location']  %}
                       value="{{ g.user['default_location'] }}"
@@ -123,7 +123,7 @@
                   <label id="checkboxNo" style="display: block;" class="btn btn-outline-danger" for="checkbox"> ยกเลิก </label>
                 </div>
                 <div id="inputPhoneContainer" class="col-8" style="display: block;">
-                  <input class="form-control col-6" placeholder="เบอร์โทร..." maxlength="10" type="text" name="inputPhone" id="inputPhone" required
+                  <input class="form-control col-6" placeholder="เบอร์โทร..." maxlength="10" type="text" name="inputPhone" id="inputPhone" 
                     {% if g.user['default_sender_phone'] %}
                       value="{{g.user['default_sender_phone'] }}"
                     {% endif %}
