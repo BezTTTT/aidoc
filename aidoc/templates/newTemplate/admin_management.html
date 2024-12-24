@@ -25,7 +25,7 @@
   let dataTableInstance = null; // DataTables instance
 
   function fetchAdminPage() {
-    fetch(`http://127.0.0.1:5000/admin_page_api/`, {
+    fetch(`/admin_page_api/`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -142,7 +142,7 @@
 
     const formData = { id: userId }; // Construct the payload
 
-    fetch(`http://127.0.0.1:5000/delete_user_api/`, {
+    fetch(`/delete_user_api/`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",

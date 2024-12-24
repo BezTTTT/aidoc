@@ -33,7 +33,7 @@
     const role = 'admin'; // Example role value
     let fetchReport = ""
     if(province == "ทั้งประเทศ"){
-      fetchReport = fetch(`http://127.0.0.1:5000/report_api/`, {
+      fetchReport = fetch(`/report_api/`, {
       method: 'GET',
       headers: {
         'x-role': role, // Custom header with role
