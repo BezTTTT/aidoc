@@ -241,7 +241,7 @@ function dropDownProvince(fetchProvince){
   function generatePagination(data) {
     const paginationDiv = document.getElementById('pagination');
     paginationDiv.innerHTML = ""; // Clear previous pagination
-
+c
     const totalPages = data.pagination.total_pages>0 ? data.pagination.total_pages: 1 ; // Adjust based on your API response
     const currentPage = data.pagination.page;
     

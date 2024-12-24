@@ -41,7 +41,7 @@
       },
     })
     }else{
-      fetchReport = fetch(`http://127.0.0.1:5000/report_api/?province=${province}`, {
+      fetchReport = fetch(`/report_api/?province=${province}`, {
       method: 'GET',
       headers: {
         'x-role': role, // Custom header with role
