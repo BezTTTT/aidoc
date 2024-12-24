@@ -45,7 +45,8 @@ def fetch_user_info(cursor,id):
             national_id,
             hospital,
             phone,
-            license
+            license,
+            username
             FROM user 
         WHERE id = %s
             """

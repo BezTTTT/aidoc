@@ -154,7 +154,7 @@
           throw new Error(`Failed to delete user: ${response.statusText}`);
         }
         alert("ผู้ใช้ถูกลบสำเร็จ!");
-        fetchAdminPage(); // Refresh the table after deletion
+        window.location.reload();
       })
       .catch((error) => {
         console.error("Error:", error);
