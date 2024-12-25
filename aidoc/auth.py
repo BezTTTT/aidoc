@@ -5,7 +5,6 @@ from werkzeug.security import check_password_hash
 
 import functools
 import datetime
-import ast
 
 from aidoc.db import get_db
 
@@ -65,13 +64,14 @@ def dentist_index():
 def role_validation(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
-        allowed_roles = ['patient', 'osm', 'dentist', 'specialist']
+        allowed_roles = ['patient', 'osm', 'dentist', 'specialist', 'admin']
         isUserDefinedInSession = g.user is not None
         byPassValidation = 'register_later' in session
         if ('role' not in kwargs) or (kwargs['role'] not in allowed_roles) or \
             (not byPassValidation and kwargs['role']=='osm' and isUserDefinedInSession and g.user['is_osm']==0) or \
             (not byPassValidation and kwargs['role']=='patient' and isUserDefinedInSession and g.user['is_patient']==0) or \
             (kwargs['role']=='specialist' and isUserDefinedInSession and g.user['is_specialist']==0) or \
+            (kwargs['role']=='admin' and isUserDefinedInSession and g.user['is_admin']==0) or \
             (kwargs['role']=='dentist' and isUserDefinedInSession and g.user['username'] is None) \
         :
             session.pop('sender_mode', None)

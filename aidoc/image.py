@@ -431,7 +431,7 @@ def diagnosis(role, img_id):
             val = (dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location, img_id)
             cursor.execute(sql, val)
         
-        if role=='specialist' and request.args.get('specialist_feedback')=='true':
+        if (role=='specialist' or role=='admin') and request.args.get('specialist_feedback')=='true':
             dentist_feedback_code = request.form.get('dt_comment_option')
             dentist_feedback_lesion = None
             dentist_feedback_location = None
@@ -462,7 +462,7 @@ def diagnosis(role, img_id):
                    img_id)
             cursor.execute(sql, val)
 
-        if role=='specialist' and request.args.get('case_report')=='true':
+        if (role=='specialist' or role=='admin') and request.args.get('case_report')=='true':
             case_report = request.form.get('case_report')
             sql = '''UPDATE submission_record SET
                         dentist_id=%s,
@@ -480,7 +480,7 @@ def diagnosis(role, img_id):
     dentistCommentFlag = request.args.get('dentistComment', None)
 
     db, cursor = get_db()
-    if role=='specialist':
+    if role=='specialist' or role=='admin':
         sql = '''SELECT submission_record.id AS img_id, case_id, channel, fname, special_request,
                     patient_id, patient.name AS patient_name, patient.surname AS patient_surname, patient_national_id as saved_patient_national_id, patient.national_id AS db_patient_national_id, patient.birthdate,
                     patient.sex, patient.job_position, patient.email, patient.phone AS patient_phone, patient.address, patient.province,
@@ -575,7 +575,7 @@ def diagnosis(role, img_id):
     else:
         data['dentistCommentFlag'] = 'false'
 
-    if role=='osm' or role=='specialist':
+    if role=='osm' or role=='specialist' or role=='admin':
         #if data['sender_phone'] != None or data['sender_id'] == None:
         #    data['owner_id'] = data['patient_id']
         
@@ -586,7 +586,7 @@ def diagnosis(role, img_id):
         else:
             data['location_text'] = "จังหวัด"+data['location_province']
 
-        if role=='specialist':
+        if role=='specialist' or role=='admin':
             if data['patient_id']!=data['sender_id']:
                 if 'sender_name' in data and data['sender_name'] is not None:
                     data['sender_description'] = f"{data['sender_name']} {data['sender_surname']} (ผู้นำส่งข้อมูล, เบอร์โทรติดต่อ: {data['sender_phone_db']})"
@@ -657,6 +657,17 @@ def record(role): # Submission records
                     ai_prediction, submission_record.created_at
                 FROM submission_record
                 INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
+                LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
+                ORDER BY case_id DESC'''
+        cursor.execute(sql)
+    elif role=='admin':
+        sql = '''SELECT submission_record.id, case_id, channel, fname, patient_user.name, patient_user.surname, patient_user.birthdate,
+                    sender_id, patient_id, dentist_id, sender_phone, special_request,
+                    location_province, location_amphoe, location_district, location_zipcode, 
+                    dentist_feedback_comment,dentist_feedback_code,case_report,
+                    ai_prediction, submission_record.created_at
+                FROM submission_record
+                LEFT JOIN patient_case_id ON submission_record.id = patient_case_id.id
                 LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
                 ORDER BY case_id DESC'''
         cursor.execute(sql)
@@ -746,13 +757,13 @@ def record(role): # Submission records
         filterProvince = session['record_filter'].get('filterProvince', "")
         filterSpecialist = session['record_filter'].get('filterSpecialist', "")
     
-    # # Initialize an empty list to store filtered results
+    # Initialize an empty list to store filtered results
     filtered_data = []
 
     # Loop through the data and apply both search and filter criteria
     # This section must be researched for the efficiency (and refactored), but for now just let it be
     for record in db_query:
-        if role=='specialist':
+        if role=='specialist' or role=='admin':
             record_case_report = record.get("case_report")
             record_fname = record.get("fname").lower()
             record_case_id = record.get("case_id")
@@ -867,8 +878,12 @@ def record(role): # Submission records
     
     session['current_record_page'] = page
 
-    if role=='specialist': 
-        sql = "SELECT location_province FROM submission_record WHERE channel != 'DENTIST' GROUP BY location_province ORDER BY COUNT(location_province) DESC;"
+    if role=='specialist' or role=='admin': 
+        if role=='specialist':
+            sql = "SELECT location_province FROM submission_record WHERE channel != 'DENTIST' GROUP BY location_province ORDER BY COUNT(location_province) DESC;"
+        else: # admin
+            sql = "SELECT location_province FROM submission_record GROUP BY location_province ORDER BY COUNT(location_province) DESC;"
+
         cursor.execute(sql)
         dictList = cursor.fetchall()
         data['province_name_list'] = [item['location_province'] for item in dictList]
@@ -898,7 +913,7 @@ def record(role): # Submission records
                 search_query=search_query,
                 filters=[filterStatus,filterPriority,filterProvince,filterSpecialist])
 
-# region report [INCOMPLETE]
+# region report
 @bp.route('/report/')
 @login_required
 #@role_validation
