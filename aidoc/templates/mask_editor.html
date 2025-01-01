@@ -35,7 +35,6 @@
             <div class="canvas-toolbar">
                 <div class='canvas-main-tool-container'>
                     <div id="canvas-main-tool-id" class="canvas-main-tool">
-<!-- >>>>>>>>>>>>>>>> Modified (start) <<<<<<<<<<<<<<<<<<<<<<<<<<<< -->
                         <div id="zoom-tool" class="canvas-zoom-tool">
                             <div class="canvas-zoom-tool-icon" data-toggle="tooltip" title="zoom">
                             </div>
@@ -90,7 +89,6 @@
                     </div>
                 </div>
             </div>
-<!-- >>>>>>>>>>>>>>>> Modified (end) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<< -->
         
             <!-- main canvas -->
             <div id="canvas-container-id" class="canvas-container">
@@ -103,11 +101,9 @@
                         <canvas id="canvas-id" class="canvas-screen"></canvas>
                     </div>
                 </div>
-<!-- >>>>>>>>>>>>>>>> Modified (start) <<<<<<<<<<<<<<<<<<<<<<<<<<<< -->
                 <div class="credit-container">
                     Computer Engineering, CMU-CPE
                 </div>
-<!-- >>>>>>>>>>>>>>>> Modified (end) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<< -->
             </div>
         </div>
         {% endblock %}
@@ -118,9 +114,7 @@
 
             // >> initail
             let canvas = null
-// >>>>>>>>>>>>>>>> Modified (start) <<<<<<<<<<<<<<<<<<<<<<<<<<<<
             let mode = 'edit' // idle, edit
-// >>>>>>>>>>>>>>>> Modified (end) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             let context = null
             let actionScale = 1
             let actionZoomElement = null
@@ -130,9 +124,7 @@
             let bounding = { x: 0, y: 0 }
             let scaleOffset = { x: 0, y: 0 }
             let action = 'none' // drawing, panning, none
-// >>>>>>>>>>>>>>>> Modified (start) <<<<<<<<<<<<<<<<<<<<<<<<<<<<
             let tool = 'pencil' // pencil, pan
-// >>>>>>>>>>>>>>>> Modified (end) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             let selectedElement = null
             let currentMouse = { x: 0, y: 0 }
             let isCloseAble = false
@@ -142,9 +134,7 @@
             let holdingElement = null
             let scale = 1
             let isSaving = false
-// >>>>>>>>>>>>>>>> Modified (start) <<<<<<<<<<<<<<<<<<<<<<<<<<<<
             let isHideMask = false
-// >>>>>>>>>>>>>>>> Modified (end) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             const tools = ['pencil', 'eraser', 'pan']
             const lineWidth = 1
             const fillColor = 'rgb(0, 0, 0)'
@@ -153,10 +143,8 @@
             const percentDisplay = document.getElementById('percent-display-id')
             const editButton = document.getElementById('edit-button-id')
             const saveButton = document.getElementById('save-button-id')
-// >>>>>>>>>>>>>>>> Modified (start) <<<<<<<<<<<<<<<<<<<<<<<<<<<<
             const hideButton = document.getElementById('hide-button-id')
             const showButton = document.getElementById('show-button-id')
-// >>>>>>>>>>>>>>>> Modified (end) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             const canvasMainAction = document.getElementById('canvas-main-action-id')
             const canvasBox = document.getElementById('canvas-container-id')
             const canvasContainer = document.getElementById('canvas-id')
@@ -172,10 +160,8 @@
                 canvasBox.addEventListener("wheel", onUserWheel)
                 canvasContainer.addEventListener("mousedown", handleMouseDown)
                 editButton.addEventListener("click", toggleMode)
-// >>>>>>>>>>>>>>>> Modified (start) <<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 hideButton.addEventListener("click", toggleHideMaskMode)
                 showButton.addEventListener("click", toggleHideMaskMode)
-// >>>>>>>>>>>>>>>> Modified (end) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 initialUndoTool.addEventListener("click", () => undo())
                 initialRedoTool.addEventListener("click", () => redo())
                 initialPanTool.addEventListener("click", () => onUserSelectedTool('pan'))
@@ -209,7 +195,6 @@
             }
 
             const initial = () => {
-// >>>>>>>>>>>>>>>> Modified (start) <<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 canvasMainTool.style.display = 'flex'
                 editButton.style.display = 'none'
                 saveButton.style.display = 'flex'
@@ -217,7 +202,6 @@
                 hideButton.style.display = 'flex'
                 initialPencilTool.classList.add('canvas-tool-active')
                 canvasContainer.style.cursor = "url({{ url_for('static', filename='icons/pen-solid.svg') }}) 0 36, auto"
-// >>>>>>>>>>>>>>>> Modified (end) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 updateCanvasSize()
                 actionZoomElement = canvasMainAction
                 const canvasBoxWidth = canvasBox.clientWidth
@@ -636,9 +620,7 @@
             }
 
             const handleMouseDown = (event) => {
-// >>>>>>>>>>>>>>>> Modified (start) <<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 if (isHideMask) return
-// >>>>>>>>>>>>>>>> Modified (end) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 event.preventDefault()
                 if (event.button !== 0) return
                 const refClientX = event.clientX - canvasContainer.getBoundingClientRect().left
@@ -717,9 +699,7 @@
             }
 
             const handleMouseMove = (event) => {
-// >>>>>>>>>>>>>>>> Modified (start) <<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 if (isHideMask) return
-// >>>>>>>>>>>>>>>> Modified (end) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 if (action === 'panning') {
                     return
                 }
@@ -771,9 +751,7 @@
                     action = 'none'
                     return
                 }
-// >>>>>>>>>>>>>>>> Modified (start) <<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 if (isHideMask) return
-// >>>>>>>>>>>>>>>> Modified (end) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 if (action === 'drawing') {
                     if (tool === 'eraser' || tool === 'pencil') {
                         if (!isCloseByClick) {
@@ -801,17 +779,13 @@
             }
 
             const handleKeyDown = (event) => {
-                if (event.ctrlKey && (event.key === 'z' || event.key === 'Z' || event.key === 'ผ')) {
-// >>>>>>>>>>>>>>>> Modified (start) <<<<<<<<<<<<<<<<<<<<<<<<<<<<                    
+                if (event.ctrlKey && (event.key === 'z' || event.key === 'Z' || event.key === 'ผ')) {                  
                     isHideMask = true
                     toggleHideMaskMode()
-// >>>>>>>>>>>>>>>> Modified (end) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                     undo()
-                }else if (event.ctrlKey && (event.key === 'y' || event.key === 'Y' || event.key === 'ั')) {
-// >>>>>>>>>>>>>>>> Modified (start) <<<<<<<<<<<<<<<<<<<<<<<<<<<<                    
+                }else if (event.ctrlKey && (event.key === 'y' || event.key === 'Y' || event.key === 'ั')) {                  
                     isHideMask = true
                     toggleHideMaskMode()
-// >>>>>>>>>>>>>>>> Modified (end) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                     redo()
                 }else if (event.key === 'Escape') {
                     if (tool === 'eraser' || tool === 'pencil') {
@@ -894,7 +868,6 @@
                     }
                 }
             }      
-// >>>>>>>>>>>>>>>> Modified (start) <<<<<<<<<<<<<<<<<<<<<<<<<<<<
             const toggleHideMaskMode = () => {
                 if (isHideMask) {
                     isHideMask = false
@@ -918,7 +891,6 @@
                 }
                 canvasRendering()
             }
-// >>>>>>>>>>>>>>>> Modified (end) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             const canvasRendering = () => {
                 createCanvas()
                 if (!canvas) return
@@ -938,7 +910,6 @@
                 window.addEventListener('mouseup', handleMouseUp)
 
                 // draw elements
-// >>>>>>>>>>>>>>>> Modified (start) <<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 if (!isHideMask) {
                     data['external_masking_path'].forEach((element) => {
                         if (element.length !== 0) {
@@ -956,7 +927,6 @@
                         }
                     })
                 }
-// >>>>>>>>>>>>>>>> Modified (end) <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 canvas.onFocus(selectedElement?.element)
                 canvas.holdingPencil(holdingElement, 1 / actionScale)
                 canvas.restore()
@@ -967,8 +937,11 @@
                     isSaving = true
                     saveButton.style.pointerEvents = 'none'
                     saveButton.style.opacity = 0.5
+                    actionScale = 1
+                    updateCanvasSize()
+                    canvasRendering()
+                    
                     const url = canvasContainer.toDataURL()
-            
                     // Convert data URL to Blob
                     const response = await fetch(url)
                     const file = await response.blob()

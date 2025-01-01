@@ -59,6 +59,7 @@ def create_app(test_config=None):
     app.add_url_rule('/', endpoint='index')
 
     # Register the click command init-db
+    # Use command: 'flask --app aidoc init-db' to create all tables for the aidoc_development database
     from . import db
     db.init_app(app)
 

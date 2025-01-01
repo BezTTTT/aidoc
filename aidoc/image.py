@@ -3,8 +3,6 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 
-####### Disable this section if you are not using the prediction model for speeding up the development process ##########
-
 import tensorflow as tf
 import oralLesionNet
 # Load the oralLesionNet model to the global variable
@@ -12,8 +10,6 @@ model = oralLesionNet.load_model()
 
 import imageQualityChecker
 qualityChecker = imageQualityChecker.ImageQualityChecker()
-
-#########################################################################################################################
 
 from PIL import Image, ImageFilter
 import cv2
@@ -361,8 +357,8 @@ def recompute_image(return_page, role, img_id):
     pil_img.save(thumbOutlinedImagePath) 
 
     db, cursor = get_db()
-    sql = "UPDATE submission_record SET ai_prediction=%s, ai_scores=%s WHERE id=%s"
-    val = (prediction, str(scores), img_id)
+    sql = "UPDATE submission_record SET ai_prediction=%s, ai_scores=%s, updated_at=%s WHERE id=%s"
+    val = (prediction, str(scores), datetime.now(), img_id)
     cursor.execute(sql, val)
 
     return redirect(url_for('image.'+return_page, role=role, img_id=img_id))
@@ -396,7 +392,7 @@ def download_image(user_id, imagename):
 @login_required
 @role_validation
 def quick_confirm(role, img_id):
-    if role=='specialist':
+    if role=='specialist' or role=='admin':
         ai_result = request.args.get('ai_result', type=int)
         if ai_result==0:
             diagnostic_code = 'NORMAL'
@@ -422,16 +418,16 @@ def diagnosis(role, img_id):
             val = (1, img_id)
             cursor.execute(sql, val)
 
-        if role=='dentist' and 'feedback_submit' in request.form:
+        if (role=='dentist' or (role=='admin' and request.args.get('channel')=='DENTIST')) and 'feedback_submit' in request.form:
             dentist_feedback_code = request.form.get('agree_option')
             dentist_feedback_location = request.form.get('lesion_location')
             dentist_feedback_lesion = request.form.get('lesion_type')
             dentist_feedback_comment = request.form.get('dentist_comment')
-            sql = "UPDATE submission_record SET dentist_feedback_code=%s, dentist_feedback_comment=%s, dentist_feedback_lesion=%s, dentist_feedback_location=%s WHERE id=%s"
-            val = (dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location, img_id)
+            sql = "UPDATE submission_record SET dentist_id=%s, dentist_feedback_code=%s, dentist_feedback_comment=%s, dentist_feedback_lesion=%s, dentist_feedback_location=%s, dentist_feedback_date=%s WHERE id=%s"
+            val = (session["user_id"], dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location, datetime.now(), img_id)
             cursor.execute(sql, val)
         
-        if (role=='specialist' or role=='admin') and request.args.get('specialist_feedback')=='true':
+        if (role=='specialist' or (role=='admin' and request.args.get('channel')!='DENTIST')) and request.args.get('specialist_feedback')=='true':
             dentist_feedback_code = request.form.get('dt_comment_option')
             dentist_feedback_lesion = None
             dentist_feedback_location = None
@@ -462,7 +458,7 @@ def diagnosis(role, img_id):
                    img_id)
             cursor.execute(sql, val)
 
-        if (role=='specialist' or role=='admin') and request.args.get('case_report')=='true':
+        if (role=='specialist' or (role=='admin' and request.args.get('channel')!='DENTIST')) and request.args.get('case_report')=='true':
             case_report = request.form.get('case_report')
             sql = '''UPDATE submission_record SET
                         dentist_id=%s,
@@ -480,7 +476,7 @@ def diagnosis(role, img_id):
     dentistCommentFlag = request.args.get('dentistComment', None)
 
     db, cursor = get_db()
-    if role=='specialist' or role=='admin':
+    if role=='specialist' or (role=='admin' and request.args.get('channel')!='DENTIST'):
         sql = '''SELECT submission_record.id AS img_id, case_id, channel, fname, special_request,
                     patient_id, patient.name AS patient_name, patient.surname AS patient_surname, patient_national_id as saved_patient_national_id, patient.national_id AS db_patient_national_id, patient.birthdate,
                     patient.sex, patient.job_position, patient.email, patient.phone AS patient_phone, patient.address, patient.province,
@@ -491,7 +487,7 @@ def diagnosis(role, img_id):
                     location_district, location_amphoe, location_province, location_zipcode,
                     ai_prediction, ai_scores, submission_record.created_at
                 FROM submission_record
-                INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
+                LEFT JOIN patient_case_id ON submission_record.id = patient_case_id.id
                 LEFT JOIN user AS sender ON submission_record.sender_id = sender.id
                 LEFT JOIN user AS patient ON submission_record.patient_id = patient.id
                 LEFT JOIN user AS dentist ON submission_record.dentist_id = dentist.id
@@ -507,7 +503,7 @@ def diagnosis(role, img_id):
                 LEFT JOIN user AS sender ON submission_record.sender_phone = sender.phone
                 LEFT JOIN user AS patient ON submission_record.patient_id = patient.id
                 WHERE submission_record.id=%s'''
-    elif role=='dentist':
+    elif role=='dentist' or (role=='admin' and request.args.get('channel')=='DENTIST'):
         sql = '''SELECT submission_record.id AS img_id, fname, sender_id,
                     dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location,
                     ai_prediction, ai_scores
@@ -575,7 +571,7 @@ def diagnosis(role, img_id):
     else:
         data['dentistCommentFlag'] = 'false'
 
-    if role=='osm' or role=='specialist' or role=='admin':
+    if role=='osm' or role=='specialist' or (role=='admin' and request.args.get('channel')!='DENTIST'):
         #if data['sender_phone'] != None or data['sender_id'] == None:
         #    data['owner_id'] = data['patient_id']
         
@@ -586,7 +582,7 @@ def diagnosis(role, img_id):
         else:
             data['location_text'] = "จังหวัด"+data['location_province']
 
-        if role=='specialist' or role=='admin':
+        if role=='specialist' or (role=='admin' and request.args.get('channel')!='DENTIST'):
             if data['patient_id']!=data['sender_id']:
                 if 'sender_name' in data and data['sender_name'] is not None:
                     data['sender_description'] = f"{data['sender_name']} {data['sender_surname']} (ผู้นำส่งข้อมูล, เบอร์โทรติดต่อ: {data['sender_phone_db']})"
@@ -605,6 +601,9 @@ def diagnosis(role, img_id):
                 data['sex']='ชาย'
             elif data['sex']=='F':
                 data['sex']='หญิง'
+
+    if role=='admin':
+        data['channel'] = request.args.get('channel')
 
     dentist_diagnosis_map = {'NORMAL': 'ยืนยันว่าไม่พบรอยโรค (Normal)',
                                 'OPMD': 'น่าจะมีรอยโรคที่คล้ายกันกับ OPMD',
@@ -662,14 +661,17 @@ def record(role): # Submission records
         cursor.execute(sql)
     elif role=='admin':
         sql = '''SELECT submission_record.id, case_id, channel, fname, patient_user.name, patient_user.surname, patient_user.birthdate,
+                    sender.name as sender_name, sender.surname as sender_surname, sender.hospital as sender_hospital,
                     sender_id, patient_id, dentist_id, sender_phone, special_request,
                     location_province, location_amphoe, location_district, location_zipcode, 
-                    dentist_feedback_comment,dentist_feedback_code,case_report,
+                    dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, case_report,
                     ai_prediction, submission_record.created_at
                 FROM submission_record
                 LEFT JOIN patient_case_id ON submission_record.id = patient_case_id.id
                 LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
-                ORDER BY case_id DESC'''
+                LEFT JOIN user AS sender ON submission_record.sender_id = sender.id
+                ORDER BY submission_record.id DESC
+                '''
         cursor.execute(sql)
     elif role=='osm':
         sql = '''SELECT submission_record.id, channel, fname,
@@ -954,8 +956,8 @@ def adminChecking1(role, img_id):
             dentist_feedback_location = request.form.get('lesion_location')
             dentist_feedback_lesion = request.form.get('lesion_type')
             dentist_feedback_comment = request.form.get('dentist_comment')
-            sql = "UPDATE submission_record SET dentist_feedback_code=%s, dentist_feedback_comment=%s, dentist_feedback_lesion=%s, dentist_feedback_location=%s WHERE id=%s"
-            val = (dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location, img_id)
+            sql = "UPDATE submission_record SET dentist_feedback_code=%s, dentist_feedback_comment=%s, dentist_feedback_lesion=%s, dentist_feedback_location=%s, dentist_feedback_date=%s WHERE id=%s"
+            val = (dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location, datetime.now(), img_id)
             cursor.execute(sql, val)
         
         if role=='specialist' and request.args.get('specialist_feedback')=='true':
@@ -1163,6 +1165,7 @@ def adminChecking1(role, img_id):
             'lesion_location_map': lesion_location_map,
             'lesion_type_map': lesion_type_map}
     return render_template('admin_checkingmock.html',data=data, maps=maps)
+
 # Helper functions
 # region create_thumbnail
 def create_thumbnail(pil_img):
@@ -1347,7 +1350,7 @@ def upload_submission_module(target_user_id):
                     sql = "UPDATE user SET default_location=%s WHERE id=%s"
                     val = (str(session['location']), session['user_id'])
                     cursor.execute(sql, val)
-                    load_logged_in_user()
+                    load_logged_in_user() # Update the user info on g variable
 
                 sql = '''INSERT INTO submission_record
                     (fname,
@@ -1378,19 +1381,19 @@ def upload_submission_module(target_user_id):
                     sql = "UPDATE user SET default_location=%s WHERE id=%s"
                     val = (str(session['location']), session['user_id'])
                     cursor.execute(sql, val)
-                    load_logged_in_user()
+                    load_logged_in_user() # Update the user info on g variable
 
                 if 'sender_phone' in session and session['sender_phone']:
                     sql = "UPDATE user SET default_sender_phone=%s WHERE id=%s"
                     val = (session['sender_phone'], session['user_id'])
                     cursor.execute(sql, val)
-                    load_logged_in_user()
+                    load_logged_in_user() # Update the user info on g variable
                 
                 if (g.user['default_sender_phone'] and ('sender_phone' not in session or session['sender_phone'] is None)):
                     sql = "UPDATE user SET default_sender_phone=NULL WHERE id=%s"
                     val = (session['user_id'], )
                     cursor.execute(sql, val)
-                    load_logged_in_user()
+                    load_logged_in_user() # Update the user info on g variable
                 
                 sql = '''INSERT INTO submission_record 
                         (fname,
@@ -1430,7 +1433,7 @@ def upload_submission_module(target_user_id):
                     sql = "UPDATE user SET default_location=%s WHERE id=%s"
                     val = (str(session['location']), session['user_id'])
                     cursor.execute(sql, val)
-                    load_logged_in_user()
+                    load_logged_in_user() # Update the user info on g variable
 
                 sql = '''INSERT INTO submission_record 
                         (fname, 
@@ -1500,6 +1503,8 @@ def format_thai_datetime(x):
     )
     return output_thai_datetime_str
     
+# Part of the mask editor module
+# Developed by Tewarit Somrit
 def convertMask2Cordinates(maskPath) :
 
     img = cv2.imread(maskPath, cv2.IMREAD_GRAYSCALE)
