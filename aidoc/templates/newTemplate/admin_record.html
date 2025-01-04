@@ -145,7 +145,6 @@ function fetchData() {
     fetch(apiUrl)
         .then(response => response.json())
         .then(data => {
-          console.log(data.data.length)
             populateCard(data);
             if (!isProvincePopulated && data) {
               dropDownProvince(data);
@@ -182,7 +181,7 @@ function populateCard(imageData) {
               <h6 class="fs-6 card-subtitle text-muted mb-2">ผลการวินิจฉัยของ AI: ${item.ai_prediction}</h6>
               <h6 class="fs-6 card-subtitle text-muted mb-2">ความคิดเห็นทันตแพทย์: ${item.dentist_comment}</h6>
               <div class="d-grid gap-2 d-md-block justify-content-md-center">
-                <form action="/admin_checking/specialist/${item.submission_id}" method="POST" class="mx-1">
+                <form action="/diagnosis/admin/${item.submission_id}" method="POST" class="mx-1">
                     <input class="btn btn-outline-success" type="submit" value="ดูผลการวิเคราะห์"/>
                 </form>
                 <button class="btn btn-outline-danger my-1" type="button" data-bs-toggle="modal" data-bs-target="#deleteModal-${item.submission_id}">

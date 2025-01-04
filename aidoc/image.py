@@ -637,7 +637,7 @@ def diagnosis(role, img_id):
             'lesion_location_map': lesion_location_map,
             'lesion_type_map': lesion_type_map}
     return render_template(role+'_diagnosis.html', data=data, maps=maps)
-    
+
 # region record
 @bp.route('/record/<role>', methods=('GET', 'POST'))
 @login_required
@@ -915,29 +915,29 @@ def record(role): # Submission records
                 search_query=search_query,
                 filters=[filterStatus,filterPriority,filterProvince,filterSpecialist])
 
-# region report
-@bp.route('/report/')
+# region report [INCOMPLETE]
+@bp.route('/admin/report/')
 @login_required
 #@role_validation
 def report():
-    return render_template("submission_report.html")
+    return render_template("/newTemplate/submission_report.html")
 
 @bp.route('/admin_page/', methods=('GET','POST','DELETE'))
 @login_required
 #@role_validation
 def userManagement():
-    return render_template("user_management.html")
+    return render_template("/newTemplate/admin_management.html")
 
-@bp.route('/image_manage/')
+@bp.route('/record/admin')
 @login_required
 #@role_validation
 def pictureManagement():
-    return render_template("picture_management.html") 
+    return render_template("/newTemplate/admin_record.html") 
 
 @bp.route('/edit/', methods=('GET','POST'))
 @login_required
 def edit():
-    return render_template("edit.html")
+    return render_template("/newTemplate/admin_edit.html")
 
 
 @bp.route('/admin_checking/<role>/<int:img_id>', methods=('GET','POST'))

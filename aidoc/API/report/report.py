@@ -2,7 +2,7 @@ import json
 from decimal import Decimal
 from flask import jsonify
 from . import get_table_patient_and_osm, get_table_specialist
-from . import get_all_submission
+from . import get_all_submission , get_province_list
 
 
 def generate_report(province):
@@ -10,15 +10,16 @@ def generate_report(province):
     osm_data = get_table_patient_and_osm.get_table("OSM", province)
     dentist_data = get_table_specialist.get_table(province)
     total_pic = get_all_submission.get_all_submission(province)
-    print(total_pic)
+    total_province = get_province_list. generate_province_list()
+    print(province)
 
-    output = build_initial_output(province, patient_data, osm_data, dentist_data, total_pic)
+    output = build_initial_output(province, patient_data, osm_data, dentist_data, total_pic,total_province)
     output = calculate_totals(patient_data, osm_data, dentist_data, output)
 
     return output
 
 
-def build_initial_output(province, patient_data, osm_data, dentist_data, total_pic):
+def build_initial_output(province, patient_data, osm_data, dentist_data, total_pic ,total_province):
     return {
         'patient_and_osm': {
             'patient': patient_data,
@@ -32,7 +33,8 @@ def build_initial_output(province, patient_data, osm_data, dentist_data, total_p
         },
         'province': province,
         'specialist': dentist_data,
-        'total_pic': total_pic
+        'total_pic': total_pic,
+        'total_province': total_province
     }
 
 
