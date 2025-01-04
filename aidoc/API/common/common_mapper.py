@@ -1,6 +1,11 @@
 def map_ai_prediction_list(predictions):
     prediction_mapping = {0: "normal", 1: "opmd", 2: "oscc"}
-    return {prediction_mapping.get(pred['ai_prediction'], "unknown"): pred['N'] for pred in predictions}
+    result = {"opmd": 0, "oscc": 0, "normal": 0}
+    for pred in predictions:
+        label = prediction_mapping.get(pred['ai_prediction'])
+        if label:
+            result[label] += pred['N']
+    return result
 
 def map_ai_prediction_int(prediction):
     prediction_mapping = {0: "normal", 1: "opmd", 2: "oscc"}

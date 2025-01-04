@@ -21,33 +21,34 @@ def users_list():
 
 def fetch_user_list(cursor):
     query ="""
-SELECT 
-    u.id,
-    u.name,
-    u.surname,
-    u.job_position,
-    u.is_patient,
-    u.is_osm,
-    u.is_specialist,
-    u.is_admin,
-    u.email,
-    u.province,
-    COALESCE(sr.N, 0) AS N
-FROM 
-    user u
-LEFT JOIN 
-    (
         SELECT 
-            sender_id,
-            COUNT(*) AS N 
+            u.id,
+            u.name,
+            u.surname,
+            u.job_position,
+            u.is_patient,
+            u.is_osm,
+            u.is_specialist,
+            u.is_admin,
+            u.email,
+            u.province,
+            COALESCE(sr.N, 0) AS N
         FROM 
-            submission_record 
-        GROUP BY 
-            sender_id
-    ) sr
-ON 
-    u.id = sr.sender_id;
-
+            user u
+        LEFT JOIN 
+            (
+                SELECT 
+                    sender_id,
+                    COUNT(*) AS N 
+                FROM 
+                    submission_record 
+                GROUP BY 
+                    sender_id
+            ) sr
+        ON 
+            u.id = sr.sender_id
+        ORDER BY 
+            u.last_login DESC
     """
     cursor.execute(query)
     user_list_query = cursor.fetchall()
