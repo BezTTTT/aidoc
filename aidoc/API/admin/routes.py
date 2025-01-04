@@ -33,16 +33,16 @@ def put_submit_edited_info():
 
     required_fields = [
         "name", "surname", "job_position", "is_patient", "is_osm", 
-        "is_specialist", "is_admin", "email", "province", "national_id", 
-        "hospital", "phone", "license", "id"
+        "is_specialist", "is_admin", "email", "province",
+        "hospital", "phone", "id"
     ]
-
-    for field in required_fields:
-        if field not in data:
-            return jsonify({"error": f"Missing required field: {field}"}), 400
+    
+    # for field in required_fields:
+    #     if field not in data:
+    #         return jsonify({"error": f"Missing required field: {field}"}), 400
 
     output = admin.put_update_user_info(data)
-
+    print(output)
     return output
 
 @admin_bp.route('/image_manage_api/', methods=['GET'])

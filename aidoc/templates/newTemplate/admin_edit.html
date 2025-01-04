@@ -1,0 +1,224 @@
+{% extends "./base.html" %}
+
+{% block title %} RiskOCA | Edit User {% endblock %}
+
+{% block content %}
+<div>
+    <h3>ข้อมูลผู้ใช้</h3>
+</div>
+
+
+<div class="container-md">
+    <form id="editUserForm" action="/edit_page" method="POST">
+        <input type="hidden" name="_method" value="PUT">
+        <div id="formContent" class="row g-3 my-4">
+          <!--populateContect from script-->
+        </div>
+        <fieldset class="row my-3">
+            <legend class="col-form-label col-sm-2 pt-0">Permission</legend>
+
+            <div class="col-sm-10">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="role" id="admin" value="admin" >
+                    <label class="form-check-label" for="admin">Admin</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="role" id="specialist" value="specialist">
+                    <label class="form-check-label" for="dentist">Specialist</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="role" id="osm" value="osm">
+                    <label class="form-check-label" for="user">Osm</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="role" id="patient" value="patient">
+                    <label class="form-check-label" for="user">Patient</label>
+                </div>
+            </div>
+        </fieldset>
+
+        <!-- submit button -->
+        <div class="col-12 d-flex justify-content-end">
+            <button type="submit" class="btn btn-primary" id="editUserForm">Submit</button>
+        </div>
+
+    </form>
+</div>
+
+<script>
+    function fetchUserData() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const userId = urlParams.get('id'); // Get the user ID from the URL query parameter
+  
+      if (!userId) {
+        console.warn("User ID is missing in the query parameter.");
+        return;
+      }
+  
+      fetch(`http://127.0.0.1:5000/edit_user_info_api/?id=${userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          // Populate form fields with data
+          populateHTMLByRole(data)
+          // Update roles checkboxes
+          if (data.is_admin || data.is_osm || data.is_specialist || data.is_patient) {
+            document.getElementById('admin').checked = data.is_admin === 1;
+            document.getElementById('specialist').checked = data.is_specialist === 1;
+            document.getElementById('osm').checked = data.is_osm === 1;
+            document.getElementById('patient').checked = data.is_patient === 1;
+          }
+        })
+        .catch((error) => {
+          console.error('Error fetching user data:', error);
+        });
+    }
+  
+    async function submitFormData(event) {
+      event.preventDefault();  // Prevent the default form submission
+  
+      const urlParams = new URLSearchParams(window.location.search);
+      const userId = urlParams.get('id'); // Get the user ID
+  
+      const formData = {
+        id: userId,
+        name: document.getElementById('firstname').value,
+        surname: document.getElementById('lastname').value,
+        job_position: document.getElementById('job_position').value,
+        license : document.getElementById('license')? document.getElementById('license').value: '',
+        hospital: document.getElementById('hospital').value,
+        province: document.getElementById('province').value,
+        email: document.getElementById('email').value,
+        national_id : document.getElementById('nationalId')? document.getElementById('nationalId').value : '',
+        phone : document.getElementById('phone').value,
+        is_admin: document.getElementById('admin').checked ? 1 : 0,
+        is_specialist: document.getElementById('specialist').checked ? 1 : 0,
+        is_osm: document.getElementById('osm').checked ? 1 : 0,
+        is_patient: document.getElementById('patient').checked ? 1 : 0,
+      };
+  
+      try {
+        const response = await fetch("/submit_info_api/", {
+          method: "PUT",  // Use PUT method for updating
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        });
+  
+        if (response.ok) {
+          alert("User information updated successfully!");
+          window.location.href = '/admin_page/'
+        } else {
+          alert("Failed to update user information.");
+        }
+      } catch (error) {
+        console.error("Error submitting form data:", error);
+      }
+    }
+  
+    document.getElementById('editUserForm').addEventListener('submit', submitFormData);
+
+    function populateHTMLByRole(data) {
+    const formContent = document.getElementById("formContent");
+    formContent.innerHTML = ""; // Clear previous fields
+    // Common fields for all roles
+    const commonFields = `
+        <div class="col-md-6">
+            <label for="firstname" class="form-label">Firstname</label>
+            <input class="form-control" type="text" name="name" id="firstname" value="${data.name || ''}">
+        </div>
+        <div class="col-md-6">
+            <label for="lastname" class="form-label">Lastname</label>
+            <input class="form-control" type="text" name="surname" id="lastname" value="${data.surname || ''}">
+        </div>
+        <div class="col-md-6">
+                <label for="province" class="form-label">Province</label>
+                <input class="form-control" type="text" name="province" id="province" value="${data.province || ''}">
+        </div>
+        <div class="col-md-6">
+            <label for="email" class="form-label">E-mail</label>
+            <input class="form-control" type="email" name="email" id="email" value="${data.email || ""}">
+        </div>
+        <div class="col-md-6">
+            <label for="phone" class="form-label">Phone</label>
+            <input class="form-control" type="text" name="phone" id="phone" maxlength="10" value="${data.phone || ''}">
+        </div>
+    `;
+
+    formContent.innerHTML += commonFields;
+
+    if (data.username) {
+        formContent.innerHTML += `
+          <div class="col-md-6">
+            <label for="job_position" class="form-label">Work</label>
+            <select id="job_position" name="job_position" class="form-control" required>
+                <option value="" hidden>Select a job position</option>
+                <option value="OSM" ${data.job_position === "OSM" ? "selected" : ""}>อสม.</option>
+                <option value="Dental Nurse" ${data.job_position === "Dental Nurse" ? "selected" : ""}>ทันตาภิบาล/เจ้าพนักงานทันตสาธารณสุข</option>
+                <option value="Dentist" ${data.job_position === "Dentist" ? "selected" : ""}>ทันตแพทย์</option>
+                <option value="Oral Pathologist" ${data.job_position === "Oral Pathologist" ? "selected" : ""}>ทันตแพทย์เฉพาะทาง วิทยาการวินิจฉัยโรคช่องปาก</option>
+                <option value="Oral and Maxillofacial Surgeon" ${data.job_position === "Oral and Maxillofacial Surgeon" ? "selected" : ""}>ทันตแพทย์เฉพาะทาง ศัลยศาสตร์ช่องปากและแม็กซิลโลเฟเชียล</option>
+                <option value="Physician" ${data.job_position === "Physician" ? "selected" : ""}>แพทย์</option>
+                <option value="Public Health Technical Officer" ${data.job_position === "Public Health Technical Officer" ? "selected" : ""}>นักวิชาการสาธารณสุข</option>
+                <option value="Computer Technical Officer" ${data.job_position === "Computer Technical Officer" ? "selected" : ""}>นักวิชาการคอมพิวเตอร์/นักวิจัย/ผู้พัฒนาระบบ</option>
+                <option value="Other Public Health Officer" ${data.job_position === "Other Public Health Officer" ? "selected" : ""}>ข้าราชการ/เจ้าพนักงานกระทรวงสาธารณสุข</option>
+                <option value="Other Government Officer" ${data.job_position === "Other Government Officer" ? "selected" : ""}>เจ้าหน้าที่รัฐอื่น</option>
+                <option value="General Public" ${data.job_position === "General Public" ? "selected" : ""}>บุคคลทั่วไป</option>
+            </select>
+        </div>
+
+            <div class="col-md-6">
+                <label for="license" class="form-label">License</label>
+                <input class="form-control" type="text" name="license" id="license" value="${data.license}">
+            </div>
+            <div class="col-md-6">
+                <label for="hospital" class="form-label">Hospital</label>
+                <input class="form-control" type="text" name="hospital" id="hospital" value="${data.hospital}">
+            </div>
+        `;
+    } else if (data.is_osm === 1) {
+        formContent.innerHTML += `
+            <div class="col-md-6">
+                <label for="job_position" class="form-label">Work</label>
+                <select id="job_position" name="job_position" class="form-control" required>
+                  <option value="" hidden>Select a job position</option>
+                  <option value="OSM" ${data.job_position === "OSM" ? "selected" : ""}>อสม.</option>
+                  <option value="Dental Nurse" ${data.job_position === "Dental Nurse" ? "selected" : ""}>ทันตาภิบาล/เจ้าพนักงานทันตสาธารณสุข</option>
+                  <option value="Dentist" ${data.job_position === "Dentist" ? "selected" : ""}>ทันตแพทย์</option>
+                  <option value="Oral Pathologist" ${data.job_position === "Oral Pathologist" ? "selected" : ""}>ทันตแพทย์เฉพาะทาง วิทยาการวินิจฉัยโรคช่องปาก</option>
+                  <option value="Oral and Maxillofacial Surgeon" ${data.job_position === "Oral and Maxillofacial Surgeon" ? "selected" : ""}>ทันตแพทย์เฉพาะทาง ศัลยศาสตร์ช่องปากและแม็กซิลโลเฟเชียล</option>
+                  <option value="Physician" ${data.job_position === "Physician" ? "selected" : ""}>แพทย์</option>
+                  <option value="Public Health Technical Officer" ${data.job_position === "Public Health Technical Officer" ? "selected" : ""}>นักวิชาการสาธารณสุข</option>
+                  <option value="Computer Technical Officer" ${data.job_position === "Computer Technical Officer" ? "selected" : ""}>นักวิชาการคอมพิวเตอร์/นักวิจัย/ผู้พัฒนาระบบ</option>
+                  <option value="Other Public Health Officer" ${data.job_position === "Other Public Health Officer" ? "selected" : ""}>ข้าราชการ/เจ้าพนักงานกระทรวงสาธารณสุข</option>
+                  <option value="Other Government Officer" ${data.job_position === "Other Government Officer" ? "selected" : ""}>เจ้าหน้าที่รัฐอื่น</option>
+                  <option value="General Public" ${data.job_position === "General Public" ? "selected" : ""}>บุคคลทั่วไป</option>
+            </select>
+            </div>
+            <div class="col-md-6">
+                <label for="hospital" class="form-label">Hospital</label>
+                <input class="form-control" type="text" name="hospital" id="hospital" value="${data.hospital}">
+            </div>
+            <div class="col-md-6">
+                <label for="nationalId" class="form-label">National ID</label>
+                <input class="form-control" type="text" name="nationalId" id="nationalId" value="${data.national_id}" maxlength="13">
+            </div>
+        `;
+    } else {
+        formContent.innerHTML += `
+            <div class="col-md-6">
+                <label for="job_position" class="form-label">Work</label>
+                <input class="form-control" type="text" name="job_position" id="job_position" value="${data.job_position || ''}"> 
+            </div>
+        `;
+    }
+}
+    fetchUserData(); // Call the function when the page loads
+  </script>
+
+{% endblock %}
