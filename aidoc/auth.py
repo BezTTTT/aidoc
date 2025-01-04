@@ -177,15 +177,8 @@ def login(role):
             error_msg = "รหัสผ่านไม่ถูกต้อง โปรดลองอีกครั้งหนึ่ง ... หากลืมรหัสผ่าน กรุณากดเลือก ลืมรหัสผ่าน"
         if error_msg is None: # Logged in sucessfully
             session['user_id'] = user['id']
-            sql = """
-            UPDATE user
-            SET 
-                last_login = NOW()
-                WHERE id = %s
-            """
-            cursor.execute(sql, (
-                user['id']
-            ))
+            sql = "UPDATE user SET last_login = NOW() WHERE id = %s"
+            cursor.execute(sql, (user['id'],))
             return redirect(url_for('image.record', role='dentist'))
         flash(error_msg)
         return render_template("dentist_login.html")

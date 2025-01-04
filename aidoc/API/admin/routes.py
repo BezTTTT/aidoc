@@ -42,7 +42,6 @@ def put_submit_edited_info():
     #         return jsonify({"error": f"Missing required field: {field}"}), 400
 
     output = admin.put_update_user_info(data)
-    print(output)
     return output
 
 @admin_bp.route('/image_manage_api/', methods=['GET'])
