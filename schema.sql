@@ -31,6 +31,7 @@ CREATE TABLE `user` (
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `default_sender_phone` varchar(255) DEFAULT NULL,
   `default_location` varchar(255) DEFAULT NULL
+  `last_login` datetime DEFAULT NULL,
 ) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;
 
 /*
