@@ -3,11 +3,13 @@
 {% block title %} RiskOCA | Edit User {% endblock %}
 
 {% block content %}
-<div>
+<div id="loadingIndicator" style="display: none; text-align: center; font-weight: bold; font-size: 60px; color: red; ">
+  กำลังโหลดข้อมูล...
+</div>
+<div id = "mainContainer">
+  <div>
     <h3>ข้อมูลผู้ใช้</h3>
 </div>
-
-
 <div class="container-md">
     <form id="editUserForm" action="/edit_page" method="POST">
         <input type="hidden" name="_method" value="PUT">
@@ -43,10 +45,15 @@
         </div>
 
     </form>
+  </div>
 </div>
 
 <script>
     function fetchUserData() {
+      const loadingIndicator = document.getElementById('loadingIndicator');
+      const mainContent = document.getElementById('mainContainer');
+      mainContent.style.display = 'none';
+      loadingIndicator.style.display = 'block';
       const urlParams = new URLSearchParams(window.location.search);
       const userId = urlParams.get('id'); // Get the user ID from the URL query parameter
   
@@ -74,8 +81,13 @@
           }
         })
         .catch((error) => {
-          console.error('Error fetching user data:', error);
-        });
+        console.error('Error:', error);
+        alert('เกิดข้อผิดพลาดขณะโหลดข้อมูล');
+      })
+      .finally(() => {
+        mainContent.style.display= 'block';
+        loadingIndicator.style.display = 'none';
+      });
     }
   
     async function submitFormData(event) {
