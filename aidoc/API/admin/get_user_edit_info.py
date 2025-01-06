@@ -29,7 +29,6 @@ def user_info(id):
     return output
 
 def fetch_user_info(cursor,id):
-    print(id)
     query ="""
         SELECT
             id,
