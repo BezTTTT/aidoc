@@ -29,6 +29,7 @@ CREATE TABLE `user` (
   `is_admin` boolean DEFAULT FALSE,
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_login` datetime DEFAULT NULL,
   `default_sender_phone` varchar(255) DEFAULT NULL,
   `default_location` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;
