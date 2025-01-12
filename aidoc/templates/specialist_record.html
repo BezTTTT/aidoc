@@ -58,6 +58,28 @@
                         {%endfor%}
                     </select>
                 </div>
+                <div class="col my-1">
+                    <label for="filterFollowup">Follow Up Status:</label>
+                    <select name="filterFollowup" id="filterFollowup" class="btn btn-light border border-1 mx-1">
+                        <option value="">ทั้งหมด</option>
+                        <option value="Initiated">Initiated</option>
+                        <option value="On Specialist">On Specialist</option>
+                        <option value="On Contact">On Contact</option>
+                        <option value="On Treatment">On Treatment</option>
+                        <option value="Closed">Closed</option>
+                    </select>
+                </div>
+                {% if g.user['is_admin'] == 1 %}
+                    <div class="col my-1">
+                        <label for="filterRetrain">Retrain Request:</label>
+                        <select name="filterRetrain" id="filterRetrain" class="btn btn-light border border-1 mx-1">
+                            <option value="">ทั้งหมด</option>
+                            <option value="Requested">Requested</option>
+                            <option value="Processing">Processing</option>
+                            <option value="Done">Done</option>
+                        </select>
+                    </div>
+                {% endif %}
             </div>
         </form>
     </div>
@@ -76,7 +98,7 @@
         <div class="row">
             {% for item in pagination %}
                 <div class="col-md-3 mb-4">
-                    <div class="card h-100"
+                    <div class="card h-100 position-relative"
                     {% if item['special_request']==1 %}
                         style="border-color: red; border-width: 3px"
                     {% endif %}
@@ -140,6 +162,21 @@
                                 <button class="btn btn-outline-danger my-1" type="button" 
                                     data-bs-toggle="modal"
                                     data-bs-target="#submissionDeleteModal{{ item['id'] }}" >ลบข้อมูล</button>
+                                    
+                                <form action="{{ url_for('image.followup_request', role='specialist', img_id=item['id']) }}" id="followup_request_id{{item['id']}}" method="post"></form>
+                                {% if item['followup_request_status'] is none %}
+                                    <button class="btn btn-outline-warning btn-sm my-1" type="submit" form="followup_request_id{{item['id']}}">Request Follow Up</button>
+                                {% else %}
+                                    <button class="btn btn-warning btn-sm my-1" type="submit" form="followup_request_id{{item['id']}}">Cancel Follow Up</button>
+                                {% endif %}
+                                {% if g.user['is_admin'] == 1 %}
+                                    <form action="{{ url_for('image.retrain_request', role='specialist', img_id=item['id']) }}" id="retrain_request_id{{item['id']}}" method="post"></form>
+                                    {% if item['retrain_request_status'] is none %}
+                                        <button class="btn btn-outline-info btn-sm my-1" type="submit" form="retrain_request_id{{item['id']}}">Request Retrain</button>
+                                    {% else %}
+                                        <button class="btn btn-info btn-sm my-1" type="submit" form="retrain_request_id{{item['id']}}">Cancel Retrain Req</button>
+                                    {% endif %}
+                                {% endif %}
                             </div>
                         </div>
 
@@ -163,7 +200,14 @@
                                 </div>
                             </div>
                         </div>
-
+                        <span class="position-absolute top-0 end-0 text-end">
+                            {% if item['followup_request_status'] is not none %}
+                                <div class="badge bg-warning text-dark my-1">Follow Up: {{item['followup_request_status']}}</div><br>
+                            {% endif %}
+                            {% if g.user['is_admin']==1 and item['retrain_request_status'] is not none %}
+                                <div class="badge bg-info text-dark my-1">Retrain: {{item['retrain_request_status']}}</div>
+                            {% endif %}
+                        </span>
                     </div>
                 </div>
             {% endfor %}
@@ -195,6 +239,7 @@
     const filterPriority = document.getElementById("filterPriority");
     const filterProvince = document.getElementById("filterProvince")
     const filterSpecialist = document.getElementById("filterSpecialist")
+    const filterFollowup = document.getElementById("filterFollowup")
 
     filterStatus.addEventListener("change", function () {
         document.getElementById("filterForm").submit();
@@ -208,13 +253,16 @@
     filterSpecialist.addEventListener("change", function () {
         document.getElementById("filterForm").submit();
     });
-
+    filterFollowup.addEventListener("change", function () {
+        document.getElementById("filterForm").submit();
+    });
     
     // Get the filters element and set its value from Flask
     const filterStatusValue     = "{{ filters[0] }}";
     const filterPriorityValue   = "{{ filters[1] }}";
     const filterProvinceValue   = "{{ filters[2] }}";
     const filterSpecialistValue  = "{{ filters[3] }}";
+    const filterFollowupValue   = "{{ filters[4] }}";
 
     // Set the selected filters value if it exists
     if (filterStatusValue) {
@@ -229,6 +277,19 @@
     if (filterSpecialistValue) {
         filterSpecialist.value = filterSpecialistValue
     }
-        
+    if (filterFollowupValue) {
+        filterFollowup.value = filterFollowupValue
+    }
+
+    const filterRetrain = document.getElementById("filterRetrain")
+    if (filterRetrain != null){
+        filterRetrain.addEventListener("change", function () {
+            document.getElementById("filterForm").submit();
+        });
+        const filterRetrainValue    = "{{ filters[5] }}";
+        if (filterRetrainValue) {
+            filterRetrain.value = filterRetrainValue
+        }
+    }
 </script>
 {% endblock %}

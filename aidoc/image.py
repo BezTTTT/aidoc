@@ -387,7 +387,7 @@ def download_image(user_id, imagename):
     response.call_on_close(lambda: os.remove(zip_filename))
     return response
 
- # region quick_confirm
+# region quick_confirm
 @bp.route('/quick_confirm/<role>/<int:img_id>', methods=('POST', ))
 @login_required
 @role_validation
@@ -403,6 +403,47 @@ def quick_confirm(role, img_id):
         db, cursor = get_db()
         sql = "UPDATE submission_record SET dentist_id=%s, dentist_feedback_code=%s, dentist_feedback_date=%s, updated_at=%s WHERE id=%s"
         val = ( session["user_id"], diagnostic_code, datetime.now(), datetime.now(), img_id)
+        cursor.execute(sql, val)
+    return redirect(url_for('image.record', role=role, page=session['current_record_page']))
+
+# region followup_request
+@bp.route('/followup_request/<role>/<int:img_id>', methods=('POST', ))
+@login_required
+@role_validation
+def followup_request(role, img_id):
+
+    db, cursor = get_db()
+    sql = "SELECT * FROM followup_request WHERE submission_id=%s"
+    val = ( img_id,)
+    cursor.execute(sql, val)
+    data = cursor.fetchall()
+    if not data:
+        sql = "INSERT INTO followup_request (submission_id, followup_requester, followup_request_status) VALUES (%s, %s, %s)"
+        val = ( img_id, session["user_id"], 'Initiated')
+        cursor.execute(sql, val)
+    else:
+        sql = "DELETE FROM followup_request WHERE submission_id=%s"
+        val = ( img_id, )
+        cursor.execute(sql, val)
+    return redirect(url_for('image.record', role=role, page=session['current_record_page']))
+
+# region retrain_request
+@bp.route('/retrain_request/<role>/<int:img_id>', methods=('POST', ))
+@login_required
+@role_validation
+def retrain_request(role, img_id):
+    db, cursor = get_db()
+    sql = "SELECT * FROM retrain_request WHERE submission_id=%s"
+    val = ( img_id,)
+    cursor.execute(sql, val)
+    data = cursor.fetchall()
+    if not data: # check is the list is empty
+        sql = "INSERT INTO retrain_request (submission_id, retrain_requester, retrain_request_status) VALUES (%s, %s, %s)"
+        val = ( img_id, session["user_id"], 'Requested')
+        cursor.execute(sql, val)
+    else:
+        sql = "DELETE FROM retrain_request WHERE submission_id=%s"
+        val = ( img_id, )
         cursor.execute(sql, val)
     return redirect(url_for('image.record', role=role, page=session['current_record_page']))
 
@@ -653,10 +694,12 @@ def record(role): # Submission records
                     sender_id, patient_id, dentist_id, sender_phone, special_request,
                     location_province, location_amphoe, location_district, location_zipcode, 
                     dentist_feedback_comment,dentist_feedback_code,case_report,
-                    ai_prediction, submission_record.created_at
+                    ai_prediction, submission_record.created_at, retrain_request_status, followup_request_status
                 FROM submission_record
                 INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
                 LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
+                LEFT JOIN followup_request ON submission_record.id = followup_request.submission_id
+                LEFT JOIN retrain_request ON submission_record.id = retrain_request.submission_id
                 ORDER BY case_id DESC'''
         cursor.execute(sql)
     elif role=='admin':
@@ -665,13 +708,14 @@ def record(role): # Submission records
                     sender_id, patient_id, dentist_id, sender_phone, special_request,
                     location_province, location_amphoe, location_district, location_zipcode, 
                     dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, case_report,
-                    ai_prediction, submission_record.created_at
+                    ai_prediction, submission_record.created_at, retrain_request_status, followup_request_status
                 FROM submission_record
                 LEFT JOIN patient_case_id ON submission_record.id = patient_case_id.id
                 LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
                 LEFT JOIN user AS sender ON submission_record.sender_id = sender.id
-                ORDER BY submission_record.id DESC
-                '''
+                LEFT JOIN followup_request ON submission_record.id = followup_request.submission_id
+                LEFT JOIN retrain_request ON submission_record.id = retrain_request.submission_id
+                ORDER BY submission_record.id DESC'''
         cursor.execute(sql)
     elif role=='osm':
         sql = '''SELECT submission_record.id, channel, fname,
@@ -697,7 +741,7 @@ def record(role): # Submission records
                 ORDER BY case_id DESC'''
         val = (session["user_id"],)
         cursor.execute(sql, val)
-    else:
+    else: # Dentist
         sql = '''SELECT submission_record.id, channel, fname, name, surname, birthdate,
                     sender_id, patient_id, dentist_id, special_request, province,
                     dentist_feedback_comment,dentist_feedback_code,
@@ -745,12 +789,16 @@ def record(role): # Submission records
         filterPriority = request.form.get("filterPriority", "") 
         filterProvince = request.form.get("filterProvince", "") 
         filterSpecialist = request.form.get("filterSpecialist", "")
+        filterFollowup = request.form.get("filterFollowup", "")
+        filterRetrain = request.form.get("filterRetrain", "")
         session['record_filter']['search_query'] = search_query
         session['record_filter']['agree'] = agree
         session['record_filter']['filterStatus'] = filterStatus
         session['record_filter']['filterPriority'] = filterPriority
         session['record_filter']['filterProvince'] = filterProvince
         session['record_filter']['filterSpecialist'] = filterSpecialist
+        session['record_filter']['filterFollowup'] = filterFollowup
+        session['record_filter']['filterRetrain'] = filterRetrain
     else:
         search_query = session['record_filter'].get('search_query', "")
         agree = session['record_filter'].get('agree', "")
@@ -758,7 +806,8 @@ def record(role): # Submission records
         filterPriority = session['record_filter'].get('filterPriority', "")
         filterProvince = session['record_filter'].get('filterProvince', "")
         filterSpecialist = session['record_filter'].get('filterSpecialist', "")
-    
+        filterFollowup = session['record_filter'].get("filterFollowup", "")
+        filterRetrain = session['record_filter'].get("filterRetrain", "")
     # Initialize an empty list to store filtered results
     filtered_data = []
 
@@ -779,8 +828,10 @@ def record(role): # Submission records
             record_amphoe = record.get("location_amphoe")
             record_zipcode = record.get("location_zipcode")
             record_dentist_id = record.get("dentist_id")
+            record_followup_request_status = record.get("followup_request_status")
+            record_retrain_request_status = record.get("retrain_request_status")
 
-            if search_query!="" or filterStatus!="" or filterPriority!="" or filterProvince!="" or filterSpecialist!="":
+            if search_query!="" or filterStatus!="" or filterPriority!="" or filterProvince!="" or filterSpecialist!="" or filterFollowup!="" or filterRetrain!="":
                 cumulativeFilterFlag = True
 
                 if search_query!="":
@@ -802,7 +853,11 @@ def record(role): # Submission records
                     cumulativeFilterFlag &= filterProvince==record_province
                 if filterSpecialist!="":
                     cumulativeFilterFlag &= int(filterSpecialist)==record_dentist_id
-                
+                if filterFollowup!="":
+                    cumulativeFilterFlag &= filterFollowup == record_followup_request_status
+                if filterRetrain!="":
+                    cumulativeFilterFlag &= filterRetrain == record_retrain_request_status
+
                 if cumulativeFilterFlag:
                     filtered_data.append(record)
             else:
@@ -913,7 +968,7 @@ def record(role): # Submission records
                 current_page=page,
                 total_pages=total_pages,
                 search_query=search_query,
-                filters=[filterStatus,filterPriority,filterProvince,filterSpecialist])
+                filters=[filterStatus,filterPriority,filterProvince,filterSpecialist,filterFollowup,filterRetrain])
 
 # region report
 @bp.route('/admin/report/')

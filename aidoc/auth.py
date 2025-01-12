@@ -200,10 +200,8 @@ def login_required(view):
     def wrapped_view(**kwargs):
         if g.user is None:
             if 'sender_mode' in session:
-                if session['sender_mode']=='dentist':
-                    return redirect(url_for('auth.login', role='dentist'))
-                elif session['sender_mode']=='osm':
-                    return redirect(url_for('auth.login', role='osm'))
+                if session['sender_mode'] in ['dentist', 'osm', 'specialist', 'admin']:
+                    return redirect(url_for('auth.login', role=session['sender_mode']))
                 elif session['sender_mode']=='general':
                     return redirect('/general')
             return redirect('/')

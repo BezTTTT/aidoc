@@ -104,6 +104,33 @@ CREATE TABLE `general_submission_record` (
 ) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;
 
 /*
+  retrain_request_status: 'Requested', 'Processing', 'Done'
+*/
+
+CREATE TABLE `retrain_request` (
+  `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `submission_id` int NOT NULL,
+  `retrain_requester` int NOT NULL,
+  `retrain_request_date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `retrain_request_status` varchar(256) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*
+  followup_request_status: 'Initiated', 'On Specialist', 'On Contact', 'On Treatment', 'Closed'
+  contact_person: name, hospital, role, telephone or line contact
+*/
+
+CREATE TABLE `followup_request` (
+  `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `submission_id` int NOT NULL,
+  `followup_requester` int NOT NULL,
+  `followup_request_date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `followup_request_status` varchar(256) NOT NULL,
+  `contact_person` varchar(256),
+  `followup_note` varchar(256)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+/*
  Source Server         : rockpi
  Source Server Type    : MariaDB
  Source Server Version : 100808 (10.8.8-MariaDB-1:10.8.8+maria~ubu2204)
