@@ -212,7 +212,7 @@ def register(role):
                 img_id = session['register_later']['img_id']
                 session.pop('register_later', None)
                 session.pop('noNationalID', None)
-                return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
+                return redirect(url_for('webapp.diagnosis', role=role, img_id=img_id))
         else:
             return render_template(target_template, data=data)
     elif role=='osm':
@@ -292,7 +292,7 @@ def register(role):
                 img_id = session['register_later']['img_id']
                 session.pop('register_later', None)
                 session['user_id'] = g.user['id'] 
-                return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
+                return redirect(url_for('webapp.diagnosis', role=role, img_id=img_id))
         else:
             return render_template(target_template, data=data)
     elif role=='dentist':
@@ -353,7 +353,7 @@ def register(role):
                 val = (data["name"], data["surname"], data["email"], data["phone"], data["username"],generate_password_hash(data["password"]), data["job_position"], data["osm_job"], data["hospital"],data["province"], data["license"], session['user_id'])
                 cursor.execute(sql, val)
                 
-            return redirect(url_for('image.record', role='dentist'))
+            return redirect(url_for('webapp.record', role='dentist'))
         else:
             return render_template(target_template, data=data)
     else:
@@ -429,7 +429,7 @@ def cancel_register():
         session['sender_mode'] = role
         img_id = session['register_later']['img_id']
         session.pop('register_later', None)
-        return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
+        return redirect(url_for('webapp.diagnosis', role=role, img_id=img_id))
 
 # Helper functions
 

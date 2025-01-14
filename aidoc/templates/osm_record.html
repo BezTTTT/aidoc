@@ -20,8 +20,8 @@
     </div>
     <form action="/record/osm" method="post">
         <div class="input-group mb-3">
-            <input type="text" class="form-control" name="search" placeholder="ชื่อ นามสกุลคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC ชื่อไฟล์ Case ID" value="{{ data['search'] }}" />
-            <button class="btn btn-outline-primary" type="submit" value="{{ data['search'] }}"> Search </button>
+            <input type="text" class="form-control" name="search" placeholder="ชื่อ นามสกุลคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC ชื่อไฟล์ Case ID" value="{{ data['search_query'] }}" />
+            <button class="btn btn-outline-primary" type="submit" value="{{ data['search_query'] }}"> Search </button>
         </div>
     </form>
 
@@ -51,7 +51,7 @@
     <div class="col-12 mt-5">
         <p>ประวัติการนำส่งภาพถ่ายช่องปากของคนไข้</p>
     </div>
-    {% if pagination|length == 0 %}
+    {% if paginated_data|length == 0 %}
         <div class="col-12 mt-4">
             <p class="text-center text-danger">ไม่พบข้อมูล</p>
         </div>
@@ -63,7 +63,7 @@
     <!-- Loop through paginated data -->
     <div class="container my-4">
         <div class="row">
-            {% for item in pagination %}
+            {% for item in paginated_data %}
                 <div class="col-md-3 mb-4">
                     <div class="card h-100"
                     {% if item['special_request']==1 %}
@@ -118,7 +118,7 @@
                                     {% endif %}
                             </h6>
                             <div class="d-grid gap-2 d-md-flex justify-content-md-center">
-                                <form action="{{ url_for('image.diagnosis', role='osm', img_id=item['id']) }}" id="form_id{{item['id']}}" method="post"> </form>
+                                <form action="{{ url_for('webapp.diagnosis', role='osm', img_id=item['id']) }}" id="form_id{{item['id']}}" method="post"> </form>
                                 <button class="btn btn-outline-success" type="submit" form="form_id{{item['id']}}">ดูผลการวิเคราะห์</button>
                                 <button class="btn btn-outline-danger" type="button" data-bs-toggle="modal" data-bs-target="#submissionDeleteModal{{ item['id'] }}" >ลบข้อมูล</button>
                             </div>
@@ -183,8 +183,8 @@
     });
 
     // Get the filters element and set its value from Flask
-    const filterStatusValue     = "{{ filters[0] }}";
-    const filterPriorityValue   = "{{ filters[1] }}";
+    const filterStatusValue     = "{{ data['filterStatus'] }}";
+    const filterPriorityValue   = "{{ data['filterPriority'] }}";
 
     // Set the selected filters value if it exists
     if (filterStatusValue) {
