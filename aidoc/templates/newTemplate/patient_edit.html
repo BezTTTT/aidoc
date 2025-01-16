@@ -1,0 +1,98 @@
+{% extends "./base.html" %}
+
+{% block title %} RiskOCA | Patient Register {% endblock %}
+
+{% block content %}
+<div class="row d-flex align-items-center justify-content-center pt-4">
+    <div class="card mb-4" style="width: max-content;">
+        <div class="card-body">
+            <h5 class="card-title">แก้ไขข้อมูลส่วนตัว</h5>
+            <form class="my-4" action="/edit/patient" method="post" enctype="multipart/form-data">
+                <div class="form-group py-2">
+                    <label for="name">ชื่อ (ไม่ต้องใส่คำนำหน้าชื่อ) <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" name="name" id="name" required value="{{data.name}}">
+                </div>    
+                <div class="form-group py-2">
+                    <label for="surname">นามสกุล <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="นามสกุล..." name="surname" id="surname" value="{{data.surname}}" required>
+                </div>
+                <div class="form-group py-2">
+                    <label for="national_id">เลขประจำตัวประชาชน <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="เลขประจำตัว ปชช. 13 หลัก ..." name="national_id" id="national_id" value="{{data.national_id}}" maxlength="13" readonly style="background-color: #f8f9fa;">
+                </div>
+                <div class="form-group py-2">
+                    <label for="job_position">อาชีพ <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="อาชีพ..." name="job_position" id="job_position" value="{{data.job_position}}" required>
+                </div>
+                <div class="form-group py-2">
+                    <label for="address">ที่อยู่ (ที่พักปัจจุบัน) <span style="color: red;">*</span></label>
+                    <textarea 
+                        class="form-control" 
+                        placeholder="บ้านเลขที่... หมู่... ตำบล... อำเภอ..." 
+                        name="address" 
+                        id="address" 
+                        cols="50" 
+                        required>{{ data.address }}</textarea>
+                </div>
+                
+                <div class="form-group py-2">
+                    <label for="province">จังหวัด (ที่พักปัจจุบัน) <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="จังหวัด..." name="province" id="province" value="{{data.province}}" required>
+                </div>
+                <div class="form-group py-2">
+                    <label for="email">อีเมล (ถ้ามี)</label>
+                    <input type="text" class="form-control" placeholder="อีเมล..." name="email" id="email" value="{{data.email}}">
+                </div>
+                <div class="form-group py-2">
+                    <label for="phone">เบอร์โทรศัพท์ (ถ้ามี)</label>
+                    <input type="text" class="form-control" placeholder="เบอร์โทรศัพท์..." name="phone" id="phone" value="{{data.phone}}" maxlength="10">
+                </div>
+                <div class="form-group py-2">
+                    <label for="dob_day">วันเกิด <span style="color: red;">*</span></label>
+                    <div class="row">
+                        <!-- Day select -->
+                        <div class="col-3">
+                            <select id="dob_day" name="dob_day" class="form-control">
+                                <option value="" disabled>วัน</option>
+                                {% for day in range(1, 32) %}
+                                    <option value="{{ day }}" {% if day == data.birthdate_day %} selected {% endif %}>{{ day }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                
+                        <!-- Month select -->
+                        <div class="col-5">
+                            <select id="dob_month" name="dob_month" class="form-control">
+                                <option value="" disabled>เดือน</option>
+                                {% set month_list_th = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'] %}
+                                {% for month in month_list_th %}
+                                    <option value="{{ loop.index }}" {% if loop.index == data.birthdate_month %} selected {% endif %}>{{ month }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                
+                        <!-- Year select -->
+                        <div class="col-4">
+                            <select id="dob_year" name="dob_year" class="form-control">
+                                <option value="" disabled>ปี</option>
+                                {% for year in range(2567, 2467, -1) %} <!-- Replace 2567 with current BE year -->
+                                    <option value="{{ year }}" {% if year == data.birthdate_year %} selected {% endif %}>{{ year }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>                
+                <br>
+                <div class="row d-flex justify-content-center">
+                    <div class="col d-flex justify-content-center">
+                        <a class="btn btn-outline-danger" style="width: 100%;" href="/upload_image/patient">ยกเลิก</a>
+                    </div>
+                    <div class="col d-flex justify-content-center">
+                        <input class="btn btn-success" style="width: 100%;" type="submit" value="ยืนยันการแก้ไข">
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
