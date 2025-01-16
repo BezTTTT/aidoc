@@ -100,7 +100,6 @@ def upload_image(role):
                             'province': g.user['province'],
                             'zipcode': None}
                 data['default_location_text'] = "สถานที่คัดกรอง: จังหวัด"+location['province']
-            data['earthchieAPI'] = True # enable Earthchie's Thailand Address Auto-complete API
         elif submission=='true': # upload confirmation is submitted
             # Check if submission list is in the queue (session), if so submit them to the Submission Module and the AI Prediction Engine
             if 'imageNameList' in session and session['imageNameList']:
@@ -152,6 +151,7 @@ def upload_image(role):
                     session.pop('patient_id', None)
                     session.pop('location', None)
                 return redirect(url_for('webapp.diagnosis', role=role, img_id=result['id']))
+    data['earthchieAPI'] = True # enable Earthchie's Thailand Address Auto-complete API
     return render_template(role+"_upload.html", data=data)
 
 # region load_image
