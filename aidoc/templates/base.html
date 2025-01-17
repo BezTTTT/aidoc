@@ -112,6 +112,9 @@
                                     >จัดการรูปภาพ</a
                                     >
                                 </li>
+                                <li>
+                                    <a class="dropdown-item" href="/edit/dentist">แก้ไขข้อมูลส่วนตัว</a>
+                                </li>
                                 </ul>
                             </li>
                             {% endif %}
@@ -123,7 +126,9 @@
                             <li class="nav-item">
                                 <a class="nav-link active" aria-current="page" href="/record/osm">ประวัติการนำส่งข้อมูล</a>
                             </li>
-
+                            <li class="nav-item">
+                                <a class="nav-link active" aria-current="page" href="/edit/osm">แก้ไขข้อมูลส่วนตัว</a>
+                            </li>
                         <!--  patient navbar -->
                         {% elif g.user['is_patient']==1 %}
                             <li class="nav-item">
@@ -131,6 +136,9 @@
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link active" aria-current="page" href="/record/patient">ประวัติการนำส่งข้อมูล</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link active" aria-current="page" href="/edit/patient">แก้ไขข้อมูลส่วนตัว</a>
                             </li>
                         {% endif %}
                         

@@ -388,6 +388,189 @@ def download_image(user_id, imagename):
     response.call_on_close(lambda: os.remove(zip_filename))
     return response
 
+@bp.route('/edit/<role>', methods=('GET', 'POST'))
+@login_required
+def editByRole(role):
+    thai_months = [
+                    'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 
+                    'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 
+                    'สิงหาคม', 'กันยายน', 'ตุลาคม', 
+                    'พฤศจิกายน', 'ธันวาคม'
+                ]
+    db, cursor = get_db()
+    if role == 'patient':
+        # Handling GET request to render the edit form
+        if request.method == 'GET':
+            sql = '''SELECT 
+                        name, 
+                        surname, 
+                        birthdate, 
+                        province, 
+                        national_id, 
+                        job_position, 
+                        default_location, 
+                        email,
+                        address,
+                        phone
+                    FROM 
+                        user
+                    WHERE 
+                        id = %s;
+                    '''
+            val = (session["user_id"],)
+            cursor.execute(sql, val)
+            data = cursor.fetchone()
+            if data["national_id"]:
+                data["national_id"] = data["national_id"][:-4] + "****"
+            data["email"] = data["email"] if data.get("email") else ""
+            if data["birthdate"]:
+                birthdate = data["birthdate"]
+                data["birthdate_day"] = birthdate.day
+                data["birthdate_month"] = thai_months[birthdate.month - 1]
+                data["birthdate_year"] = birthdate.year + 543
+                del data["birthdate"]
+            return render_template("/newTemplate/patient_edit.html", data=data)
+        
+        # Handling POST request to update data
+        elif request.method == 'POST':
+            name = request.form['name']
+            surname = request.form['surname']
+            national_id = request.form['national_id']
+            job_position = request.form['job_position']
+            address = request.form['address']
+            province = request.form['province']
+            email = request.form['email']
+            phone = request.form['phone']
+            dob_day = int(request.form['dob_day'])
+            dob_month = int(request.form['dob_month'])
+            dob_year = int(request.form['dob_year'])  # Convert to integer
+
+            # Convert Thai year to Gregorian year (subtract 543)
+            birthdate = date(dob_year - 543, dob_month, dob_day)
+
+            sql = '''UPDATE user
+                     SET name = %s, surname = %s, national_id = %s, job_position = %s,
+                         address = %s, province = %s, email = %s, phone = %s, birthdate = %s
+                     WHERE id = %s;'''
+            val = (name, surname, national_id, job_position, address, province, email, phone, birthdate, session["user_id"])
+            cursor.execute(sql, val)
+            db.commit()
+            flash('ข้อมูลส่วนตัวได้รับการแก้ไขแล้ว', 'success')
+            return redirect('/edit/patient')
+    elif role == 'osm':
+        if request.method == 'GET':
+            sql = '''SELECT 
+                        name, 
+                        surname, 
+                        province,
+                        hospital,
+                        national_id, 
+                        job_position, 
+                        phone
+                    FROM 
+                        user
+                    WHERE 
+                        id = %s;
+                    '''
+            val = (session["user_id"],)
+            cursor.execute(sql, val)
+            data = cursor.fetchone()
+            if data["national_id"]:
+                data["national_id"] = data["national_id"][:-4] + "****"
+            if data["phone"]:
+                data["phone"] = data["phone"][:-4] + "****"
+            data["email"] = data["email"] if data.get("email") else ""
+            
+            return render_template("/newTemplate/osm_edit.html",data=data)
+        if request.method == 'POST':
+            name = request.form['name']
+            surname = request.form['surname']
+            job_position = request.form['job_position']
+            osm_job = request.form.get('osm_job', '')
+            license = request.form.get('license', '')
+            hospital = request.form['hospital']
+            province = request.form['province']
+
+            sql = '''UPDATE user SET 
+                    name = %s,
+                    surname = %s,
+                    job_position = %s,
+                    osm_job = %s,
+                    license = %s,
+                    hospital = %s,
+                    province = %s
+                 WHERE 
+                    id = %s;
+                '''
+            values = (name, surname, job_position, osm_job, license, hospital, province, session["user_id"])
+            cursor.execute(sql, values)
+            db.commit()
+            flash('ข้อมูลส่วนตัวได้รับการแก้ไขแล้ว', 'success')
+            return redirect("/edit/osm")
+    else:
+        if request.method == 'GET':
+            sql = '''SELECT 
+                        name, 
+                        surname, 
+                        province,
+                        hospital,
+                        national_id, 
+                        job_position, 
+                        phone,
+                        email
+                    FROM 
+                        user
+                    WHERE 
+                        id = %s;
+                    '''
+            val = (session["user_id"],)
+            cursor.execute(sql, val)
+            data = cursor.fetchone()
+            if data["phone"]:
+                data["phone"] = data["phone"][:-4] + "****"
+            data["email"] = data["email"] if data.get("email") else ""
+            return render_template("/newTemplate/dentist_edit.html",data=data)
+        if request.method == "POST":
+            name = request.form['name']
+            surname = request.form['surname']
+            job_position = request.form['job_position']
+            osm_job = request.form.get('osm_job', '')
+            license = request.form.get('license', '')
+            hospital = request.form['hospital']
+            province = request.form['province']
+            phone = request.form['phone']
+            email = request.form['email']
+
+            sql = '''UPDATE user SET 
+                    name = %s,
+                    surname = %s,
+                    job_position = %s,
+                    osm_job = %s,
+                    license = %s,
+                    hospital = %s,
+                    province = %s,
+                    phone = %s,
+                    email = %s
+                 WHERE 
+                    id = %s;
+                '''
+            values = (name, surname, job_position, osm_job, license, hospital, province, phone, email, session["user_id"])
+            cursor.execute(sql, values)
+            db.commit()
+            flash('ข้อมูลส่วนตัวได้รับการแก้ไขแล้ว', 'success')
+            return redirect('/edit/dentist')
+
+
+# @bp.route('/edit/osm', methods=('GET','POST'))
+# @login_required
+# def editOsm():
+#     return render_template("/newTemplate/osm_edit.html")
+
+# @bp.route('/edit/dentist', methods=('GET','POST'))
+# @login_required
+# def editDoc():
+#     return render_template("/newTemplate/dentist_edit.html")
+
 # Helper functions
 # region create_thumbnail
 def create_thumbnail(pil_img):
