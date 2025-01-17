@@ -1,13 +1,21 @@
 from flask import (
-    Blueprint, flash, redirect, render_template, request, session, url_for, jsonify, g
+    Blueprint, flash, redirect, render_template, request, session, url_for, jsonify, g, current_app
 )
 from werkzeug.security import generate_password_hash
 
+from PyPDF2 import PdfWriter, PdfReader
+from reportlab.pdfgen import canvas
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase import pdfmetrics
+from reportlab.lib.pagesizes import A4
 import datetime
 import re
+import io
+import os
 
 from aidoc.db import get_db
 from aidoc.auth import login_required, load_logged_in_user, role_validation
+from aidoc.webapp import format_thai_datetime
 
 # 'user' blueprint manages user management system
 bp = Blueprint('user', __name__)
@@ -431,8 +439,89 @@ def cancel_register():
         session.pop('register_later', None)
         return redirect(url_for('webapp.diagnosis', role=role, img_id=img_id))
 
-# Helper functions
+# region get_user_compliance
+# Comply with the current versions of user_agreement and informed_consent
+def get_user_compliance(user_id):
+    sql = 'SELECT * FROM user_agreement WHERE id=%s'
+    val = (user_id, )
+    db, cursor = get_db()
+    cursor.execute(sql, val)
+    results = cursor.fetchall()
 
+    if not results:
+        result = results[-1] # Get the lastest agreement
+        return  (result['user_agreement_version'] == current_app.config['CURRENT_AGREEMENT_VER']) and \
+                (result['informed_consent_version'] == current_app.config['CURRENT_CONSENT_VER'])
+    else:
+        return False
+
+# region set_user_compliance
+# Comply with the current versions of user_agreement and informed_consent
+def set_user_compliance(user_id):
+    sql = '''INSERT INTO user_agreement
+        (user_id, user_agreement_version, user_agreement_datetime, informed_consent_version, informed_consent_datetime)
+        VALUES (%s, %s, %s, %s, %s)'''
+    val = (user_id,
+           current_app.config['CURRENT_AGREEMENT_VER'],
+           datetime.datetime.now(),
+           current_app.config['CURRENT_CONSENT_VER'],
+           datetime.datetime.now())
+    db, cursor = get_db()
+    cursor.execute(sql, val)
+
+# region generate_legal_docs
+# Generate user_agreement and informed_consent pdfs
+def generate_legal_docs(user_id):
+    sql = 'SELECT name, surname, national_id FROM user WHERE id=%s'
+    val = (user_id, )
+    db, cursor = get_db()
+    cursor.execute(sql, val)
+    result = cursor.fetchone()
+    full_name = f"{result['name']} {result['surname']}"
+    full_name_with_id = f"{result['name']} {result['surname']} (เลขบัตรประชาชน {result['national_id']})"
+
+    os.makedirs(os.path.join(current_app.config['LEGAL_DIR'], str(user_id)) , exist_ok=True)
+
+    # Generate PDFs
+    pdfmetrics.registerFont(TTFont('THSarabunNew-Bold', os.path.join(current_app.config['LEGAL_DIR'], 'templates', 'THSarabunNew Bold.ttf')))
+    current_time = format_thai_datetime(datetime.datetime.now())
+
+    packet1 = io.BytesIO()
+    canvas1 = canvas.Canvas(packet1, pagesize=A4)
+    canvas1.setFont('THSarabunNew-Bold', 16)
+    canvas1.drawString(170, 530, full_name) # User Agreement
+    canvas1.drawString(385, 530, current_time + ' น.')
+    canvas1.save()
+    packet1.seek(0)
+    canvas_pdf1 = PdfReader(packet1)
+    input1 = PdfReader(
+        open(os.path.join(current_app.config['LEGAL_DIR'], 'templates', 'agreement_v'+ str(current_app.config['CURRENT_AGREEMENT_VER']) + ".pdf"), "rb")) # User Agreement
+    output1 = PdfWriter()
+    output1.add_page(input1.pages[0])
+    page = input1.pages[1]
+    page.merge_page(canvas_pdf1.pages[0])
+    output1.add_page(page)
+    output_stream = open(os.path.join(current_app.config['LEGAL_DIR'], str(user_id), "agreement_v" + str(current_app.config['CURRENT_AGREEMENT_VER']) + ".pdf"), "wb")
+    output1.write(output_stream)
+    output_stream.close()
+
+    packet2 = io.BytesIO()
+    canvas2 = canvas.Canvas(packet2, pagesize=A4)
+    canvas2.setFont('THSarabunNew-Bold', 16)
+    canvas2.drawString(160, 735, full_name) # Broad Informed Consent
+    canvas2.drawString(170, 335, full_name)
+    canvas2.drawString(400, 335, current_time + ' น.')
+    canvas2.drawString(170, 300, "รศ.ดร.ปฏิเวธ วุฒิสารวัฒนา") # PI
+    canvas2.drawString(400, 300, current_time + ' น.')
+    canvas2.drawString(180, 265, "ทพ.ดร.แมนสรวง วงศ์อภัย") # Project Head
+    canvas2.drawString(400, 265, current_time + ' น.')
+    canvas2.save()
+    packet2.seek(0)
+
+
+    
+
+# Helper functions
 # region remove_prefix
 def remove_prefix(input_str):
     prefixes = ["นาย", "นางสาว", "นาง", "น.ส.", "นส.", "น.",  "ทพญ.", "ทพ.", "ดร."]

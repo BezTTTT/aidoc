@@ -44,6 +44,8 @@ def create_app(test_config=None):
     os.makedirs(thumbOutlinedDir, exist_ok=True)
     os.makedirs(maskDir, exist_ok=True)
 
+    app.config['LEGAL_DIR'] = os.path.join(projectDir, 'legal') 
+
     # Register blueprints
     from . import auth
     app.register_blueprint(auth.bp)
