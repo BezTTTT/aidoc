@@ -23,7 +23,8 @@
     <div class="row d-flex justify-content-center align-items-center text-center">
       <div class="col-8 col-xs-2 d-flex justify-content-center align-items-center">
         <form class="p-3 text-center" action="/upload_image/patient" method="post" enctype="multipart/form-data">
-          <input id="file-upload1" type="file" name="imageList" onchange="form.submit()" accept="image/*" multiple hidden />
+          <input id="file-upload" type="file" name="imageList" onchange="form.submit()" accept="image/*" multiple hidden />
+          <input id="file-upload1" data-bs-target="#termsBackdrop" data-bs-toggle="modal" hidden />
           <div class="d-flex align-items-center" style="width: 100%">
             <label for="file-upload1" class="card d-flex justify-content-center align-items-center" style="
                   border-style: dashed;
@@ -143,6 +144,7 @@
     </div>
   </div>
 {% endif %}
+{% include 'terms_modals.html' %}
 {% include 'examples_footer.html' %}
 {% include 'terms_footer.html' %}
 {% endblock %}
@@ -176,11 +178,13 @@
 
   // Load sender info if there is a default_sender_phone
   var isFirstOpen = true
-  checkSenderPhone(inputPhone.value)
 
-  inputPhone.addEventListener('input',function(e){
+  if (inputPhone!=null){
+    checkSenderPhone(inputPhone.value);
+    inputPhone.addEventListener('input',function(e){
       checkSenderPhone( phone = e.target.value)
-  })
+    });
+  }
 
   function checkSenderPhone(phone){
     if(phone.length >= 9){

@@ -20,8 +20,8 @@
     </div>
     <form action="/record/dentist" method="get">
         <div class="input-group mb-3">
-            <input type="text" class="form-control" name="search" placeholder="Search" value="{{ data['search'] }}" />
-            <button class="btn btn-outline-primary" type="submit" value="{{ data['search'] }}"> Search </button>
+            <input type="text" class="form-control" name="search" placeholder="Search" value="{{ data['search_query'] }}" />
+            <button class="btn btn-outline-primary" type="submit" value="{{ data['search_query'] }}"> Search </button>
         </div>
     </form>
     <div class="d-flex justify-content-end">
@@ -38,7 +38,7 @@
     <div class="col-12 mt-5">
         <p>ประวัติผลลัพธ์การวิเคราะห์รอยโรคในภาพถ่ายช่องปากวิเคราะห์</p>
     </div>
-    {% if pagination|length == 0 %}
+    {% if paginated_data|length == 0 %}
         <div class="col-12">
             <p class="text-center text-danger">ไม่พบข้อมูล</p>
         </div>
@@ -46,7 +46,7 @@
     <!-- Loop through paginated data -->
     <div class="container">
         <div class="row">
-            {% for item in pagination %}
+            {% for item in paginated_data %}
                 <div class="col-md-3 mb-4">
                     <div class="card h-100">
                         <div style="display: inline-flex; align-items: center; justify-content: center; ">
@@ -69,7 +69,7 @@
                                         OSCC
                                     {% endif %}
                             </h6>
-                            <form action="{{ url_for('image.diagnosis', role='dentist', img_id=item['id']) }}" id="form_id{{item['id']}}" method="post"></form>
+                            <form action="{{ url_for('webapp.diagnosis', role='dentist', img_id=item['id']) }}" id="form_id{{item['id']}}" method="post"></form>
                             <div class="d-grid gap-2 d-md-block justify-content-md-center">
                                 <button class="btn btn-outline-success" type="submit" form="form_id{{item['id']}}">ดูผลการวิเคราะห์</button>
                                 <button class="btn btn-outline-danger my-1" type="button" data-bs-toggle="modal" data-bs-target="#submissionDeleteModal{{ item['id'] }}" >ลบข้อมูล</button>
