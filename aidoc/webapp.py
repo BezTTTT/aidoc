@@ -309,9 +309,6 @@ def record(role):
 
     session['sender_mode'] = role
 
-    from aidoc.user import generate_legal_docs
-    generate_legal_docs(2)
-
     # There is no pagination for patient's record page (a special case)
     if role=='patient':
         data = record_patient()

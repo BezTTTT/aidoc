@@ -18,14 +18,13 @@ import numpy as np
 import os
 import glob
 import shutil
-import json
 import ast
 import zipfile
-from datetime import datetime, date
+from datetime import datetime
 from dateutil.parser import parse
 
 from aidoc.db import get_db
-from aidoc.auth import login_required, role_validation, load_logged_in_user
+from aidoc.auth import login_required, role_validation
 from aidoc.webapp import update_submission_record
 
 # 'image' blueprint manages Image upload, AI prediction, and the Diagnosis
@@ -151,6 +150,14 @@ def upload_image(role):
                     session.pop('patient_id', None)
                     session.pop('location', None)
                 return redirect(url_for('webapp.diagnosis', role=role, img_id=result['id']))
+    
+    else: # For GET method, check the user compliance on user agreement and informed consent
+        from aidoc.user import generate_legal_drafts, get_user_compliance
+        data['user_compliance'] = get_user_compliance(session['user_id'])
+        if not data['user_compliance']:
+            generate_legal_drafts(session['user_id'])
+            session['returning_page'] = 'upload_image'
+    
     data['earthchieAPI'] = True # enable Earthchie's Thailand Address Auto-complete API
     return render_template(role+"_upload.html", data=data)
 
