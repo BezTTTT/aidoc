@@ -13,8 +13,10 @@ def map_user_list_data(data):
             "province": row["province"],
             "job_position": cm.map_job_position_to_th(row["job_position"]),
             "role": [],
-            "total_submit": row["N"]
+            "total_submit": row["N"],
+            "last_login": du.format_date_to_ddMMyyyy_time(row["last_login"]) if row["last_login"] else "-"
         }
+
 
         if row["is_patient"] == 1:
             user["role"].append("patient")

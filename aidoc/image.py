@@ -388,6 +388,608 @@ def download_image(user_id, imagename):
     response.call_on_close(lambda: os.remove(zip_filename))
     return response
 
+# region quick_confirm
+@bp.route('/quick_confirm/<role>/<int:img_id>', methods=('POST', ))
+@login_required
+@role_validation
+def quick_confirm(role, img_id):
+    if role=='specialist' or role=='admin':
+        ai_result = request.args.get('ai_result', type=int)
+        if ai_result==0:
+            diagnostic_code = 'NORMAL'
+        elif ai_result==1:
+            diagnostic_code = 'OPMD'
+        else:
+            diagnostic_code = 'OSCC'
+        db, cursor = get_db()
+        sql = "UPDATE submission_record SET dentist_id=%s, dentist_feedback_code=%s, dentist_feedback_date=%s, updated_at=%s WHERE id=%s"
+        val = ( session["user_id"], diagnostic_code, datetime.now(), datetime.now(), img_id)
+        cursor.execute(sql, val)
+    return redirect(url_for('image.record', role=role, page=session['current_record_page']))
+
+# region followup_request
+@bp.route('/followup_request/<role>/<int:img_id>', methods=('POST', ))
+@login_required
+@role_validation
+def followup_request(role, img_id):
+
+    db, cursor = get_db()
+    sql = "SELECT * FROM followup_request WHERE submission_id=%s"
+    val = ( img_id,)
+    cursor.execute(sql, val)
+    data = cursor.fetchall()
+    if not data:
+        sql = "INSERT INTO followup_request (submission_id, followup_requester, followup_request_status) VALUES (%s, %s, %s)"
+        val = ( img_id, session["user_id"], 'Initiated')
+        cursor.execute(sql, val)
+    else:
+        sql = "DELETE FROM followup_request WHERE submission_id=%s"
+        val = ( img_id, )
+        cursor.execute(sql, val)
+    return redirect(url_for('image.record', role=role, page=session['current_record_page']))
+
+# region retrain_request
+@bp.route('/retrain_request/<role>/<int:img_id>', methods=('POST', ))
+@login_required
+@role_validation
+def retrain_request(role, img_id):
+    db, cursor = get_db()
+    sql = "SELECT * FROM retrain_request WHERE submission_id=%s"
+    val = ( img_id,)
+    cursor.execute(sql, val)
+    data = cursor.fetchall()
+    if not data: # check is the list is empty
+        sql = "INSERT INTO retrain_request (submission_id, retrain_requester, retrain_request_status) VALUES (%s, %s, %s)"
+        val = ( img_id, session["user_id"], 'Requested')
+        cursor.execute(sql, val)
+    else:
+        sql = "DELETE FROM retrain_request WHERE submission_id=%s"
+        val = ( img_id, )
+        cursor.execute(sql, val)
+    return redirect(url_for('image.record', role=role, page=session['current_record_page']))
+
+# region diagnosis
+@bp.route('/diagnosis/<role>/<int:img_id>', methods=('GET', 'POST'))
+@login_required
+@role_validation
+def diagnosis(role, img_id):
+    if request.method=='POST':
+        db, cursor = get_db()
+        if request.args.get('special_request')=='true':
+            sql = "UPDATE submission_record SET special_request=%s WHERE id=%s"
+            val = (1, img_id)
+            cursor.execute(sql, val)
+
+        if (role=='dentist' or (role=='admin' and request.args.get('channel')=='DENTIST')) and 'feedback_submit' in request.form:
+            dentist_feedback_code = request.form.get('agree_option')
+            dentist_feedback_location = request.form.get('lesion_location')
+            dentist_feedback_lesion = request.form.get('lesion_type')
+            dentist_feedback_comment = request.form.get('dentist_comment')
+            sql = "UPDATE submission_record SET dentist_id=%s, dentist_feedback_code=%s, dentist_feedback_comment=%s, dentist_feedback_lesion=%s, dentist_feedback_location=%s, dentist_feedback_date=%s WHERE id=%s"
+            val = (session["user_id"], dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location, datetime.now(), img_id)
+            cursor.execute(sql, val)
+        
+        if (role=='specialist' or (role=='admin' and request.args.get('channel')!='DENTIST')) and request.args.get('specialist_feedback')=='true':
+            dentist_feedback_code = request.form.get('dt_comment_option')
+            dentist_feedback_lesion = None
+            dentist_feedback_location = None
+            dentist_feedback_comment = ''
+            if dentist_feedback_code=='BAD_IMG':
+                dentist_feedback_comment = request.form.get('BadImgCommentSelectOptions')
+            elif dentist_feedback_code=='OPMD' or dentist_feedback_code=='OSCC':
+                dentist_feedback_lesion = request.form.get('LesionTypeSelection')
+                dentist_feedback_location = request.form.get('LesionLocationSelection')
+            elif dentist_feedback_code=='OTHER':
+                dentist_feedback_comment = request.form.get('OtherCommentTextarea', '')
+            sql = '''UPDATE submission_record SET
+                        dentist_id=%s,
+                        dentist_feedback_code=%s,
+                        dentist_feedback_comment=%s,
+                        dentist_feedback_lesion=%s,
+                        dentist_feedback_location=%s,
+                        dentist_feedback_date=%s,
+                        updated_at=%s
+                    WHERE id=%s'''
+            val = (session["user_id"],
+                   dentist_feedback_code,
+                   dentist_feedback_comment,
+                   dentist_feedback_lesion,
+                   dentist_feedback_location,
+                   datetime.now(),
+                   datetime.now(),
+                   img_id)
+            cursor.execute(sql, val)
+
+        if (role=='specialist' or (role=='admin' and request.args.get('channel')!='DENTIST')) and request.args.get('case_report')=='true':
+            case_report = request.form.get('case_report')
+            sql = '''UPDATE submission_record SET
+                        dentist_id=%s,
+                        case_report=%s,
+                        dentist_feedback_date=%s,
+                        updated_at=%s
+                    WHERE id=%s'''
+            val = (session["user_id"],
+                   case_report,
+                   datetime.now(),
+                   datetime.now(),
+                   img_id)
+            cursor.execute(sql, val)
+
+    dentistCommentFlag = request.args.get('dentistComment', None)
+
+    db, cursor = get_db()
+    if role=='specialist' or (role=='admin' and request.args.get('channel')!='DENTIST'):
+        sql = '''SELECT submission_record.id AS img_id, case_id, channel, fname, special_request,
+                    patient_id, patient.name AS patient_name, patient.surname AS patient_surname, patient_national_id as saved_patient_national_id, patient.national_id AS db_patient_national_id, patient.birthdate,
+                    patient.sex, patient.job_position, patient.email, patient.phone AS patient_phone, patient.address, patient.province,
+                    sender_id, sender.name AS sender_name, sender.surname AS sender_surname, sender.hospital AS sender_hospital, sender.province AS sender_province,
+                    sender.phone AS sender_phone_db, sender_phone,
+                    dentist_id, dentist.name AS dentist_name, dentist.surname AS dentist_surname,
+                    dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location, dentist_feedback_date, case_report,
+                    location_district, location_amphoe, location_province, location_zipcode,
+                    ai_prediction, ai_scores, submission_record.created_at
+                FROM submission_record
+                LEFT JOIN patient_case_id ON submission_record.id = patient_case_id.id
+                LEFT JOIN user AS sender ON submission_record.sender_id = sender.id
+                LEFT JOIN user AS patient ON submission_record.patient_id = patient.id
+                LEFT JOIN user AS dentist ON submission_record.dentist_id = dentist.id
+                WHERE submission_record.id=%s'''
+    elif role=='osm':
+        sql = '''SELECT submission_record.id AS img_id, case_id, channel, fname, special_request, sender_id, patient_id, sender_phone, sender.phone AS osm_phone, 
+                    patient.name AS patient_name, patient.surname AS patient_surname, patient_national_id as saved_patient_national_id, patient.national_id AS db_patient_national_id, patient.birthdate,
+                    patient.sex, patient.job_position, patient.email, patient.phone AS patient_phone, patient.address, patient.province,
+                    location_district, location_amphoe, location_province, location_zipcode,
+                    ai_prediction, ai_scores, submission_record.created_at
+                FROM submission_record
+                INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id
+                LEFT JOIN user AS sender ON submission_record.sender_phone = sender.phone
+                LEFT JOIN user AS patient ON submission_record.patient_id = patient.id
+                WHERE submission_record.id=%s'''
+    elif role=='dentist' or (role=='admin' and request.args.get('channel')=='DENTIST'):
+        sql = '''SELECT submission_record.id AS img_id, fname, sender_id,
+                    dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location,
+                    ai_prediction, ai_scores
+                FROM submission_record
+                WHERE id=%s'''
+    else:
+        if dentistCommentFlag and dentistCommentFlag=='true':
+            sql = '''SELECT submission_record.id AS img_id, case_id, channel, fname, special_request, sender_id, patient_id, sender_phone, 
+                    dentist_feedback_code, dentist_feedback_comment, dentist_feedback_date, ai_prediction, ai_scores, submission_record.created_at
+                FROM submission_record
+                INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id
+                WHERE submission_record.id=%s'''
+        else:
+            sql = '''SELECT submission_record.id AS img_id, case_id, channel, fname, special_request, sender_id, patient_id, sender_phone, 
+                    ai_prediction, ai_scores, submission_record.created_at
+                FROM submission_record
+                INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id
+                WHERE submission_record.id=%s'''
+        
+    val = (img_id, )
+    cursor.execute(sql, val)
+    data = cursor.fetchone()
+
+    # Authorization check
+    if data is None:
+        return render_template('unauthorized_access.html', error_msg='ไม่พบข้อมูลที่ร้องขอ Data Not Found')
+    elif (session['sender_mode']!=role) or \
+        (role=='patient' and (session['user_id']!=data['patient_id'])) or \
+        (role=='osm' and session['user_id']!=data['sender_id'] and data['sender_phone']!=data['osm_phone']) or \
+        (role=='dentist' and session['user_id']!=data['sender_id']):
+            return render_template('unauthorized_access.html', error_msg='คุณไม่มีสิทธิ์เข้าถึงข้อมูล Unauthorized Access')
+
+    # Further process the data
+    data['ai_scores'] = json.loads(data['ai_scores'])
+    # data['owner_id'] = data['sender_id']
+    
+    # if role=='patient' and data['sender_id'] is None: # If an unregistered osm submit the data via the patient system, the data will be stored in the patient_id folder
+    #     data['owner_id'] = data['patient_id']
+    if 'channel' in data and data['channel']=='PATIENT':
+        data['owner_id'] = data['patient_id']
+    else:
+        data['owner_id'] = data['sender_id']
+
+
+    if dentistCommentFlag:
+        data['dentistCommentFlag'] = dentistCommentFlag
+        if data['ai_prediction']==0 and data['dentist_feedback_code']=='NORMAL':
+            data['dentistCommentAgreeCode'] = 'TN'
+        elif data['ai_prediction']==0 and (data['dentist_feedback_code']=='OPMD' or data['dentist_feedback_code']=='OSCC'):
+            data['dentistCommentAgreeCode'] = 'FN'
+        elif data['ai_prediction']!=0 and (data['dentist_feedback_code']=='OPMD' or data['dentist_feedback_code']=='OSCC'):
+            data['dentistCommentAgreeCode'] = 'TP'
+        elif data['ai_prediction']!=0 and data['dentist_feedback_code']=='NORMAL':
+            data['dentistCommentAgreeCode'] = 'FP'
+        else:
+            data['dentistCommentAgreeCode'] = 'Error'
+            if data['dentist_feedback_comment'] == 'NON_STANDARD':
+                data['dentistComment'] = 'มุมมองไม่ได้มาตรฐาน'
+            elif data['dentist_feedback_comment'] == 'BLUR':
+                data['dentistComment'] = 'ภาพเบลอ ไม่ชัด'
+            elif data['dentist_feedback_comment'] == 'DARK':
+                data['dentistComment'] = 'ภาพช่องปากมืดเกินไป ขอเปิดแฟลชด้วย'
+            elif data['dentist_feedback_comment'] == 'SMALL':
+                data['dentistComment'] = 'ช่องปากเล็กเกินไป ขอนำกล้องเข้าใกล้ปากมากกว่านี้'
+    else:
+        data['dentistCommentFlag'] = 'false'
+
+    if role=='osm' or role=='specialist' or (role=='admin' and request.args.get('channel')!='DENTIST'):
+        #if data['sender_phone'] != None or data['sender_id'] == None:
+        #    data['owner_id'] = data['patient_id']
+        
+        data['thai_datetime'] = format_thai_datetime(data['created_at'])
+
+        if data['location_district']:
+            data['location_text'] = "ตำบล"+data['location_district']+" อำเภอ"+data['location_amphoe']+" จังหวัด"+data['location_province']+" " +str(data['location_zipcode'])
+        else:
+            data['location_text'] = "จังหวัด"+data['location_province']
+
+        if role=='specialist' or (role=='admin' and request.args.get('channel')!='DENTIST'):
+            if data['patient_id']!=data['sender_id']:
+                if 'sender_name' in data and data['sender_name'] is not None:
+                    data['sender_description'] = f"{data['sender_name']} {data['sender_surname']} (ผู้นำส่งข้อมูล, เบอร์โทรติดต่อ: {data['sender_phone_db']})"
+                else:
+                    data['sender_description'] = f"ผู้นำส่งข้อมูล เบอร์โทรติดต่อ: {data['sender_phone']} (ยังไม่ได้ลงทะเบียน)"
+            else:
+                data['sender_description'] = f"{data['sender_name']} {data['sender_surname']} (ผู้ป่วยนำส่งรูปด้วยตัวเอง)"
+        else: # osm
+            data['sender_description'] = f"{g.user['name']} {g.user['surname']} (โทรศัพท์: {g.user['phone']})"
+            data['sender_hospital'] = g.user['hospital']
+            data['sender_province'] = g.user['province']
+
+        if 'birthdate' in data and data['birthdate'] is not None:
+            data['patient_age'] = calculate_age(data['birthdate'])
+            if data['sex']=='M':
+                data['sex']='ชาย'
+            elif data['sex']=='F':
+                data['sex']='หญิง'
+
+    if role=='admin':
+        data['channel'] = request.args.get('channel')
+
+    dentist_diagnosis_map = {'NORMAL': 'ยืนยันว่าไม่พบรอยโรค (Normal)',
+                                'OPMD': 'น่าจะมีรอยโรคที่คล้ายกันกับ OPMD',
+                                'OSCC': 'น่าจะมีรอยโรคที่คล้ายกันกับ OSCC',
+                                'BAD_IMG': 'ภาพถ่ายที่ส่งมายังไม่ได้มาตรฐาน ทำให้วินิจฉัยไม่ได้',
+                                'OTHER': 'ความเห็น/คำวินิจฉัย อื่น ๆ ที่ต้องการแจ้งกลับให้ผู้ป่วย'
+                            }
+    bad_image_map = {'NON_STANDARD': 'มุมมองไม่ได้มาตรฐาน',
+                     'BLUR': 'ภาพเบลอ ไม่ชัด',
+                     'DARK': 'ภาพช่องปากมืดเกินไป ขอเปิดแฟลชด้วย',
+                     'SMALL': 'ช่องปากเล็กเกินไป ขอนำกล้องเข้าใกล้ปากมากกว่านี้'
+                    }
+    lesion_location_map = {1: 'ริมฝีปากบนและล่าง (Lip)',
+                           2: 'กระพุ้งแก้มด้านขวาด้านซ้าย (Buccal mucosa)',
+                           3: 'เหงือกบนและล่าง (Gingiva)',
+                           4: 'เหงือกด้านหลังฟันกรามล่าง (Retromolar area)',
+                           5: 'เพดานแข็ง (Hard palate)',
+                           6: 'เพดานอ่อน (Soft palate)',
+                           7: 'ลิ้นด้านบนและด้านข้าง (Dorsal and lateral tongue)',
+                           8: 'ใต้ลิ้น (Ventral tongue)',
+                           9: 'พื้นปาก (Floor of mouth)'
+                           }
+    lesion_type_map = {1: 'รอยโรคสีขาว',
+                       2: 'รอยโรคสีแดง',
+                       3: 'รอยโรคสีขาวปนแดง',
+                       4: 'รอยแผลถลอก',
+                       5: 'ลักษณะเป็นก้อน'
+                       }
+    maps = {'dentist_diagnosis_map': dentist_diagnosis_map,
+            'bad_image_map': bad_image_map,
+            'lesion_location_map': lesion_location_map,
+            'lesion_type_map': lesion_type_map}
+    return render_template(role+'_diagnosis.html', data=data, maps=maps)
+
+# region record
+@bp.route('/record/<role>', methods=('GET', 'POST'))
+@login_required
+@role_validation
+def record(role): # Submission records
+   
+    session['sender_mode'] = role
+    value = request.args.get('value')
+    print(value)
+    # Reload the record every time the page is reloaded
+    db, cursor = get_db()
+    if role=='specialist':
+        sql = '''SELECT submission_record.id, case_id, channel, fname, patient_user.name, patient_user.surname, patient_user.birthdate,
+                    sender_id, patient_id, dentist_id, sender_phone, special_request,
+                    location_province, location_amphoe, location_district, location_zipcode, 
+                    dentist_feedback_comment,dentist_feedback_code,case_report,
+                    ai_prediction, submission_record.created_at, retrain_request_status, followup_request_status
+                FROM submission_record
+                INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
+                LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
+                LEFT JOIN followup_request ON submission_record.id = followup_request.submission_id
+                LEFT JOIN retrain_request ON submission_record.id = retrain_request.submission_id
+                ORDER BY case_id DESC'''
+        cursor.execute(sql)
+    elif role=='admin':
+        sql = '''SELECT submission_record.id, case_id, channel, fname, patient_user.name, patient_user.surname, patient_user.birthdate,
+                    sender.name as sender_name, sender.surname as sender_surname, sender.hospital as sender_hospital,
+                    sender_id, patient_id, dentist_id, sender_phone, special_request,
+                    location_province, location_amphoe, location_district, location_zipcode, 
+                    dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, case_report,
+                    ai_prediction, submission_record.created_at, retrain_request_status, followup_request_status
+                FROM submission_record
+                LEFT JOIN patient_case_id ON submission_record.id = patient_case_id.id
+                LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
+                LEFT JOIN user AS sender ON submission_record.sender_id = sender.id
+                LEFT JOIN followup_request ON submission_record.id = followup_request.submission_id
+                LEFT JOIN retrain_request ON submission_record.id = retrain_request.submission_id
+                ORDER BY submission_record.id DESC'''
+        cursor.execute(sql)
+    elif role=='osm':
+        sql = '''SELECT submission_record.id, channel, fname,
+                    patient_user.name, patient_user.surname, patient_user.birthdate, patient_user.province,
+                    case_id, sender_id, patient_id, dentist_id, special_request, sender_phone, 
+                    location_province, location_zipcode, 
+                    dentist_feedback_comment,dentist_feedback_code,
+                    ai_prediction, submission_record.created_at
+                FROM submission_record
+                INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
+                LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
+                LEFT JOIN user AS sender_user ON submission_record.sender_phone = sender_user.phone
+                WHERE sender_id = %s OR submission_record.sender_phone is not NULL
+                ORDER BY case_id DESC'''
+        val = (session["user_id"],)
+        cursor.execute(sql, val)
+    elif role=='patient':
+        sql = '''SELECT submission_record.id, case_id, special_request, sender_id, patient_id, sender_phone, channel, 
+                    dentist_feedback_code, dentist_feedback_comment, dentist_feedback_date, ai_prediction, ai_scores, submission_record.created_at
+                FROM submission_record
+                INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id
+                WHERE patient_id=%s
+                ORDER BY case_id DESC'''
+        val = (session["user_id"],)
+        cursor.execute(sql, val)
+    else: # Dentist
+        sql = '''SELECT submission_record.id, channel, fname, name, surname, birthdate,
+                    sender_id, patient_id, dentist_id, special_request, province,
+                    dentist_feedback_comment,dentist_feedback_code,
+                    ai_prediction, submission_record.created_at
+                FROM submission_record
+                LEFT JOIN user ON submission_record.patient_id = user.id
+                WHERE sender_id = %s
+                ORDER BY id DESC'''
+        val = (session["user_id"],)
+        cursor.execute(sql, val)
+    db_query = cursor.fetchall()
+    
+    # patient's record page is a special case (no pagination)
+    if role=='patient':
+        data=db_query
+        for item in data:
+            item['thai_datetime'] = format_thai_datetime(item['created_at'])
+            if item['ai_prediction']==0 and item['dentist_feedback_code']=='NORMAL':
+                item['dentistCommentAgreeCode'] = 'TN'
+            elif item['ai_prediction']==0 and (item['dentist_feedback_code']=='OPMD' or item['dentist_feedback_code']=='OSCC'):
+                item['dentistCommentAgreeCode'] = 'FN'
+            elif item['ai_prediction']!=0 and (item['dentist_feedback_code']=='OPMD' or item['dentist_feedback_code']=='OSCC'):
+                item['dentistCommentAgreeCode'] = 'TP'
+            elif item['ai_prediction']!=0 and item['dentist_feedback_code']=='NORMAL':
+                item['dentistCommentAgreeCode'] = 'FP'
+            else:
+                item['dentistCommentAgreeCode'] = 'Error'
+                if item['dentist_feedback_comment'] == 'NON_STANDARD':
+                    item['dentistComment'] = 'มุมมองไม่ได้มาตรฐาน'
+                elif item['dentist_feedback_comment'] == 'BLUR':
+                    item['dentistComment'] = 'ภาพเบลอ ไม่ชัด'
+                elif item['dentist_feedback_comment'] == 'DARK':
+                    item['dentistComment'] = 'ภาพช่องปากมืดเกินไป ขอเปิดแฟลชด้วย'
+                elif item['dentist_feedback_comment'] == 'SMALL':
+                    item['dentistComment'] = 'ช่องปากเล็กเกินไป ขอนำกล้องเข้าใกล้ปากมากกว่านี้'
+        return render_template("patient_record.html", data=data)
+
+    # Filter data if search query is provided
+    if 'record_filter' not in session:
+        session['record_filter'] = {}
+    if request.method == 'POST':
+        search_query = request.form.get("search", session['record_filter'].get('search_query', ""))
+        agree = request.form.get("agree", "")
+        filterStatus = request.form.get("filterStatus", "") 
+        filterPriority = request.form.get("filterPriority", "") 
+        filterProvince = request.form.get("filterProvince", "") 
+        filterSpecialist = request.form.get("filterSpecialist", "")
+        filterFollowup = request.form.get("filterFollowup", "")
+        filterRetrain = request.form.get("filterRetrain", "")
+        session['record_filter']['search_query'] = search_query
+        session['record_filter']['agree'] = agree
+        session['record_filter']['filterStatus'] = filterStatus
+        session['record_filter']['filterPriority'] = filterPriority
+        session['record_filter']['filterProvince'] = filterProvince
+        session['record_filter']['filterSpecialist'] = filterSpecialist
+        session['record_filter']['filterFollowup'] = filterFollowup
+        session['record_filter']['filterRetrain'] = filterRetrain
+    else:
+        search_query = session['record_filter'].get('search_query', "")
+        agree = session['record_filter'].get('agree', "")
+        filterStatus = session['record_filter'].get('filterStatus', "")
+        filterPriority = session['record_filter'].get('filterPriority', "")
+        filterProvince = session['record_filter'].get('filterProvince', "")
+        filterSpecialist = session['record_filter'].get('filterSpecialist', "")
+        filterFollowup = session['record_filter'].get("filterFollowup", "")
+        filterRetrain = session['record_filter'].get("filterRetrain", "")
+    # Initialize an empty list to store filtered results
+    filtered_data = []
+
+    # Loop through the data and apply both search and filter criteria
+    # This section must be researched for the efficiency (and refactored), but for now just let it be
+    for record in db_query:
+        if role=='specialist' or role=='admin':
+            record_case_report = record.get("case_report")
+            record_fname = record.get("fname").lower()
+            record_case_id = record.get("case_id")
+            record_feedback_code = record.get("dentist_feedback_code")
+            record_ai_prediction = record.get("ai_prediction")
+            record_patient_name = record.get("name")
+            record_patient_surname = record.get("surname")
+            record_special_request = record.get("special_request")
+            record_province = record.get("location_province")
+            record_district = record.get("location_district")
+            record_amphoe = record.get("location_amphoe")
+            record_zipcode = record.get("location_zipcode")
+            record_dentist_id = record.get("dentist_id")
+            record_followup_request_status = record.get("followup_request_status")
+            record_retrain_request_status = record.get("retrain_request_status")
+
+            if search_query!="" or filterStatus!="" or filterPriority!="" or filterProvince!="" or filterSpecialist!="" or filterFollowup!="" or filterRetrain!="":
+                cumulativeFilterFlag = True
+
+                if search_query!="":
+                    cumulativeFilterFlag &= (search_query in record_fname) or (str(record_case_id) == search_query) or \
+                        (record_patient_name is not None) and (record_patient_name in search_query or record_patient_surname in search_query) or \
+                        (record_case_report != '') and (search_query in record_case_report) or \
+                        (record_feedback_code is not None) and (record_feedback_code.lower() == search_query.lower()) or \
+                        (search_query.lower() == 'opmd') and (record_ai_prediction==1) or \
+                        (search_query.lower() == 'oscc') and (record_ai_prediction==2) or \
+                        (record_district is not None) and (search_query in record_district) or \
+                        (record_amphoe is not None) and (search_query in record_amphoe) or \
+                        (record_province is not None) and (search_query in record_province) or \
+                        (record_zipcode is not None) and (search_query == record_zipcode)
+                if filterStatus!="":
+                    cumulativeFilterFlag &= (filterStatus == "1" and record_feedback_code!=None) or (filterStatus == "0" and record_feedback_code==None)
+                if filterPriority!="":
+                    cumulativeFilterFlag &= (filterPriority=="1" and record_special_request==1) or (filterPriority=="0" and record_special_request==0)
+                if filterProvince!="":
+                    cumulativeFilterFlag &= filterProvince==record_province
+                if filterSpecialist!="":
+                    cumulativeFilterFlag &= int(filterSpecialist)==record_dentist_id
+                if filterFollowup!="":
+                    cumulativeFilterFlag &= filterFollowup == record_followup_request_status
+                if filterRetrain!="":
+                    cumulativeFilterFlag &= filterRetrain == record_retrain_request_status
+
+                if cumulativeFilterFlag:
+                    filtered_data.append(record)
+            else:
+                filtered_data.append(record)
+        elif role=='osm':
+            record_fname = record.get("fname").lower()
+            record_case_id = record.get("case_id")
+            record_feedback_code = record.get("dentist_feedback_code")
+            record_ai_prediction = record.get("ai_prediction")
+            record_patient_name = record.get("name")
+            record_patient_surname = record.get("surname")
+            record_special_request = record.get("special_request")
+            record_province = record.get("location_province")
+            record_district = record.get("location_district")
+            record_amphoe = record.get("location_amphoe")
+            record_zipcode = record.get("location_zipcode")
+
+            if search_query!="" or filterStatus!="" or filterPriority!="" or filterProvince!="":
+                cumulativeFilterFlag = True
+
+                if search_query!="":
+                    cumulativeFilterFlag &= (search_query in record_fname) or (str(record_case_id) == search_query) or \
+                        (record_patient_name is not None) and (record_patient_name in search_query or record_patient_surname in search_query) or \
+                        (record_feedback_code is not None) and (record_feedback_code.lower() == search_query.lower()) or \
+                        (search_query.lower() == 'opmd') and (record_ai_prediction==1) or \
+                        (search_query.lower() == 'oscc') and (record_ai_prediction==2) or \
+                        (record_district is not None) and (search_query in record_district) or \
+                        (record_amphoe is not None) and (search_query in record_amphoe) or \
+                        (record_province is not None) and (search_query in record_province) or \
+                        (record_zipcode is not None) and (search_query == record_zipcode)
+                if filterStatus!="":
+                    cumulativeFilterFlag &= (filterStatus == "1" and record_feedback_code!=None) or (filterStatus == "0" and record_feedback_code==None)
+                if filterPriority!="":
+                    cumulativeFilterFlag &= (filterPriority=="1" and record_special_request==1) or (filterPriority=="0" and record_special_request==0)
+                
+                if cumulativeFilterFlag:
+                    filtered_data.append(record)
+            else:
+                filtered_data.append(record)
+        else:
+            record_comment = record.get("dentist_feedback_comment")
+            record_fname = record.get("fname").lower()
+            record_agree = record.get("dentist_feedback_code")
+            if (not search_query or search_query in record_comment or search_query in record_fname) and \
+                (not agree or agree==record_agree):
+                filtered_data.append(record)
+   
+    # Pagination
+    page = request.args.get("page", 1, type=int)
+    if request.method == "POST":
+        if 'current_record_page' in session:
+            page = session['current_record_page']
+        else:
+            page = 1
+        
+    PER_PAGE = 12 #number images data show on record page per page
+    total_pages = (len(filtered_data) - 1) // PER_PAGE + 1
+    start_idx = (page - 1) * PER_PAGE
+    end_idx = start_idx + PER_PAGE
+    paginated_data = filtered_data[start_idx:end_idx]
+    
+    # Process each item in paginated_data
+    for item in paginated_data:
+        if item['channel']=='PATIENT':
+            item['owner_id'] = item['patient_id']
+        else:
+            item['owner_id'] = item['sender_id']
+        item["formatted_created_at"] = item["created_at"].strftime("%d/%m/%Y %H:%M")
+        if ("birthdate" in item and item["birthdate"]):
+            item["age"] = calculate_age(item["birthdate"])
+
+    data = {}
+    data['search'] = search_query
+    data['agree'] = agree
+    
+    session['current_record_page'] = page
+
+    if role=='specialist' or role=='admin': 
+        if role=='specialist':
+            sql = "SELECT location_province FROM submission_record WHERE channel != 'DENTIST' GROUP BY location_province ORDER BY COUNT(location_province) DESC;"
+        else: # admin
+            sql = "SELECT location_province FROM submission_record GROUP BY location_province ORDER BY COUNT(location_province) DESC;"
+
+        cursor.execute(sql)
+        dictList = cursor.fetchall()
+        data['province_name_list'] = [item['location_province'] for item in dictList]
+        
+        sql = '''SELECT name, surname, license, user.id
+            FROM submission_record
+            LEFT JOIN user ON submission_record.dentist_id=user.id
+            WHERE submission_record.dentist_id IS NOT NULL AND channel != 'DENTIST'
+            GROUP BY user.id
+            ORDER BY COUNT(user.id) DESC'''
+        cursor.execute(sql)
+        dictList = cursor.fetchall()
+        data['specialist_list'] = []
+        for item in dictList:
+            if item['license'] is not None:
+                data['specialist_list'].append((item['id'], f"{item['name']} {item['surname']} ({item['license']})"))
+            else:
+                data['specialist_list'].append((item['id'], f"{item['name']} {item['surname']}"))
+
+    return render_template(
+                role + "_record.html",
+                data=data,
+                dataCount=len(filtered_data),
+                pagination=paginated_data,
+                current_page=page,
+                total_pages=total_pages,
+                search_query=search_query,
+                filters=[filterStatus,filterPriority,filterProvince,filterSpecialist,filterFollowup,filterRetrain])
+
+# region report
+@bp.route('/admin/report/')
+@login_required
+#@role_validation
+def report():
+    return render_template("/newTemplate/submission_report.html")
+
+@bp.route('/admin_page/', methods=('GET','POST','DELETE'))
+@login_required
+#@role_validation
+def userManagement():
+    return render_template("/newTemplate/admin_management.html")
+
+@bp.route('/edit/', methods=('GET','POST'))
+@login_required
+def edit():
+    return render_template("/newTemplate/admin_edit.html")
+
 @bp.route('/edit/<role>', methods=('GET', 'POST'))
 @login_required
 def editByRole(role):

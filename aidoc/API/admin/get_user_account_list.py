@@ -32,6 +32,7 @@ def fetch_user_list(cursor):
             u.is_admin,
             u.email,
             u.province,
+            u.last_login,
             COALESCE(sr.N, 0) AS N
         FROM 
             user u
