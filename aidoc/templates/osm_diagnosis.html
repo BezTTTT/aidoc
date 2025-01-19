@@ -152,7 +152,7 @@
                             <div class="modal-body text-start"> คำขอตรวจสอบภาพกรณีพิเศษใช้กับกรณีที่ท่านตรวจพบรอยโรคในภาพแล้วเท่านั้น </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                                <form action="{{ url_for('webapp.diagnosis', role='osm', img_id=data['img_id'], special_request='true') }}" method="POST" >
+                                <form action="{{ url_for('image.diagnosis', role='osm', img_id=data['img_id'], special_request='true') }}" method="POST" >
                                     <input class="btn btn-primary " id="specialRequestSubmit" type="submit" value="ตกลง" style="width: 100%"/>
                                 </form>
                             </div>

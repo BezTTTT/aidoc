@@ -157,10 +157,19 @@
           </a>
         </td>
         <td class="text-center">
-          <a href="/record/admin?value=opmd"
-          style="text-decoration: none; color: black; cursor: pointer;">
+        {% set default_data = {'search': 'opmd'} %}
+        <form action="/record/admin" method="POST">
+          <input
+            type="text"
+            id="search-input"
+            name="search"
+            value="{{ default_data.search }}"
+            style="display:none"
+        >
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;">
             ${entry.ai_predict.opmd}
-          </a>
+          </button>
+        </form>
         </td>
         <td class="text-center">
             <a href="/record/admin?value=oscc"

@@ -15,7 +15,7 @@ import os
 
 from aidoc.db import get_db
 from aidoc.auth import login_required, load_logged_in_user, role_validation
-from aidoc.webapp import format_thai_datetime
+from aidoc.image import format_thai_datetime
 
 # 'user' blueprint manages user management system
 bp = Blueprint('user', __name__)
@@ -220,7 +220,7 @@ def register(role):
                 img_id = session['register_later']['img_id']
                 session.pop('register_later', None)
                 session.pop('noNationalID', None)
-                return redirect(url_for('webapp.diagnosis', role=role, img_id=img_id))
+                return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
         else:
             return render_template(target_template, data=data)
     elif role=='osm':
@@ -300,7 +300,7 @@ def register(role):
                 img_id = session['register_later']['img_id']
                 session.pop('register_later', None)
                 session['user_id'] = g.user['id'] 
-                return redirect(url_for('webapp.diagnosis', role=role, img_id=img_id))
+                return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
         else:
             return render_template(target_template, data=data)
     elif role=='dentist':
@@ -361,7 +361,7 @@ def register(role):
                 val = (data["name"], data["surname"], data["email"], data["phone"], data["username"],generate_password_hash(data["password"]), data["job_position"], data["osm_job"], data["hospital"],data["province"], data["license"], session['user_id'])
                 cursor.execute(sql, val)
                 
-            return redirect(url_for('webapp.record', role='dentist'))
+            return redirect(url_for('image.record', role='dentist'))
         else:
             return render_template(target_template, data=data)
     else:
@@ -437,7 +437,7 @@ def cancel_register():
         session['sender_mode'] = role
         img_id = session['register_later']['img_id']
         session.pop('register_later', None)
-        return redirect(url_for('webapp.diagnosis', role=role, img_id=img_id))
+        return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
 
 # region get_user_compliance
 # Comply with the current versions of user_agreement and informed_consent

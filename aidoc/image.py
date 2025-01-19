@@ -26,7 +26,6 @@ from dateutil.parser import parse
 
 from aidoc.db import get_db
 from aidoc.auth import login_required, role_validation, load_logged_in_user
-from aidoc.webapp import update_submission_record
 
 # 'image' blueprint manages Image upload, AI prediction, and the Diagnosis
 bp = Blueprint('image', __name__)
@@ -150,8 +149,7 @@ def upload_image(role):
                     session.pop('patient_national_id', None)
                     session.pop('patient_id', None)
                     session.pop('location', None)
-                return redirect(url_for('webapp.diagnosis', role=role, img_id=result['id']))
-    data['earthchieAPI'] = True # enable Earthchie's Thailand Address Auto-complete API
+                return redirect(url_for('image.diagnosis', role=role, img_id=result['id']))
     return render_template(role+"_upload.html", data=data)
 
 # region load_image
@@ -241,7 +239,7 @@ def delete_image(role):
     val = (img_id,)
     cursor.execute(sql, val)
 
-    return redirect(url_for('webapp.record', role=role, page=session['current_record_page']))
+    return redirect(url_for('image.record', role=role, page=session['current_record_page']))
 
 # region rotate_image
 @bp.route('/rotate_image/<return_page>/<role>/<img_id>', methods=('POST', ))
@@ -279,7 +277,7 @@ def rotate_image(return_page, role, img_id):
     pil_img.save(maskPath)
 
     if return_page=='diagnosis':
-        return redirect(url_for('webapp.diagnosis', role=role, img_id=img_id))
+        return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
 
 # region mask_editor
 @bp.route('/mask_editor/<role>/<img_id>', methods=('POST', ))
@@ -317,7 +315,7 @@ def mask_editor(role, img_id):
         thumb_img = create_thumbnail(outlined_img)
         thumb_img.save(thumbOutlinedImagePath)
 
-        return redirect(url_for('webapp.diagnosis', role=role, img_id=img_id))
+        return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
 
     externalCoordinates, holesCoordinates = convertMask2Cordinates(maskPath)
 
@@ -406,13 +404,11 @@ def quick_confirm(role, img_id):
         val = ( session["user_id"], diagnostic_code, datetime.now(), datetime.now(), img_id)
         cursor.execute(sql, val)
     return redirect(url_for('image.record', role=role, page=session['current_record_page']))
-
 # region followup_request
 @bp.route('/followup_request/<role>/<int:img_id>', methods=('POST', ))
 @login_required
 @role_validation
 def followup_request(role, img_id):
-
     db, cursor = get_db()
     sql = "SELECT * FROM followup_request WHERE submission_id=%s"
     val = ( img_id,)
@@ -427,7 +423,6 @@ def followup_request(role, img_id):
         val = ( img_id, )
         cursor.execute(sql, val)
     return redirect(url_for('image.record', role=role, page=session['current_record_page']))
-
 # region retrain_request
 @bp.route('/retrain_request/<role>/<int:img_id>', methods=('POST', ))
 @login_required
@@ -447,7 +442,6 @@ def retrain_request(role, img_id):
         val = ( img_id, )
         cursor.execute(sql, val)
     return redirect(url_for('image.record', role=role, page=session['current_record_page']))
-
 # region diagnosis
 @bp.route('/diagnosis/<role>/<int:img_id>', methods=('GET', 'POST'))
 @login_required
@@ -459,7 +453,6 @@ def diagnosis(role, img_id):
             sql = "UPDATE submission_record SET special_request=%s WHERE id=%s"
             val = (1, img_id)
             cursor.execute(sql, val)
-
         if (role=='dentist' or (role=='admin' and request.args.get('channel')=='DENTIST')) and 'feedback_submit' in request.form:
             dentist_feedback_code = request.form.get('agree_option')
             dentist_feedback_location = request.form.get('lesion_location')
@@ -499,7 +492,6 @@ def diagnosis(role, img_id):
                    datetime.now(),
                    img_id)
             cursor.execute(sql, val)
-
         if (role=='specialist' or (role=='admin' and request.args.get('channel')!='DENTIST')) and request.args.get('case_report')=='true':
             case_report = request.form.get('case_report')
             sql = '''UPDATE submission_record SET
@@ -514,9 +506,7 @@ def diagnosis(role, img_id):
                    datetime.now(),
                    img_id)
             cursor.execute(sql, val)
-
     dentistCommentFlag = request.args.get('dentistComment', None)
-
     db, cursor = get_db()
     if role=='specialist' or (role=='admin' and request.args.get('channel')!='DENTIST'):
         sql = '''SELECT submission_record.id AS img_id, case_id, channel, fname, special_request,
@@ -568,7 +558,6 @@ def diagnosis(role, img_id):
     val = (img_id, )
     cursor.execute(sql, val)
     data = cursor.fetchone()
-
     # Authorization check
     if data is None:
         return render_template('unauthorized_access.html', error_msg='ไม่พบข้อมูลที่ร้องขอ Data Not Found')
@@ -577,7 +566,6 @@ def diagnosis(role, img_id):
         (role=='osm' and session['user_id']!=data['sender_id'] and data['sender_phone']!=data['osm_phone']) or \
         (role=='dentist' and session['user_id']!=data['sender_id']):
             return render_template('unauthorized_access.html', error_msg='คุณไม่มีสิทธิ์เข้าถึงข้อมูล Unauthorized Access')
-
     # Further process the data
     data['ai_scores'] = json.loads(data['ai_scores'])
     # data['owner_id'] = data['sender_id']
@@ -588,8 +576,6 @@ def diagnosis(role, img_id):
         data['owner_id'] = data['patient_id']
     else:
         data['owner_id'] = data['sender_id']
-
-
     if dentistCommentFlag:
         data['dentistCommentFlag'] = dentistCommentFlag
         if data['ai_prediction']==0 and data['dentist_feedback_code']=='NORMAL':
@@ -612,18 +598,15 @@ def diagnosis(role, img_id):
                 data['dentistComment'] = 'ช่องปากเล็กเกินไป ขอนำกล้องเข้าใกล้ปากมากกว่านี้'
     else:
         data['dentistCommentFlag'] = 'false'
-
     if role=='osm' or role=='specialist' or (role=='admin' and request.args.get('channel')!='DENTIST'):
         #if data['sender_phone'] != None or data['sender_id'] == None:
         #    data['owner_id'] = data['patient_id']
         
         data['thai_datetime'] = format_thai_datetime(data['created_at'])
-
         if data['location_district']:
             data['location_text'] = "ตำบล"+data['location_district']+" อำเภอ"+data['location_amphoe']+" จังหวัด"+data['location_province']+" " +str(data['location_zipcode'])
         else:
             data['location_text'] = "จังหวัด"+data['location_province']
-
         if role=='specialist' or (role=='admin' and request.args.get('channel')!='DENTIST'):
             if data['patient_id']!=data['sender_id']:
                 if 'sender_name' in data and data['sender_name'] is not None:
@@ -636,17 +619,14 @@ def diagnosis(role, img_id):
             data['sender_description'] = f"{g.user['name']} {g.user['surname']} (โทรศัพท์: {g.user['phone']})"
             data['sender_hospital'] = g.user['hospital']
             data['sender_province'] = g.user['province']
-
         if 'birthdate' in data and data['birthdate'] is not None:
             data['patient_age'] = calculate_age(data['birthdate'])
             if data['sex']=='M':
                 data['sex']='ชาย'
             elif data['sex']=='F':
                 data['sex']='หญิง'
-
     if role=='admin':
         data['channel'] = request.args.get('channel')
-
     dentist_diagnosis_map = {'NORMAL': 'ยืนยันว่าไม่พบรอยโรค (Normal)',
                                 'OPMD': 'น่าจะมีรอยโรคที่คล้ายกันกับ OPMD',
                                 'OSCC': 'น่าจะมีรอยโรคที่คล้ายกันกับ OSCC',
@@ -679,16 +659,13 @@ def diagnosis(role, img_id):
             'lesion_location_map': lesion_location_map,
             'lesion_type_map': lesion_type_map}
     return render_template(role+'_diagnosis.html', data=data, maps=maps)
-
 # region record
 @bp.route('/record/<role>', methods=('GET', 'POST'))
 @login_required
 @role_validation
 def record(role): # Submission records
-   
-    session['sender_mode'] = role
     value = request.args.get('value')
-    print(value)
+    session['sender_mode'] = role
     # Reload the record every time the page is reloaded
     db, cursor = get_db()
     if role=='specialist':
@@ -780,12 +757,12 @@ def record(role): # Submission records
                 elif item['dentist_feedback_comment'] == 'SMALL':
                     item['dentistComment'] = 'ช่องปากเล็กเกินไป ขอนำกล้องเข้าใกล้ปากมากกว่านี้'
         return render_template("patient_record.html", data=data)
-
     # Filter data if search query is provided
     if 'record_filter' not in session:
         session['record_filter'] = {}
     if request.method == 'POST':
         search_query = request.form.get("search", session['record_filter'].get('search_query', ""))
+        print(search_query)
         agree = request.form.get("agree", "")
         filterStatus = request.form.get("filterStatus", "") 
         filterPriority = request.form.get("filterPriority", "") 
@@ -812,7 +789,6 @@ def record(role): # Submission records
         filterRetrain = session['record_filter'].get("filterRetrain", "")
     # Initialize an empty list to store filtered results
     filtered_data = []
-
     # Loop through the data and apply both search and filter criteria
     # This section must be researched for the efficiency (and refactored), but for now just let it be
     for record in db_query:
@@ -832,10 +808,8 @@ def record(role): # Submission records
             record_dentist_id = record.get("dentist_id")
             record_followup_request_status = record.get("followup_request_status")
             record_retrain_request_status = record.get("retrain_request_status")
-
             if search_query!="" or filterStatus!="" or filterPriority!="" or filterProvince!="" or filterSpecialist!="" or filterFollowup!="" or filterRetrain!="":
                 cumulativeFilterFlag = True
-
                 if search_query!="":
                     cumulativeFilterFlag &= (search_query in record_fname) or (str(record_case_id) == search_query) or \
                         (record_patient_name is not None) and (record_patient_name in search_query or record_patient_surname in search_query) or \
@@ -859,7 +833,6 @@ def record(role): # Submission records
                     cumulativeFilterFlag &= filterFollowup == record_followup_request_status
                 if filterRetrain!="":
                     cumulativeFilterFlag &= filterRetrain == record_retrain_request_status
-
                 if cumulativeFilterFlag:
                     filtered_data.append(record)
             else:
@@ -876,10 +849,8 @@ def record(role): # Submission records
             record_district = record.get("location_district")
             record_amphoe = record.get("location_amphoe")
             record_zipcode = record.get("location_zipcode")
-
             if search_query!="" or filterStatus!="" or filterPriority!="" or filterProvince!="":
                 cumulativeFilterFlag = True
-
                 if search_query!="":
                     cumulativeFilterFlag &= (search_query in record_fname) or (str(record_case_id) == search_query) or \
                         (record_patient_name is not None) and (record_patient_name in search_query or record_patient_surname in search_query) or \
@@ -930,19 +901,16 @@ def record(role): # Submission records
         item["formatted_created_at"] = item["created_at"].strftime("%d/%m/%Y %H:%M")
         if ("birthdate" in item and item["birthdate"]):
             item["age"] = calculate_age(item["birthdate"])
-
     data = {}
     data['search'] = search_query
     data['agree'] = agree
     
     session['current_record_page'] = page
-
     if role=='specialist' or role=='admin': 
         if role=='specialist':
             sql = "SELECT location_province FROM submission_record WHERE channel != 'DENTIST' GROUP BY location_province ORDER BY COUNT(location_province) DESC;"
         else: # admin
             sql = "SELECT location_province FROM submission_record GROUP BY location_province ORDER BY COUNT(location_province) DESC;"
-
         cursor.execute(sql)
         dictList = cursor.fetchall()
         data['province_name_list'] = [item['location_province'] for item in dictList]
@@ -961,7 +929,6 @@ def record(role): # Submission records
                 data['specialist_list'].append((item['id'], f"{item['name']} {item['surname']} ({item['license']})"))
             else:
                 data['specialist_list'].append((item['id'], f"{item['name']} {item['surname']}"))
-
     return render_template(
                 role + "_record.html",
                 data=data,
@@ -971,20 +938,17 @@ def record(role): # Submission records
                 total_pages=total_pages,
                 search_query=search_query,
                 filters=[filterStatus,filterPriority,filterProvince,filterSpecialist,filterFollowup,filterRetrain])
-
 # region report
 @bp.route('/admin/report/')
 @login_required
 #@role_validation
 def report():
     return render_template("/newTemplate/submission_report.html")
-
 @bp.route('/admin_page/', methods=('GET','POST','DELETE'))
 @login_required
 #@role_validation
 def userManagement():
     return render_template("/newTemplate/admin_management.html")
-
 @bp.route('/edit/', methods=('GET','POST'))
 @login_required
 def edit():
@@ -1291,65 +1255,121 @@ def upload_submission_module(target_user_id):
         ai_predictions = []
         ai_scores = []
         for i, filename in enumerate(session['imageNameList']):
-            imgPath = os.path.join(tempDir, filename)
-            outlined_img, prediction, scores, mask = oral_lesion_prediction(imgPath)
-
-            outlined_img.save(os.path.join(tempDir, 'outlined_'+filename))
-            mask.save(os.path.join(tempDir, 'mask_'+filename))
-
-            #Create the thumbnail and saved to temp folder
-            pil_img = Image.open(os.path.join(tempDir, 'outlined_'+filename)) 
-            pil_img = create_thumbnail(pil_img)
-            pil_img.save(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', 'thumb_outlined_' + filename)) 
-
-            ai_predictions.append(prediction)
-            ai_scores.append(str(scores))
-        
-        if session['imageNameList']:
-            session['ai_predictions'] = ai_predictions
-            session['ai_infos'] = ai_scores
-        else:
-            session.pop('ai_predictions', None)
-            session.pop('ai_infos', None)
-        
-        # Create directory for the user (using user_id) if not exist
-        user_id = str(target_user_id)
-        uploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', user_id)
-        thumbUploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', 'thumbnail', user_id)
-        outlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', user_id)
-        thumbOutlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', 'thumbnail', user_id)
-        maskDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'mask', user_id)
-        os.makedirs(uploadDir, exist_ok=True)
-        os.makedirs(thumbUploadDir, exist_ok=True)
-        os.makedirs(outlinedDir, exist_ok=True)
-        os.makedirs(thumbOutlinedDir, exist_ok=True)
-        os.makedirs(maskDir, exist_ok=True)
-
-        # Copy files to the storage
-        checked_filename_lst = []
-        for filename in session['imageNameList']:
-            if os.path.isfile(os.path.join(tempDir, filename)):
-
-                checked_filename = rename_if_duplicated(uploadDir, filename)
-
-                shutil.copy2(os.path.join(tempDir, filename), os.path.join(uploadDir, checked_filename))
-                shutil.copy2(os.path.join(tempDir, 'thumb_'+filename), os.path.join(thumbUploadDir, checked_filename))
-                shutil.copy2(os.path.join(tempDir, 'outlined_'+filename), os.path.join(outlinedDir, checked_filename))
-                shutil.copy2(os.path.join(tempDir, 'thumb_outlined_'+filename), os.path.join(thumbOutlinedDir, checked_filename))
-                shutil.copy2(os.path.join(tempDir, 'mask_'+filename), os.path.join(maskDir, checked_filename))
-
-                checked_filename_lst.append(checked_filename)
-        session['imageNameList'] = checked_filename_lst
-
-        # Try to clear temp folder if #files are more than CLEAR_TEMP_THRESHOLD
-        if len(os.listdir(tempDir)) > current_app.config['CLEAR_TEMP_THRESHOLD']:
-            for filename in os.listdir(tempDir):
-                if os.path.isfile(os.path.join(tempDir, filename)):
-                    os.remove(os.path.join(tempDir, filename))
-
-        # update database with the submission records
-        # data are saved in session['imageNameList']
-        update_submission_record(ai_predictions, ai_scores)
+            db, cursor = get_db()
+            
+            if session['sender_mode']=='dentist':
+                
+                if g.user['default_location'] is None or str(g.user['default_location'])!=str(session['location']):
+                    sql = "UPDATE user SET default_location=%s WHERE id=%s"
+                    val = (str(session['location']), session['user_id'])
+                    cursor.execute(sql, val)
+                    load_logged_in_user() # Update the user info on g variable
+                sql = '''INSERT INTO submission_record
+                    (fname,
+                    sender_id,
+                    location_district,
+                    location_amphoe,
+                    location_province,
+                    location_zipcode,
+                    ai_prediction,
+                    ai_scores,
+                    channel)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)'''
+                val = (filename,
+                       session['user_id'],
+                       session['location']['district'],
+                       session['location']['amphoe'],
+                       session['location']['province'],
+                       session['location']['zipcode'],
+                       ai_predictions[i],
+                       ai_scores[i],
+                       'DENTIST')
+                cursor.execute(sql, val)
+            elif session['sender_mode']=='patient':
+                if g.user['default_location'] is None or str(g.user['default_location'])!=str(session['location']):
+                    sql = "UPDATE user SET default_location=%s WHERE id=%s"
+                    val = (str(session['location']), session['user_id'])
+                    cursor.execute(sql, val)
+                    load_logged_in_user() # Update the user info on g variable
+                if 'sender_phone' in session and session['sender_phone']:
+                    sql = "UPDATE user SET default_sender_phone=%s WHERE id=%s"
+                    val = (session['sender_phone'], session['user_id'])
+                    cursor.execute(sql, val)
+                    load_logged_in_user() # Update the user info on g variable
+                
+                if (g.user['default_sender_phone'] and ('sender_phone' not in session or session['sender_phone'] is None)):
+                    sql = "UPDATE user SET default_sender_phone=NULL WHERE id=%s"
+                    val = (session['user_id'], )
+                    cursor.execute(sql, val)
+                    load_logged_in_user() # Update the user info on g variable
+                
+                sql = '''INSERT INTO submission_record 
+                        (fname,
+                        sender_id,
+                        sender_phone,
+                        location_district,
+                        location_amphoe,
+                        location_province,
+                        location_zipcode,
+                        patient_id,
+                        ai_prediction,
+                        ai_scores,
+                        channel)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'''
+                val = (filename,
+                        session['sender_id'],
+                        session['sender_phone'],
+                        session['location']['district'],
+                        session['location']['amphoe'],
+                        session['location']['province'],
+                        session['location']['zipcode'],
+                        session['user_id'],
+                        ai_predictions[i],
+                        ai_scores[i],
+                        'PATIENT')
+                cursor.execute(sql, val)
+                
+                cursor.execute("SELECT LAST_INSERT_ID()")
+                row = cursor.fetchone()
+                sql = "INSERT INTO patient_case_id (id) VALUES (%s)"
+                val = (row['LAST_INSERT_ID()'],)
+                cursor.execute(sql, val)
+            elif session['sender_mode']=='osm':
+                if g.user['default_location'] is None or str(g.user['default_location'])!=str(session['location']):
+                    sql = "UPDATE user SET default_location=%s WHERE id=%s"
+                    val = (str(session['location']), session['user_id'])
+                    cursor.execute(sql, val)
+                    load_logged_in_user() # Update the user info on g variable
+                sql = '''INSERT INTO submission_record 
+                        (fname, 
+                        sender_id,
+                        location_district,
+                        location_amphoe,
+                        location_province,
+                        location_zipcode,
+                        patient_id,
+                        patient_national_id,
+                        ai_prediction,
+                        ai_scores,
+                        channel)
+                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'''
+                val = (filename,
+                        session['user_id'],
+                        session['location']['district'],
+                        session['location']['amphoe'],
+                        session['location']['province'],
+                        session['location']['zipcode'],
+                        session['patient_id'],
+                        session['patient_national_id'],
+                        ai_predictions[i],
+                        ai_scores[i],
+                        'OSM')
+                cursor.execute(sql, val)
+                cursor.execute("SELECT LAST_INSERT_ID()")
+                row = cursor.fetchone()
+                sql = "INSERT INTO patient_case_id (id) VALUES (%s)"
+                val = (row['LAST_INSERT_ID()'],)
+                cursor.execute(sql, val)
 
 # region rename_if_duplicated
 # Rename the filename if duplicates in the user folder, By appending a running number
@@ -1361,14 +1381,30 @@ def rename_if_duplicated(uploadDir, checked_filename):
         return checked_filename
     else:
         runningNumber = len(duplicate_files)
-    
+
     while (os.path.isfile(os.path.join(uploadDir, checked_filename))):
         file_parts = os.path.splitext(checked_filename)
         checked_filename = file_parts[0] + '_' + str(runningNumber) + file_parts[1]
         runningNumber+=1
-        
+
     return checked_filename
-    
+
+def calculate_age(born):
+    if isinstance(born,str):
+        born = parse(born)
+    today = date.today()
+    return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
+
+def format_thai_datetime(x):
+    month_list_th = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน','กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
+    output_thai_datetime_str = '{} {} {} {}:{}'.format(
+        x.strftime('%d'),
+        month_list_th[int(x.strftime('%m'))-1],
+        int(x.strftime('%Y'))+543,
+        x.strftime('%H'),
+        x.strftime('%M')
+    )
+    return output_thai_datetime_str
 # Part of the mask editor module
 # Developed by Tewarit Somrit
 def convertMask2Cordinates(maskPath) :

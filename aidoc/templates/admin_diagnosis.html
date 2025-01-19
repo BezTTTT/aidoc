@@ -61,7 +61,7 @@
 <div class="d-flex justify-content-center">
     <div class="row justify-content-center my-4" style="width: 90%;">
         <div class="col-md-2 text-center mt-2 px-1">
-            <form action="{{url_for('webapp.record', role='admin', page=session['current_record_page'])}}" method="post" enctype="multipart/form-data">
+            <form action="{{url_for('image.record', role='admin', page=session['current_record_page'])}}" method="post" enctype="multipart/form-data">
                 <a class="btn btn-outline-success btn-block nowrap" style="width: 100%; margin: 0;"
                     onclick='this.parentNode.submit(); return false;'>ย้อนกลับ</a>
             </form>
@@ -174,7 +174,7 @@
 </div>
 
 {% if data['channel']=='DENTIST' %}
-    <form action="{{ url_for('webapp.diagnosis', role='admin', img_id=data['img_id'], channel=data['channel'])}}" method="post" enctype="multipart/form-data">
+    <form action="{{ url_for('image.diagnosis', role='admin', img_id=data['img_id'], channel=data['channel'])}}" method="post" enctype="multipart/form-data">
         <div class="row d-flex justify-content-center text-align-left my-4">
             <div class="card mb-5" style="width: 100%">
                 <div id="outer-container" class="card-body">
@@ -314,7 +314,7 @@
                 </div>
             {% endif %}
             <div id="dentist-feedback-container" class="card" style="width: 100%; height: fit-content">
-                <form action="{{url_for('webapp.diagnosis', role='admin', img_id=data['img_id'], specialist_feedback='true', channel=data['channel'])}}" method="post" enctype="multipart/form-data">
+                <form action="{{url_for('image.diagnosis', role='admin', img_id=data['img_id'], specialist_feedback='true', channel=data['channel'])}}" method="post" enctype="multipart/form-data">
                     <div class="card-body px-4">
                         <h5 class="card-title">สำหรับทันตแพทย์ที่เข้าร่วมโครงการ ท่านจะวินิจฉัยภาพนี้ให้เข้ากรณีใด</h5>
                         {% for key, value in maps['dentist_diagnosis_map'].items() %}
@@ -444,7 +444,7 @@
             <div id="case-report-container" class="card mt-3" style="width: 100%; height: fit-content">
                 <div class="card-body px-4">
                     <h5 class="card-title text-start mb-3">รายงานผู้ป่วย (Case Report)</h5>
-                    <form action="{{url_for('webapp.diagnosis', role='admin', img_id=data['img_id'], case_report='true', channel=data['channel'])}}" method="post" enctype="multipart/form-data">                    
+                    <form action="{{url_for('image.diagnosis', role='admin', img_id=data['img_id'], case_report='true', channel=data['channel'])}}" method="post" enctype="multipart/form-data">                    
                         <div id="CaseReportBox">
                             <label for="CaseReportTextarea" class="form-label mt-2">สร้างรายงานผู้ป่วย หรือ ความคิดเห็น หรือ คำวินิจฉัยอื่น ๆ ที่ต้องการบันทึกเป็นประวัติไว้ หรือ รายงานต่อทันตแพทย์ผู้เชี่ยวชาญ</label>
                             <textarea class="form-control" id="CaseReportTextarea" rows="3" name="case_report">{{data['case_report']}}</textarea>

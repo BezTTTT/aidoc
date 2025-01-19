@@ -44,9 +44,9 @@ def index():
         return render_template("patient_login.html") # default index page (patient and osm login)
     else: # if user is already logged in
         if 'sender_mode' in session and session['sender_mode']=='dentist':
-            return redirect(url_for("webapp.record", role='dentist'))
+            return redirect(url_for("image.record", role='dentist'))
         elif 'sender_mode' in session and session['sender_mode']=='osm':
-            return redirect(url_for("webapp.record", role='osm'))
+            return redirect(url_for("image.record", role='osm'))
         else:
             return render_template("patient_upload.html")
 
@@ -57,7 +57,7 @@ def dentist_index():
 
     if g.user: # already logged in
         if 'sender_mode' in session and session['sender_mode']=='dentist':
-            return redirect(url_for("webapp.record", role='dentist'))
+            return redirect(url_for("image.record", role='dentist'))
     else:
         return render_template("dentist_login.html")
 
@@ -179,7 +179,7 @@ def login(role):
             session['user_id'] = user['id']
             sql = "UPDATE user SET last_login = NOW() WHERE id = %s"
             cursor.execute(sql, (user['id'],))
-            return redirect(url_for('webapp.record', role='dentist'))
+            return redirect(url_for('image.record', role='dentist'))
         flash(error_msg)
         return render_template("dentist_login.html")
 
