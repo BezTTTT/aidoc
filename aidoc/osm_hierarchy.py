@@ -1,3 +1,4 @@
+import json
 from flask import Blueprint, jsonify, render_template, request, session
 from aidoc.auth import login_required
 from aidoc.db import get_db
@@ -5,7 +6,7 @@ from aidoc.db import get_db
 bp = Blueprint('osm_hierarchy', __name__)
 
 
-@bp.route('/osm_hierarchy', methods=['GET'])
+@bp.route('/', methods=['GET'])
 @login_required
 def render_osm_hierarchy():
     user_id = session.get('user_id')
@@ -23,7 +24,7 @@ def render_osm_hierarchy():
         user_data = cursor.fetchone()
 
         if not user_data:
-            return render_template('/newTemplate/osm_hierarchy.html', group_id=None, is_user_supervisor=0)
+            return render_template('/newTemplate/osm_hierarchy.html', group_id=-1, is_user_supervisor=0)
 
         group_id = user_data['group_id']
         is_supervisor = user_data['is_supervisor']
@@ -33,14 +34,16 @@ def render_osm_hierarchy():
         db.close()
 
 
-@bp.route('/osm_hierarchy/group/<int:group_id>', methods=['GET'])
+@bp.route('/group/<int:group_id>', methods=['GET'])
 @login_required
 def get_group_users(group_id):
+    if group_id == -1:
+        return jsonify({'group_list': []})
     db, cursor = get_db()
     try:
         cursor.execute(
             """
-            SELECT oh.group_id, oh.user_id AS osm_id, oh.is_supervisor, u.name, u.surname, u.hospital, u.province,
+            SELECT oh.group_id, oh.user_id AS osm_id, oh.is_supervisor, u.name, u.surname, u.hospital, u.province, u.phone,
             (SELECT COUNT(*) FROM submission_record sr WHERE sr.patient_id = oh.user_id OR sr.sender_id = oh.user_id) AS submission_count
             FROM osm_hierarchy oh
             LEFT JOIN user u ON oh.user_id = u.id
@@ -51,7 +54,7 @@ def get_group_users(group_id):
         )
         hierarchy = cursor.fetchall()
             
-
+        print(hierarchy)
         group_list = [
             {
                 "osm_id": osm["osm_id"],
@@ -60,24 +63,31 @@ def get_group_users(group_id):
                 "is_supervisor": osm["is_supervisor"],
                 "hospital": osm["hospital"],
                 "province": osm["province"],
-                "submission_count": osm["submission_count"]
+                "submission_count": osm["submission_count"],
+                "phone_number": osm["phone"]
             }
             for osm in hierarchy if osm["name"] and osm["surname"]
         ]
-        print(group_list)
         return jsonify({'group_list': group_list})
     finally:
         cursor.close()
         db.close()
 
 
-@bp.route('/osm_hierarchy/add', methods=['POST'])
+@bp.route('/add', methods=['POST'])
 @login_required
 def add_to_group():
     data = request.get_json()
+    
+    if not data or 'user_id' not in data or 'group_id' not in data:
+        return json.dumps({'error': 'No osm_id/group_id provided'}), 400  
+
     user_id_to_add = data.get('user_id')
     group_id = data.get('group_id')
 
+    if group_id == -1:
+        return json.dumps({'error': 'Invalid group_id'}), 400
+    
     db, cursor = get_db()
     try:
         cursor.execute(
@@ -85,22 +95,29 @@ def add_to_group():
             (user_id_to_add, group_id)
         )
         db.commit()
-        return jsonify({'status': 'success', 'message': 'User added to group'})
+        return json.dumps({'message': 'User added to group'}), 200
     except Exception as e:
         db.rollback()
-        return jsonify({'status': 'error', 'message': str(e)})
+        return json.dumps({'error': f'An error occurred while adding user to group: {e}'}), 500
     finally:
         cursor.close()
         db.close()
 
 
-@bp.route('/osm_hierarchy/remove', methods=['POST'])
+@bp.route('/remove', methods=['DELETE'])
 @login_required
 def remove_from_group():
     body = request.get_json()
+    
+    if not body or 'user_id' not in body or 'group_id' not in body:
+        return json.dumps({'error': 'No osm_id/group_id provided'}), 400    
+    
     user_id = body.get('user_id')
     group_id = body.get('group_id')
 
+    if group_id == -1:
+        return json.dumps({'error': 'Invalid group_id'}), 400
+    
     db, cursor = get_db()
     try:
         cursor.execute(
@@ -108,28 +125,28 @@ def remove_from_group():
             (user_id, group_id)
         )
         db.commit()
-        return jsonify({'status': 'success', 'message': 'User removed from group'})
+        return json.dumps({"message": "User removed from group."}), 200
     except Exception as e:
         db.rollback()
-        return jsonify({'status': 'error', 'message': str(e)})
+        return json.dumps({"error": f"An error occurred while removing user from group: {e}"}), 500
     finally:
         cursor.close()
         db.close()
 
 
-@bp.route('/osm_hierarchy/get_osm_to_search', methods=['GET'])
+@bp.route('/get_osm_for_search', methods=['GET'])
 @login_required
 def search_users():
     db, cursor = get_db()
     try:
         cursor.execute("""
-            SELECT id, name, surname 
+            SELECT id, name, surname, phone as phone_number, province, hospital
             FROM user 
             WHERE is_osm = 1 
             AND id NOT IN (SELECT user_id FROM osm_hierarchy)
         """)
         users = cursor.fetchall()
-        return jsonify({'osm_users': users})
+        return jsonify({'osm_list': users})
     finally:
         cursor.close()
         db.close()
