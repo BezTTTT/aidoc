@@ -14,7 +14,7 @@ qualityChecker = imageQualityChecker.ImageQualityChecker()
 from PIL import Image, ImageFilter
 import cv2
 import numpy as np
-
+from user import validate_province_name,validate_license,validate_phone,validate_national_id,remove_prefix
 import os
 import glob
 import shutil
@@ -986,8 +986,6 @@ def editByRole(role):
             val = (session["user_id"],)
             cursor.execute(sql, val)
             data = cursor.fetchone()
-            if data["national_id"]:
-                data["national_id"] = data["national_id"][:-4] + "****"
             data["email"] = data["email"] if data.get("email") else ""
             if data["birthdate"]:
                 birthdate = data["birthdate"]
@@ -999,7 +997,7 @@ def editByRole(role):
         
         # Handling POST request to update data
         elif request.method == 'POST':
-            name = request.form['name']
+            name = remove_prefix(request.form['name'])
             surname = request.form['surname']
             national_id = request.form['national_id']
             job_position = request.form['job_position']
@@ -1010,6 +1008,12 @@ def editByRole(role):
             dob_day = int(request.form['dob_day'])
             dob_month = int(request.form['dob_month'])
             dob_year = int(request.form['dob_year'])  # Convert to integer
+            data["valid_national_id"] = True
+            data["valid_phone"] = True
+            data["valid_province_name"] = True
+
+            valid_func_list = [validate_license,
+                               validate_province_name,]
 
             # Convert Thai year to Gregorian year (subtract 543)
             birthdate = date(dob_year - 543, dob_month, dob_day)
@@ -1032,7 +1036,8 @@ def editByRole(role):
                         hospital,
                         national_id, 
                         job_position, 
-                        phone
+                        phone,
+                        osm_job
                     FROM 
                         user
                     WHERE 
@@ -1041,10 +1046,6 @@ def editByRole(role):
             val = (session["user_id"],)
             cursor.execute(sql, val)
             data = cursor.fetchone()
-            if data["national_id"]:
-                data["national_id"] = data["national_id"][:-4] + "****"
-            if data["phone"]:
-                data["phone"] = data["phone"][:-4] + "****"
             data["email"] = data["email"] if data.get("email") else ""
             
             return render_template("/newTemplate/osm_edit.html",data=data)
@@ -1056,6 +1057,9 @@ def editByRole(role):
             license = request.form.get('license', '')
             hospital = request.form['hospital']
             province = request.form['province']
+            data["valid_national_id"] = True
+            data["valid_phone"] = True
+            data["valid_province_name"] = True
 
             sql = '''UPDATE user SET 
                     name = %s,
@@ -1092,8 +1096,6 @@ def editByRole(role):
             val = (session["user_id"],)
             cursor.execute(sql, val)
             data = cursor.fetchone()
-            if data["phone"]:
-                data["phone"] = data["phone"][:-4] + "****"
             data["email"] = data["email"] if data.get("email") else ""
             return render_template("/newTemplate/dentist_edit.html",data=data)
         if request.method == "POST":
@@ -1106,6 +1108,9 @@ def editByRole(role):
             province = request.form['province']
             phone = request.form['phone']
             email = request.form['email']
+            data["valid_national_id"] = True
+            data["valid_phone"] = True
+            data["valid_province_name"] = True
 
             sql = '''UPDATE user SET 
                     name = %s,
@@ -1125,17 +1130,6 @@ def editByRole(role):
             db.commit()
             flash('ข้อมูลส่วนตัวได้รับการแก้ไขแล้ว', 'success')
             return redirect('/edit/dentist')
-
-
-# @bp.route('/edit/osm', methods=('GET','POST'))
-# @login_required
-# def editOsm():
-#     return render_template("/newTemplate/osm_edit.html")
-
-# @bp.route('/edit/dentist', methods=('GET','POST'))
-# @login_required
-# def editDoc():
-#     return render_template("/newTemplate/dentist_edit.html")
 
 # Helper functions
 # region create_thumbnail

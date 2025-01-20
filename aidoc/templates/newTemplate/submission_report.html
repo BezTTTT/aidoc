@@ -151,10 +151,18 @@
       row.innerHTML = `
         <td>${label}</td>
         <td class="text-center">
-          <a href="/record/admin?value="${entry.total_pic}"
-          style="text-decoration: none; color: black; cursor: pointer;">
+        {% set default_data = {'search': ''} %}
+        <form action="/record/admin" method="POST">
+          <input
+            type="text"
+            id="search-input"
+            name="search"
+            value="{{ default_data.search }}"
+            style="display:none"
+        >
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;">
             ${entry.total_pic}
-          </a>
+          </button>
         </td>
         <td class="text-center">
         {% set default_data = {'search': 'opmd'} %}
@@ -172,16 +180,34 @@
         </form>
         </td>
         <td class="text-center">
-            <a href="/record/admin?value=oscc"
-            style="text-decoration: none; color: black; cursor: pointer;">
-              ${entry.ai_predict.oscc}
-            </a>
+        {% set default_data = {'search': 'oscc'} %}
+        <form action="/record/admin" method="POST">
+          <input
+            type="text"
+            id="search-input"
+            name="search"
+            value="{{ default_data.search }}"
+            style="display:none"
+        >
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;">
+            ${entry.ai_predict.oscc}
+          </button>
+        </form>
         </td>
         <td class="text-center">
-            <a href="/record/admin?value=normal"
-            style="text-decoration: none; color: black; cursor: pointer;">
-              ${entry.ai_predict.normal}
-            </a>
+        {% set default_data = {'search': 'normal'} %}
+        <form action="/record/admin" method="POST">
+          <input
+            type="text"
+            id="search-input"
+            name="search"
+            value="{{ default_data.search }}"
+            style="display:none"
+        >
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;">
+            ${entry.ai_predict.normal}
+          </button>
+        </form>
         </td>
         <td class="text-center">
             <a href="/record/admin?value=opmd"
