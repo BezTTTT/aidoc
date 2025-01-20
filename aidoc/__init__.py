@@ -57,6 +57,12 @@ def create_app(test_config=None):
     app.register_blueprint(report.routes.report_bp)
     from .API import admin
     app.register_blueprint(admin.routes.admin_bp)
+    
+    from . import osm_hierarchy
+    app.register_blueprint(osm_hierarchy.bp)
+
+    # Enable debug mode
+    app.config['DEBUG'] = True
 
     # Add special endpoints
     app.add_url_rule('/', endpoint='index')

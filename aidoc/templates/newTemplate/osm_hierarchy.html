@@ -1,0 +1,91 @@
+{% extends "./base.html" %} {% block title %}RiskOCA | OSM Group{% endblock %}
+{% block content %}
+<div>
+  <div id="groupIdContainer" data-group-id="{{ group_id }}"></div>
+  <div id="supervisorContainer" data-user-supervisor="{{ is_user_supervisor }}"></div>
+  <h2 class="text-center">OSM hierarchy</h2>
+
+  <!-- Loading Spinner -->
+  <div id="groupListLoadingSpinner" class="text-center" style="display: none">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">กำลังโหลด...</span>
+    </div>
+    <p>กำลังโหลดรายชื่อกลุ่ม โปรดรอ...</p>
+  </div>
+
+  <table class="table" style="display: none" id="groupListContainer">
+    <thead>
+      <tr>
+        <th>ชื่อ - นามสกุล</th>
+        <th>สังกัดโรงพยายาล</th>
+        <th>จังหวัด</th>
+        <th>จำนวนนำส่ง (รูป)</th>
+        {% if is_user_supervisor == 1 %}
+        <th>การจัดการ</th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody id="groupList"></tbody>
+  </table>
+
+  <div class="container mt-5">
+    <button class="btn btn-primary" onclick="loadAllUsers()">
+      เพิ่มสมาชิก
+    </button>
+  </div>
+
+  <!-- Modal -->
+  <div
+    class="modal fade"
+    id="searchModal"
+    tabindex="-1"
+    aria-labelledby="searchModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="searchModalLabel">เพิ่มสมาชิก</h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Loading Spinner -->
+          <div id="loadingSpinner" class="text-center" style="display: none">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">กำลังโหลด...</span>
+            </div>
+            <p>กำลังโหลดข้อมูล โปรดรอ...</p>
+          </div>
+          <!-- Search Content -->
+          <div id="searchContent" style="display: none">
+            <input
+              type="text"
+              id="searchInput"
+              class="form-control mb-3"
+              placeholder="กรอกชื่อหรือนามสกุลเพื่อค้นหา"
+              oninput="searchUsers()"
+            />
+            <div id="results" class="list-group"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            เสร็จสิ้น
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='script/osm_heirarchy.js') }}"></script>
+{% endblock %}
