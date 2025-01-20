@@ -61,7 +61,7 @@ block content %}
           data-bs-dismiss="modal"
           onclick="window.location.reload();"
         >
-          ปิด
+          เสร็จสิ้น
         </button>
       </div>
     </div>
@@ -100,7 +100,6 @@ block content %}
   const is_user_supervisor = groupData.dataset.userSupervisor;
 
   function fetchGroup() {
-    fetchedGroupData = []; // Clear existing data
     fetch(`/osm_hierarchy/group/${groupId}`, {
       method: "GET",
       headers: {
@@ -175,7 +174,6 @@ block content %}
   }
 
   function fetchOSMUsers() {
-    fetchedOSMData = []; // Clear existing data
     fetch(`/osm_hierarchy/get_osm_for_search`, {
       method: "GET",
       headers: {
@@ -254,23 +252,23 @@ block content %}
       .then((response) => {
         if (!response.ok) {
           throw new Error(
-            `Failed to delete user from gruop: ${response.statusText}`
+            `Failed to delete user from group: ${response.statusText}`
           );
         }
         alert("ผู้ใช้ถูกลบสำเร็จ!");
-        fetchGroup(); // Re-fetch group data and re-render the table
+        window.location.reload(); // Refresh page after deleting user
       })
       .catch((error) => {
         console.error("Error:", error);
         alert("เกิดข้อผิดพลาดในการลบผู้ใช้");
+        button.disabled = false; // Re-enable the button on error
       });
   }
 
   function addUserToGroup(button, userId, addingName) {
-    console.log("asdasd", userId, addingName);
     if (!confirm(`คุณต้องการเพิ่ม ${addingName} ไปในกลุ่มใช่หรือไม่ ?`)) return;
 
-    button.disabled = true;
+    button.disabled = true; // Disable the button temporarily
     const formData = { user_id: userId, group_id: groupId };
 
     fetch(`/osm_hierarchy/add`, {
@@ -291,6 +289,7 @@ block content %}
       .catch((error) => {
         console.error("Error:", error);
         alert("เกิดข้อผิดพลาดในการเพิ่มผู้ใช้");
+        button.disabled = false; // Re-enable the button on error
       });
   }
   if (groupId != -1) fetchGroup(); // Fetch data and render table on page load
