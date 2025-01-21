@@ -1,0 +1,194 @@
+{% extends "./base.html" %}
+
+{% block title %} RiskOCA | OSM Records {% endblock %}
+
+{% block content %}
+
+<div class="row">
+    <div class="col-12">
+        <h2>ระบบการวิเคราะห์รอยโรคมะเร็งช่องปากด้วย AI สำหรับผู้นำส่งข้อมูล</h2>
+        <p>{{ g.user['name'] }} {{ g.user['surname'] }} ({{ g.user['job_position_th'] }}) </p>
+    </div>
+
+    <!-- Search Box -->
+    <div class="col-12 mt-3">
+        <p>ค้นหาผลลัพธ์ตามคำสำคัญ <i>เช่น ชื่อ นามสกุลคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC ชื่อไฟล์ Case ID</i></p>
+    </div>
+    <form action="/osm_hierarchy/group_record/{{ osm_id }}" method="post">
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" name="search" placeholder="ชื่อ นามสกุลคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC ชื่อไฟล์ Case ID" value="{{ data['search'] }}" />
+            <button class="btn btn-outline-primary" type="submit" value="{{ data['search'] }}"> Search </button>
+        </div>
+    </form>
+
+    <div class="container">
+        <form action="/osm_hierarchy/group_record/{{ osm_id }}" method="post" id="filterForm">
+            <div class="row row-cols-auto">
+                <div class="col my-1">
+                    <label for="filterPriority">ระดับความสำคัญ:</label>
+                    <select name="filterPriority" id="filterPriority" class="btn btn-light border border-1 mx-1">
+                        <option value="">ทั้งหมด</option>
+                        <option value="1">พิเศษ</option>
+                        <option value="0">ปกติ</option>
+                    </select>
+                </div>
+                <div class="col my-1">
+                    <label for="filterStatus">สถานะ:</label>
+                    <select name="filterStatus" id="filterStatus" class="btn btn-light border border-1 mx-1">
+                        <option value="">ทั้งหมด</option>
+                        <option value="1">ตรวจแล้ว</option>
+                        <option value="0">ยังไม่ได้ตรวจ</option>
+                    </select>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-12 mt-5">
+        <p>ประวัติการนำส่งภาพถ่ายช่องปากของคนไข้</p>
+    </div>
+    {% if pagination|length == 0 %}
+        <div class="col-12 mt-4">
+            <p class="text-center text-danger">ไม่พบข้อมูล</p>
+        </div>
+    {% else %}
+        <div>
+            จำนวนรายการทั้งหมด {{dataCount}} รายการ
+        </div>
+    {% endif %}
+    <!-- Loop through paginated data -->
+    <div class="container my-4">
+        <div class="row">
+            {% for item in pagination %}
+                <div class="col-md-3 mb-4">
+                    <div class="card h-100"
+                    {% if item['special_request']==1 %}
+                        style="border-color: red; border-width: 3px"
+                    {% endif %}
+                    >
+                        <div style="display: inline-flex; align-items: center; justify-content: center; ">
+                            <a href="{{ url_for('image.load_image', folder='upload', user_id=item['owner_id'], imagename=item['fname']) }}" target="_blank">
+                                <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=item['owner_id'], imagename=item['fname']) }}" 
+                                    class="card-img-top mt-2" alt="" style="max-height: 256px" />
+                            </a>
+                        </div>
+
+                        <div class="card-body">
+                            <h6 class="image-name">ชื่อไฟล์ : {{ item['fname'] }} </h6>
+                            <h6 class="image-name" >Case ID : {{ item['case_id'] }}
+                                {% if item['dentist_id'] %}
+                                    [ตรวจแล้ว]
+                                {% else %}
+                                    [ยังไม่ได้ตรวจ]
+                                {% endif %}
+                                {% if item['special_request']==1 %}
+                                    [มีคำขอตรวจพิเศษ]
+                                {% endif %}
+                            </h6>
+                            {% if item['name'] is not none %}
+                                <h6 class="image-name">ชื่อผู้ป่วย : {{ item['name'] }} {{ item['surname'] }} ( {{ item["age"] }} ปี )</h6>
+                            {% else %}
+                                <h6 class="image-name">ชื่อผู้ป่วย : <i>ไม่มีข้อมูล</i> </h6>
+                            {% endif%}
+                            {% if item['location_zipcode'] is not none %}
+                                <h6 class="image-name">สถานที่คัดกรอง : จ.{{ item['location_province'] }} ({{ item['location_zipcode'] }})</h6>
+                            {% else %}
+                                <h6 class="image-name">สถานที่คัดกรอง : จ.{{ item['location_province'] }} </h6>
+                            {% endif %}
+                            <h6 class="image-name" >ช่องทาง :
+                                {% if item['sender_phone'] is none %}
+                                    ระบบผู้ตรวจคัดกรอง
+                                {% else %}
+                                    ระบบประชาชน
+                                {% endif %}
+                            </h6>
+                            <h6 class="">นำส่งวันที่ : {{ item['formatted_created_at'] }} น.</h6>
+                            <h6 class="fs-6 card-subtitle text-muted mb-2">
+                                ผลการพยากรณ์ของ AI :
+                                    {% if item['ai_prediction']==0 %}
+                                        Normal
+                                    {% elif item['ai_prediction']==1 %}
+                                        OPMD
+                                    {% else %}
+                                        OSCC
+                                    {% endif %}
+                            </h6>
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                                <form action="{{ url_for('image.diagnosis', role='osm', img_id=item['id']) }}" id="form_id{{item['id']}}" method="post"> </form>
+                                <button class="btn btn-outline-success" type="submit" form="form_id{{item['id']}}">ดูผลการวิเคราะห์</button>
+
+                            </div>
+                        </div>
+
+                        <!-- Submission Delete Modal -->
+                        <div class="modal fade" id="submissionDeleteModal{{ item['id'] }}" tabindex="-1"
+                            aria-labelledby="submissionDeleteModalLabel" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h1 class="modal-title fs-5" id="submissionDeleteModalLabel"> ลบประวัติ </h1>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">คุณแน่ใจที่จะลบประวัตินี้ ใช่หรือไม่</div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> ยกเลิก </button>
+                                        <form action="{{ url_for('image.delete_image', role='osm') }}" method="post" enctype="multipart/form-data">
+                                            <input name="img_id" type="text" value="{{ item['id'] }}" hidden />
+                                            <input class="btn btn-outline-danger" style="width: 100%" type="submit" value="ลบข้อมูล" />
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination links -->
+        <div class="pagination d-flex justify-content-center align-items-center">
+            {% if current_page > 1 %}
+                <a href="?page=1" class="btn page-link m-2 text-secondary">&laquo; หน้าแรก</a>
+                <a href="?page={{ current_page - 1 }}" class="btn page-link m-2 text-secondary">&lsaquo; ก่อนหน้า</a>
+            {% endif %}
+            {% for page_num in range(1, total_pages + 1) %}
+                {% if page_num == current_page %}
+                    <span class="current-page page-link m-2 text-secondary">หน้าปัจจุบัน : {{ page_num }} จาก {{ total_pages }}</span>
+                {% endif %}
+            {% endfor %}
+            {% if current_page < total_pages %}
+                <a href="?page={{ current_page + 1 }}" class="btn page-link m-2 text-secondary">ถัดไป &rsaquo;</a>
+                <a href="?page={{ total_pages }}" class="btn page-link m-2 text-secondary">หลังสุด &raquo;</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+    const filterStatus = document.getElementById("filterStatus");
+    const filterPriority = document.getElementById("filterPriority");
+
+    filterStatus.addEventListener("change", function () {
+        document.getElementById("filterForm").submit();
+    });
+    filterPriority.addEventListener("change", function () {
+        document.getElementById("filterForm").submit();
+    });
+
+    // Get the filters element and set its value from Flask
+    const filterStatusValue     = "{{ filters[0] }}";
+    const filterPriorityValue   = "{{ filters[1] }}";
+
+    // Set the selected filters value if it exists
+    if (filterStatusValue) {
+        filterStatus.value = filterStatusValue;
+    }
+    if (filterPriorityValue) {
+        filterPriority.value = filterPriorityValue;
+    }
+        
+</script>
+{% endblock %}
