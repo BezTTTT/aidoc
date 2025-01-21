@@ -46,7 +46,7 @@ block content %}
           <thead>
             <tr class="text-dark">
               <th>ชื่อ - นามสกุล</th>
-              <th>สังกัดโรงพยายาล</th>
+              <th>โรงพยาบาลที่สังกัด</th>
               <th>จังหวัด</th>
               <th>เพิ่มผู้ตรวจคัดกรอง</th>
             </tr>
@@ -72,7 +72,7 @@ block content %}
   <thead>
     <tr class="text-dark">
       <th>ชื่อ - นามสกุล</th>
-      <th>สังกัดโรงพยายาล</th>
+      <th>โรงพยาบาลที่สังกัด</th>
       <th>จังหวัด</th>
       <th>จำนวนอัพโหลด (อัพโหลดล่าสุด)</th>
       <th>เบอร์โทรศัพท์</th>
@@ -130,11 +130,11 @@ block content %}
       const row = document.createElement("tr");
 
       row.innerHTML = `<td>${user.name} <span>${user.surname}</span></td>
-      <td>${user.hospital}</td>
+      <td>${user.hospital ? user.hospital : "ไม่มีโรงพยาบาลที่สังกัด"}</td>
       <td>${user.province}</td>
       <td>${
         user.submission_count
-          ? `${user.submission_count} รูป (${"11/55/66"})`
+          ? `<a href="/osm_hierarchy/group_record/${user.osm_id}"> ${user.submission_count} รูป (${user.last_activity}) </a>`
           : "-"
       } </td>
       <td>${user.phone_number}</td>
@@ -204,7 +204,7 @@ block content %}
       const row = document.createElement("tr");
 
       row.innerHTML = `<td>${user.name} <span>${user.surname}</span></td>
-    <td>${user.hospital ? user.hospital : "ไม่มีโรงพยาบาลสังกัด"}</td>
+    <td>${user.hospital ? user.hospital : "ไม่มีโรงพยาบาลที่สังกัด"}</td>
     <td>${user.province}</td>
     ${
       is_user_supervisor
