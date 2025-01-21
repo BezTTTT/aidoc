@@ -14,7 +14,7 @@ qualityChecker = imageQualityChecker.ImageQualityChecker()
 from PIL import Image, ImageFilter
 import cv2
 import numpy as np
-from user import validate_province_name,validate_license,validate_phone,validate_national_id,remove_prefix
+from aidoc.user import validate_province_name,validate_duplicate_users,validate_phone,validate_national_id,remove_prefix,validate_license
 import os
 import glob
 import shutil
@@ -762,7 +762,6 @@ def record(role): # Submission records
         session['record_filter'] = {}
     if request.method == 'POST':
         search_query = request.form.get("search", session['record_filter'].get('search_query', ""))
-        print(search_query)
         agree = request.form.get("agree", "")
         filterStatus = request.form.get("filterStatus", "") 
         filterPriority = request.form.get("filterPriority", "") 
@@ -957,6 +956,7 @@ def edit():
 @bp.route('/edit/<role>', methods=('GET', 'POST'))
 @login_required
 def editByRole(role):
+    data = {}
     thai_months = [
                     'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 
                     'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 
@@ -964,6 +964,7 @@ def editByRole(role):
                     'พฤศจิกายน', 'ธันวาคม'
                 ]
     db, cursor = get_db()
+    target_template = '/newTemplate/patient_edit.html'
     if role == 'patient':
         # Handling GET request to render the edit form
         if request.method == 'GET':
@@ -993,41 +994,49 @@ def editByRole(role):
                 data["birthdate_month"] = thai_months[birthdate.month - 1]
                 data["birthdate_year"] = birthdate.year + 543
                 del data["birthdate"]
-            return render_template("/newTemplate/patient_edit.html", data=data)
+            return render_template(target_template, data=data)
         
         # Handling POST request to update data
         elif request.method == 'POST':
-            name = remove_prefix(request.form['name'])
-            surname = request.form['surname']
-            national_id = request.form['national_id']
-            job_position = request.form['job_position']
-            address = request.form['address']
-            province = request.form['province']
-            email = request.form['email']
-            phone = request.form['phone']
-            dob_day = int(request.form['dob_day'])
-            dob_month = int(request.form['dob_month'])
-            dob_year = int(request.form['dob_year'])  # Convert to integer
-            data["valid_national_id"] = True
+            data['name'] = remove_prefix(request.form['name'])
+            data['surname'] = request.form['surname']
+            data['national_id'] = request.form['national_id']
+            data['job_position'] = request.form['job_position']
+            data['address'] = request.form['address']
+            data['province'] = request.form['province']
+            data['email'] = request.form['email']
+            data['phone'] = request.form['phone']
+            data['dob_day'] = int(request.form['dob_day'])
+            data['dob_month'] = int(request.form['dob_month'])
+            data['dob_year'] = int(request.form['dob_year'])
+
             data["valid_phone"] = True
             data["valid_province_name"] = True
+            mimic = []
 
-            valid_func_list = [validate_license,
-                               validate_province_name,]
+            valid_func_list = [ validate_province_name,
+                                validate_phone]
+            for valid_func in valid_func_list:
+                args = {'data': data, 'form': request.form , 'mimic':mimic}
+                valid_check, data , mimic = valid_func(args)
+                if not valid_check:
+                    return render_template(target_template,data=data)
 
             # Convert Thai year to Gregorian year (subtract 543)
-            birthdate = date(dob_year - 543, dob_month, dob_day)
+            birthdate = date(data["dob_year"] - 543, data["dob_month"], data["dob_day"])
 
             sql = '''UPDATE user
                      SET name = %s, surname = %s, national_id = %s, job_position = %s,
                          address = %s, province = %s, email = %s, phone = %s, birthdate = %s
                      WHERE id = %s;'''
-            val = (name, surname, national_id, job_position, address, province, email, phone, birthdate, session["user_id"])
+            val = (data['name'], data['surname'], data['national_id'],  data['job_position'], data['address']
+                   , data['province'], data['email'], data['phone'], birthdate, session["user_id"])
             cursor.execute(sql, val)
             db.commit()
             flash('ข้อมูลส่วนตัวได้รับการแก้ไขแล้ว', 'success')
             return redirect('/edit/patient')
     elif role == 'osm':
+        target_template = '/newTemplate/osm_edit.html'
         if request.method == 'GET':
             sql = '''SELECT 
                         name, 
@@ -1048,18 +1057,30 @@ def editByRole(role):
             data = cursor.fetchone()
             data["email"] = data["email"] if data.get("email") else ""
             
-            return render_template("/newTemplate/osm_edit.html",data=data)
+            return render_template(target_template,data=data)
         if request.method == 'POST':
-            name = request.form['name']
-            surname = request.form['surname']
-            job_position = request.form['job_position']
-            osm_job = request.form.get('osm_job', '')
-            license = request.form.get('license', '')
-            hospital = request.form['hospital']
-            province = request.form['province']
-            data["valid_national_id"] = True
+            data['name'] = request.form['name']
+            data['surname'] = request.form['surname']
+            data['job_position'] = request.form['job_position']
+            data['osm_job'] = request.form.get('osm_job', '')
+            data['license'] = request.form.get('license', '')
+            data['hospital'] = request.form['hospital']
+            data['province'] = request.form['province']
+            data['national_id'] = request.form['national_id']
+            data['phone'] = request.form['phone']
             data["valid_phone"] = True
             data["valid_province_name"] = True
+            data["valid_license"] = True
+
+            mimic = []
+            valid_func_list = [ validate_province_name,
+                                validate_phone,
+                                validate_license]
+            for valid_func in valid_func_list:
+                args = {'data': data, 'form': request.form , 'mimic':mimic}
+                valid_check, data , mimic = valid_func(args)
+                if not valid_check:
+                    return render_template(target_template,data=data)
 
             sql = '''UPDATE user SET 
                     name = %s,
@@ -1068,16 +1089,20 @@ def editByRole(role):
                     osm_job = %s,
                     license = %s,
                     hospital = %s,
-                    province = %s
+                    province = %s,
+                    national_id = %s,
+                    phone = %s
                  WHERE 
                     id = %s;
                 '''
-            values = (name, surname, job_position, osm_job, license, hospital, province, session["user_id"])
+            values = (data['name'], data['surname'], data['job_position'], data['osm_job'], data['license'], data['hospital']
+                      , data['province'],data['national_id'],data['phone'], session["user_id"])
             cursor.execute(sql, values)
             db.commit()
             flash('ข้อมูลส่วนตัวได้รับการแก้ไขแล้ว', 'success')
             return redirect("/edit/osm")
     else:
+        target_template = "/newTemplate/dentist_edit.html"
         if request.method == 'GET':
             sql = '''SELECT 
                         name, 
@@ -1097,20 +1122,29 @@ def editByRole(role):
             cursor.execute(sql, val)
             data = cursor.fetchone()
             data["email"] = data["email"] if data.get("email") else ""
-            return render_template("/newTemplate/dentist_edit.html",data=data)
+            return render_template(target_template,data=data)
         if request.method == "POST":
-            name = request.form['name']
-            surname = request.form['surname']
-            job_position = request.form['job_position']
-            osm_job = request.form.get('osm_job', '')
-            license = request.form.get('license', '')
-            hospital = request.form['hospital']
-            province = request.form['province']
-            phone = request.form['phone']
-            email = request.form['email']
-            data["valid_national_id"] = True
+            data['name'] = request.form['name']
+            data['surname'] = request.form['surname']
+            data['job_position'] = request.form['job_position']
+            data['osm_job'] = request.form.get('osm_job', '')
+            data['license'] = request.form.get('license', '')
+            data['hospital'] = request.form['hospital']
+            data['province'] = request.form['province']
+            data['phone'] = request.form['phone']
+            data['email'] = request.form['email']
             data["valid_phone"] = True
             data["valid_province_name"] = True
+
+            mimic = []
+            valid_func_list = [ validate_province_name,
+                                validate_phone,
+                                validate_license]
+            for valid_func in valid_func_list:
+                args = {'data': data, 'form': request.form , 'mimic':mimic}
+                valid_check, data , mimic = valid_func(args)
+                if not valid_check:
+                    return render_template(target_template,data=data)
 
             sql = '''UPDATE user SET 
                     name = %s,
@@ -1125,7 +1159,8 @@ def editByRole(role):
                  WHERE 
                     id = %s;
                 '''
-            values = (name, surname, job_position, osm_job, license, hospital, province, phone, email, session["user_id"])
+            values = (data['name'], data['surname'], data['job_position'], data['osm_job'], data['license'], data['hospital']
+                      , data['province'], data['phone'], data['email'], session["user_id"])
             cursor.execute(sql, values)
             db.commit()
             flash('ข้อมูลส่วนตัวได้รับการแก้ไขแล้ว', 'success')
