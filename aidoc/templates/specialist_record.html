@@ -153,8 +153,8 @@
                                     {{item['dentist_feedback_code']}}
                                 {% endif %}
                             </h6>
-                            <form action="{{ url_for('image.diagnosis', role='specialist', img_id=item['id']) }}" id="diagnosis_submit_id{{item['id']}}" method="post"></form>
-                            <form action="{{ url_for('image.quick_confirm', role='specialist', img_id=item['id'], ai_result=item['ai_prediction']) }}" id="quick_submit_id{{item['id']}}" method="post"></form>
+                            <form action="{{ url_for('webapp.diagnosis', role='specialist', img_id=item['id']) }}" id="diagnosis_submit_id{{item['id']}}" method="post"></form>
+                            <form action="{{ url_for('webapp.quick_confirm', role='specialist', img_id=item['id'], ai_result=item['ai_prediction']) }}" id="quick_submit_id{{item['id']}}" method="post"></form>
                             <div class="d-grid gap-2 d-md-block justify-content-md-center">
                                 <button class="btn btn-outline-primary" type="submit" form="diagnosis_submit_id{{item['id']}}">ตรวจยืนยันผล</button>
                                 <button class="btn btn-outline-success my-1" type="submit" form="quick_submit_id{{item['id']}}"
@@ -163,14 +163,14 @@
                                     data-bs-toggle="modal"
                                     data-bs-target="#submissionDeleteModal{{ item['id'] }}" >ลบข้อมูล</button>
                                     
-                                <form action="{{ url_for('image.followup_request', role='specialist', img_id=item['id']) }}" id="followup_request_id{{item['id']}}" method="post"></form>
+                                <form action="{{ url_for('webapp.followup_request', role='specialist', img_id=item['id']) }}" id="followup_request_id{{item['id']}}" method="post"></form>
                                 {% if item['followup_request_status'] is none %}
                                     <button class="btn btn-outline-warning btn-sm my-1" type="submit" form="followup_request_id{{item['id']}}">Request Follow Up</button>
                                 {% else %}
                                     <button class="btn btn-warning btn-sm my-1" type="submit" form="followup_request_id{{item['id']}}">Cancel Follow Up</button>
                                 {% endif %}
                                 {% if g.user['is_admin'] == 1 %}
-                                    <form action="{{ url_for('image.retrain_request', role='specialist', img_id=item['id']) }}" id="retrain_request_id{{item['id']}}" method="post"></form>
+                                    <form action="{{ url_for('webapp.retrain_request', role='specialist', img_id=item['id']) }}" id="retrain_request_id{{item['id']}}" method="post"></form>
                                     {% if item['retrain_request_status'] is none %}
                                         <button class="btn btn-outline-info btn-sm my-1" type="submit" form="retrain_request_id{{item['id']}}">Request Retrain</button>
                                     {% else %}

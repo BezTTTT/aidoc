@@ -118,7 +118,7 @@
                                     {% endif %}
                             </h6>
                             <div class="d-grid gap-2 d-md-flex justify-content-md-center">
-                                <form action="{{ url_for('image.diagnosis', role='osm', img_id=item['id']) }}" id="form_id{{item['id']}}" method="post"> </form>
+                                <form action="{{ url_for('webapp.diagnosis', role='osm', img_id=item['id']) }}" id="form_id{{item['id']}}" method="post"> </form>
                                 <button class="btn btn-outline-success" type="submit" form="form_id{{item['id']}}">ดูผลการวิเคราะห์</button>
                                 <button class="btn btn-outline-danger" type="button" data-bs-toggle="modal" data-bs-target="#submissionDeleteModal{{ item['id'] }}" >ลบข้อมูล</button>
                             </div>

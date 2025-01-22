@@ -9,8 +9,8 @@ from dateutil.parser import parse
 from aidoc.db import get_db
 from aidoc.auth import login_required, role_validation, load_logged_in_user
 
-# 'image' blueprint manages Diagnosis and Record systems, including report and admin managment system
-bp = Blueprint('image', __name__)
+# 'webapp' blueprint manages Diagnosis and Record systems, including report and admin managment system
+bp = Blueprint('webapp', __name__)
 
 # Flask views
 
@@ -31,7 +31,7 @@ def quick_confirm(role, img_id):
         sql = "UPDATE submission_record SET dentist_id=%s, dentist_feedback_code=%s, dentist_feedback_date=%s, updated_at=%s WHERE id=%s"
         val = ( session["user_id"], diagnostic_code, datetime.now(), datetime.now(), img_id)
         cursor.execute(sql, val)
-    return redirect(url_for('image.record', role=role, page=session['current_record_page']))
+    return redirect(url_for('webapp.record', role=role, page=session['current_record_page']))
 
 # region followup_request
 @bp.route('/followup_request/<role>/<int:img_id>', methods=('POST', ))
@@ -52,7 +52,7 @@ def followup_request(role, img_id):
         sql = "DELETE FROM followup_request WHERE submission_id=%s"
         val = ( img_id, )
         cursor.execute(sql, val)
-    return redirect(url_for('image.record', role=role, page=session['current_record_page']))
+    return redirect(url_for('webapp.record', role=role, page=session['current_record_page']))
 
 # region retrain_request
 @bp.route('/retrain_request/<role>/<int:img_id>', methods=('POST', ))
@@ -72,7 +72,7 @@ def retrain_request(role, img_id):
         sql = "DELETE FROM retrain_request WHERE submission_id=%s"
         val = ( img_id, )
         cursor.execute(sql, val)
-    return redirect(url_for('image.record', role=role, page=session['current_record_page']))
+    return redirect(url_for('webapp.record', role=role, page=session['current_record_page']))
 
 # region diagnosis
 @bp.route('/diagnosis/<role>/<int:img_id>', methods=('GET', 'POST'))
@@ -308,9 +308,6 @@ def diagnosis(role, img_id):
 def record(role): 
 
     session['sender_mode'] = role
-
-    from aidoc.user import generate_legal_docs
-    generate_legal_docs(2)
 
     # There is no pagination for patient's record page (a special case)
     if role=='patient':

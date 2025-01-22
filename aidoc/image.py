@@ -14,7 +14,7 @@ qualityChecker = imageQualityChecker.ImageQualityChecker()
 from PIL import Image, ImageFilter
 import cv2
 import numpy as np
-from aidoc.user import validate_province_name,validate_duplicate_users,validate_phone,validate_national_id,remove_prefix,validate_license
+
 import os
 import glob
 import shutil
@@ -248,7 +248,7 @@ def delete_image(role):
     val = (img_id,)
     cursor.execute(sql, val)
 
-    return redirect(url_for('image.record', role=role, page=session['current_record_page']))
+    return redirect(url_for('webapp.record', role=role, page=session['current_record_page']))
 
 # region rotate_image
 @bp.route('/rotate_image/<return_page>/<role>/<img_id>', methods=('POST', ))
@@ -286,7 +286,7 @@ def rotate_image(return_page, role, img_id):
     pil_img.save(maskPath)
 
     if return_page=='diagnosis':
-        return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
+        return redirect(url_for('webapp.diagnosis', role=role, img_id=img_id))
 
 # region mask_editor
 @bp.route('/mask_editor/<role>/<img_id>', methods=('POST', ))
@@ -324,7 +324,7 @@ def mask_editor(role, img_id):
         thumb_img = create_thumbnail(outlined_img)
         thumb_img.save(thumbOutlinedImagePath)
 
-        return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
+        return redirect(url_for('webapp.diagnosis', role=role, img_id=img_id))
 
     externalCoordinates, holesCoordinates = convertMask2Cordinates(maskPath)
 
@@ -513,121 +513,65 @@ def upload_submission_module(target_user_id):
         ai_predictions = []
         ai_scores = []
         for i, filename in enumerate(session['imageNameList']):
-            db, cursor = get_db()
-            
-            if session['sender_mode']=='dentist':
-                
-                if g.user['default_location'] is None or str(g.user['default_location'])!=str(session['location']):
-                    sql = "UPDATE user SET default_location=%s WHERE id=%s"
-                    val = (str(session['location']), session['user_id'])
-                    cursor.execute(sql, val)
-                    load_logged_in_user() # Update the user info on g variable
-                sql = '''INSERT INTO submission_record
-                    (fname,
-                    sender_id,
-                    location_district,
-                    location_amphoe,
-                    location_province,
-                    location_zipcode,
-                    ai_prediction,
-                    ai_scores,
-                    channel)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)'''
-                val = (filename,
-                       session['user_id'],
-                       session['location']['district'],
-                       session['location']['amphoe'],
-                       session['location']['province'],
-                       session['location']['zipcode'],
-                       ai_predictions[i],
-                       ai_scores[i],
-                       'DENTIST')
-                cursor.execute(sql, val)
-            elif session['sender_mode']=='patient':
-                if g.user['default_location'] is None or str(g.user['default_location'])!=str(session['location']):
-                    sql = "UPDATE user SET default_location=%s WHERE id=%s"
-                    val = (str(session['location']), session['user_id'])
-                    cursor.execute(sql, val)
-                    load_logged_in_user() # Update the user info on g variable
-                if 'sender_phone' in session and session['sender_phone']:
-                    sql = "UPDATE user SET default_sender_phone=%s WHERE id=%s"
-                    val = (session['sender_phone'], session['user_id'])
-                    cursor.execute(sql, val)
-                    load_logged_in_user() # Update the user info on g variable
-                
-                if (g.user['default_sender_phone'] and ('sender_phone' not in session or session['sender_phone'] is None)):
-                    sql = "UPDATE user SET default_sender_phone=NULL WHERE id=%s"
-                    val = (session['user_id'], )
-                    cursor.execute(sql, val)
-                    load_logged_in_user() # Update the user info on g variable
-                
-                sql = '''INSERT INTO submission_record 
-                        (fname,
-                        sender_id,
-                        sender_phone,
-                        location_district,
-                        location_amphoe,
-                        location_province,
-                        location_zipcode,
-                        patient_id,
-                        ai_prediction,
-                        ai_scores,
-                        channel)
-                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'''
-                val = (filename,
-                        session['sender_id'],
-                        session['sender_phone'],
-                        session['location']['district'],
-                        session['location']['amphoe'],
-                        session['location']['province'],
-                        session['location']['zipcode'],
-                        session['user_id'],
-                        ai_predictions[i],
-                        ai_scores[i],
-                        'PATIENT')
-                cursor.execute(sql, val)
-                
-                cursor.execute("SELECT LAST_INSERT_ID()")
-                row = cursor.fetchone()
-                sql = "INSERT INTO patient_case_id (id) VALUES (%s)"
-                val = (row['LAST_INSERT_ID()'],)
-                cursor.execute(sql, val)
-            elif session['sender_mode']=='osm':
-                if g.user['default_location'] is None or str(g.user['default_location'])!=str(session['location']):
-                    sql = "UPDATE user SET default_location=%s WHERE id=%s"
-                    val = (str(session['location']), session['user_id'])
-                    cursor.execute(sql, val)
-                    load_logged_in_user() # Update the user info on g variable
-                sql = '''INSERT INTO submission_record 
-                        (fname, 
-                        sender_id,
-                        location_district,
-                        location_amphoe,
-                        location_province,
-                        location_zipcode,
-                        patient_id,
-                        patient_national_id,
-                        ai_prediction,
-                        ai_scores,
-                        channel)
-                        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'''
-                val = (filename,
-                        session['user_id'],
-                        session['location']['district'],
-                        session['location']['amphoe'],
-                        session['location']['province'],
-                        session['location']['zipcode'],
-                        session['patient_id'],
-                        session['patient_national_id'],
-                        ai_predictions[i],
-                        ai_scores[i],
-                        'OSM')
-                cursor.execute(sql, val)
-                cursor.execute("SELECT LAST_INSERT_ID()")
-                row = cursor.fetchone()
-                sql = "INSERT INTO patient_case_id (id) VALUES (%s)"
-                val = (row['LAST_INSERT_ID()'],)
-                cursor.execute(sql, val)
+            imgPath = os.path.join(tempDir, filename)
+            outlined_img, prediction, scores, mask = oral_lesion_prediction(imgPath)
+
+            outlined_img.save(os.path.join(tempDir, 'outlined_'+filename))
+            mask.save(os.path.join(tempDir, 'mask_'+filename))
+
+            #Create the thumbnail and saved to temp folder
+            pil_img = Image.open(os.path.join(tempDir, 'outlined_'+filename)) 
+            pil_img = create_thumbnail(pil_img)
+            pil_img.save(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', 'thumb_outlined_' + filename)) 
+
+            ai_predictions.append(prediction)
+            ai_scores.append(str(scores))
+        
+        if session['imageNameList']:
+            session['ai_predictions'] = ai_predictions
+            session['ai_infos'] = ai_scores
+        else:
+            session.pop('ai_predictions', None)
+            session.pop('ai_infos', None)
+        
+        # Create directory for the user (using user_id) if not exist
+        user_id = str(target_user_id)
+        uploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', user_id)
+        thumbUploadDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', 'thumbnail', user_id)
+        outlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', user_id)
+        thumbOutlinedDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'outlined', 'thumbnail', user_id)
+        maskDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'mask', user_id)
+        os.makedirs(uploadDir, exist_ok=True)
+        os.makedirs(thumbUploadDir, exist_ok=True)
+        os.makedirs(outlinedDir, exist_ok=True)
+        os.makedirs(thumbOutlinedDir, exist_ok=True)
+        os.makedirs(maskDir, exist_ok=True)
+
+        # Copy files to the storage
+        checked_filename_lst = []
+        for filename in session['imageNameList']:
+            if os.path.isfile(os.path.join(tempDir, filename)):
+
+                checked_filename = rename_if_duplicated(uploadDir, filename)
+
+                shutil.copy2(os.path.join(tempDir, filename), os.path.join(uploadDir, checked_filename))
+                shutil.copy2(os.path.join(tempDir, 'thumb_'+filename), os.path.join(thumbUploadDir, checked_filename))
+                shutil.copy2(os.path.join(tempDir, 'outlined_'+filename), os.path.join(outlinedDir, checked_filename))
+                shutil.copy2(os.path.join(tempDir, 'thumb_outlined_'+filename), os.path.join(thumbOutlinedDir, checked_filename))
+                shutil.copy2(os.path.join(tempDir, 'mask_'+filename), os.path.join(maskDir, checked_filename))
+
+                checked_filename_lst.append(checked_filename)
+        session['imageNameList'] = checked_filename_lst
+
+        # Try to clear temp folder if #files are more than CLEAR_TEMP_THRESHOLD
+        if len(os.listdir(tempDir)) > current_app.config['CLEAR_TEMP_THRESHOLD']:
+            for filename in os.listdir(tempDir):
+                if os.path.isfile(os.path.join(tempDir, filename)):
+                    os.remove(os.path.join(tempDir, filename))
+
+        # update database with the submission records
+        # data are saved in session['imageNameList']
+        update_submission_record(ai_predictions, ai_scores)
 
 # region rename_if_duplicated
 # Rename the filename if duplicates in the user folder, By appending a running number
@@ -639,30 +583,14 @@ def rename_if_duplicated(uploadDir, checked_filename):
         return checked_filename
     else:
         runningNumber = len(duplicate_files)
-
+    
     while (os.path.isfile(os.path.join(uploadDir, checked_filename))):
         file_parts = os.path.splitext(checked_filename)
         checked_filename = file_parts[0] + '_' + str(runningNumber) + file_parts[1]
         runningNumber+=1
-
+        
     return checked_filename
-
-def calculate_age(born):
-    if isinstance(born,str):
-        born = parse(born)
-    today = date.today()
-    return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
-
-def format_thai_datetime(x):
-    month_list_th = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน','กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
-    output_thai_datetime_str = '{} {} {} {}:{}'.format(
-        x.strftime('%d'),
-        month_list_th[int(x.strftime('%m'))-1],
-        int(x.strftime('%Y'))+543,
-        x.strftime('%H'),
-        x.strftime('%M')
-    )
-    return output_thai_datetime_str
+    
 # Part of the mask editor module
 # Developed by Tewarit Somrit
 def convertMask2Cordinates(maskPath) :

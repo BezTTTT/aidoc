@@ -16,8 +16,8 @@
     </div>
     <form action="/record/admin" method="post">
         <div class="input-group mb-3">
-            <input type="text" class="form-control" name="search" placeholder="ชื่อ นามสกุลคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC คำสำคัญในรายงานผู้ป่วย ชื่อไฟล์ Case ID" value="{{ data['search'] }}" />
-            <button class="btn btn-outline-primary" type="submit" value="{{ data['search'] }}"> Search </button>
+            <input type="text" class="form-control" name="search" placeholder="ชื่อ นามสกุลคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC คำสำคัญในรายงานผู้ป่วย ชื่อไฟล์ Case ID" value="{{ data['search_query'] }}" />
+            <button class="btn btn-outline-primary" type="submit" value="{{ data['search_query'] }}"> Search </button>
         </div>
     </form>
     
@@ -82,7 +82,7 @@
         </form>
     </div>
     
-    {% if pagination|length == 0 %}
+    {% if paginated_data|length == 0 %}
         <div class="col-12 mt-4">
             <p class="text-center text-danger">ไม่พบข้อมูล</p>
         </div>
@@ -94,7 +94,7 @@
     <!-- Loop through paginated data -->
     <div class="container my-4">
         <div class="row">
-            {% for item in pagination %}
+            {% for item in paginated_data %}
                 <div class="col-md-3 mb-4">
                     <div class="card h-100 position-relative"
                     {% if item['special_request']==1 %}
@@ -151,8 +151,8 @@
                                     {{item['dentist_feedback_code']}}
                                 {% endif %}
                             </h6>
-                            <form action="{{ url_for('image.diagnosis', role='admin', img_id=item['id'], channel=item['channel']) }}" id="diagnosis_submit_id{{item['id']}}" method="post"></form>
-                            <form action="{{ url_for('image.quick_confirm', role='admin', img_id=item['id'], ai_result=item['ai_prediction']) }}" id="quick_submit_id{{item['id']}}" method="post"></form>
+                            <form action="{{ url_for('webapp.diagnosis', role='admin', img_id=item['id'], channel=item['channel']) }}" id="diagnosis_submit_id{{item['id']}}" method="post"></form>
+                            <form action="{{ url_for('webapp.quick_confirm', role='admin', img_id=item['id'], ai_result=item['ai_prediction']) }}" id="quick_submit_id{{item['id']}}" method="post"></form>
                             <div class="d-grid gap-2 d-md-block justify-content-md-center">
                                 <button class="btn btn-outline-primary" type="submit" form="diagnosis_submit_id{{item['id']}}">ตรวจยืนยันผล</button>
                                 <button class="btn btn-outline-success my-1" type="submit" form="quick_submit_id{{item['id']}}"
@@ -161,13 +161,13 @@
                                     data-bs-toggle="modal"
                                     data-bs-target="#submissionDeleteModal{{ item['id'] }}" >ลบข้อมูล</button>
                                     
-                                <form action="{{ url_for('image.followup_request', role='admin', img_id=item['id']) }}" id="followup_request_id{{item['id']}}" method="post"></form>
+                                <form action="{{ url_for('webapp.followup_request', role='admin', img_id=item['id']) }}" id="followup_request_id{{item['id']}}" method="post"></form>
                                 {% if item['followup_request_status'] is none %}
                                     <button class="btn btn-outline-warning btn-sm my-1" type="submit" form="followup_request_id{{item['id']}}">Request Follow Up</button>
                                 {% else %}
                                     <button class="btn btn-warning btn-sm my-1" type="submit" form="followup_request_id{{item['id']}}">Cancel Follow Up</button>
                                 {% endif %}
-                                <form action="{{ url_for('image.retrain_request', role='admin', img_id=item['id']) }}" id="retrain_request_id{{item['id']}}" method="post"></form>
+                                <form action="{{ url_for('webapp.retrain_request', role='admin', img_id=item['id']) }}" id="retrain_request_id{{item['id']}}" method="post"></form>
                                 {% if item['retrain_request_status'] is none %}
                                     <button class="btn btn-outline-info btn-sm my-1" type="submit" form="retrain_request_id{{item['id']}}">Request Retrain</button>
                                 {% else %}
@@ -227,9 +227,9 @@
                                     {{item['dentist_feedback_code']}}
                                 {% endif %}
                             </h6>
-                            <form action="{{ url_for('image.diagnosis', role='admin', img_id=item['id'], channel=item['channel']) }}" id="form_id{{item['id']}}" method="post"></form>
-                            <form action="{{ url_for('image.followup_request', role='admin', img_id=item['id']) }}" id="followup_request_id{{item['id']}}" method="post"></form>
-                            <form action="{{ url_for('image.retrain_request', role='admin', img_id=item['id']) }}" id="retrain_request_id{{item['id']}}" method="post"></form>
+                            <form action="{{ url_for('webapp.diagnosis', role='admin', img_id=item['id'], channel=item['channel']) }}" id="form_id{{item['id']}}" method="post"></form>
+                            <form action="{{ url_for('webapp.followup_request', role='admin', img_id=item['id']) }}" id="followup_request_id{{item['id']}}" method="post"></form>
+                            <form action="{{ url_for('webapp.retrain_request', role='admin', img_id=item['id']) }}" id="retrain_request_id{{item['id']}}" method="post"></form>
                             <div class="d-grid gap-2 d-md-block justify-content-md-center">
                                 <button class="btn btn-outline-success" type="submit" form="form_id{{item['id']}}">ดูผลการวิเคราะห์</button>
                                 <button class="btn btn-outline-danger my-1" type="button" data-bs-toggle="modal" data-bs-target="#submissionDeleteModal{{ item['id'] }}" >ลบข้อมูล</button>
@@ -330,12 +330,12 @@
     });
     
     // Get the filters element and set its value from Flask
-    const filterStatusValue     = "{{ filters[0] }}";
-    const filterPriorityValue   = "{{ filters[1] }}";
-    const filterProvinceValue   = "{{ filters[2] }}";
-    const filterSpecialistValue = "{{ filters[3] }}";
-    const filterFollowupValue   = "{{ filters[4] }}";
-    const filterRetrainValue    = "{{ filters[5] }}";
+    const filterStatusValue     = "{{ data['filterStatus'] }}";
+    const filterPriorityValue   = "{{ data['filterPriority'] }}";
+    const filterProvinceValue   = "{{ data['filterProvince'] }}";
+    const filterSpecialistValue  = "{{ data['filterSpecialist'] }}";
+    const filterFollowupValue   = "{{ data['filterFollowup'] }}";
+    const filterRetrainValue    = "{{ data['filterRetrain'] }}";
 
     // Set the selected filters value if it exists
     if (filterStatusValue) {

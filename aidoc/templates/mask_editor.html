@@ -66,7 +66,7 @@
 
                         <div id='cancel-button-id' class="canvas-cancel-button">
                             <!-- Cancel -->
-                            <form action="{{ url_for('image.diagnosis', role=role, img_id=img_id) }}" method="post" enctype="multipart/form-data" class="canvas-cancel-form">
+                            <form action="{{ url_for('webapp.diagnosis', role=role, img_id=img_id) }}" method="post" enctype="multipart/form-data" class="canvas-cancel-form">
                                 <input style="width: 100%; background-color: transparent; border: none; color: rgb(255, 255, 255);" type="submit" value="Cancel">
                             </form>
                         </div>

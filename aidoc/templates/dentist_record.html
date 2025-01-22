@@ -69,7 +69,7 @@
                                         OSCC
                                     {% endif %}
                             </h6>
-                            <form action="{{ url_for('image.diagnosis', role='dentist', img_id=item['id']) }}" id="form_id{{item['id']}}" method="post"></form>
+                            <form action="{{ url_for('webapp.diagnosis', role='dentist', img_id=item['id']) }}" id="form_id{{item['id']}}" method="post"></form>
                             <div class="d-grid gap-2 d-md-block justify-content-md-center">
                                 <button class="btn btn-outline-success" type="submit" form="form_id{{item['id']}}">ดูผลการวิเคราะห์</button>
                                 <button class="btn btn-outline-danger my-1" type="button" data-bs-toggle="modal" data-bs-target="#submissionDeleteModal{{ item['id'] }}" >ลบข้อมูล</button>
