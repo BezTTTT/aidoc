@@ -49,6 +49,7 @@ def upload_image(role):
             imageName = None
             imageList = request.files.getlist("imageList")
             imageNameList = []
+            quality_ai_predictions = []
             for imageFile in imageList: 
                 if imageFile and allowed_file(imageFile.filename):
                     fileName, fileExtension = os.path.splitext(imageFile.filename)
@@ -66,27 +67,31 @@ def upload_image(role):
 
                     # Check image quality
                     global qualityChecker
-                    qualityResults = qualityChecker.predict(pil_img)
-                    print(qualityResults['Class_Name'])
-                    if qualityResults['Class_ID'] == 0:
+                    quality_result = qualityChecker.predict(pil_img)
+                    print(quality_result['Class_Name'])
+                    if quality_result['Class_ID'] == 0:
                         flash(f'ระบบตรวจสอบพบว่าไฟล์ {imageName} คุณภาพของรูปไม่ได้มาตรฐาน ภาพช่องปากอาจไม่ชัด (เบลอ) หรือมืดเกินไป (เปิดไฟส่องสว่างช่องปากด้วย) กรุณานำส่งรูปที่ได้คุณภาพเท่านั้น')
-                    elif qualityResults['Class_ID'] == 1:
+                    elif quality_result['Class_ID'] == 1:
                         flash(f'ระบบตรวจสอบพบว่าไฟล์ {imageName} ไม่ปรากฎช่องปากในภาพ กรุณานำส่งภาพถ่ายที่ได้มุมมองมาตรฐานตามตัวอย่างเท่านั้น')
-                    data['imageQuality'] = qualityResults['Class_ID']
+                    data['imageQuality'] = quality_result['Class_ID']
 
                     pil_img = create_thumbnail(pil_img)
                     pil_img.save(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', 'thumb_' + imageName)) 
                     # Save the current filenames on session for the upcoming prediction
                     imageNameList.append(imageName)
+                    quality_ai_predictions.append(quality_result['Class_ID'].item())
                 else:
                     flash(f'ไฟล์ {imageName} ไม่ใช่ชนิดรูปภาพที่กำหนด ระบบรับข้อมูลเฉพาะที่เป็นชนิดรูปภาพที่กำหนดเท่านั้น')
             if len(imageList)>0:
                 # Save the current filenames on session for the upcoming prediction
                 session['imageNameList'] = imageNameList
+                session['quality_ai_predictions'] = quality_ai_predictions
             else:
                 session.pop('imageNameList', None)
+                session.pop('quality_ai_predictions', None)
             if imageName:
                 data['uploadedImage'] = imageName # Send back path of the last submitted image (if sent for more than 1)
+            
             if g.user['default_location']:
                 location = ast.literal_eval(g.user['default_location'])
                 if location['district']:
@@ -99,9 +104,12 @@ def upload_image(role):
                             'province': g.user['province'],
                             'zipcode': None}
                 data['default_location_text'] = "สถานที่คัดกรอง: จังหวัด"+location['province']
+
         elif submission=='true': # upload confirmation is submitted
+
             # Check if submission list is in the queue (session), if so submit them to the Submission Module and the AI Prediction Engine
             if 'imageNameList' in session and session['imageNameList']:
+
                 if role=='patient':
                     if request.form.get('inputPhone') is not None and request.form.get('inputPhone')!='':
                         session['sender_phone'] = request.form.get('inputPhone')
@@ -132,6 +140,7 @@ def upload_image(role):
                 
                 upload_submission_module(target_user_id=session['user_id'])
 
+                # Load img_id using the newly upload file
                 lastImageName = list(session['imageNameList'])[-1]
                 db, cursor = get_db()
                 sql = "SELECT id FROM submission_record WHERE fname=%s"
@@ -139,6 +148,7 @@ def upload_image(role):
                 cursor.execute(sql, val)
                 result = cursor.fetchall() # There might be several images of the same name (duplication is checked only the same user upload the same files)
                 result = result[-1] # The last image will be selected
+
                 #Clear submission queue in the session
                 session.pop('imageNameList', None)
                 if role=='patient':
@@ -364,12 +374,37 @@ def recompute_image(return_page, role, img_id):
     pil_img = create_thumbnail(pil_img)
     pil_img.save(thumbOutlinedImagePath) 
 
+    # Recheck image quality
+    global qualityChecker
+    pil_img = Image.open(imagePath)
+    quality_result = qualityChecker.predict(pil_img)
+    quality_ai_prediction = quality_result['Class_ID'].item()
+
     db, cursor = get_db()
-    sql = "UPDATE submission_record SET ai_prediction=%s, ai_scores=%s, updated_at=%s WHERE id=%s"
-    val = (prediction, str(scores), datetime.now(), img_id)
+    sql = '''UPDATE submission_record
+        SET
+            ai_prediction=%s,
+            ai_scores=%s,
+            lesion_ai_version=%s,
+            quality_ai_prediction=%s,
+            quality_ai_version=%s,
+            ai_updated_at=%s,
+            updated_at=%s
+        WHERE id=%s'''
+    val = (prediction,
+           str(scores),
+           current_app.config['AI_LESION_VER'],
+           quality_ai_prediction,
+           current_app.config['AI_QUALITY_VER'],
+           datetime.now(),
+           datetime.now(),
+           img_id)
     cursor.execute(sql, val)
 
-    return redirect(url_for('image.'+return_page, role=role, img_id=img_id))
+    if role=='admin':
+        return redirect(url_for('webapp.'+return_page, role=role, img_id=img_id, channel=request.args.get('channel')))
+    else:
+        return redirect(url_for('webapp.'+return_page, role=role, img_id=img_id))
 
 # region download_image
 @bp.route('/download_image/<user_id>/<imagename>', methods=('GET', ))

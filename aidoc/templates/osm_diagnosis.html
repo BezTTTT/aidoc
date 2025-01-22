@@ -112,6 +112,19 @@
                 <h5 class="card-title text-start mb-3">ข้อมูลภาพ</h5>
                 <p>Case ID: {{data['case_id']}} </p>
                 <p>ชื่อไฟล์: {{data['fname']}}</p>
+                <p>
+                {% if data['quality_ai_prediction'] is not none %}
+                    {% if data['quality_ai_prediction']==0 %}
+                        ตรวจคุณภาพรูป: <span style="color: red;">ไม่ผ่านมาตรฐาน (ผลลัพธ์อาจผิดพลาด)</span>
+                    {% elif data['quality_ai_prediction']==1 %}
+                        ตรวจคุณภาพรูป: <span style="color: red;">ไม่พบช่องปาก (ภาพอาจไม่เกี่ยวข้อง)</span>
+                    {% elif data['quality_ai_prediction']==2 %}
+                        ตรวจคุณภาพรูป: <span style="color: green;">ผ่านมาตรฐาน</span>
+                    {% endif %}
+                {% else %}
+                    ตรวจคุณภาพรูป: ไม่มีผลลัพธ์ (กด Recompute ใหม่)
+                {% endif %}
+                </p>
                 <p>วันที่นำส่ง: {{data['thai_datetime']}}</p>
                 <p>สถานที่คัดกรอง: {{data['location_text']}}</p>
                 <p>ช่องทางการนำส่งรูป:

@@ -1,5 +1,5 @@
 from flask import (
-    Blueprint, redirect, render_template, request, session, url_for, g, flash, 
+    Blueprint, redirect, render_template, request, session, url_for, g, flash, current_app,
 )
 
 import json
@@ -141,7 +141,7 @@ def diagnosis(role, img_id):
                    img_id)
             cursor.execute(sql, val)
 
-    dentistCommentFlag = request.args.get('dentistComment', None)
+    dentistFeedbackRequest = request.args.get('dentistFeedbackRequest', None) # Request from patient_record --> patient_diagnosis
 
     db, cursor = get_db()
     if role=='specialist' or (role=='admin' and request.args.get('channel')!='DENTIST'):
@@ -153,7 +153,7 @@ def diagnosis(role, img_id):
                     dentist_id, dentist.name AS dentist_name, dentist.surname AS dentist_surname,
                     dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location, dentist_feedback_date, case_report,
                     location_district, location_amphoe, location_province, location_zipcode,
-                    ai_prediction, ai_scores, submission_record.created_at
+                    ai_prediction, ai_scores, lesion_ai_version, quality_ai_prediction, quality_ai_version, ai_updated_at, submission_record.created_at
                 FROM submission_record
                 LEFT JOIN patient_case_id ON submission_record.id = patient_case_id.id
                 LEFT JOIN user AS sender ON submission_record.sender_id = sender.id
@@ -165,7 +165,7 @@ def diagnosis(role, img_id):
                     patient.name AS patient_name, patient.surname AS patient_surname, patient_national_id as saved_patient_national_id, patient.national_id AS db_patient_national_id, patient.birthdate,
                     patient.sex, patient.job_position, patient.email, patient.phone AS patient_phone, patient.address, patient.province,
                     location_district, location_amphoe, location_province, location_zipcode,
-                    ai_prediction, ai_scores, submission_record.created_at
+                    ai_prediction, ai_scores, lesion_ai_version, quality_ai_prediction, quality_ai_version, ai_updated_at, submission_record.created_at
                 FROM submission_record
                 INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id
                 LEFT JOIN user AS sender ON submission_record.sender_phone = sender.phone
@@ -174,19 +174,20 @@ def diagnosis(role, img_id):
     elif role=='dentist' or (role=='admin' and request.args.get('channel')=='DENTIST'):
         sql = '''SELECT submission_record.id AS img_id, fname, sender_id,
                     dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location,
-                    ai_prediction, ai_scores
+                    ai_prediction, ai_scores, lesion_ai_version, quality_ai_prediction, quality_ai_version, ai_updated_at
                 FROM submission_record
                 WHERE id=%s'''
-    else:
-        if dentistCommentFlag and dentistCommentFlag=='true':
+    else: # Patient system
+        if dentistFeedbackRequest and dentistFeedbackRequest=='true':
             sql = '''SELECT submission_record.id AS img_id, case_id, channel, fname, special_request, sender_id, patient_id, sender_phone, 
-                    dentist_feedback_code, dentist_feedback_comment, dentist_feedback_date, ai_prediction, ai_scores, submission_record.created_at
+                    dentist_feedback_code, dentist_feedback_comment, dentist_feedback_date,
+                    ai_prediction, ai_scores, lesion_ai_version, quality_ai_prediction, quality_ai_version, ai_updated_at, submission_record.created_at
                 FROM submission_record
                 INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id
                 WHERE submission_record.id=%s'''
-        else:
+        else: # Patient system without dentist feedback (dentist feedback is pending)
             sql = '''SELECT submission_record.id AS img_id, case_id, channel, fname, special_request, sender_id, patient_id, sender_phone, 
-                    ai_prediction, ai_scores, submission_record.created_at
+                    ai_prediction, ai_scores, lesion_ai_version, quality_ai_prediction, quality_ai_version, ai_updated_at, submission_record.created_at
                 FROM submission_record
                 INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id
                 WHERE submission_record.id=%s'''
@@ -205,16 +206,61 @@ def diagnosis(role, img_id):
             return render_template('unauthorized_access.html', error_msg='คุณไม่มีสิทธิ์เข้าถึงข้อมูล Unauthorized Access')
 
     # Further process the data
-    data['ai_scores'] = json.loads(data['ai_scores'])
     
+    if role=='admin':
+        data['channel'] = request.args.get('channel')
+
     if 'channel' in data and data['channel']=='PATIENT':
         data['owner_id'] = data['patient_id']
     else:
         data['owner_id'] = data['sender_id']
 
+    # AI Results Processing
+    data['ai_scores'] = json.loads(data['ai_scores'])
+    if data['lesion_ai_version']:
+        data['lesion_ai_version_check'] = data['lesion_ai_version'] == current_app.config['AI_LESION_VER']
+    if data['quality_ai_version']:
+        data['quality_ai_version_check'] = data['quality_ai_version'] == current_app.config['AI_QUALITY_VER']
+    if data['ai_updated_at']:
+        data['ai_updated_at_thai_datetime'] = format_thai_datetime(data['ai_updated_at'])
+    else:
+        data['ai_updated_at_thai_datetime'] = 'ไม่มีผลลัพธ์ (กด Recompute ใหม่)'
 
-    if dentistCommentFlag:
-        data['dentistCommentFlag'] = dentistCommentFlag
+    if role=='osm' or role=='specialist' or (role=='admin' and request.args.get('channel')!='DENTIST'):
+        # Sender info processing
+        if role=='specialist' or (role=='admin' and request.args.get('channel')!='DENTIST'):
+            if data['patient_id']!=data['sender_id']:
+                if 'sender_name' in data and data['sender_name'] is not None:
+                    data['sender_description'] = f"{data['sender_name']} {data['sender_surname']} (ผู้นำส่งข้อมูล, เบอร์โทรติดต่อ: {data['sender_phone_db']})"
+                else:
+                    data['sender_description'] = f"ผู้นำส่งข้อมูล เบอร์โทรติดต่อ: {data['sender_phone']} (ยังไม่ได้ลงทะเบียน)"
+            else:
+                data['sender_description'] = f"{data['sender_name']} {data['sender_surname']} (ผู้ป่วยนำส่งรูปด้วยตัวเอง)"
+        else: # osm
+            data['sender_description'] = f"{g.user['name']} {g.user['surname']} (โทรศัพท์: {g.user['phone']})"
+            data['sender_hospital'] = g.user['hospital']
+            data['sender_province'] = g.user['province']
+
+        # Datetime format processing
+        data['thai_datetime'] = format_thai_datetime(data['created_at'])
+
+        # Location format processing
+        if data['location_district']:
+            data['location_text'] = "ตำบล"+data['location_district']+" อำเภอ"+data['location_amphoe']+" จังหวัด"+data['location_province']+" " +str(data['location_zipcode'])
+        else:
+            data['location_text'] = "จังหวัด"+data['location_province']
+
+        # Age and sex processing
+        if 'birthdate' in data and data['birthdate'] is not None:
+            data['patient_age'] = calculate_age(data['birthdate'])
+            if data['sex']=='M':
+                data['sex']='ชาย'
+            elif data['sex']=='F':
+                data['sex']='หญิง'
+
+    # For patient_dignosis page for the case that has the dentist feedback
+    if dentistFeedbackRequest:
+        data['dentistFeedbackRequest'] = dentistFeedbackRequest
         if data['ai_prediction']==0 and data['dentist_feedback_code']=='NORMAL':
             data['dentistCommentAgreeCode'] = 'TN'
         elif data['ai_prediction']==0 and (data['dentist_feedback_code']=='OPMD' or data['dentist_feedback_code']=='OSCC'):
@@ -234,39 +280,7 @@ def diagnosis(role, img_id):
             elif data['dentist_feedback_comment'] == 'SMALL':
                 data['dentistComment'] = 'ช่องปากเล็กเกินไป ขอนำกล้องเข้าใกล้ปากมากกว่านี้'
     else:
-        data['dentistCommentFlag'] = 'false'
-
-    if role=='osm' or role=='specialist' or (role=='admin' and request.args.get('channel')!='DENTIST'):
-        
-        data['thai_datetime'] = format_thai_datetime(data['created_at'])
-
-        if data['location_district']:
-            data['location_text'] = "ตำบล"+data['location_district']+" อำเภอ"+data['location_amphoe']+" จังหวัด"+data['location_province']+" " +str(data['location_zipcode'])
-        else:
-            data['location_text'] = "จังหวัด"+data['location_province']
-
-        if role=='specialist' or (role=='admin' and request.args.get('channel')!='DENTIST'):
-            if data['patient_id']!=data['sender_id']:
-                if 'sender_name' in data and data['sender_name'] is not None:
-                    data['sender_description'] = f"{data['sender_name']} {data['sender_surname']} (ผู้นำส่งข้อมูล, เบอร์โทรติดต่อ: {data['sender_phone_db']})"
-                else:
-                    data['sender_description'] = f"ผู้นำส่งข้อมูล เบอร์โทรติดต่อ: {data['sender_phone']} (ยังไม่ได้ลงทะเบียน)"
-            else:
-                data['sender_description'] = f"{data['sender_name']} {data['sender_surname']} (ผู้ป่วยนำส่งรูปด้วยตัวเอง)"
-        else: # osm
-            data['sender_description'] = f"{g.user['name']} {g.user['surname']} (โทรศัพท์: {g.user['phone']})"
-            data['sender_hospital'] = g.user['hospital']
-            data['sender_province'] = g.user['province']
-
-        if 'birthdate' in data and data['birthdate'] is not None:
-            data['patient_age'] = calculate_age(data['birthdate'])
-            if data['sex']=='M':
-                data['sex']='ชาย'
-            elif data['sex']=='F':
-                data['sex']='หญิง'
-
-    if role=='admin':
-        data['channel'] = request.args.get('channel')
+        data['dentistFeedbackRequest'] = 'false'
 
     dentist_diagnosis_map = {'NORMAL': 'ยืนยันว่าไม่พบรอยโรค (Normal)',
                                 'OPMD': 'น่าจะมีรอยโรคที่คล้ายกันกับ OPMD',
@@ -963,7 +977,7 @@ def record_patient():
     return data
 
 # region update_submission_record
-# This function will be called by
+# This function will be called by image.upload_submission_module
 def update_submission_record(ai_predictions, ai_scores):
     # Add the prediction record to the database
     for i, filename in enumerate(session['imageNameList']):
@@ -986,8 +1000,12 @@ def update_submission_record(ai_predictions, ai_scores):
                 location_zipcode,
                 ai_prediction,
                 ai_scores,
+                lesion_ai_version,
+                quality_ai_prediction,
+                quality_ai_version,
+                ai_updated_at,
                 channel)
-                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)'''
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'''
             val = (filename,
                     session['user_id'],
                     session['location']['district'],
@@ -996,6 +1014,10 @@ def update_submission_record(ai_predictions, ai_scores):
                     session['location']['zipcode'],
                     ai_predictions[i],
                     ai_scores[i],
+                    current_app.config['AI_LESION_VER'],
+                    session['quality_ai_predictions'][i],
+                    current_app.config['AI_QUALITY_VER'],
+                    datetime.now(),
                     'DENTIST')
             cursor.execute(sql, val)
 
@@ -1031,8 +1053,12 @@ def update_submission_record(ai_predictions, ai_scores):
                     patient_id,
                     ai_prediction,
                     ai_scores,
+                    lesion_ai_version,
+                    quality_ai_prediction,
+                    quality_ai_version,
+                    ai_updated_at,
                     channel)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'''
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'''
             val = (filename,
                     session['sender_id'],
                     session['sender_phone'],
@@ -1043,6 +1069,10 @@ def update_submission_record(ai_predictions, ai_scores):
                     session['user_id'],
                     ai_predictions[i],
                     ai_scores[i],
+                    current_app.config['AI_LESION_VER'],
+                    session['quality_ai_predictions'][i],
+                    current_app.config['AI_QUALITY_VER'],
+                    datetime.now(),
                     'PATIENT')
             cursor.execute(sql, val)
             
@@ -1071,8 +1101,12 @@ def update_submission_record(ai_predictions, ai_scores):
                     patient_national_id,
                     ai_prediction,
                     ai_scores,
+                    lesion_ai_version,
+                    quality_ai_prediction,
+                    quality_ai_version,
+                    ai_updated_at,
                     channel)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'''
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'''
             val = (filename,
                     session['user_id'],
                     session['location']['district'],
@@ -1083,6 +1117,10 @@ def update_submission_record(ai_predictions, ai_scores):
                     session['patient_national_id'],
                     ai_predictions[i],
                     ai_scores[i],
+                    current_app.config['AI_LESION_VER'],
+                    session['quality_ai_predictions'][i],
+                    current_app.config['AI_QUALITY_VER'],
+                    datetime.now(),
                     'OSM')
             cursor.execute(sql, val)
 
