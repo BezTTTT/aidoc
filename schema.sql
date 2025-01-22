@@ -131,12 +131,12 @@ CREATE TABLE `followup_request` (
   `followup_note` varchar(256)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-CREATE TABLE `user_agreement` (
+CREATE TABLE `user_compliance` (
   `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `user_id` int NOT NULL,
-  `user_agreement_version` int DEFAULT NULL,
+  `user_agreement_version` varchar(256),
   `user_agreement_datetime` datetime DEFAULT NULL,
-  `informed_consent_version` int DEFAULT NULL,
+  `informed_consent_version` varchar(256),
   `informed_consent_datetime` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 

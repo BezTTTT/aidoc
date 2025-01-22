@@ -48,7 +48,7 @@ def index():
         elif 'sender_mode' in session and session['sender_mode']=='osm':
             return redirect(url_for("image.record", role='osm'))
         else:
-            return render_template("patient_upload.html")
+            return redirect(url_for("image.upload_image", role='patient'))
 
 @bp.route('/dentist')
 def dentist_index():
