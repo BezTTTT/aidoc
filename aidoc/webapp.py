@@ -350,7 +350,17 @@ def record(role):
         session['record_filter']['filterSpecialist'] = filterSpecialist
         session['record_filter']['filterFollowup'] = filterFollowup
         session['record_filter']['filterRetrain'] = filterRetrain
-        
+    else:
+        # Load values from session or use an empty string
+        search_query = session['record_filter'].get('search_query', "")
+        agree = session['record_filter'].get("agree", "")   # This is exclusively for dentist system
+        filterStatus = session['record_filter'].get("filterStatus", "") 
+        filterPriority = session['record_filter'].get("filterPriority", "") 
+        filterProvince = session['record_filter'].get("filterProvince", "") 
+        filterSpecialist = session['record_filter'].get("filterSpecialist", "")
+        filterFollowup = session['record_filter'].get("filterFollowup", "")
+        filterRetrain = session['record_filter'].get("filterRetrain", "")
+
     page = request.args.get("page", session.get('current_record_page', 1), type=int)
     session['current_record_page'] = page
     session['records_per_page'] = 12
@@ -610,7 +620,7 @@ def construct_specialist_filter_sql():
 
     if search_query!="":
         search_query_list.append(f"(INSTR(LOWER(fname), '{search_query}'))")
-        search_query_list.append(f"(name IS NOT NULL AND (INSTR('{search_query}', name) OR INSTR('{search_query}', surname)))")
+        search_query_list.append(f"(patient_user.name IS NOT NULL AND (INSTR('{search_query}', patient_user.name) OR INSTR('{search_query}', patient_user.surname)))")
         search_query_list.append(f"(case_report IS NOT NULL AND (INSTR(case_report, '{search_query}')))")
         search_query_list.append(f"(dentist_feedback_code IS NOT NULL AND (LOWER(dentist_feedback_code) = '{search_query.lower()}'))")
         if search_query.isdigit():
@@ -631,7 +641,7 @@ def construct_specialist_filter_sql():
         if len(filter_query_list)>0:
             filter_query = f'({filter_query}) AND ({search_query_combined})'
         else:
-            filter_query = search_query_combined
+            filter_query = f'({search_query_combined})'
     
     supplemental_data = {}
     supplemental_data['search_query'] = search_query
@@ -777,7 +787,7 @@ def construct_dentist_filter_sql():
         
         search_query_combined = " OR ".join(search_query_list)
         
-        filter_query = search_query_combined
+        filter_query = f'({search_query_combined})'
     else:
         filter_query = ''
     
@@ -832,7 +842,7 @@ def record_dentist():
     
     return paginated_data, supplemental_data, dataCount
 
-# region construct_dentist_filter_sql
+# region construct_osm_filter_sql
 def construct_osm_filter_sql():
     
     # Retrieve filter parameters from the session
@@ -875,7 +885,7 @@ def construct_osm_filter_sql():
         if len(filter_query_list)>0:
             filter_query = f'({filter_query}) AND ({search_query_combined})'
         else:
-            filter_query = search_query_combined
+            filter_query = f'({search_query_combined})'
     
     supplemental_data = {}
     supplemental_data['search_query'] = search_query
@@ -884,7 +894,7 @@ def construct_osm_filter_sql():
 
     return filter_query, supplemental_data
 
-# region construct_dentist_filter_sql
+# region construct_osm_filter_sql
 def record_osm():
     
     filter_query, supplemental_data = construct_osm_filter_sql()
@@ -914,7 +924,7 @@ def record_osm():
         OFFSET %s'''
     
     if filter_query!='':
-        sql_where = 'AND ' + filter_query
+        sql_where = ' AND ' + filter_query
         sql1 = sql_count + sql_join_part + sql_where
         sql2 = sql_select_part + sql_join_part + sql_where + sql_limit_part
     else:
