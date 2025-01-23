@@ -3,9 +3,7 @@ from flask import (
 )
 
 import json
-from datetime import datetime, date
-from dateutil.parser import parse
-
+from aidoc.utils import *
 from aidoc.db import get_db
 from aidoc.auth import login_required, role_validation, load_logged_in_user
 
@@ -371,6 +369,7 @@ def record(role):
 @bp.route('/edit/<role>', methods=('GET', 'POST'))
 @login_required
 def editByRole(role):
+    data = {}
     thai_months = [
                     'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 
                     'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 
@@ -378,6 +377,7 @@ def editByRole(role):
                     'พฤศจิกายน', 'ธันวาคม'
                 ]
     db, cursor = get_db()
+    target_template = '/newTemplate/patient_edit.html'
     if role == 'patient':
         # Handling GET request to render the edit form
         if request.method == 'GET':
@@ -400,44 +400,57 @@ def editByRole(role):
             val = (session["user_id"],)
             cursor.execute(sql, val)
             data = cursor.fetchone()
-            if data["national_id"]:
-                data["national_id"] = data["national_id"][:-4] + "****"
-            data["email"] = data["email"] if data.get("email") else ""
             if data["birthdate"]:
                 birthdate = data["birthdate"]
                 data["birthdate_day"] = birthdate.day
                 data["birthdate_month"] = thai_months[birthdate.month - 1]
                 data["birthdate_year"] = birthdate.year + 543
                 del data["birthdate"]
-            return render_template("/newTemplate/patient_edit.html", data=data)
+            return render_template(target_template, data=data)
         
         # Handling POST request to update data
         elif request.method == 'POST':
-            name = request.form['name']
-            surname = request.form['surname']
-            national_id = request.form['national_id']
-            job_position = request.form['job_position']
-            address = request.form['address']
-            province = request.form['province']
-            email = request.form['email']
-            phone = request.form['phone']
-            dob_day = int(request.form['dob_day'])
-            dob_month = int(request.form['dob_month'])
-            dob_year = int(request.form['dob_year'])  # Convert to integer
+            data['name'] = remove_prefix(request.form['name'])
+            data['surname'] = request.form['surname']
+            data['national_id'] = request.form['national_id']
+            data['job_position'] = request.form['job_position']
+            data['address'] = request.form['address']
+            data['province'] = request.form['province']
+            data['email'] = request.form['email']
+            data['phone'] = request.form['phone']
+            data['dob_day'] = int(request.form['dob_day'])
+            data['dob_month'] = int(request.form['dob_month'])
+            data['dob_year'] = int(request.form['dob_year'])
+            birthdate = date(data["dob_year"] - 543, data["dob_month"], data["dob_day"])
+            data["valid_phone"] = True
+            data["valid_province_name"] = True
 
-            # Convert Thai year to Gregorian year (subtract 543)
-            birthdate = date(dob_year - 543, dob_month, dob_day)
+            if data["email"]=='':
+                data["email"] = None
+            if data["phone"]=='':
+                data["phone"] = None
+            inval = []
+            valid_func_list = [ validate_province_name,
+                                validate_phone]
+            for valid_func in valid_func_list:
+                args = {'data': data, 'form': request.form , 'invalid':inval}
+                valid_check, data , inval = valid_func(args)
+                if not valid_check:
+                    return render_template(target_template,data=data)
+
 
             sql = '''UPDATE user
                      SET name = %s, surname = %s, national_id = %s, job_position = %s,
                          address = %s, province = %s, email = %s, phone = %s, birthdate = %s
                      WHERE id = %s;'''
-            val = (name, surname, national_id, job_position, address, province, email, phone, birthdate, session["user_id"])
+            val = (data['name'], data['surname'], data['national_id'],  data['job_position'], data['address']
+                   , data['province'], data['email'], data['phone'], birthdate, session["user_id"])
             cursor.execute(sql, val)
             db.commit()
             flash('ข้อมูลส่วนตัวได้รับการแก้ไขแล้ว', 'success')
             return redirect('/edit/patient')
     elif role == 'osm':
+        target_template = '/newTemplate/osm_edit.html'
         if request.method == 'GET':
             sql = '''SELECT 
                         name, 
@@ -461,15 +474,35 @@ def editByRole(role):
                 data["phone"] = data["phone"][:-4] + "****"
             data["email"] = data["email"] if data.get("email") else ""
             
-            return render_template("/newTemplate/osm_edit.html",data=data)
+            return render_template(target_template,data=data)
         if request.method == 'POST':
-            name = request.form['name']
-            surname = request.form['surname']
-            job_position = request.form['job_position']
-            osm_job = request.form.get('osm_job', '')
-            license = request.form.get('license', '')
-            hospital = request.form['hospital']
-            province = request.form['province']
+            data['name'] = request.form['name']
+            data['surname'] = request.form['surname']
+            data['job_position'] = request.form['job_position']
+            data['osm_job'] = request.form.get('osm_job', '')
+            data['license'] = request.form.get('license', '')
+            data['hospital'] = request.form['hospital']
+            data['province'] = request.form['province']
+            data['national_id'] = request.form['national_id']
+            data['phone'] = request.form['phone','']
+            data["valid_phone"] = True
+            data["valid_province_name"] = True
+            data["valid_license"] = True
+
+            if data["email"]=='':
+                data["email"] = None
+            if data["phone"]=='':
+                data["phone"] = None
+
+            inval = []
+            valid_func_list = [ validate_province_name,
+                                validate_phone,
+                                validate_license]
+            for valid_func in valid_func_list:
+                args = {'data': data, 'form': request.form , 'invalid':inval}
+                valid_check, data , inval = valid_func(args)
+                if not valid_check:
+                    return render_template(target_template,data=data)
 
             sql = '''UPDATE user SET 
                     name = %s,
@@ -478,16 +511,20 @@ def editByRole(role):
                     osm_job = %s,
                     license = %s,
                     hospital = %s,
-                    province = %s
+                    province = %s,
+                    national_id = %s,
+                    phone = %s
                  WHERE 
                     id = %s;
                 '''
-            values = (name, surname, job_position, osm_job, license, hospital, province, session["user_id"])
+            values = (data['name'], data['surname'], data['job_position'], data['osm_job'], data['license'], data['hospital']
+                      , data['province'],data['national_id'],data['phone'], session["user_id"])
             cursor.execute(sql, values)
             db.commit()
             flash('ข้อมูลส่วนตัวได้รับการแก้ไขแล้ว', 'success')
             return redirect("/edit/osm")
     else:
+        target_template = "/newTemplate/dentist_edit.html"
         if request.method == 'GET':
             sql = '''SELECT 
                         name, 
@@ -506,20 +543,39 @@ def editByRole(role):
             val = (session["user_id"],)
             cursor.execute(sql, val)
             data = cursor.fetchone()
-            if data["phone"]:
-                data["phone"] = data["phone"][:-4] + "****"
             data["email"] = data["email"] if data.get("email") else ""
-            return render_template("/newTemplate/dentist_edit.html",data=data)
+            return render_template(target_template,data=data)
         if request.method == "POST":
-            name = request.form['name']
-            surname = request.form['surname']
-            job_position = request.form['job_position']
-            osm_job = request.form.get('osm_job', '')
-            license = request.form.get('license', '')
-            hospital = request.form['hospital']
-            province = request.form['province']
-            phone = request.form['phone']
-            email = request.form['email']
+            data['name'] = request.form['name']
+            data['surname'] = request.form['surname']
+            data['job_position'] = request.form['job_position']
+            data['osm_job'] = request.form.get('osm_job', '')
+            data['license'] = request.form.get('license', '')
+            data['hospital'] = request.form['hospital']
+            data['province'] = request.form['province']
+            data['phone'] = request.form['phone']
+            data['email'] = request.form['email']
+            data["valid_phone"] = True
+            data["valid_province_name"] = True
+
+            if data["email"]=='':
+                data["email"] = None
+            if data["phone"]=='':
+                data["phone"] = None
+            if data["license"] == '':
+                data["license"] = None
+            if data["osm_job"] == '':
+                data["osm_job"] = None
+
+            inval = []
+            valid_func_list = [ validate_province_name,
+                                validate_phone,
+                                validate_license]
+            for valid_func in valid_func_list:
+                args = {'data': data, 'form': request.form , 'invalid':inval}
+                valid_check, data , inval = valid_func(args)
+                if not valid_check:
+                    return render_template(target_template,data=data)
 
             sql = '''UPDATE user SET 
                     name = %s,
@@ -534,7 +590,8 @@ def editByRole(role):
                  WHERE 
                     id = %s;
                 '''
-            values = (name, surname, job_position, osm_job, license, hospital, province, phone, email, session["user_id"])
+            values = (data['name'], data['surname'], data['job_position'], data['osm_job'], data['license'], data['hospital']
+                      , data['province'], data['phone'], data['email'], session["user_id"])
             cursor.execute(sql, values)
             db.commit()
             flash('ข้อมูลส่วนตัวได้รับการแก้ไขแล้ว', 'success')
@@ -596,7 +653,7 @@ def construct_specialist_filter_sql():
 
     if search_query!="":
         search_query_list.append(f"(INSTR(LOWER(fname), '{search_query}'))")
-        search_query_list.append(f"(name IS NOT NULL AND (INSTR('{search_query}', name) OR INSTR('{search_query}', surname)))")
+        search_query_list.append(f"(patient_user.name IS NOT NULL AND (INSTR('{search_query}', patient_user.name) OR INSTR('{search_query}', patient_user.surname)))")
         search_query_list.append(f"(case_report IS NOT NULL AND (INSTR(case_report, '{search_query}')))")
         search_query_list.append(f"(dentist_feedback_code IS NOT NULL AND (LOWER(dentist_feedback_code) = '{search_query.lower()}'))")
         if search_query.isdigit():
@@ -683,6 +740,7 @@ def record_specialist(admin=False):
         sql_where = 'WHERE ' + filter_query
         sql1 = sql_count + sql_join_part + sql_where
         sql2 = sql_select_part + sql_join_part + sql_where + sql_limit_part
+        
     else:
         sql1 = sql_count + sql_join_part
         sql2 = sql_select_part + sql_join_part + sql_limit_part
@@ -852,9 +910,9 @@ def construct_osm_filter_sql():
             search_query_list.append(f"(location_zipcode IS NOT NULL AND (location_zipcode = {int(search_query)}))")
 
         if search_query.lower() == 'opmd':
-            search_query_list.append(f"(ai_prediction = 1)")
+            search_query_list.append(f"(ai_prediction = 1) AND sender_id = {session['user_id']}")
         if search_query.lower() == 'oscc':
-            search_query_list.append(f"(ai_prediction = 2)")
+            search_query_list.append(f"(ai_prediction = 2) AND sender_id = {session['user_id']}")
         
         search_query_combined = " OR ".join(search_query_list)
         
@@ -1091,21 +1149,3 @@ def update_submission_record(ai_predictions, ai_scores):
             sql = "INSERT INTO patient_case_id (id) VALUES (%s)"
             val = (row['LAST_INSERT_ID()'],)
             cursor.execute(sql, val)
-
-# Helper functions
-def calculate_age(born):
-    if isinstance(born,str):
-        born = parse(born)
-    today = date.today()
-    return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
-
-def format_thai_datetime(x):
-    month_list_th = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน','กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
-    output_thai_datetime_str = '{} {} {} {}:{}'.format(
-        x.strftime('%d'),
-        month_list_th[int(x.strftime('%m'))-1],
-        int(x.strftime('%Y'))+543,
-        x.strftime('%H'),
-        x.strftime('%M')
-    )
-    return output_thai_datetime_str
