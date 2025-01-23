@@ -57,10 +57,19 @@ def render_osm_hierarchy_record(): # Submission records
     try:
         db, cursor = get_db()
         cursor.execute( 'Select group_id from osm_hierarchy where user_id = %s', (user_id,))
-        group_id = cursor.fetchone()['group_id'] if cursor.fetchone()['group_id'] > -1 else -1
-
+        qury = cursor.fetchone()
+        group_id = qury["group_id"] if qury else -1
         
-        if group_id != -1:
+        if group_id == -1:
+            return render_template("/newTemplate/osm_hierarchy_record.html", 
+                    data={'has_group': False, 'osm_option_list': [], 'search': '', 'agree': ''}, 
+                    dataCount=0, 
+                    pagination=[], 
+                    current_page=1, 
+                    total_pages=0, 
+                    search_query="", 
+                    filters=[])
+        else:
             cursor.execute(
                 """SELECT user_id, user.name, user.surname FROM osm_hierarchy 
                 LEFT JOIN user ON user_id = user.id
@@ -75,25 +84,18 @@ def render_osm_hierarchy_record(): # Submission records
                 osm_option_list.append({'user_id': osm['user_id'], 'name': f"{osm['name']} {osm['surname']}"})
     except Exception as e:  
         pass
-    return jsonify(group_id)
-    if group_id == str(-1):
-        data = {}
-        data['has_group'] = False
-        data["osm_option_list"] = []
-        data['search'] = ""
-        data['agree'] = ""
-        return render_template("/newTemplate/osm_hierarchy_record.html", data=data, dataCount=0, pagination=[], current_page=1, total_pages=0, search_query="", filters=[])
+        
     
     osm_sql_construct = ''
     
     if not ids:
-        osm_sql_construct = 'sender_id = {user_id} OR'
+        osm_sql_construct = f'sender_id = {user_id} OR'
     else:   
         try: 
             for id in ids:
                 osm_sql_construct += f'sender_id = {id} OR '
         except ValueError:
-            osm_sql_construct = 'sender_id = {user_id} OR'
+            osm_sql_construct = f'sender_id = {user_id} OR'
 
     db, cursor = get_db()
     sql = f'''SELECT submission_record.id, channel, fname,
@@ -110,7 +112,6 @@ def render_osm_hierarchy_record(): # Submission records
             LEFT JOIN user AS osm_user ON sender_id = osm_user.id
             WHERE {osm_sql_construct} submission_record.sender_phone is not NULL
             ORDER BY case_id DESC'''
-
     cursor.execute(sql, )
     db_query =  cursor.fetchall()
 
