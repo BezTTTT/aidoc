@@ -18,9 +18,8 @@ def format_thai_datetime(x):
 
 
 # render osm hierarchy page
-@bp.route('/', methods=['GET']) 
+@bp.route('/member-manage/', methods=['GET']) 
 @login_required
-@role_validation
 def render_osm_hierarchy():
     user_id = session.get('user_id')
     db, cursor = get_db()
@@ -37,43 +36,88 @@ def render_osm_hierarchy():
         user_data = cursor.fetchone()
 
         if not user_data:
-            return render_template('/newTemplate/osm_hierarchy.html', group_id=-1, is_user_supervisor=0)
+            return render_template('/newTemplate/osm_hierarchy_manage.html', group_id=-1, is_user_supervisor=0)
 
         group_id = user_data['group_id']
         is_supervisor = user_data['is_supervisor']
-        return render_template('/newTemplate/osm_hierarchy.html', group_id=group_id, is_user_supervisor=is_supervisor)
+        return render_template('/newTemplate/osm_hierarchy_manage.html', group_id=group_id, is_user_supervisor=is_supervisor)
     finally:
         cursor.close()
         db.close()
 
-#render osm hierarchy record page
-@bp.route('/group_record/<int:osm_id>', methods=('GET', 'POST'))
-@login_required
-@role_validation
-def render_osm_hierarchy_record(osm_id): # Submission records
 
-    # Reload the record every time the page is reloaded
+#render osm hierarchy record page
+@bp.route('/', methods=('GET', 'POST'))
+@login_required
+def render_osm_hierarchy_record(): # Submission records
+    user_id = session.get('user_id')
+    group_id = -1
+    ids = []
+    osm_option_list = []
+    try:
+        db, cursor = get_db()
+        cursor.execute( 'Select group_id from osm_hierarchy where user_id = %s', (user_id,))
+        group_id = cursor.fetchone()['group_id'] if cursor.fetchone()['group_id'] > -1 else -1
+
+        
+        if group_id != -1:
+            cursor.execute(
+                """SELECT user_id, user.name, user.surname FROM osm_hierarchy 
+                LEFT JOIN user ON user_id = user.id
+                WHERE group_id = %s
+                """,
+                (group_id,)
+            )
+            osm_list = cursor.fetchall()    
+    
+            ids = [int(x['user_id']) for x in osm_list]
+            for osm in osm_list:
+                osm_option_list.append({'user_id': osm['user_id'], 'name': f"{osm['name']} {osm['surname']}"})
+    except Exception as e:  
+        pass
+    return jsonify(group_id)
+    if group_id == str(-1):
+        data = {}
+        data['has_group'] = False
+        data["osm_option_list"] = []
+        data['search'] = ""
+        data['agree'] = ""
+        return render_template("/newTemplate/osm_hierarchy_record.html", data=data, dataCount=0, pagination=[], current_page=1, total_pages=0, search_query="", filters=[])
+    
+    osm_sql_construct = ''
+    
+    if not ids:
+        osm_sql_construct = 'sender_id = {user_id} OR'
+    else:   
+        try: 
+            for id in ids:
+                osm_sql_construct += f'sender_id = {id} OR '
+        except ValueError:
+            osm_sql_construct = 'sender_id = {user_id} OR'
+
     db, cursor = get_db()
-    sql = '''SELECT submission_record.id, channel, fname,
+    sql = f'''SELECT submission_record.id, channel, fname,
                 patient_user.name, patient_user.surname, patient_user.birthdate, patient_user.province,
                 case_id, sender_id, patient_id, dentist_id, special_request, sender_phone, 
                 location_province, location_zipcode, 
                 dentist_feedback_comment,dentist_feedback_code,
-                ai_prediction, submission_record.created_at
+                ai_prediction, submission_record.created_at,
+                osm_user.name AS sender_name, osm_user.surname AS sender_surname
             FROM submission_record
             INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
             LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
             LEFT JOIN user AS sender_user ON submission_record.sender_phone = sender_user.phone
-            WHERE sender_id = %s OR submission_record.sender_phone is not NULL
+            LEFT JOIN user AS osm_user ON sender_id = osm_user.id
+            WHERE {osm_sql_construct} submission_record.sender_phone is not NULL
             ORDER BY case_id DESC'''
-    val = (osm_id,)
-    cursor.execute(sql, val)
-    db_query = cursor.fetchall()
-    
+
+    cursor.execute(sql, )
+    db_query =  cursor.fetchall()
+
     # Filter data if search query is provided
     if 'record_filter' not in session:
         session['record_filter'] = {}
-    if request.method == 'POST':
+    if request.method == 'POST':  
         search_query = request.form.get("search", session['record_filter'].get('search_query', ""))
         agree = request.form.get("agree", "")
         filterStatus = request.form.get("filterStatus", "") 
@@ -82,6 +126,7 @@ def render_osm_hierarchy_record(osm_id): # Submission records
         filterSpecialist = request.form.get("filterSpecialist", "")
         filterFollowup = request.form.get("filterFollowup", "")
         filterRetrain = request.form.get("filterRetrain", "")
+        filterSender = request.form.get("filterSender", "")
         session['record_filter']['search_query'] = search_query
         session['record_filter']['agree'] = agree
         session['record_filter']['filterStatus'] = filterStatus
@@ -90,6 +135,7 @@ def render_osm_hierarchy_record(osm_id): # Submission records
         session['record_filter']['filterSpecialist'] = filterSpecialist
         session['record_filter']['filterFollowup'] = filterFollowup
         session['record_filter']['filterRetrain'] = filterRetrain
+        session['record_filter']['filterSender'] = filterSender
     else:
         search_query = session['record_filter'].get('search_query', "")
         agree = session['record_filter'].get('agree', "")
@@ -99,6 +145,7 @@ def render_osm_hierarchy_record(osm_id): # Submission records
         filterSpecialist = session['record_filter'].get('filterSpecialist', "")
         filterFollowup = session['record_filter'].get("filterFollowup", "")
         filterRetrain = session['record_filter'].get("filterRetrain", "")
+        filterSender = session['record_filter'].get("filterSender", "")
     # Initialize an empty list to store filtered results
     filtered_data = []
 
@@ -116,8 +163,11 @@ def render_osm_hierarchy_record(osm_id): # Submission records
         record_district = record.get("location_district")
         record_amphoe = record.get("location_amphoe")
         record_zipcode = record.get("location_zipcode")
-
-        if search_query!="" or filterStatus!="" or filterPriority!="" or filterProvince!="":
+        record_sender_id= record.get("sender_id")
+        record_sender_name = record.get("sender_name")
+        record_sender_surname = record.get("sender_surname")
+        
+        if search_query!="" or filterStatus!="" or filterPriority!="" or filterProvince!="" or filterSender!="":
             cumulativeFilterFlag = True
 
             if search_query!="":
@@ -129,12 +179,17 @@ def render_osm_hierarchy_record(osm_id): # Submission records
                     (record_district is not None) and (search_query in record_district) or \
                     (record_amphoe is not None) and (search_query in record_amphoe) or \
                     (record_province is not None) and (search_query in record_province) or \
-                    (record_zipcode is not None) and (search_query == record_zipcode)
+                    (record_zipcode is not None) and (search_query == record_zipcode) or \
+                    (record_sender_name is not None) and (search_query in record_sender_name) or \
+                    (record_sender_surname is not None) and (search_query in record_sender_surname)
             if filterStatus!="":
                 cumulativeFilterFlag &= (filterStatus == "1" and record_feedback_code!=None) or (filterStatus == "0" and record_feedback_code==None)
             if filterPriority!="":
                 cumulativeFilterFlag &= (filterPriority=="1" and record_special_request==1) or (filterPriority=="0" and record_special_request==0)
-            
+            # filter by osm sender
+            if filterSender!="":
+                cumulativeFilterFlag &= (filterSender == str(record_sender_id))
+                
             if cumulativeFilterFlag:
                 filtered_data.append(record)
         else:
@@ -165,24 +220,58 @@ def render_osm_hierarchy_record(osm_id): # Submission records
             item["age"] = 55# calculate_age(item["birthdate"])
 
     data = {}
+    data["has_group"] = True
+    data["osm_option_list"] = osm_option_list
     data['search'] = search_query
     data['agree'] = agree
     
     session['current_record_page'] = page
 
-    print("filtered_data", data)
 
     return render_template(
                 "/newTemplate/osm_hierarchy_record.html",
-                osm_id=osm_id,
-
                 data=data,
                 dataCount=len(filtered_data),
                 pagination=paginated_data,
                 current_page=page,
                 total_pages=total_pages,
                 search_query=search_query,
-                filters=[filterStatus,filterPriority,filterProvince,filterSpecialist,filterFollowup,filterRetrain])
+                filters=[filterStatus,filterPriority,filterProvince,filterSpecialist,filterFollowup,filterRetrain, filterSender])
+
+@bp.route('/get_group_record/', methods=['GET'])
+def get_group_record():
+    ids = request.args.get('osm_ids')
+
+    if not ids:
+        return jsonify({"error": "No IDs provided"}), 400
+    
+    osm_sql_construct = ''
+    try:
+        # Convert comma-separated string to a list of integers
+        osm_ids = list(map(int, ids.split(',')))
+
+        for osm_id in osm_ids:
+            osm_sql_construct += f'sender_id = {osm_id} OR '
+    except ValueError:
+        return jsonify({"error": "Invalid ID format"}), 400
+
+    db, cursor = get_db()
+    sql = f'''SELECT submission_record.id, channel, fname,
+                patient_user.name, patient_user.surname, patient_user.birthdate, patient_user.province,
+                case_id, sender_id, patient_id, dentist_id, special_request, sender_phone, 
+                location_province, location_zipcode, 
+                dentist_feedback_comment,dentist_feedback_code,
+                ai_prediction, submission_record.created_at
+            FROM submission_record
+            INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
+            LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
+            LEFT JOIN user AS sender_user ON submission_record.sender_phone = sender_user.phone
+            WHERE {osm_sql_construct} submission_record.sender_phone is not NULL
+            ORDER BY case_id DESC'''
+
+    cursor.execute(sql, )
+    db_query =  cursor.fetchall()
+    return jsonify(db_query)
 
 
 @bp.route('/group/<int:group_id>', methods=['GET'])
@@ -195,7 +284,8 @@ def get_group_users(group_id):
         cursor.execute(
             """
             SELECT oh.group_id, oh.user_id AS osm_id, oh.is_supervisor, u.name, u.surname, u.hospital, u.province, u.phone,
-            (SELECT COUNT(*) FROM submission_record sr WHERE sr.patient_id = oh.user_id OR sr.sender_id = oh.user_id) AS submission_count,
+            (SELECT COUNT(*) FROM submission_record 
+            WHERE sender_id = oh.user_id AND channel = 'OSM') AS submission_count,
             (SELECT created_at FROM submission_record WHERE sender_id = oh.user_id ORDER BY created_at DESC LIMIT 1) AS last_activity
             FROM osm_hierarchy oh
             LEFT JOIN user u ON oh.user_id = u.id
@@ -222,7 +312,6 @@ def get_group_users(group_id):
             }
             for osm in hierarchy if osm["name"] and osm["surname"]
         ]
-        print(group_list)
         return jsonify({'group_list': group_list})
     finally:
         cursor.close()

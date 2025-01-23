@@ -8,17 +8,28 @@ block content %}
 
 {% if group_id != -1 %}
 
-<div class="my-5 d-flex justify-content-between">
-  <p class="fs-2">กลุ่มผู้ตรวจคัดกรอง</p>
+<div class="my-5 ">
+  <h2>กลุ่มผู้ตรวจคัดกรอง</p>
   {% if is_user_supervisor %}
-  <button
-    class="btn btn-primary"
-    data-bs-toggle="modal"
-    data-bs-target="#addUserModal"
-    onclick="fetchOSMUsers()"
-  >
-    เพิ่มผู้ตรวจคัดกรอง
-  </button>
+  <div class="text-end">
+    <button
+      class="btn btn-primary"
+      data-bs-toggle="modal"
+      data-bs-target="#addUserModal"
+      onclick="fetchOSMUsers()"
+    >
+      เพิ่มผู้ตรวจคัดกรอง
+    </button>
+    <button
+      class="btn btn-primary"
+      data-bs-toggle="modal"
+      data-bs-target="#addUserModal"
+      onclick="window.location.href='/osm_hierarchy/';"
+    >
+      รายงานกลุ่มผู้ตรวจคัดกรอง
+    </button>
+</div>
+  
   {% endif %}
 </div>
 
@@ -68,21 +79,23 @@ block content %}
   </div>
 </div>
 
-<table id="user_manage" class="dataTable">
-  <thead>
-    <tr class="text-dark">
-      <th>ชื่อ - นามสกุล</th>
-      <th>โรงพยาบาลที่สังกัด</th>
-      <th>จังหวัด</th>
-      <th>จำนวนอัพโหลด (อัพโหลดล่าสุด)</th>
-      <th>เบอร์โทรศัพท์</th>
-      {% if is_user_supervisor %}
-      <th>จัดการ</th>
-      {% endif %}
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+<div class="table-responsive">
+  <table id="user_manage" class="dataTable">
+    <thead>
+      <tr class="text-dark">
+        <th>ชื่อ - นามสกุล</th>
+        <th>โรงพยาบาลที่สังกัด</th>
+        <th>จังหวัด</th>
+        <th>จำนวนอัพโหลด (อัพโหลดล่าสุด)</th>
+        <th>เบอร์โทรศัพท์</th>
+        {% if is_user_supervisor %}
+        <th>จัดการ</th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
 {% else %}
 <div class="alert alert-danger" role="alert">
   คุณไม่ได้อยู่ในกลุ่มผู้ตรวจคัดกรองใดๆ โปรดติดต่อผู้ดูแลเพื่อเข้าร่วมกลุ่ม
@@ -134,7 +147,7 @@ block content %}
       <td>${user.province}</td>
       <td>${
         user.submission_count
-          ? `<a href="/osm_hierarchy/group_record/${user.osm_id}"> ${user.submission_count} รูป (${user.last_activity}) </a>`
+          ? `<a onclick='console.log("${user.id}")' style="cursor: pointer"> ${user.submission_count} รูป (${user.last_activity}) </a>`
           : "-"
       } </td>
       <td>${user.phone_number}</td>
