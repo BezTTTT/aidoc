@@ -653,7 +653,7 @@ def construct_specialist_filter_sql():
 
     if search_query!="":
         search_query_list.append(f"(INSTR(LOWER(fname), '{search_query}'))")
-        search_query_list.append(f"(patient_user.name IS NOT NULL AND (INSTR('{search_query}', patient_user.name) OR INSTR('{search_query}', patient_user.surname)))")
+        search_query_list.append(f"(name IS NOT NULL AND (INSTR('{search_query}',name) OR INSTR('{search_query}', surname)))")
         search_query_list.append(f"(case_report IS NOT NULL AND (INSTR(case_report, '{search_query}')))")
         search_query_list.append(f"(dentist_feedback_code IS NOT NULL AND (LOWER(dentist_feedback_code) = '{search_query.lower()}'))")
         if search_query.isdigit():
@@ -730,7 +730,7 @@ def record_specialist(admin=False):
             LEFT JOIN retrain_request ON submission_record.id = retrain_request.submission_id
             '''
         
-    sql_count = "SELECT count(*) AS full_count"
+    sql_count = "SELECT count(submission_record.id) AS full_count"
     sql_limit_part = '''
                 ORDER BY submission_record.id DESC
                 LIMIT %s
@@ -744,7 +744,6 @@ def record_specialist(admin=False):
     else:
         sql1 = sql_count + sql_join_part
         sql2 = sql_select_part + sql_join_part + sql_limit_part
-
     cursor.execute(sql1)
     dataCount = cursor.fetchone()
 
@@ -910,9 +909,9 @@ def construct_osm_filter_sql():
             search_query_list.append(f"(location_zipcode IS NOT NULL AND (location_zipcode = {int(search_query)}))")
 
         if search_query.lower() == 'opmd':
-            search_query_list.append(f"(ai_prediction = 1) AND sender_id = {session['user_id']}")
+            search_query_list.append(f"(ai_prediction = 1)")
         if search_query.lower() == 'oscc':
-            search_query_list.append(f"(ai_prediction = 2) AND sender_id = {session['user_id']}")
+            search_query_list.append(f"(ai_prediction = 2)")
         
         search_query_combined = " OR ".join(search_query_list)
         
@@ -951,7 +950,7 @@ def record_osm():
         INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
         LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
         LEFT JOIN user AS sender_user ON submission_record.sender_phone = sender_user.phone
-        WHERE (sender_id = %s OR submission_record.sender_phone is not NULL)'''
+        WHERE (sender_id = %s OR (submission_record.sender_phone is not NULL AND submission_record.sender_phone = %s))'''
     sql_limit_part = '''
         ORDER BY submission_record.id DESC
         LIMIT %s
@@ -965,11 +964,11 @@ def record_osm():
         sql1 = sql_count + sql_join_part
         sql2 = sql_select_part + sql_join_part + sql_limit_part
     
-    val = (session['user_id'],)
+    val = (session['user_id'],g.user['phone'])
     cursor.execute(sql1, val)
     dataCount = cursor.fetchone()
 
-    val = (session['user_id'], records_per_page, offset)
+    val = (session['user_id'],g.user['phone'], records_per_page, offset)
     cursor.execute(sql2,val)
     paginated_data = cursor.fetchall()
 
