@@ -44,11 +44,15 @@ def create_app(test_config=None):
     os.makedirs(thumbOutlinedDir, exist_ok=True)
     os.makedirs(maskDir, exist_ok=True)
 
+    app.config['LEGAL_DIR'] = os.path.join(projectDir, 'legal') 
+
     # Register blueprints
     from . import auth
     app.register_blueprint(auth.bp)
     from . import image
     app.register_blueprint(image.bp)
+    from . import webapp
+    app.register_blueprint(webapp.bp)
     from . import user
     app.register_blueprint(user.bp)
     from . import general

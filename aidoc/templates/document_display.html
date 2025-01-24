@@ -1,0 +1,10 @@
+{% extends "./base.html"%}
+
+{% block title %} AIDOC | Document Display {% endblock %}
+
+{% block content %}
+<br />
+
+<object data="/load_legal_docs/{{data['user_id']}}/{{data['document']}}" type="application/pdf" style="min-height:100vh;width:100%"></object>
+
+{% endblock %}

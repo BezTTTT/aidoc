@@ -1,0 +1,99 @@
+{% extends "./base.html" %}
+
+{% block title %} AIDOC | Patient Register {% endblock %}
+
+{% block content %}
+    <div class="row d-flex align-items-center justify-content-center pt-4">
+        <div class="card mb-4" style="width: max-content;">
+            <div class="card-body">
+                <h5 class="card-title">แก้ไขข้อมูลส่วนตัว</h5>
+                <form class="my-4" action="/edit/osm" method="post" enctype="multipart/form-data">
+                    <div class="form-group py-2">
+                        <label for="name">ชื่อ (ไม่ต้องใส่คำนำหน้าชื่อ) <span style="color: red;">*</span></label>
+                        <input type="text" class="form-control" placeholder="ชื่อ..." name="name" id="name" value= "{{data.name}}"required>
+                    </div>
+                    <div class="form-group py-2">
+                        <label for="surname">นามสกุล <span style="color: red;">*</span></label>
+                        <input type="text" class="form-control" placeholder="นามสกุล..." name="surname" id="surname" value= "{{data.surname}}" required>
+                    </div>
+                    <div class="form-group py-2">
+                        <label for="job_position">ตำแหน่งในทางสาธารณสุข <span style="color: red;">*</span></label>
+                        <select id="job_position" name="job_position" class="form-control" required>
+                            <option value="" hidden>ตำแหน่งในทางสาธารณสุข...</option>
+                            <option value="OSM">อสม.</option> 
+                            <option value="Dental Nurse">ทันตาภิบาล/เจ้าพนักงานทันตสาธารณสุข</option>
+                            <option value="Dentist">ทันตแพทย์</option>
+                            <option value="Oral Pathologist">ทันตแพทย์เฉพาะทาง วิทยาการวินิจฉัยโรคช่องปาก</option>
+                            <option value="Oral and Maxillofacial Surgeon">ทันตแพทย์เฉพาะทาง ศัลยศาสตร์ช่องปากและแม็กซิลโลเฟเชียล</option>
+                            <option value="Physician">แพทย์</option>
+                            <option value="Public Health Technical Officer">นักวิชาการสาธารณสุข</option>
+                            <option value="Computer Technical Officer">นักวิชาการคอมพิวเตอร์</option>
+                            <option value="Other Public Health Officer">ข้าราชการ/เจ้าพนักงานกระทรวงสาธารณสุข</option>
+                            <option value="Other Government Officer">เจ้าหน้าที่รัฐอื่น</option>
+                            <option value="General Public">บุคคลทั่วไป</option>
+                        </select>
+                    </div>
+                    <div class="form-group py-2" id="osm_job_div" style="display: none;">
+                        <label for="osm_job">กรุณาระบุอาชีพ <span style="color: red;">*</span></label>
+                        <input type="text" class="form-control" placeholder="กรุณาระบุอาชีพ..." name="osm_job" id="osm_job">
+                    </div>
+                    <div class="form-group py-2" id="license_div" style="display: none;">
+                        <label for="license">กรุณาระบุเลขที่ใบอนุญาตฯ <span style="color: red;">*</span></label>
+                        <input type="text" class="form-control" placeholder="ระบุเฉพาะตัวเลขเท่านั้น" name="license" id="license">
+                    </div>
+                    <div class="form-group py-2">
+                        <label for="hospital">โรงพยาบาลที่สังกัด <span style="color: red;">*</span></label>
+                        <input type="text" class="form-control" placeholder="โรงพยาบาลที่สังกัด..." name="hospital" id="hospital" value="{{data.hospital}}"required>
+                    </div>
+                    <div class="form-group py-2">
+                        <label for="province">จังหวัด <span style="color: red;">*</span></label>
+                        <input type="text" class="form-control" placeholder="จังหวัด..." name="province" id="province" value="{{data.province}}"required>
+                    </div>
+                    <div class="form-group py-2">
+                        <label for="national_id">เลขประจำตัวประชาชน <span style="color: red;">*</span></label>
+                        <input type="text" class="form-control" placeholder="เลขประจำตัว ปชช. 13 หลัก ..." name="national_id" id="national_id" value="{{data.national_id}}" maxlength="13" readonly style="background-color: #f8f9fa;">
+                    </div>
+                    <div class="form-group py-2">
+                        <label for="phone">เบอร์โทรศัพท์ <span style="color: red;">*</span></label>
+                        <input type="text" class="form-control" placeholder="เบอร์โทรศัพท์..." name="phone" id="phone" maxlength="10" value ="{{data.phone}}" readonly style="background-color: #f8f9fa;">
+                    </div>
+                    <div class="row d-flex justify-content-center my-3">
+                        <div class="col d-flex justify-content-center">
+                            <a class="btn btn-outline-primary" style="width: 100%;" href="/record/dentist">ยกเลิก</a>
+                        </div>
+                        <div class="col d-flex justify-content-center">
+                            <input class="btn btn-success" style="width: 100%;" type="submit" value="ยืนยันการแก้ไข">
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+        const jobPositionSelect = document.getElementById("job_position");
+        const osmJobDiv = document.getElementById("osm_job_div");
+        const licenseDiv = document.getElementById("license_div");
+        const osmJobInput = document.getElementById("osm_job");
+        const licenseInput = document.getElementById("license");
+        
+        jobPositionSelect.addEventListener("change", (event) => {
+            if (event.target.value === "OSM" || event.target.value === "General Public") {
+                osmJobDiv.style.display = "block";
+                osmJobInput.required = true;
+                licenseDiv.style.display = "none";
+                licenseInput.required = false;
+            } else if (["Dentist", "Oral Pathologist", "Oral and Maxillofacial Surgeon", "Physician"].includes(event.target.value)) {
+                licenseDiv.style.display = "block";
+                licenseInput.required = true;
+                osmJobDiv.style.display = "none";
+                osmJobInput.required = false;
+            } else {
+                licenseDiv.style.display = "none";
+                licenseInput.required = false;
+                osmJobDiv.style.display = "none";
+                osmJobInput.required = false;
+            }
+        });
+    </script>
+</html>
+{% endblock %}

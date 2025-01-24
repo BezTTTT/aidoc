@@ -1,303 +1,301 @@
 {% extends "./base.html" %}
 
-{% block title %} RiskOCA | Submission Records {% endblock %}
+{% block title %} AIDOC | Submission Records {% endblock %}
 
 {% block content %}
 
-<div class="row">
-    <div class="col-12">
-        <h2>ระบบการบริหารจัดการภาพของผู้ดูแลระบบ</h2>
-        <p>ผู้ดูแลระบบ: {{ g.user['name'] }} {{ g.user['surname'] }} (Username: {{ g.user['username'] }}) </p>
-    </div>
+<h2>ระบบการบริหารจัดการภาพของผู้ดูแลระบบ</h2>
+<p>ผู้ดูแลระบบ: {{ g.user['name'] }} {{ g.user['surname'] }} (Username: {{ g.user['username'] }}) </p>
 
-    <!-- Search Box -->
-    <div class="col-12 mt-3">
-        <p>ค้นหาผลลัพธ์ตามคำสำคัญ <i> ค้นหาได้เฉพาะข้อมูลในระบบประชาชนและผู้นำส่งข้อมูล (ไม่ค้นหาในระบบทันตแพทย์)</i></p>
-    </div>
-    <form action="/record/admin" method="post">
-        <div class="input-group mb-3">
-            <input type="text" class="form-control" name="search" placeholder="ชื่อ นามสกุลคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC คำสำคัญในรายงานผู้ป่วย ชื่อไฟล์ Case ID" value="{{ data['search'] }}" />
-            <button class="btn btn-outline-primary" type="submit" value="{{ data['search'] }}"> Search </button>
+<form action="/record/admin" method="post">
+    <div class="row">
+        <!-- Search Box -->
+        <div class="col-12 mt-3">
+            <label for="search_input">ค้นหาผลลัพธ์ตามคำสำคัญ <i> ค้นหาได้เฉพาะข้อมูลในระบบประชาชนและผู้นำส่งข้อมูล (ไม่ค้นหาในระบบทันตแพทย์)</i></label>
         </div>
-    </form>
-    
-    <div class="container">
-        <form action="/record/admin" method="post" id="filterForm">
-            <div class="row row-cols-auto">
-                <div class="col my-1">
-                    <label for="filterPriority">ระดับความสำคัญ:</label>
-                    <select name="filterPriority" id="filterPriority" class="btn btn-light border border-1 mx-1">
-                        <option value="">ทั้งหมด</option>
-                        <option value="1">พิเศษ</option>
-                        <option value="0">ปกติ</option>
-                    </select>
-                </div>
-                <div class="col my-1">
-                    <label for="filterStatus">สถานะ:</label>
-                    <select name="filterStatus" id="filterStatus" class="btn btn-light border border-1 mx-1">
-                        <option value="">ทั้งหมด</option>
-                        <option value="1">ตรวจแล้ว</option>
-                        <option value="0">ยังไม่ได้ตรวจ</option>
-                    </select>
-                </div>
-                <div class="col my-1">
-                    <label for="filterProvince">จังหวัดที่คัดกรอง:</label>
-                    <select name="filterProvince" id="filterProvince" class="btn btn-light border border-1 mx-1">
-                        <option value="">ทั้งหมด</option>
-                        {% for item in data['province_name_list']%}
-                        <option value="{{item}}">{{item}}</option>
-                        {%endfor%}
-                    </select>
-                </div>
-                <div class="col my-1">
-                    <label for="filterSpecialist">ผู้ตรวจ:</label>
-                    <select name="filterSpecialist" id="filterSpecialist" class="btn btn-light border border-1 mx-1">
-                        <option value="">ทั้งหมด</option>
-                        {% for (dentist_id, dentist_name) in data['specialist_list']%}
-                        <option value="{{dentist_id}}">{{dentist_name}}</option>
-                        {%endfor%}
-                    </select>
-                </div>
-                <div class="col my-1">
-                    <label for="filterFollowup">Follow Up Status:</label>
-                    <select name="filterFollowup" id="filterFollowup" class="btn btn-light border border-1 mx-1">
-                        <option value="">ทั้งหมด</option>
-                        <option value="Initiated">Initiated</option>
-                        <option value="On Specialist">On Specialist</option>
-                        <option value="On Contact">On Contact</option>
-                        <option value="On Treatment">On Treatment</option>
-                        <option value="Closed">Closed</option>
-                    </select>
-                </div>
-                <div class="col my-1">
-                    <label for="filterRetrain">Retrain Request:</label>
-                    <select name="filterRetrain" id="filterRetrain" class="btn btn-light border border-1 mx-1">
-                        <option value="">ทั้งหมด</option>
-                        <option value="Requested">Requested</option>
-                        <option value="Processing">Processing</option>
-                        <option value="Done">Done</option>
-                    </select>
-                </div>
+    </div>
+    <div class="row mt-1">
+        <div class="col">
+            <div class="input-group">
+                <input type="text" class="form-control" name="search" id="search_input"
+                    placeholder="ชื่อ นามสกุลคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC คำสำคัญในรายงานผู้ป่วย ชื่อไฟล์ Case ID"
+                    value="{{ data['search_query'] }}" />
+                <button class="btn btn-outline-primary" type="submit" value="{{ data['search_query'] }}"> Search </button>
             </div>
-        </form>
+        </div>
     </div>
+    <div class="row row-cols-auto my-3">
+        <div class="col my-1">
+            <label for="filterPriority">ระดับความสำคัญ:</label>
+            <select name="filterPriority" id="filterPriority" class="btn btn-light border border-1 mx-1" onchange="this.form.submit()">
+                <option value="">ทั้งหมด</option>
+                <option value="1">พิเศษ</option>
+                <option value="0">ปกติ</option>
+            </select>
+        </div>
+        <div class="col my-1">
+            <label for="filterStatus">สถานะ:</label>
+            <select name="filterStatus" id="filterStatus" class="btn btn-light border border-1 mx-1" onchange="this.form.submit()">
+                <option value="">ทั้งหมด</option>
+                <option value="1">ตรวจแล้ว</option>
+                <option value="0">ยังไม่ได้ตรวจ</option>
+            </select>
+        </div>
+        <div class="col my-1">
+            <label for="filterProvince">จังหวัดที่คัดกรอง:</label>
+            <select name="filterProvince" id="filterProvince" class="btn btn-light border border-1 mx-1" onchange="this.form.submit()">
+                <option value="">ทั้งหมด</option>
+                {% for item in data['province_name_list']%}
+                <option value="{{item}}">{{item}}</option>
+                {%endfor%}
+            </select>
+        </div>
+        <div class="col my-1">
+            <label for="filterSpecialist">ผู้ตรวจ:</label>
+            <select name="filterSpecialist" id="filterSpecialist" class="btn btn-light border border-1 mx-1" onchange="this.form.submit()">
+                <option value="">ทั้งหมด</option>
+                {% for (dentist_id, dentist_name) in data['specialist_list']%}
+                <option value="{{dentist_id}}">{{dentist_name}}</option>
+                {%endfor%}
+            </select>
+        </div>
+        <div class="col my-1">
+            <label for="filterFollowup">Follow Up Status:</label>
+            <select name="filterFollowup" id="filterFollowup" class="btn btn-light border border-1 mx-1" onchange="this.form.submit()">
+                <option value="">ทั้งหมด</option>
+                <option value="Initiated">Initiated</option>
+                <option value="On Specialist">On Specialist</option>
+                <option value="On Contact">On Contact</option>
+                <option value="On Treatment">On Treatment</option>
+                <option value="Closed">Closed</option>
+            </select>
+        </div>
+        <div class="col my-1">
+            <label for="filterRetrain">Retrain Request:</label>
+            <select name="filterRetrain" id="filterRetrain" class="btn btn-light border border-1 mx-1" onchange="this.form.submit()">
+                <option value="">ทั้งหมด</option>
+                <option value="Requested">Requested</option>
+                <option value="Processing">Processing</option>
+                <option value="Done">Done</option>
+            </select>
+        </div>
+    </div>
+</form>
     
-    {% if pagination|length == 0 %}
-        <div class="col-12 mt-4">
-            <p class="text-center text-danger">ไม่พบข้อมูล</p>
-        </div>
-    {% else %}
-        <div class="mt-4">
-            จำนวนรายการทั้งหมด {{dataCount}} รายการ
-        </div>
-    {% endif %}
-    <!-- Loop through paginated data -->
-    <div class="container my-4">
-        <div class="row">
-            {% for item in pagination %}
-                <div class="col-md-3 mb-4">
-                    <div class="card h-100 position-relative"
-                    {% if item['special_request']==1 %}
-                        style="border-color: red; border-width: 3px"
-                    {% endif %}
-                    >
-                        <div style="display: inline-flex; align-items: center; justify-content: center; ">
-                            <a href="{{ url_for('image.load_image', folder='upload', user_id=item['owner_id'], imagename=item['fname']) }}" target="_blank">
-                                <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=item['owner_id'], imagename=item['fname']) }}" 
-                                    class="card-img-top mt-2" alt="" style="max-height: 256px"/>
-                            </a>
-                        </div>
-                    {% if item['channel']!= 'DENTIST' %}
-                        <div class="card-body">
-                            <h6 class="image-name" >แหล่งข้อมูล :
-                                {% if item['sender_id']!=item['patient_id'] %}
-                                    ผู้ตรวจคัดกรอง
-                                {% else %}
-                                    ประชาชน
-                                {% endif %}
-                            </h6>
-                            <h6 class="image-name" >ชื่อไฟล์ : {{ item['fname'] }} </h6>
-                            <h6 class="image-name" >Case ID : {{ item['case_id'] }}
-                                {% if item['special_request']==1 %}
-                                    [มีคำขอตรวจพิเศษ]
-                                {% endif %}
-                            </h6>
-                            {% if item['name'] is not none %}
-                                <h6 class="image-name">ชื่อผู้ป่วย : {{ item['name'] }} {{ item['surname'] }} ( {{ item["age"] }} ปี )</h6>
-                            {% else %}
-                                <h6 class="image-name">ชื่อผู้ป่วย : <i>ไม่มีข้อมูล</i> </h6>
-                            {% endif%}
-                            {% if item['location_zipcode'] is not none %}
-                                <h6 class="image-name">สถานที่คัดกรอง : จ.{{ item['location_province'] }} ({{ item['location_zipcode'] }})</h6>
-                            {% else %}
-                                <h6 class="image-name">สถานที่คัดกรอง : จ.{{ item['location_province'] }} </h6>
-                            {% endif %}
-                            <h6 class="image-name">นำส่งวันที่ : {{ item['formatted_created_at'] }} น.</h6>
-                            <h6 class="fs-6 card-subtitle text-muted mb-2">
-                                ผลการพยากรณ์ของ AI :
-                                    {% if item['ai_prediction']==0 %}
-                                        Normal
-                                    {% elif item['ai_prediction']==1 %}
-                                        OPMD
-                                    {% else %}
-                                        OSCC
-                                    {% endif %}
-                            </h6>
-                            <h6 class="fs-6 card-subtitle text-muted mb-2">
-                                ผลการวินิจฉัยของทันตแพทย์: 
-                                {% if item['dentist_feedback_code'] is none %}
-                                    [ยังไม่ได้ตรวจ]
-                                {% else %}
-                                    {{item['dentist_feedback_code']}}
-                                {% endif %}
-                            </h6>
-                            <form action="{{ url_for('image.diagnosis', role='admin', img_id=item['id'], channel=item['channel']) }}" id="diagnosis_submit_id{{item['id']}}" method="post"></form>
-                            <form action="{{ url_for('image.quick_confirm', role='admin', img_id=item['id'], ai_result=item['ai_prediction']) }}" id="quick_submit_id{{item['id']}}" method="post"></form>
-                            <div class="d-grid gap-2 d-md-block justify-content-md-center">
-                                <button class="btn btn-outline-primary" type="submit" form="diagnosis_submit_id{{item['id']}}">ตรวจยืนยันผล</button>
-                                <button class="btn btn-outline-success my-1" type="submit" form="quick_submit_id{{item['id']}}"
-                                    {% if item['dentist_feedback_code'] is not none %}disabled{% endif %}>Quick AI Confirm</button>
-                                <button class="btn btn-outline-danger my-1" type="button" 
-                                    data-bs-toggle="modal"
-                                    data-bs-target="#submissionDeleteModal{{ item['id'] }}" >ลบข้อมูล</button>
-                                    
-                                <form action="{{ url_for('image.followup_request', role='admin', img_id=item['id']) }}" id="followup_request_id{{item['id']}}" method="post"></form>
-                                {% if item['followup_request_status'] is none %}
-                                    <button class="btn btn-outline-warning btn-sm my-1" type="submit" form="followup_request_id{{item['id']}}">Request Follow Up</button>
-                                {% else %}
-                                    <button class="btn btn-warning btn-sm my-1" type="submit" form="followup_request_id{{item['id']}}">Cancel Follow Up</button>
-                                {% endif %}
-                                <form action="{{ url_for('image.retrain_request', role='admin', img_id=item['id']) }}" id="retrain_request_id{{item['id']}}" method="post"></form>
-                                {% if item['retrain_request_status'] is none %}
-                                    <button class="btn btn-outline-info btn-sm my-1" type="submit" form="retrain_request_id{{item['id']}}">Request Retrain</button>
-                                {% else %}
-                                    <button class="btn btn-info btn-sm my-1" type="submit" form="retrain_request_id{{item['id']}}">Cancel Retrain Req</button>
-                                {% endif %}
-                            </div>
-                        </div>
+{% if paginated_data|length == 0 %}
+    <div class="col-12 mt-2">
+        <p class="text-center text-danger">ไม่พบข้อมูล</p>
+    </div>
+{% else %}
+    <div class="mt-2">
+        จำนวนรายการทั้งหมด {{dataCount}} รายการ
+    </div>
+{% endif %}
 
-                        <!-- Submission Delete Modal -->
-                        <div class="modal fade" id="submissionDeleteModal{{ item['id'] }}" tabindex="-1"
-                            aria-labelledby="submissionDeleteModalLabel" aria-hidden="true">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h1 class="modal-title fs-5" id="submissionDeleteModalLabel"> ลบข้อมูลการนำส่ง </h1>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body">คุณแน่ใจที่จะลบข้อมูลการนำส่งนี้ ใช่หรือไม่</div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> ยกเลิก </button>
-                                        <form action="{{ url_for('image.delete_image', role='admin') }}" method="post" enctype="multipart/form-data">
-                                            <input name="img_id" type="text" value="{{ item['id'] }}" hidden />
-                                            <input class="btn btn-outline-danger" style="width: 100%" type="submit" value="ลบข้อมูล" />
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+<!-- Loop through paginated data -->
+<div class="row mt-4">
+    {% for item in paginated_data %}
+        <div class="col-lg-3 col-md-4 col-sm-6 col-xs-12 mb-3">
+            <div class="card h-100 position-relative"
+            {% if item['special_request']==1 %}
+                style="border-color: red; border-width: 3px"
+            {% endif %}
+            >
+                <div style="display: inline-flex; align-items: center; justify-content: center; ">
+                    <a href="{{ url_for('image.load_image', folder='upload', user_id=item['owner_id'], imagename=item['fname']) }}" target="_blank">
+                        <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=item['owner_id'], imagename=item['fname']) }}" 
+                            class="card-img-top mt-2" alt="" style="max-height: 256px"/>
+                    </a>
+                </div>
+            {% if item['channel']!= 'DENTIST' %}
+                <div class="card-body">
+                    <h6 class="image-name" >แหล่งข้อมูล :
+                        {% if item['sender_id']!=item['patient_id'] %}
+                            ผู้ตรวจคัดกรอง
+                        {% else %}
+                            ประชาชน
+                        {% endif %}
+                    </h6>
+                    <h6 class="image-name" >ชื่อไฟล์ : {{ item['fname'] }} </h6>
+                    <h6 class="image-name" >Case ID : {{ item['case_id'] }}
+                        {% if item['special_request']==1 %}
+                            [มีคำขอตรวจพิเศษ]
+                        {% endif %}
+                    </h6>
+                    {% if item['name'] is not none %}
+                        <h6 class="image-name">ชื่อผู้ป่วย : {{ item['name'] }} {{ item['surname'] }} ( {{ item["age"] }} ปี )</h6>
                     {% else %}
-                        <div class="card-body">
-                            <h6 class="image-name" >แหล่งข้อมูล : ทันตแพทย์
-                            </h6>
-                            <h6 class="image-name">ชื่อไฟล์ : {{ item['fname'] }} </h6>
-                            <h6 class="image-name">ชื่อทันตแพทย์ : {{ item['sender_name'] }} {{ item['sender_surname'] }}</h6>
-                            <h6 class="image-name">โรงพยาบาลที่สังกัด : {{ item['sender_hospital'] }} </h6>
-                            {% if item['location_zipcode'] is not none %}
-                                <h6 class="image-name">สถานที่เก็บข้อมูล : จ.{{ item['location_province'] }} ({{ item['location_zipcode'] }})</h6>
-                            {% else %}
-                                <h6 class="image-name">สถานที่เก็บข้อมูล : จ.{{ item['location_province'] }} </h6>
-                            {% endif %}
-                            <h6 class="">วันที่ : {{ item['formatted_created_at'] }} น.</h6>
-                            <h6 class="fs-6 card-subtitle text-muted mb-2">
-                                ผลการพยากรณ์ของ AI :
-                                    {% if item['ai_prediction']==0 %}
-                                        Normal
-                                    {% elif item['ai_prediction']==1 %}
-                                        OPMD
-                                    {% else %}
-                                        OSCC
-                                    {% endif %}
-                            </h6>
-                            <h6 class="fs-6 card-subtitle text-muted mb-2">
-                                ความคิดเห็นของทันตแพทย์: 
-                                {% if item['dentist_feedback_code'] is none %}
-                                    [ยังไม่ได้ให้ความคิดเห็น]
-                                {% else %}
-                                    {{item['dentist_feedback_code']}}
-                                {% endif %}
-                            </h6>
-                            <form action="{{ url_for('image.diagnosis', role='admin', img_id=item['id'], channel=item['channel']) }}" id="form_id{{item['id']}}" method="post"></form>
-                            <form action="{{ url_for('image.followup_request', role='admin', img_id=item['id']) }}" id="followup_request_id{{item['id']}}" method="post"></form>
-                            <form action="{{ url_for('image.retrain_request', role='admin', img_id=item['id']) }}" id="retrain_request_id{{item['id']}}" method="post"></form>
-                            <div class="d-grid gap-2 d-md-block justify-content-md-center">
-                                <button class="btn btn-outline-success" type="submit" form="form_id{{item['id']}}">ดูผลการวิเคราะห์</button>
-                                <button class="btn btn-outline-danger my-1" type="button" data-bs-toggle="modal" data-bs-target="#submissionDeleteModal{{ item['id'] }}" >ลบข้อมูล</button>
-                            </div>
-                            {% if item['followup_request_status'] is none %}
-                                <button class="btn btn-outline-warning btn-sm my-1" type="submit" form="followup_request_id{{item['id']}}">Request Follow Up</button>
-                            {% else %}
-                                <button class="btn btn-warning btn-sm my-1" type="submit" form="followup_request_id{{item['id']}}">Cancel Follow Up</button>
-                            {% endif %}
-                            {% if item['retrain_request_status'] is none %}
-                                <button class="btn btn-outline-info btn-sm my-1" type="submit" form="retrain_request_id{{item['id']}}">Request Retrain</button>
-                            {% else %}
-                                <button class="btn btn-info btn-sm my-1" type="submit" form="retrain_request_id{{item['id']}}">Cancel Retrain Req</button>
-                            {% endif %}
-                        </div>
-
-                        <!-- Submission Delete Modal -->
-                        <div class="modal fade" id="submissionDeleteModal{{ item['id'] }}" tabindex="-1"
-                            aria-labelledby="submissionDeleteModalLabel" aria-hidden="true">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h1 class="modal-title fs-5" id="submissionDeleteModalLabel"> ลบประวัติ </h1>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body">คุณแน่ใจที่จะลบประวัตินี้ ใช่หรือไม่</div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> ยกเลิก </button>
-                                        <form action="{{ url_for('image.delete_image', role='admin') }}" method="post" enctype="multipart/form-data">
-                                            <input name="img_id" type="text" value="{{ item['id'] }}" hidden />
-                                            <input class="btn btn-outline-danger" style="width: 100%" type="submit" value="ลบข้อมูล" />
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
+                        <h6 class="image-name">ชื่อผู้ป่วย : <i>ไม่มีข้อมูล</i> </h6>
+                    {% endif%}
+                    {% if item['location_zipcode'] is not none %}
+                        <h6 class="image-name">สถานที่คัดกรอง : จ.{{ item['location_province'] }} ({{ item['location_zipcode'] }})</h6>
+                    {% else %}
+                        <h6 class="image-name">สถานที่คัดกรอง : จ.{{ item['location_province'] }} </h6>
                     {% endif %}
-                        <span class="position-absolute top-0 end-0 text-end">
-                            {% if item['followup_request_status'] is not none %}
-                                <div class="badge bg-warning text-dark my-1">Follow Up: {{item['followup_request_status']}}</div><br>
+                    <h6 class="image-name">นำส่งวันที่ : {{ item['formatted_created_at'] }} น.</h6>
+                    <h6 class="fs-6 card-subtitle text-muted mb-2">
+                        ผลการพยากรณ์ของ AI :
+                            {% if item['ai_prediction']==0 %}
+                                Normal
+                            {% elif item['ai_prediction']==1 %}
+                                OPMD
+                            {% else %}
+                                OSCC
                             {% endif %}
-                            {% if item['retrain_request_status'] is not none %}
-                                <div class="badge bg-info text-dark my-1">Retrain: {{item['retrain_request_status']}}</div>
-                            {% endif %}
-                        </span>
+                    </h6>
+                    <h6 class="fs-6 card-subtitle text-muted mb-2">
+                        ผลการวินิจฉัยของทันตแพทย์: 
+                        {% if item['dentist_feedback_code'] is none %}
+                            [ยังไม่ได้ตรวจ]
+                        {% else %}
+                            {{item['dentist_feedback_code']}}
+                        {% endif %}
+                    </h6>
+                    <form action="{{ url_for('webapp.diagnosis', role='admin', img_id=item['id'], channel=item['channel']) }}" id="diagnosis_submit_id{{item['id']}}" method="post"></form>
+                    <form action="{{ url_for('webapp.quick_confirm', role='admin', img_id=item['id'], ai_result=item['ai_prediction']) }}" id="quick_submit_id{{item['id']}}" method="post"></form>
+                    <div class="d-grid gap-2 d-md-block justify-content-md-center">
+                        <button class="btn btn-outline-primary" type="submit" form="diagnosis_submit_id{{item['id']}}">ตรวจยืนยันผล</button>
+                        <button class="btn btn-outline-success my-1" type="submit" form="quick_submit_id{{item['id']}}"
+                            {% if item['dentist_feedback_code'] is not none %}disabled{% endif %}>Quick AI Confirm</button>
+                        <button class="btn btn-outline-danger my-1" type="button" 
+                            data-bs-toggle="modal"
+                            data-bs-target="#submissionDeleteModal{{ item['id'] }}" >ลบข้อมูล</button>
+                            
+                        <form action="{{ url_for('webapp.followup_request', role='admin', img_id=item['id']) }}" id="followup_request_id{{item['id']}}" method="post"></form>
+                        {% if item['followup_request_status'] is none %}
+                            <button class="btn btn-outline-warning btn-sm my-1" type="submit" form="followup_request_id{{item['id']}}">Request Follow Up</button>
+                        {% else %}
+                            <button class="btn btn-warning btn-sm my-1" type="submit" form="followup_request_id{{item['id']}}">Cancel Follow Up</button>
+                        {% endif %}
+                        <form action="{{ url_for('webapp.retrain_request', role='admin', img_id=item['id']) }}" id="retrain_request_id{{item['id']}}" method="post"></form>
+                        {% if item['retrain_request_status'] is none %}
+                            <button class="btn btn-outline-info btn-sm my-1" type="submit" form="retrain_request_id{{item['id']}}">Request Retrain</button>
+                        {% else %}
+                            <button class="btn btn-info btn-sm my-1" type="submit" form="retrain_request_id{{item['id']}}">Cancel Retrain Req</button>
+                        {% endif %}
                     </div>
                 </div>
-            {% endfor %}
-        </div>
-        
-        <!-- Pagination links -->
-        <div class="pagination d-flex justify-content-center align-items-center">
-            {% if current_page > 1 %}
-                <a href="?page=1" class="btn page-link m-2 text-secondary">&laquo; หน้าแรก</a>
-                <a href="?page={{ current_page - 1 }}" class="btn page-link m-2 text-secondary">&lsaquo; ก่อนหน้า</a>
+
+                <!-- Submission Delete Modal -->
+                <div class="modal fade" id="submissionDeleteModal{{ item['id'] }}" tabindex="-1"
+                    aria-labelledby="submissionDeleteModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h1 class="modal-title fs-5" id="submissionDeleteModalLabel"> ลบข้อมูลการนำส่ง </h1>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">คุณแน่ใจที่จะลบข้อมูลการนำส่งนี้ ใช่หรือไม่</div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> ยกเลิก </button>
+                                <form action="{{ url_for('image.delete_image', role='admin') }}" method="post" enctype="multipart/form-data">
+                                    <input name="img_id" type="text" value="{{ item['id'] }}" hidden />
+                                    <input class="btn btn-outline-danger" style="width: 100%" type="submit" value="ลบข้อมูล" />
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <div class="card-body">
+                    <h6 class="image-name" >แหล่งข้อมูล : ทันตแพทย์
+                    </h6>
+                    <h6 class="image-name">ชื่อไฟล์ : {{ item['fname'] }} </h6>
+                    <h6 class="image-name">ชื่อทันตแพทย์ : {{ item['sender_name'] }} {{ item['sender_surname'] }}</h6>
+                    <h6 class="image-name">โรงพยาบาลที่สังกัด : {{ item['sender_hospital'] }} </h6>
+                    {% if item['location_zipcode'] is not none %}
+                        <h6 class="image-name">สถานที่เก็บข้อมูล : จ.{{ item['location_province'] }} ({{ item['location_zipcode'] }})</h6>
+                    {% else %}
+                        <h6 class="image-name">สถานที่เก็บข้อมูล : จ.{{ item['location_province'] }} </h6>
+                    {% endif %}
+                    <h6 class="">วันที่ : {{ item['formatted_created_at'] }} น.</h6>
+                    <h6 class="fs-6 card-subtitle text-muted mb-2">
+                        ผลการพยากรณ์ของ AI :
+                            {% if item['ai_prediction']==0 %}
+                                Normal
+                            {% elif item['ai_prediction']==1 %}
+                                OPMD
+                            {% else %}
+                                OSCC
+                            {% endif %}
+                    </h6>
+                    <h6 class="fs-6 card-subtitle text-muted mb-2">
+                        ความคิดเห็นของทันตแพทย์: 
+                        {% if item['dentist_feedback_code'] is none %}
+                            [ยังไม่ได้ให้ความคิดเห็น]
+                        {% else %}
+                            {{item['dentist_feedback_code']}}
+                        {% endif %}
+                    </h6>
+                    <form action="{{ url_for('webapp.diagnosis', role='admin', img_id=item['id'], channel=item['channel']) }}" id="form_id{{item['id']}}" method="post"></form>
+                    <form action="{{ url_for('webapp.followup_request', role='admin', img_id=item['id']) }}" id="followup_request_id{{item['id']}}" method="post"></form>
+                    <form action="{{ url_for('webapp.retrain_request', role='admin', img_id=item['id']) }}" id="retrain_request_id{{item['id']}}" method="post"></form>
+                    <div class="d-grid gap-2 d-md-block justify-content-md-center">
+                        <button class="btn btn-outline-success" type="submit" form="form_id{{item['id']}}">ดูผลการวิเคราะห์</button>
+                        <button class="btn btn-outline-danger my-1" type="button" data-bs-toggle="modal" data-bs-target="#submissionDeleteModal{{ item['id'] }}" >ลบข้อมูล</button>
+                    </div>
+                    {% if item['followup_request_status'] is none %}
+                        <button class="btn btn-outline-warning btn-sm my-1" type="submit" form="followup_request_id{{item['id']}}">Request Follow Up</button>
+                    {% else %}
+                        <button class="btn btn-warning btn-sm my-1" type="submit" form="followup_request_id{{item['id']}}">Cancel Follow Up</button>
+                    {% endif %}
+                    {% if item['retrain_request_status'] is none %}
+                        <button class="btn btn-outline-info btn-sm my-1" type="submit" form="retrain_request_id{{item['id']}}">Request Retrain</button>
+                    {% else %}
+                        <button class="btn btn-info btn-sm my-1" type="submit" form="retrain_request_id{{item['id']}}">Cancel Retrain Req</button>
+                    {% endif %}
+                </div>
+
+                <!-- Submission Delete Modal -->
+                <div class="modal fade" id="submissionDeleteModal{{ item['id'] }}" tabindex="-1"
+                    aria-labelledby="submissionDeleteModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h1 class="modal-title fs-5" id="submissionDeleteModalLabel"> ลบประวัติ </h1>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">คุณแน่ใจที่จะลบประวัตินี้ ใช่หรือไม่</div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> ยกเลิก </button>
+                                <form action="{{ url_for('image.delete_image', role='admin') }}" method="post" enctype="multipart/form-data">
+                                    <input name="img_id" type="text" value="{{ item['id'] }}" hidden />
+                                    <input class="btn btn-outline-danger" style="width: 100%" type="submit" value="ลบข้อมูล" />
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             {% endif %}
-            {% for page_num in range(1, total_pages + 1) %}
-                {% if page_num == current_page %}
-                    <span class="current-page page-link m-2 text-secondary">หน้าปัจจุบัน : {{ page_num }} จาก {{ total_pages }}</span>
-                {% endif %}
-            {% endfor %}
-            {% if current_page < total_pages %}
-                <a href="?page={{ current_page + 1 }}" class="btn page-link m-2 text-secondary">ถัดไป &rsaquo;</a>
-                <a href="?page={{ total_pages }}" class="btn page-link m-2 text-secondary">หลังสุด &raquo;</a>
-            {% endif %}
+                <span class="position-absolute top-0 end-0 text-end">
+                    {% if item['followup_request_status'] is not none %}
+                        <div class="badge bg-warning text-dark my-1">Follow Up: {{item['followup_request_status']}}</div><br>
+                    {% endif %}
+                    {% if item['retrain_request_status'] is not none %}
+                        <div class="badge bg-info text-dark my-1">Retrain: {{item['retrain_request_status']}}</div>
+                    {% endif %}
+                </span>
+            </div>
         </div>
-    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination links -->
+<div class="pagination d-flex justify-content-center align-items-center">
+    {% if current_page > 1 %}
+        <a href="?page=1" class="btn page-link m-2 text-secondary">&laquo; หน้าแรก</a>
+        <a href="?page={{ current_page - 1 }}" class="btn page-link m-2 text-secondary">&lsaquo; ก่อนหน้า</a>
+    {% endif %}
+    {% for page_num in range(1, total_pages + 1) %}
+        {% if page_num == current_page %}
+            <span class="current-page page-link m-2 text-secondary">หน้าปัจจุบัน : {{ page_num }} จาก {{ total_pages }}</span>
+        {% endif %}
+    {% endfor %}
+    {% if current_page < total_pages %}
+        <a href="?page={{ current_page + 1 }}" class="btn page-link m-2 text-secondary">ถัดไป &rsaquo;</a>
+        <a href="?page={{ total_pages }}" class="btn page-link m-2 text-secondary">หลังสุด &raquo;</a>
+    {% endif %}
 </div>
 {% endblock %}
 
@@ -309,33 +307,14 @@
     const filterSpecialist = document.getElementById("filterSpecialist")
     const filterFollowup = document.getElementById("filterFollowup")
     const filterRetrain = document.getElementById("filterRetrain")
-
-    filterStatus.addEventListener("change", function () {
-        document.getElementById("filterForm").submit();
-    });
-    filterPriority.addEventListener("change", function () {
-        document.getElementById("filterForm").submit();
-    });
-    filterProvince.addEventListener("change", function () {
-        document.getElementById("filterForm").submit();
-    });
-    filterSpecialist.addEventListener("change", function () {
-        document.getElementById("filterForm").submit();
-    });
-    filterFollowup.addEventListener("change", function () {
-        document.getElementById("filterForm").submit();
-    });
-    filterRetrain.addEventListener("change", function () {
-        document.getElementById("filterForm").submit();
-    });
     
     // Get the filters element and set its value from Flask
-    const filterStatusValue     = "{{ filters[0] }}";
-    const filterPriorityValue   = "{{ filters[1] }}";
-    const filterProvinceValue   = "{{ filters[2] }}";
-    const filterSpecialistValue  = "{{ filters[3] }}";
-    const filterFollowupValue   = "{{ filters[4] }}";
-    const filterRetrainValue    = "{{ filters[5] }}";
+    const filterStatusValue     = "{{ data['filterStatus'] }}";
+    const filterPriorityValue   = "{{ data['filterPriority'] }}";
+    const filterProvinceValue   = "{{ data['filterProvince'] }}";
+    const filterSpecialistValue  = "{{ data['filterSpecialist'] }}";
+    const filterFollowupValue   = "{{ data['filterFollowup'] }}";
+    const filterRetrainValue    = "{{ data['filterRetrain'] }}";
 
     // Set the selected filters value if it exists
     if (filterStatusValue) {

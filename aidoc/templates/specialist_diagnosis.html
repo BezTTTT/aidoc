@@ -1,6 +1,6 @@
 {% extends "./base.html"%}
 
-{% block title %} RiskOCA | Specialist Diagnosis {% endblock %}
+{% block title %} AIDOC | Specialist Diagnosis {% endblock %}
 
 {% block content %}
 
@@ -61,7 +61,7 @@
 <div class="d-flex justify-content-center">
     <div class="row justify-content-center my-4" style="width: 90%;">
         <div class="col-md-2 text-center mt-2 px-1">
-            <form action="{{url_for('image.record', role='specialist', page=session['current_record_page'])}}" method="post" enctype="multipart/form-data">
+            <form action="{{url_for('webapp.record', role='specialist', page=session['current_record_page'])}}" method="post" enctype="multipart/form-data">
                 <a class="btn btn-outline-success btn-block nowrap" style="width: 100%; margin: 0;"
                     onclick='this.parentNode.submit(); return false;'>ย้อนกลับ</a>
             </form>
@@ -117,7 +117,7 @@
         
             <button id="seeMoreButton" class="btn btn-light"
                 style="padding: 5px 10px; font-size: 13px;background-color:rgb(196, 196, 196);">
-                <span class="bi bi-plus">คลิกเพื่อดูความน่าจะเป็นของการพยากรณ์ด้วย AI</span>
+                <span class="bi bi-plus">คลิกเพื่อดูข้อมูลการพยากรณ์ของ AI เพิ่มเติม</span>
             </button>
     
             <div id="hiddenContent" class="m-2">
@@ -168,6 +168,53 @@
                         </p>
                     </div>
                 </div>
+
+                <div class="row" style="width: auto">
+                    <div class="col">
+                        {% if data['quality_ai_prediction'] is not none %}
+                            {% if data['quality_ai_prediction']==0 %}
+                                ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ผลลัพธ์อาจผิดพลาด)</b></span>
+                            {% elif data['quality_ai_prediction']==1 %}
+                                ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่พบช่องปาก (ภาพอาจไม่เกี่ยวข้อง)</b></span>
+                            {% elif data['quality_ai_prediction']==2 %}
+                                ตรวจคุณภาพรูป: <span style="color: green;"><b>ผ่านมาตรฐาน</b></span>
+                            {% endif %}
+                        {% else %}
+                            ตรวจคุณภาพรูป: ไม่มีผลลัพธ์ (กด Recompute ใหม่)
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row" style="width: auto">
+                    <div class="col">
+                        {% if data['lesion_ai_version'] is not none %}
+                            {% if data['lesion_ai_version_check'] %}
+                                Oral Lesion AI Version : {{data['lesion_ai_version']}} (current)
+                            {% else %}
+                                Oral Lesion AI Version : {{data['lesion_ai_version']}} <span style="color: magenta;"><b> (old version, try Recompute)</b></span>
+                            {% endif %}
+                        {% else %}
+                            Oral Lesion AI Version : ไม่มีผลลัพธ์ (กด Recompute ใหม่)
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row" style="width: auto">
+                    <div class="col">
+                        {% if data['quality_ai_version'] is not none %}
+                            {% if data['quality_ai_version_check'] %}
+                                Image Quality Checker Version : {{data['quality_ai_version']}} (current)
+                            {% else %}
+                                Image Quality Checker Version : {{data['quality_ai_version']}} <span style="color: magenta;"><b> (old version, try Recompute)</b></span>
+                            {% endif %}
+                        {% else %}
+                            Image Quality Checker Version : ไม่มีผลลัพธ์ (กด Recompute ใหม่)
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row" style="width: auto">
+                    <div class="col">
+                        วันที่ประมวลผลล่าสุด : {{data['ai_updated_at_thai_datetime']}}
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -180,6 +227,19 @@
                 <h5 class="card-title text-start mb-3">ข้อมูลภาพ</h5>
                 <p>Case ID: {{data['case_id']}}</p>
                 <p>ชื่อไฟล์: {{data['fname']}}</p>
+                <p>
+                {% if data['quality_ai_prediction'] is not none %}
+                    {% if data['quality_ai_prediction']==0 %}
+                        ตรวจคุณภาพรูป: <span style="color: red;">ไม่ผ่านมาตรฐาน (ผลลัพธ์อาจผิดพลาด)</span>
+                    {% elif data['quality_ai_prediction']==1 %}
+                        ตรวจคุณภาพรูป: <span style="color: red;">ไม่พบช่องปาก (ภาพอาจไม่เกี่ยวข้อง)</span>
+                    {% elif data['quality_ai_prediction']==2 %}
+                        ตรวจคุณภาพรูป: <span style="color: green;">ผ่านมาตรฐาน</span>
+                    {% endif %}
+                {% else %}
+                    ตรวจคุณภาพรูป: ไม่มีผลลัพธ์ (กด Recompute ใหม่)
+                {% endif %}
+                </p>
                 <p>วันที่นำส่ง: {{data['thai_datetime']}}</p>
                 <p>สถานที่คัดกรอง: {{data['location_text']}}</p>
                 <p>ผู้นำส่งรูป: {{data['sender_description']}}</p>
@@ -256,7 +316,7 @@
             </div>
         {% endif %}
         <div id="dentist-feedback-container" class="card" style="width: 100%; height: fit-content">
-            <form action="{{url_for('image.diagnosis', role='specialist', img_id=data['img_id'], specialist_feedback='true')}}" method="post" enctype="multipart/form-data">
+            <form action="{{url_for('webapp.diagnosis', role='specialist', img_id=data['img_id'], specialist_feedback='true')}}" method="post" enctype="multipart/form-data">
                 <div class="card-body px-4">
                     <h5 class="card-title">สำหรับทันตแพทย์ที่เข้าร่วมโครงการ ท่านจะวินิจฉัยภาพนี้ให้เข้ากรณีใด</h5>
                     {% for key, value in maps['dentist_diagnosis_map'].items() %}
@@ -386,7 +446,7 @@
         <div id="case-report-container" class="card mt-3" style="width: 100%; height: fit-content">
             <div class="card-body px-4">
                 <h5 class="card-title text-start mb-3">รายงานผู้ป่วย (Case Report)</h5>
-                <form action="{{url_for('image.diagnosis', role='specialist', img_id=data['img_id'], case_report='true')}}" method="post" enctype="multipart/form-data">                    
+                <form action="{{url_for('webapp.diagnosis', role='specialist', img_id=data['img_id'], case_report='true')}}" method="post" enctype="multipart/form-data">                    
                     <div id="CaseReportBox">
                         <label for="CaseReportTextarea" class="form-label mt-2">สร้างรายงานผู้ป่วย หรือ ความคิดเห็น หรือ คำวินิจฉัยอื่น ๆ ที่ต้องการบันทึกเป็นประวัติไว้ หรือ รายงานต่อทันตแพทย์ผู้เชี่ยวชาญ</label>
                         <textarea class="form-control" id="CaseReportTextarea" rows="3" name="case_report">{{data['case_report']}}</textarea>
@@ -490,7 +550,7 @@
         });
       } else {
         hiddenContent.slideUp("slow", function () {
-          button.text("คลิกเพื่อดูความน่าจะเป็นของการพยากรณ์ด้วย AI");
+          button.text("คลิกเพื่อดูข้อมูลการพยากรณ์ของ AI เพิ่มเติม");
         });
       }
     });
@@ -568,9 +628,11 @@
     const orderInput = document.getElementById('register_order')
     const patient_id = document.getElementById('patient_id')
 
-    patientIDInput.addEventListener('input',function(e){
-        checkPatientProfile( patientID = e.target.value)
-    })
+    if (patientIDInput!=null){
+        patientIDInput.addEventListener('input',function(e){
+            checkPatientProfile( patientID = e.target.value)
+        })
+    }
 
     function checkPatientProfile(patientID) {
         const idPattern = /^\d{13}$/;

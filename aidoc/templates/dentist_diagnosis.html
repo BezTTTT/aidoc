@@ -1,6 +1,6 @@
 {% extends "./base.html"%}
 
-{% block title %} RiskOCA | Diagnosis {% endblock %}
+{% block title %} AIDOC | Diagnosis {% endblock %}
 
 {% block content %}
 
@@ -107,7 +107,7 @@
         
             <button id="seeMoreButton" class="btn btn-light"
                 style="padding: 5px 10px; font-size: 13px;background-color:rgb(196, 196, 196);">
-                <span class="bi bi-plus">คลิกเพื่อดูความน่าจะเป็นของการพยากรณ์ด้วย AI</span>
+                <span class="bi bi-plus">คลิกเพื่อดูข้อมูลการพยากรณ์ของ AI เพิ่มเติม</span>
             </button>
     
             <div id="hiddenContent" class="m-2">
@@ -158,12 +158,59 @@
                         </p>
                     </div>
                 </div>
+
+                <div class="row" style="width: auto">
+                    <div class="col">
+                        {% if data['quality_ai_prediction'] is not none %}
+                            {% if data['quality_ai_prediction']==0 %}
+                                ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ผลลัพธ์อาจผิดพลาด)</b></span>
+                            {% elif data['quality_ai_prediction']==1 %}
+                                ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่พบช่องปาก (ภาพอาจไม่เกี่ยวข้อง)</b></span>
+                            {% elif data['quality_ai_prediction']==2 %}
+                                ตรวจคุณภาพรูป: <span style="color: green;"><b>ผ่านมาตรฐาน</b></span>
+                            {% endif %}
+                        {% else %}
+                            ตรวจคุณภาพรูป: ไม่มีผลลัพธ์ (กด Recompute ใหม่)
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row" style="width: auto">
+                    <div class="col">
+                        {% if data['lesion_ai_version'] is not none %}
+                            {% if data['lesion_ai_version_check'] %}
+                                Oral Lesion AI Version : {{data['lesion_ai_version']}} (current)
+                            {% else %}
+                                Oral Lesion AI Version : {{data['lesion_ai_version']}} <span style="color: magenta;"><b> (old version, try Recompute)</b></span>
+                            {% endif %}
+                        {% else %}
+                            Oral Lesion AI Version : ไม่มีผลลัพธ์ (กด Recompute ใหม่)
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row" style="width: auto">
+                    <div class="col">
+                        {% if data['quality_ai_version'] is not none %}
+                            {% if data['quality_ai_version_check'] %}
+                                Image Quality Checker Version : {{data['quality_ai_version']}} (current)
+                            {% else %}
+                                Image Quality Checker Version : {{data['quality_ai_version']}} <span style="color: magenta;"><b> (old version, try Recompute)</b></span>
+                            {% endif %}
+                        {% else %}
+                            Image Quality Checker Version : ไม่มีผลลัพธ์ (กด Recompute ใหม่)
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row" style="width: auto">
+                    <div class="col">
+                        วันที่ประมวลผลล่าสุด : {{data['ai_updated_at_thai_datetime']}}
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<form action="{{ url_for('image.diagnosis', role='dentist', img_id=data['img_id']) }}" method="post" enctype="multipart/form-data">
+<form action="{{ url_for('webapp.diagnosis', role='dentist', img_id=data['img_id']) }}" method="post" enctype="multipart/form-data">
     <div class="row d-flex justify-content-center text-align-left my-4">
         <div class="card mb-5" style="width: 100%">
             <div id="outer-container" class="card-body">
@@ -265,7 +312,7 @@
         });
       } else {
         hiddenContent.slideUp("slow", function () {
-          button.text("คลิกเพื่อดูความน่าจะเป็นของการพยากรณ์ด้วย AI");
+          button.text("คลิกเพื่อดูข้อมูลการพยากรณ์ของ AI เพิ่มเติม");
         });
       }
     });

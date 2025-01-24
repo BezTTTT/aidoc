@@ -1,6 +1,6 @@
 {% extends "./base.html"%}
 
-{% block title %} RiskOCA | Upload {% endblock %}
+{% block title %} AIDOC | Upload {% endblock %}
 
 {% block content %}
 <style>
@@ -18,32 +18,32 @@
 <h2 class="text-center"> ระบบปัญญาประดิษฐ์ที่ช่วยในการค้นหาและวิเคราะห์รอยโรคก่อนมะเร็งและมะเร็งช่องปาก</h2>
 <h4 class="text-center"> (Artificial Intelligent System for Detecting and Analyzing PMDs and Oral Cancer)</h4>
 
-{% if data is undefined or data.get('uploadedImage') is none %}
-  <div class="container-fluid">
-    <div class="row d-flex justify-content-center align-items-center text-center">
-      <div class="col-8 col-xs-2 d-flex justify-content-center align-items-center">
-        <form class="p-3 text-center" action="/upload_image/osm" method="post" enctype="multipart/form-data">
-          <input id="file-upload1" type="file" name="imageList" onchange="form.submit()" accept="image/*" multiple hidden />
-          <div class="d-flex align-items-center" style="width: 100%">
-            <label for="file-upload1" class="card d-flex justify-content-center align-items-center" style="
-                  border-style: dashed;
-                  border-color: rgb(0, 229, 255); 
-                  border-width: 2px;
-                  width: 22rem;
-                  height: 20  rem;
-                  cursor: pointer;
-                  padding: 10px;
-                ">
-              <div class="d-flex justify-content-center align-items-center img-responsive">
-                <img src="{{url_for('static', filename='icons/upload_icon.png')}}" style="width: 30%;" class="card-img-top">
-              </div>
-              คลิกเพื่ออัพโหลดรูปภาพ<br />(กรุณาอัพโหลดรูปช่องปากที่ได้มาตรฐานเท่านั้น)
-            </label>
-          </div>
+{% if data.get('uploadedImage') is none %}
+<div class="container-fluid">
+  <div class="row d-flex justify-content-center align-items-center text-center">
+    <div class="col-8 col-xs-2 d-flex justify-content-center align-items-center my-3 ">
+      {% if data['user_compliance'] %}
+        <form action="/upload_image/osm" method="post" enctype="multipart/form-data">
+          <input id="file-upload" type="file" name="imageList" onchange="form.submit()" accept="image/*" multiple hidden />
         </form> 
-      </div>
+      {% else %}
+        <input id="file-upload" data-bs-target="#termsBackdrop" data-bs-toggle="modal" hidden />
+      {% endif %}
+      <label for="file-upload" class="card d-flex justify-content-center align-items-center" style="
+            border-style: dashed;
+            border-color: rgb(0, 229, 255); 
+            border-width: 2px;
+            width: 22rem;
+            height: 20  rem;
+            cursor: pointer;
+            padding: 10px;
+          ">
+        <img src="{{url_for('static', filename='icons/upload_icon.png')}}" style="width: 30%;" class="card-img-top">
+        คลิกเพื่ออัพโหลดรูปภาพ<br />(กรุณาอัพโหลดรูปช่องปากที่ได้มาตรฐานเท่านั้น)
+      </label>
     </div>
   </div>
+</div>
 {% else %}
   <div class="p-3 text-center d-flex justify-content-center">
     <div class="col-md-8">
@@ -128,6 +128,7 @@
     </div>
   </div>
 {% endif %}
+{% include 'terms_modals.html' %}
 {% include 'examples_footer.html' %}
 {% include 'terms_footer.html' %}
 {% endblock %}
@@ -157,9 +158,11 @@
   const patientInfoContainer = document.getElementById('patientInfoContainer')
   const patientIDInput = document.getElementById('patient_id')
 
-  inputIdentityID.addEventListener('input',function(e){
-    checkPatientID( patientID = e.target.value)
-  })
+  if (inputIdentityID!=null){
+      inputIdentityID.addEventListener('input',function(e){
+      checkPatientID( patientID = e.target.value)
+    })
+  }
 
   function checkPatientID(patientID){
     if(patientID.length == 13){

@@ -1,6 +1,6 @@
 {% extends "./base.html" %}
 
-{% block title %} RiskOCA | Patient Records {% endblock %}
+{% block title %} AIDOC | Patient Records {% endblock %}
 
 {% block content %}
 
@@ -20,7 +20,7 @@
         <div class="card-header"><b>วันที่นำส่งรูป {{ item['thai_datetime'] }}</b></div>
         <div class="card-body">
           <h5 class="card-title">
-            <form id="form_{{ item.id }}" action="{{ url_for('image.diagnosis', role='patient', img_id=item['id'], dentistComment='true') }}" method="post" enctype="multipart/form-data">
+            <form id="form_{{ item.id }}" action="{{ url_for('webapp.diagnosis', role='patient', img_id=item['id'], dentistFeedbackRequest='true') }}" method="post" enctype="multipart/form-data">
               <input class="btn btn-secondary" type="submit" value="Case ID: {{ item['case_id'] }}">
             </form>
             {% if item['special_request'] == 1 %}

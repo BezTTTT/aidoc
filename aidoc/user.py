@@ -1,13 +1,22 @@
 from flask import (
-    Blueprint, flash, redirect, render_template, request, session, url_for, jsonify, g
+    Blueprint, flash, redirect, render_template, request, session, url_for, jsonify, g, current_app, send_from_directory, make_response
 )
 from werkzeug.security import generate_password_hash
 
+from PyPDF2 import PdfWriter, PdfReader
+from reportlab.pdfgen import canvas
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase import pdfmetrics
+from reportlab.lib.pagesizes import A4
 import datetime
 import re
+import io
+import os
+import shutil
 
 from aidoc.db import get_db
 from aidoc.auth import login_required, load_logged_in_user, role_validation
+from aidoc.webapp import format_thai_datetime
 
 # 'user' blueprint manages user management system
 bp = Blueprint('user', __name__)
@@ -212,7 +221,7 @@ def register(role):
                 img_id = session['register_later']['img_id']
                 session.pop('register_later', None)
                 session.pop('noNationalID', None)
-                return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
+                return redirect(url_for('webapp.diagnosis', role=role, img_id=img_id))
         else:
             return render_template(target_template, data=data)
     elif role=='osm':
@@ -292,7 +301,7 @@ def register(role):
                 img_id = session['register_later']['img_id']
                 session.pop('register_later', None)
                 session['user_id'] = g.user['id'] 
-                return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
+                return redirect(url_for('webapp.diagnosis', role=role, img_id=img_id))
         else:
             return render_template(target_template, data=data)
     elif role=='dentist':
@@ -353,7 +362,7 @@ def register(role):
                 val = (data["name"], data["surname"], data["email"], data["phone"], data["username"],generate_password_hash(data["password"]), data["job_position"], data["osm_job"], data["hospital"],data["province"], data["license"], session['user_id'])
                 cursor.execute(sql, val)
                 
-            return redirect(url_for('image.record', role='dentist'))
+            return redirect(url_for('webapp.record', role='dentist'))
         else:
             return render_template(target_template, data=data)
     else:
@@ -429,10 +438,169 @@ def cancel_register():
         session['sender_mode'] = role
         img_id = session['register_later']['img_id']
         session.pop('register_later', None)
-        return redirect(url_for('image.diagnosis', role=role, img_id=img_id))
+        return redirect(url_for('webapp.diagnosis', role=role, img_id=img_id))
+
+# region load_legal_docs
+@bp.route('/load_legal_docs/<int:user_id>/<document>')
+@login_required
+def load_legal_docs(user_id, document):
+    if (g.user['is_admin'] == 0) and (session['user_id'] != user_id):
+        return render_template('unauthorized_access.html', error_msg='คุณไม่มีสิทธิ์เข้าถึงข้อมูล Unauthorized Access')
+    
+    legalDir = current_app.config['LEGAL_DIR']
+    agreementVer = current_app.config['CURRENT_AGREEMENT_VER']
+    consentVer = current_app.config['CURRENT_CONSENT_VER']
+    doc_Dir = os.path.join(legalDir, str(user_id))
+
+    if document=='draft_agreement' or document=='agreement':
+        doc_filename = document + "_v" + agreementVer + ".pdf"
+    elif document=='draft_consent' or document=='consent':
+        doc_filename = document + "_v" + consentVer + ".pdf"
+    else:
+        doc_filename = ''
+
+    pdf = send_from_directory(doc_Dir, doc_filename)
+    response = make_response(pdf)
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = 'inline; filename=%s' % doc_filename
+    return response
+
+# region show_legal_docs
+@bp.route('/show_legal_docs/<int:user_id>/<document>')
+@login_required
+def show_legal_docs(user_id, document):
+
+    if (g.user['is_admin'] == 0) and (session['user_id'] != user_id):
+        return render_template('unauthorized_access.html', error_msg='คุณไม่มีสิทธิ์เข้าถึงข้อมูล Unauthorized Access')
+
+    data = {'user_id': user_id ,'document':document}
+    return render_template('document_display.html', data=data)
+
+# region submit_compliance
+@bp.route('/submit_compliance/<int:user_id>', methods=('POST', ))
+@login_required
+def submit_compliance(user_id):
+
+    if (g.user['is_admin'] == 0) and (session['user_id'] != user_id):
+        return render_template('unauthorized_access.html', error_msg='คุณไม่มีสิทธิ์เข้าถึงข้อมูล Unauthorized Access')
+
+    answer = request.form.get('answer')
+    if answer=='accept':
+        set_user_compliance(user_id)
+        returning_page = session['returning_page']
+        session.pop('returning_page', None)
+        if returning_page=='upload_image':
+            return redirect(url_for('image.upload_image', role=session['sender_mode']))
+    elif answer=='reject':
+        legalDir = current_app.config['LEGAL_DIR']
+        agreementVer = current_app.config['CURRENT_AGREEMENT_VER']
+        consentVer = current_app.config['CURRENT_CONSENT_VER']
+        draft1 = os.path.join(legalDir, str(user_id), "draft_agreement_v" + agreementVer + ".pdf")
+        draft2 = os.path.join(legalDir, str(user_id), "draft_consent_v" + consentVer + ".pdf")
+        os.remove(draft1)
+        os.remove(draft2)
+        return redirect('/logout')
+
+# region get_user_compliance
+# Comply with the current versions of user_agreement and informed_consent
+def get_user_compliance(user_id):
+    sql = 'SELECT * FROM user_compliance WHERE user_id=%s'
+    val = (user_id, )
+    db, cursor = get_db()
+    cursor.execute(sql, val)
+    results = cursor.fetchall()
+    if results:
+        result = results[-1] # Get the latest agreement
+        return  (result['user_agreement_version'] == current_app.config['CURRENT_AGREEMENT_VER']) and \
+                (result['informed_consent_version'] == current_app.config['CURRENT_CONSENT_VER'])
+    else:
+        return False
+
+# region set_user_compliance
+# Comply with the current versions of user_agreement and informed_consent
+def set_user_compliance(user_id):
+
+    legalDir = current_app.config['LEGAL_DIR']
+    agreementVer = current_app.config['CURRENT_AGREEMENT_VER']
+    consentVer = current_app.config['CURRENT_CONSENT_VER']
+
+    sql = '''INSERT INTO user_compliance
+        (user_id, user_agreement_version, user_agreement_datetime, informed_consent_version, informed_consent_datetime)
+        VALUES (%s, %s, %s, %s, %s)'''
+    val = (user_id, agreementVer, datetime.datetime.now(), consentVer, datetime.datetime.now())
+    db, cursor = get_db()
+    cursor.execute(sql, val)
+
+    # Make the drafts to be the final ones
+    draft1 = os.path.join(legalDir, str(user_id), "draft_agreement_v" + agreementVer + ".pdf")
+    final1 = os.path.join(legalDir, str(user_id), "agreement_v" + agreementVer + ".pdf")
+    draft2 = os.path.join(legalDir, str(user_id), "draft_consent_v" + consentVer + ".pdf")
+    final2 = os.path.join(legalDir, str(user_id), "consent_v" + consentVer + ".pdf")
+    os.rename(draft1, final1)
+    os.rename(draft2, final2)
+
+# region generate_legal_drafts
+# Generate user_agreement and informed_consent pdfs
+def generate_legal_drafts(user_id):
+    sql = 'SELECT name, surname, national_id FROM user WHERE id=%s'
+    val = (user_id, )
+    db, cursor = get_db()
+    cursor.execute(sql, val)
+    result = cursor.fetchone()
+    full_name = f"{result['name']} {result['surname']}"
+    if result['national_id']:
+        full_name_with_id = f"{result['name']} {result['surname']} (ID: {result['national_id']})"
+    else:
+        full_name_with_id = full_name
+    
+    legalDir = current_app.config['LEGAL_DIR']
+    agreementVer = current_app.config['CURRENT_AGREEMENT_VER']
+    consentVer = current_app.config['CURRENT_CONSENT_VER']
+    os.makedirs(os.path.join(legalDir, str(user_id)) , exist_ok=True)
+
+    # Generate PDFs
+    pdfmetrics.registerFont(TTFont('THSarabunNew-Bold', os.path.join(legalDir, 'templates', 'THSarabunNew Bold.ttf')))
+    current_time = format_thai_datetime(datetime.datetime.now())
+
+    for i in range(2):
+        packet = io.BytesIO()
+        text_canvas = canvas.Canvas(packet, pagesize=A4)
+        text_canvas.setFont('THSarabunNew-Bold', 16)
+        if i==0: # User Agreement
+            text_canvas.drawString(160, 530, full_name) 
+            text_canvas.drawString(385, 530, current_time + ' น.')
+        else: # Broad Informed Consent
+            text_canvas.drawString(160, 735, full_name_with_id) 
+            text_canvas.drawString(170, 335, full_name)
+            text_canvas.drawString(400, 335, current_time + ' น.')
+            text_canvas.drawString(170, 300, "รศ.ดร.ปฏิเวธ วุฒิสารวัฒนา") # PI
+            text_canvas.drawString(400, 300, current_time + ' น.')
+            text_canvas.drawString(180, 265, "ทพ.ดร.แมนสรวง วงศ์อภัย") # Project Head
+            text_canvas.drawString(400, 265, current_time + ' น.')
+        text_canvas.save()
+        packet.seek(0)
+        canvas_pdf = PdfReader(packet)
+        output = PdfWriter()
+        if i==0: # User Agreement
+            input = PdfReader(open(os.path.join(legalDir, 'templates', 'agreement_v'+ agreementVer + ".pdf"), "rb"))
+            output.add_page(input.pages[0])
+            page = input.pages[1]
+            page.merge_page(canvas_pdf.pages[0])
+            output.add_page(page)
+            output_stream = open(os.path.join(legalDir, str(user_id), "draft_agreement_v" + agreementVer + ".pdf"), "wb")
+        else: # Broad Informed Consent
+            input = PdfReader(open(os.path.join(legalDir, 'templates', 'consent_v'+ consentVer + ".pdf"), "rb"))
+            output.add_page(input.pages[0])
+            output.add_page(input.pages[1])
+            output.add_page(input.pages[2])
+            page = input.pages[3]
+            page.merge_page(canvas_pdf.pages[0])
+            output.add_page(page)
+            output_stream = open(os.path.join(legalDir, str(user_id), "draft_consent_v" + consentVer + ".pdf"), "wb")
+        output.write(output_stream)
+        output_stream.close()
 
 # Helper functions
-
 # region remove_prefix
 def remove_prefix(input_str):
     prefixes = ["นาย", "นางสาว", "นาง", "น.ส.", "นส.", "น.",  "ทพญ.", "ทพ.", "ดร."]

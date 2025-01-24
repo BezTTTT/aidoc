@@ -55,8 +55,8 @@
         <div class="container-fluid">
             <!-- Risk Oral Cancer Artificial intelligence -->
             <a class="navbar-brand">
-                RiskOCA
-                <h6 style="font-size: 10px">(Web v.3.0 | AI v.2.X )</h6>
+                AIDOC
+                <h6 style="font-size: 10px">(Web v.{{config['WEB_VER']}} | AI v.{{config['AI_LESION_VER']}}L + v.{{config['AI_QUALITY_VER']}}Q) </h6>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                 data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false"
@@ -73,6 +73,9 @@
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link active" aria-current="page" href="/record/dentist">ประวัติการนำส่งข้อมูล</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link active" aria-current="page" href="/edit/dentist">แก้ไขข้อมูลส่วนตัว</a>
                             </li>
                             <!-- Specialist is a subset of dentist -->
                             {% if g.user['is_specialist']==1 %}
@@ -127,6 +130,10 @@
                                 <a class="nav-link active" aria-current="page" href="/osm_hierarchy">กลุ่มผู้ตรวจคัดกรอง</a>
                             </li>
 
+                            <li class="nav-item">
+                                <a class="nav-link active" aria-current="page" href="/edit/osm">แก้ไขข้อมูลส่วนตัว</a>
+                            </li>
+
                         <!--  patient navbar -->
                         {% elif g.user['is_patient']==1 %}
                             <li class="nav-item">
@@ -134,6 +141,9 @@
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link active" aria-current="page" href="/record/patient">ประวัติการนำส่งข้อมูล</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link active" aria-current="page" href="/edit/patient">แก้ไขข้อมูลส่วนตัว</a>
                             </li>
                         {% endif %}
                         
