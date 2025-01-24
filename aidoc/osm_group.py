@@ -17,7 +17,7 @@ def format_thai_datetime(x):
     return output_thai_datetime_str
 
 
-# render osm hierarchy page
+# render osm group manage page
 @bp.route('/member-manage/', methods=['GET']) 
 @login_required
 def render_osm_hierarchy():

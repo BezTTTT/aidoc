@@ -58,8 +58,8 @@ def create_app(test_config=None):
     from .API import admin
     app.register_blueprint(admin.routes.admin_bp)
     
-    from . import osm_hierarchy
-    app.register_blueprint(osm_hierarchy.bp, url_prefix='/osm_hierarchy')
+    from . import osm_group
+    app.register_blueprint(osm_group.bp, url_prefix='/osm_hierarchy')
 
     # Enable debug mode
     app.config['DEBUG'] = True
