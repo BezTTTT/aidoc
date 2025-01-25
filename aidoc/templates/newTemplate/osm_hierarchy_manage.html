@@ -20,17 +20,16 @@ block content %}
     >
       เพิ่มผู้ตรวจคัดกรอง
     </button>
+  {% endif %}
     <button
       class="btn btn-primary"
-      data-bs-toggle="modal"
-      data-bs-target="#addUserModal"
       onclick="window.location.href='/osm_group/';"
     >
       รายงานกลุ่มผู้ตรวจคัดกรอง
     </button>
 </div>
   
-  {% endif %}
+  
 </div>
 
 <!-- Add User Modal -->
@@ -50,6 +49,7 @@ block content %}
           class="btn-close"
           data-bs-dismiss="modal"
           aria-label="Close"
+          onclick="handleComplete()"
         ></button>
       </div>
       <div class="modal-body">
@@ -64,7 +64,14 @@ block content %}
           </thead>
           <tbody></tbody>
         </table>
+        <div id="loadingAddSpinner" class="d-none my-2">
+          <div class="d-flex justify-content-center align-items-center">
+            <div class="spinner-border text-primary" role="status"></div>
+            <span class="ms-2">กำลังโหลดข้อมูล...</span>
+          </div>
+        </div>
       </div>
+      
       <div class="modal-footer">
         <button
           type="button"
@@ -78,6 +85,7 @@ block content %}
     </div>
   </div>
 </div>
+
 
 <div class="table-responsive">
   <table id="user_manage" class="dataTable">
@@ -96,6 +104,12 @@ block content %}
     <tbody></tbody>
   </table>
 </div>
+<div id="loadingManageSpinner" class="d-none my-2">
+  <div class="d-flex justify-content-center align-items-center">
+    <div class="spinner-border text-primary" role="status"></div>
+    <span class="ms-2">กำลังโหลดข้อมูล...</span>
+  </div>
+</div>
 {% else %}
 <div class="alert alert-danger" role="alert">
   คุณไม่ได้อยู่ในกลุ่มผู้ตรวจคัดกรองใดๆ โปรดติดต่อผู้ดูแลเพื่อเข้าร่วมกลุ่ม
@@ -109,13 +123,23 @@ block content %}
   let osmDataTableInstance = null; // DataTables instance
 
   let userAdded = false; // Track whether a user has been added
+  let addFirstLoad = true;
 
   const groupData = document.getElementById("groupData");
   const groupId = groupData.dataset.groupId;
   const is_user_supervisor = groupData.dataset.userSupervisor;
 
-  function fetchGroup() {
+  function toggleSpinner(show, elem) {
+    const spinner = document.getElementById(elem);
+    if (show) {
+      spinner.classList.remove("d-none");
+    } else {
+      spinner.classList.add("d-none");
+    }
+  }
 
+  function fetchGroup() {
+    toggleSpinner(true, "loadingManageSpinner"); // Show spinner
     fetch(`/osm_group/group/${groupId}`, {
       method: "GET",
       headers: {
@@ -131,11 +155,13 @@ block content %}
       .then((data) => {
         fetchedGroupData = data; // Save fetched data
         renderManageTable(fetchedGroupData); // Render the table initially
+        toggleSpinner(false, "loadingManageSpinner"); // Hide spinner
       })
       .catch((error) => {
         console.error("Error:", error);
         const tbody = document.querySelector(`#user_manage tbody`);
         tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">เกิดข้อผิดพลาดในการดึงข้อมูล</td></tr>`;
+        toggleSpinner(false, "loadingManageSpinner"); // Hide spinner
       });
   }
 
@@ -192,6 +218,10 @@ block content %}
   }
 
   function fetchOSMUsers() {
+    if(addFirstLoad){
+      toggleSpinner(true, "loadingAddSpinner");
+    }
+      
     fetch(`/osm_group/get_osm_for_search`, {
       method: "GET",
       headers: {
@@ -207,9 +237,16 @@ block content %}
       .then((data) => {
         fetchedOSMData = data; // Save fetched data
         renderAddTable(fetchedOSMData);
+        addFirstLoad = false
+        if(!addFirstLoad){
+          toggleSpinner(false, "loadingAddSpinner");
+        }
       })
       .catch((error) => {
         console.error("Error:", error);
+        if(!addFirstLoad){
+          toggleSpinner(false, "loadingAddSpinner");
+        }
       });
   }
 
@@ -219,7 +256,7 @@ block content %}
     tbody.innerHTML = ""; // Clear existing rows
 
     if (osm_list.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">ไม่พบผู้ตรวจคัดกรองในจังหวัดเดียวกันในจังหวัด${province}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">ไม่พบผู้ตรวจคัดกรองในจังหวัด${province}</td></tr>`;
       return;
     }
 
@@ -232,7 +269,9 @@ block content %}
     ${
       is_user_supervisor
         ? `<td>
-                 <button class="btn btn-primary" style="width: 100%" onclick="addUserToGroup(this, '${user.id}', '${user.name} ${user.surname}')">เพิ่ม</button>
+                 <button class="btn btn-primary" style="width: 100%" onclick="addUserToGroup(this, '${user.id}', '${user.name} ${user.surname}')">
+                  เพิ่ม
+                  </button>
             </td>`
         : ""
     }`;
@@ -262,7 +301,14 @@ block content %}
 
   function confirmAndDelete(button, userId, name) {
     if (!confirm(`คุณต้องการลบ ${name} ออกจากกลุ่มใช่หรือไม่ ?`)) return;
+
+    const originalText = button.innerHTML;
     button.disabled = true;
+    button.innerHTML = `
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      กำลังลบ...
+    `;
+
     const formData = { user_id: userId, group_id: groupId };
 
     fetch(`/osm_group/remove`, {
@@ -278,20 +324,32 @@ block content %}
             `Failed to delete user from group: ${response.statusText}`
           );
         }
-        alert("ผู้ใช้ถูกลบสำเร็จ!");
+        alert(`${name} ถูกลบสำเร็จ!`);
+        button.innerHTML = `
+          <i class="bi bi-check-circle-fill"></i> ลบแล้ว
+        `;
+        button.classList.remove("btn-danger");
+        button.classList.add("btn-secondary");
         window.location.reload(); // Refresh page after deleting user
       })
       .catch((error) => {
         console.error("Error:", error);
-        alert("เกิดข้อผิดพลาดในการลบผู้ใช้");
-        button.disabled = false; // Re-enable the button on error
+        alert(`เกิดข้อผิดพลาดในการลบ ${name}`);
+        button.disabled = false;
+        button.innerHTML = originalText;
       });
   }
 
   function addUserToGroup(button, userId, addingName) {
-
+    const originalText = button.innerHTML;
     button.disabled = true; // Disable the button temporarily
-    userAdded = true;
+
+    button.innerHTML = `
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      กำลังเพิ่ม...
+    `;
+  
+    
     const formData = { user_id: userId, group_id: groupId };
 
     fetch(`/osm_group/add`, {
@@ -307,12 +365,19 @@ block content %}
             `Failed to add user to group: ${response.statusText}`
           );
         }
-        alert("ผู้ใช้ถูกเพิ่มสำเร็จ!");
+        userAdded = true;
+        button.innerHTML = `
+          <i class="bi bi-check-circle-fill"></i> เพิ่มแล้ว
+        `;
+        button.classList.remove("btn-primary");
+        button.classList.add("btn-success");
+        
       })
       .catch((error) => {
         console.error("Error:", error);
         alert("เกิดข้อผิดพลาดในการเพิ่มผู้ใช้");
-        button.disabled = false; // Re-enable the button on error
+        button.disabled = false;
+        button.innerHTML = originalText;
       });
   }
 

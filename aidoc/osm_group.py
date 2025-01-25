@@ -131,7 +131,7 @@ def render_osm_group_record(): # Submission records
             LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
             LEFT JOIN user AS sender_user ON submission_record.sender_phone = sender_user.phone
             LEFT JOIN user AS osm_user ON sender_id = osm_user.id
-            WHERE {osm_sql_construct} submission_record.sender_phone is not NULL
+            WHERE ({osm_sql_construct} submission_record.sender_phone is not NULL ) AND submission_record.channel = "OSM"
             ORDER BY case_id DESC'''
     cursor.execute(sql, )
     db_query =  cursor.fetchall()
