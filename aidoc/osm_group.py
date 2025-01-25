@@ -396,3 +396,77 @@ def search_users():
         cursor.close()
         db.close()
 
+@bp.route('/promote_supervisor/', methods=['POST', 'DELETE'])
+# @login_required
+def update_osm_role():
+    body = request.get_json()
+    osm_id = body['user_id']
+
+    try:
+        db, cursor = get_db()
+        if request.method == 'POST':
+
+            cursor.execute("""
+                SELECT group_id FROM osm_group WHERE osm_supervisor_id = %s
+            """, (osm_id,))
+            existing_group = cursor.fetchone()
+            if existing_group:
+                return jsonify({'message': 'User is already a supervisor', 'group_id': existing_group['group_id']}), 200
+            else:
+                cursor.execute("""
+                    INSERT INTO osm_group (osm_supervisor_id, note) VALUE (%s, NULL)
+                """, (osm_id,))
+                new_group_id = cursor.lastrowid
+
+                cursor.execute("""
+                    INSERT INTO osm_group_member (group_id, osm_id) VALUES (%s, %s)
+                """, (new_group_id, osm_id))
+                db.commit()
+            
+            return jsonify({'message': 'Group created and user added as member', 'group_id': new_group_id}), 200
+            
+
+        elif request.method == 'DELETE':
+            #remove group and all member in group
+            cursor.execute("""
+                SELECT group_id FROM osm_group WHERE osm_supervisor_id = %s
+            """, (osm_id,))
+            is_supervisor = cursor.fetchone()
+            if not is_supervisor:
+                return jsonify({'error': 'User is not a supervisor'}), 403
+            else:
+                cursor.execute("""
+                    DELETE osm_group_member FROM osm_group_member 
+                    JOIN (SELECT group_id FROM osm_group WHERE osm_supervisor_id = %s) AS subquery 
+                    ON osm_group_member.group_id = subquery.group_id
+                """, (osm_id,))
+                cursor.execute("""
+                    DELETE FROM osm_group WHERE osm_supervisor_id = %s
+                """, (osm_id,))
+                db.commit()
+        
+        return jsonify({'message': 'Group and user removed'}), 200
+    except Exception as e:
+                db.rollback()
+                return jsonify({'error': f'An error occurred: {e}'}), 500
+    finally:
+        cursor.close()
+        db.close()
+
+@bp.route('/is_supervisor/<int:user_id>', methods=['GET'])
+# @login_required
+def is_supervisor_check(user_id):
+    try:
+        db, cursor = get_db()
+        cursor.execute("""
+            SELECT group_id FROM osm_group WHERE osm_supervisor_id = %s
+        """, (user_id,))
+        existing_group = cursor.fetchone()
+        if existing_group:
+            return jsonify(is_supervisor=True)
+        return jsonify(is_supervisor=False)
+    except:
+        return jsonify(is_supervisor=False)
+    finally:
+        cursor.close()
+        db.close()
