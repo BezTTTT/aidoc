@@ -24,7 +24,7 @@ block content %}
       class="btn btn-primary"
       data-bs-toggle="modal"
       data-bs-target="#addUserModal"
-      onclick="window.location.href='/osm_hierarchy/';"
+      onclick="window.location.href='/osm_group/';"
     >
       รายงานกลุ่มผู้ตรวจคัดกรอง
     </button>
@@ -70,7 +70,7 @@ block content %}
           type="button"
           class="btn btn-secondary"
           data-bs-dismiss="modal"
-          onclick="window.location.reload();"
+          onclick="handleComplete()"
         >
           เสร็จสิ้น
         </button>
@@ -108,12 +108,15 @@ block content %}
   let groupDataTableInstance = null; // DataTables instance
   let osmDataTableInstance = null; // DataTables instance
 
+  let userAdded = false; // Track whether a user has been added
+
   const groupData = document.getElementById("groupData");
   const groupId = groupData.dataset.groupId;
   const is_user_supervisor = groupData.dataset.userSupervisor;
 
   function fetchGroup() {
-    fetch(`/osm_hierarchy/group/${groupId}`, {
+
+    fetch(`/osm_group/group/${groupId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -131,6 +134,8 @@ block content %}
       })
       .catch((error) => {
         console.error("Error:", error);
+        const tbody = document.querySelector(`#user_manage tbody`);
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">เกิดข้อผิดพลาดในการดึงข้อมูล</td></tr>`;
       });
   }
 
@@ -157,7 +162,7 @@ block content %}
             ${
               user.is_supervisor == 1
                 ? `<button class="btn btn-secondary" disabled style="width: 100%">ผู้ดูแล</button>`
-                : `<button class="btn btn-danger" style="width: 100%" onclick="confirmAndDelete(this, '${user.osm_id}');">ลบ</button>`
+                : `<button class="btn btn-danger" style="width: 100%" onclick="confirmAndDelete(this, '${user.osm_id}', '${user.name} ${user.surname}');">ลบ</button>`
             }
             </td>`
           : ""
@@ -187,7 +192,7 @@ block content %}
   }
 
   function fetchOSMUsers() {
-    fetch(`/osm_hierarchy/get_osm_for_search`, {
+    fetch(`/osm_group/get_osm_for_search`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -210,8 +215,13 @@ block content %}
 
   function renderAddTable(data) {
     const tbody = document.querySelector(`#add_list tbody`);
-    const { osm_list } = data;
+    const { osm_list , province} = data;
     tbody.innerHTML = ""; // Clear existing rows
+
+    if (osm_list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">ไม่พบผู้ตรวจคัดกรองในจังหวัดเดียวกันในจังหวัด${province}</td></tr>`;
+      return;
+    }
 
     osm_list.forEach((user) => {
       const row = document.createElement("tr");
@@ -250,12 +260,12 @@ block content %}
     });
   }
 
-  function confirmAndDelete(button, userId) {
-    if (!confirm("คุณต้องการลบผู้ใช้นี้ออกจากกลุ่มใช่หรือไม่ ?")) return;
+  function confirmAndDelete(button, userId, name) {
+    if (!confirm(`คุณต้องการลบ ${name} ออกจากกลุ่มใช่หรือไม่ ?`)) return;
     button.disabled = true;
     const formData = { user_id: userId, group_id: groupId };
 
-    fetch(`/osm_hierarchy/remove`, {
+    fetch(`/osm_group/remove`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -279,12 +289,12 @@ block content %}
   }
 
   function addUserToGroup(button, userId, addingName) {
-    if (!confirm(`คุณต้องการเพิ่ม ${addingName} ไปในกลุ่มใช่หรือไม่ ?`)) return;
 
     button.disabled = true; // Disable the button temporarily
+    userAdded = true;
     const formData = { user_id: userId, group_id: groupId };
 
-    fetch(`/osm_hierarchy/add`, {
+    fetch(`/osm_group/add`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -305,7 +315,15 @@ block content %}
         button.disabled = false; // Re-enable the button on error
       });
   }
+
+  function handleComplete() {
+    if (userAdded) {
+      window.location.reload(); // Reload the page if a user was added
+    }
+  }
+
   if (groupId != -1) fetchGroup(); // Fetch data and render table on page load
+
 </script>
 
 {% endblock %}

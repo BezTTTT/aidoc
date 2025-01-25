@@ -8,16 +8,19 @@
 <div class="row">
     <div class="col-12">
         <h2>ระบบการบริหารจัดการภาพของสมาชิกกลุ่มผู้ตรวจคัดกรอง</h2>
+        <p>หัวหน้ากลุ่มผู้ตรวจคัดกรอง: {{ data['group_info']['name'] }} {{ data['group_info']['surname'] }} ({{ data['group_info']['phone'] }})</p>
+        
         <div class="text-end">
-            <button class="btn btn-primary" onclick="window.location.href='/osm_hierarchy/member-manage/'">จัดการสมาชิกกลุ่มผู้ตรวจคัดกรอง</button>
+            <button class="btn btn-primary" onclick="window.location.href='/osm_group/member-manage/'">จัดการสมาชิกกลุ่มผู้ตรวจคัดกรอง</button>
         </div>
+        <p>{% if data['group_info']['note'] != None %} data['group_info']['note'] {% else %} ไม่มีข้อมูลคำอธิบายกลุ่ม {% endif %}</p>
     </div>
 
     <!-- Search Box -->
     <div class="col-12 mt-3">
         <p>ค้นหาผลลัพธ์ตามคำสำคัญ <i>ค้นหาผลลัพธ์ตามคำสำคัญ ค้นหาได้เฉพาะข้อมูลในระบบของสมาชิกกลุ่มผู้ตรวจคัดกรอง</i></p>
     </div>
-    <form action="/osm_hierarchy/" method="post">
+    <form action="/osm_group/" method="post">
         <div class="input-group mb-3">
             <input type="text" class="form-control" name="search" placeholder="ชื่อ นามสกุลคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC ชื่อไฟล์ Case ID" value="{{ data['search'] }}" />
             <button class="btn btn-outline-primary" type="submit" value="{{ data['search'] }}"> Search </button>
@@ -25,7 +28,7 @@
     </form>
 
     <div class="container">
-        <form action="/osm_hierarchy/" method="post" id="filterForm">
+        <form action="/osm_group/" method="post" id="filterForm">
             <div class="row row-cols-auto">
                 <div class="col my-1">
                     <label for="filterPriority">ระดับความสำคัญ:</label>
@@ -48,7 +51,7 @@
                     <select name="filterSender" id="filterSender" class="btn btn-light border border-1 mx-1">
                         <option value="">ทั้งหมด</option>
                         {% for osm in data['osm_option_list'] %}
-                            <option value="{{ osm['user_id'] }}">{{osm['name']}}</option>
+                            <option value="{{ osm['osm_id'] }}">{{osm['name']}}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -126,9 +129,8 @@
                                     {% endif %}
                             </h6>
                             <div class="d-grid gap-2 d-md-flex justify-content-md-center">
-                                <form action="{{ url_for('image.diagnosis', role='osm', img_id=item['id']) }}" id="form_id{{item['id']}}" method="post"> </form>
+                                <form action="{{ url_for('webapp.diagnosis', role='osm', img_id=item['id']) }}" id="form_id{{item['id']}}" method="post"> </form>
                                 <button class="btn btn-outline-success" type="submit" form="form_id{{item['id']}}">ดูผลการวิเคราะห์</button>
-
                             </div>
                         </div>
 

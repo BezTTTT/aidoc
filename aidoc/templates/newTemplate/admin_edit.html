@@ -76,7 +76,7 @@
         return;
       }
 
-      fetch(`/osm_hierarchy/is_supervisor/${userId}`, {
+      fetch(`/osm_group/osm_permission/${userId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -161,7 +161,7 @@
       try {
         if(is_osm == 1 && set_supervisor != (is_supervisor ? 1 : 0)){
           if(set_supervisor == 1){
-            const response = await fetch("/osm_hierarchy/promote_supervisor/", {
+            const response = await fetch("/osm_group/promote_supervisor/", {
               method: "POST",  // Use POST method for make osm to supervisor
               headers: {
                 "Content-Type": "application/json",
@@ -169,7 +169,7 @@
               body: JSON.stringify({user_id: userId}),
             });
           }else{
-            const response = await fetch("/osm_hierarchy/promote_supervisor/", {
+            const response = await fetch("/osm_group/promote_supervisor/", {
               method: "DELETE",  // Use POST method for make osm to supervisor
               headers: {
                 "Content-Type": "application/json",

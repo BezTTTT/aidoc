@@ -63,7 +63,7 @@ def create_app(test_config=None):
     app.register_blueprint(admin.routes.admin_bp)
     
     from . import osm_group
-    app.register_blueprint(osm_group.bp, url_prefix='/osm_hierarchy')
+    app.register_blueprint(osm_group.bp, url_prefix='/osm_group')
 
     # Enable debug mode
     app.config['DEBUG'] = True

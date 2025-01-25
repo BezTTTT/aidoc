@@ -126,6 +126,11 @@
                             <li class="nav-item">
                                 <a class="nav-link active" aria-current="page" href="/record/osm">ประวัติการนำส่งข้อมูล</a>
                             </li>
+                            {% if g.user['has_group'] %}
+                            <li class="nav-item">
+                                <a class="nav-link active" aria-current="page" href="/osm_group">กลุ่มผู้ตรวจคัดกรอง</a>
+                            </li>
+                            {% endif %}
                             <li class="nav-item">
                                 <a class="nav-link active" aria-current="page" href="/edit/osm">แก้ไขข้อมูลส่วนตัว</a>
                             </li>
