@@ -459,7 +459,8 @@ def editByRole(role):
                         hospital,
                         national_id, 
                         job_position, 
-                        phone
+                        phone,
+                        osm_job
                     FROM 
                         user
                     WHERE 
@@ -468,41 +469,37 @@ def editByRole(role):
             val = (session["user_id"],)
             cursor.execute(sql, val)
             data = cursor.fetchone()
-            if data["national_id"]:
-                data["national_id"] = data["national_id"][:-4] + "****"
-            if data["phone"]:
-                data["phone"] = data["phone"][:-4] + "****"
-            data["email"] = data["email"] if data.get("email") else ""
             
             return render_template(target_template,data=data)
         if request.method == 'POST':
             data['name'] = request.form['name']
             data['surname'] = request.form['surname']
             data['job_position'] = request.form['job_position']
-            data['osm_job'] = request.form.get('osm_job', '')
-            data['license'] = request.form.get('license', '')
+            data['osm_job'] = request.form.get('osm_job')
+            data['license'] = request.form.get('license')
             data['hospital'] = request.form['hospital']
             data['province'] = request.form['province']
             data['national_id'] = request.form['national_id']
-            data['phone'] = request.form['phone','']
+            data['phone'] = request.form['phone']
             data["valid_phone"] = True
             data["valid_province_name"] = True
-            data["valid_license"] = True
-
-            if data["email"]=='':
-                data["email"] = None
-            if data["phone"]=='':
-                data["phone"] = None
+            data["valid_national_id"] = True
 
             inval = []
-            valid_func_list = [ validate_province_name,
-                                validate_phone,
-                                validate_license]
+            valid_func_list = [ validate_national_id,
+                               validate_phone,
+                               validate_license,
+                               validate_province_name,]
             for valid_func in valid_func_list:
                 args = {'data': data, 'form': request.form , 'invalid':inval}
                 valid_check, data , inval = valid_func(args)
                 if not valid_check:
                     return render_template(target_template,data=data)
+                
+            if data["osm_job"] == '':
+                data["osm_job"] = None
+            if data["license"] == '':
+                data["license"] = None
 
             sql = '''UPDATE user SET 
                     name = %s,
