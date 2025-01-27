@@ -69,6 +69,10 @@ CREATE TABLE `submission_record` (
   `biopsy_comment` varchar(255) DEFAULT NULL,
   `ai_prediction` int DEFAULT NULL,
   `ai_scores` varchar(255) DEFAULT NULL,
+  `lesion_ai_version` varchar(255) DEFAULT NULL,
+  `quality_ai_prediction` int DEFAULT NULL,
+  `quality_ai_version` varchar(255) DEFAULT NULL,
+  `ai_updated_at`	datetime DEFAULT NULL,
   `location_district` varchar(255) DEFAULT NULL,
   `location_amphoe` varchar(255) DEFAULT NULL,
   `location_province` varchar(255) DEFAULT NULL,
@@ -113,7 +117,7 @@ CREATE TABLE `retrain_request` (
   `submission_id` int NOT NULL,
   `retrain_requester` int NOT NULL,
   `retrain_request_date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `retrain_request_status` varchar(256) NOT NULL
+  `retrain_request_status` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 /*
@@ -126,17 +130,17 @@ CREATE TABLE `followup_request` (
   `submission_id` int NOT NULL,
   `followup_requester` int NOT NULL,
   `followup_request_date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `followup_request_status` varchar(256) NOT NULL,
-  `contact_person` varchar(256),
-  `followup_note` varchar(256)
+  `followup_request_status` varchar(255) NOT NULL,
+  `contact_person` varchar(255),
+  `followup_note` varchar(255)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE `user_compliance` (
   `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `user_id` int NOT NULL,
-  `user_agreement_version` varchar(256),
+  `user_agreement_version` varchar(255),
   `user_agreement_datetime` datetime DEFAULT NULL,
-  `informed_consent_version` varchar(256),
+  `informed_consent_version` varchar(255),
   `informed_consent_datetime` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
