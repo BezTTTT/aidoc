@@ -10,12 +10,14 @@ block content %}
   {% if group_id != -1 %}
 
   <div class="my-5">
-    <h2>กลุ่มผู้ตรวจคัดกรอง</h2>
+    <h2>ระบบจัดการสมาชิกกลุ่มผู้ตรวจคัดกรอง</h2>
     <p>
       หมายเหตุของกลุ่ม:
       <span
-        >{% if group_note != None%} {{group_note}} {% else %} ไม่มีข้อมูล {%
-        endif %} {% if is_user_supervisor %}
+        ><i
+          >{% if group_note != None%} {{group_note}} {% else %} ไม่มีข้อมูล {%
+          endif %} {% if is_user_supervisor %}</i
+        >
         <span>
           <button class="btn btn-link" onclick="editGroupNote()">แก้ไข</button>
         </span>
@@ -130,10 +132,10 @@ block content %}
 </div>
 
 <script>
-  let fetchedGroupData = []; // Store fetched data globally
-  let fetchedOSMData = []; // Store fetched data globally
-  let groupDataTableInstance = null; // DataTables instance
-  let osmDataTableInstance = null; // DataTables instance
+  let fetchedGroupData = [];
+  let fetchedOSMData = [];
+  let groupDataTableInstance = null; // Group member dataTables instance
+  let osmDataTableInstance = null; // OSM add dataTables instance
 
   let userAdded = false; // Track whether a user has been added
   let addFirstLoad = true;
@@ -186,12 +188,25 @@ block content %}
     group_list.forEach((user) => {
       const row = document.createElement("tr");
 
-      row.innerHTML = `<td>${user.name} <span>${user.surname}</span></td>
+      row.innerHTML = `<td>${user.name} <span>${user.surname}</span> ${
+        user.is_supervisor == "1"
+          ? " <span>(หัวหน้ากลุ่มผู้ตรวจคัดกรอง)</span>"
+          : ""
+      }</td>
       <td>${user.hospital ? user.hospital : "ไม่มีโรงพยาบาลที่สังกัด"}</td>
       <td>${user.province}</td>
       <td>${
         user.submission_count
-          ? `<a onclick='console.log("${user.id}")' style="cursor: pointer"> ${user.submission_count} รูป (${user.last_activity}) </a>`
+          ? `
+          <form action="/osm_group/" method="post" id="filterForm">
+            <div class="col my-1">
+              <input name="filterSender" id="filterSender" class="d-none" value="${user.osm_id}">
+            </input>
+            </div>
+            <button type="submit" class="btn btn-link">${user.submission_count} รูป (${user.last_activity})</button>
+            </div>
+          </form>
+          `
           : "-"
       } </td>
       <td>${user.phone_number}</td>
