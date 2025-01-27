@@ -8,10 +8,21 @@ block content %}
 
 {% if group_id != -1 %}
 
-<div class="my-5 ">
-  <h2>กลุ่มผู้ตรวจคัดกรอง</p>
-  {% if is_user_supervisor %}
+<div class="my-5">
+  <h2>กลุ่มผู้ตรวจคัดกรอง</h2>
+  <p>
+    หมายเหตุของกลุ่ม:
+    <span
+      >{{ group_note }} {% if is_user_supervisor %}
+      <span>
+        <button class="btn btn-link" onclick="editGroupNote()">แก้ไข</button>
+      </span>
+      {% endif %}
+    </span>
+  </p>
+
   <div class="text-end">
+    {% if is_user_supervisor %}
     <button
       class="btn btn-primary"
       data-bs-toggle="modal"
@@ -20,19 +31,17 @@ block content %}
     >
       เพิ่มผู้ตรวจคัดกรอง
     </button>
-  {% endif %}
+    {% endif %}
     <button
       class="btn btn-primary"
       onclick="window.location.href='/osm_group/';"
     >
       รายงานกลุ่มผู้ตรวจคัดกรอง
     </button>
-</div>
-  
-  
+  </div>
 </div>
 
-<!-- Add User Modal -->
+<!-- Modal -->
 <div
   class="modal fade"
   id="addUserModal"
@@ -71,7 +80,7 @@ block content %}
           </div>
         </div>
       </div>
-      
+
       <div class="modal-footer">
         <button
           type="button"
@@ -85,7 +94,6 @@ block content %}
     </div>
   </div>
 </div>
-
 
 <div class="table-responsive">
   <table id="user_manage" class="dataTable">
@@ -218,10 +226,10 @@ block content %}
   }
 
   function fetchOSMUsers() {
-    if(addFirstLoad){
+    if (addFirstLoad) {
       toggleSpinner(true, "loadingAddSpinner");
     }
-      
+
     fetch(`/osm_group/get_osm_for_search`, {
       method: "GET",
       headers: {
@@ -237,14 +245,14 @@ block content %}
       .then((data) => {
         fetchedOSMData = data; // Save fetched data
         renderAddTable(fetchedOSMData);
-        addFirstLoad = false
-        if(!addFirstLoad){
+        addFirstLoad = false;
+        if (!addFirstLoad) {
           toggleSpinner(false, "loadingAddSpinner");
         }
       })
       .catch((error) => {
         console.error("Error:", error);
-        if(!addFirstLoad){
+        if (!addFirstLoad) {
           toggleSpinner(false, "loadingAddSpinner");
         }
       });
@@ -252,7 +260,7 @@ block content %}
 
   function renderAddTable(data) {
     const tbody = document.querySelector(`#add_list tbody`);
-    const { osm_list , province} = data;
+    const { osm_list, province } = data;
     tbody.innerHTML = ""; // Clear existing rows
 
     if (osm_list.length === 0) {
@@ -348,8 +356,7 @@ block content %}
       <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
       กำลังเพิ่ม...
     `;
-  
-    
+
     const formData = { user_id: userId, group_id: groupId };
 
     fetch(`/osm_group/add`, {
@@ -371,13 +378,43 @@ block content %}
         `;
         button.classList.remove("btn-primary");
         button.classList.add("btn-success");
-        
       })
       .catch((error) => {
         console.error("Error:", error);
         alert("เกิดข้อผิดพลาดในการเพิ่มผู้ใช้");
         button.disabled = false;
         button.innerHTML = originalText;
+      });
+  }
+
+  function editGroupNote() {
+    const newNote = prompt("กรุณาใส่หมายเหตุใหม่:");
+    if (newNote === null || newNote.trim() === "") {
+      return; // Exit if no input
+    }
+
+    const formData = { group_id: groupId, note: newNote };
+
+    fetch("/osm_group/change_group_note/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Failed to update note: ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        alert(data.message);
+        window.location.reload(); // Reload the page to reflect changes
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        alert("เกิดข้อผิดพลาดในการอัปเดตหมายเหตุ");
       });
   }
 
@@ -388,7 +425,6 @@ block content %}
   }
 
   if (groupId != -1) fetchGroup(); // Fetch data and render table on page load
-
 </script>
 
 {% endblock %}

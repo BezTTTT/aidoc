@@ -27,7 +27,7 @@ def render_osm_group():
     try:
         cursor.execute(
             """
-            SELECT o.group_id, (ogm.osm_id = osm_supervisor_id) as is_supervisor
+            SELECT o.group_id, o.note, (ogm.osm_id = osm_supervisor_id) as is_supervisor
             FROM osm_group_member as ogm
             JOIN osm_group o ON ogm.group_id = o.group_id
             WHERE osm_id = %s
@@ -38,11 +38,13 @@ def render_osm_group():
 
         
         if not user_data:
-            return render_template('/newTemplate/osm_hierarchy_manage.html', group_id=-1, is_user_supervisor=0)
+            return render_template('/newTemplate/osm_hierarchy_manage.html', group_id=-1, is_user_supervisor=0, group_note="ไม่มีข้อมูล")
 
         group_id = user_data['group_id']
         is_supervisor = user_data['is_supervisor']
-        return render_template('/newTemplate/osm_hierarchy_manage.html', group_id=group_id, is_user_supervisor=is_supervisor)
+        group_note = user_data['note']
+        print(group_note)
+        return render_template('/newTemplate/osm_hierarchy_manage.html', group_id=group_id, is_user_supervisor=is_supervisor, group_note=group_note)
     finally:
         cursor.close()
         db.close()
@@ -90,7 +92,7 @@ def render_osm_group_record(): # Submission records
                 (group_id,)
             )
             group_info = cursor.fetchone()
-            
+           
             ids = [int(x['osm_id']) for x in osm_list]
             
             for osm in osm_list:
@@ -391,7 +393,7 @@ def search_users():
         db.close()
 
 @bp.route('/promote_supervisor/', methods=['POST', 'DELETE'])
-# @login_required
+@login_required
 def update_osm_role():
     body = request.get_json()
     osm_id = body['user_id']
@@ -449,7 +451,7 @@ def update_osm_role():
 
 
 @bp.route('/osm_permission/<int:user_id>', methods=['GET'])
-# @login_required
+@login_required
 def check_is_supervisor_or_member(user_id):
     result = {}
     try:
@@ -472,3 +474,33 @@ def check_is_supervisor_or_member(user_id):
         db.close()
 
     return jsonify(result)
+
+
+
+@bp.route('/change_group_note/', methods=['POST'])
+@login_required
+def update_group_note():  
+    try:
+        body = request.get_json()
+        db, cursor = get_db()
+        group_id = body.get('group_id')
+        note = body.get('note')
+        print(body)
+        if not group_id or not note:
+            return jsonify({'error': 'Group ID and note are required'}), 400
+
+        cursor.execute(
+            "UPDATE osm_group SET note = %s WHERE group_id = %s",
+            (note, group_id)
+        )
+        
+        db.commit()
+        return jsonify({'message': 'Note updated successfully'})
+    except Exception as e:
+        db.rollback()
+        return jsonify({'error': f'An error occurred: {e}'})
+    finally:
+        cursor.close()
+        db.close()
+
+

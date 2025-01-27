@@ -9,11 +9,10 @@
     <div class="col-12">
         <h2>ระบบการบริหารจัดการภาพของสมาชิกกลุ่มผู้ตรวจคัดกรอง</h2>
         <p>หัวหน้ากลุ่มผู้ตรวจคัดกรอง: {{ data['group_info']['name'] }} {{ data['group_info']['surname'] }} ({{ data['group_info']['phone'] }})</p>
-        
+        <p>หมายเหตุของกลุ่ม: {% if data['group_info']['note'] != None %} {{data['group_info']['note']}} {% else %} ไม่มีข้อมูล {% endif %}</p>
         <div class="text-end">
             <button class="btn btn-primary" onclick="window.location.href='/osm_group/member-manage/'">จัดการสมาชิกกลุ่มผู้ตรวจคัดกรอง</button>
         </div>
-        <p>{% if data['group_info']['note'] != None %} data['group_info']['note'] {% else %} ไม่มีข้อมูลคำอธิบายกลุ่ม {% endif %}</p>
     </div>
 
     <!-- Search Box -->
