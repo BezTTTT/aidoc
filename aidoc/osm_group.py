@@ -326,6 +326,14 @@ def add_to_group():
     db, cursor = get_db()
     try:
         cursor.execute(
+            "SELECT 1 FROM osm_group_member WHERE osm_id = %s",
+            (user_id_to_add,)
+        )
+        exitsting_member = cursor.fetchone()
+        if exitsting_member:
+            return json.dumps({'error': 'User is already in other group'}), 400
+        
+        cursor.execute(
             "INSERT INTO osm_group_member (group_id, osm_id) VALUES (%s, %s)",
             (group_id, user_id_to_add)
         )
@@ -393,10 +401,14 @@ def search_users():
         db.close()
 
 @bp.route('/promote_supervisor/', methods=['POST', 'DELETE'])
-@login_required
+# @login_required
 def update_osm_role():
     body = request.get_json()
+    
     osm_id = body['user_id']
+
+    if (not osm_id): 
+        return jsonify({'error': 'No osm_id provided'}), 400
 
     try:
         db, cursor = get_db()
@@ -406,18 +418,29 @@ def update_osm_role():
                 SELECT group_id FROM osm_group WHERE osm_supervisor_id = %s
             """, (osm_id,))
             existing_group = cursor.fetchone()
+
             if existing_group:
                 return jsonify({'message': 'User is already a supervisor', 'group_id': existing_group['group_id']}), 200
-            else:
-                cursor.execute("""
-                    INSERT INTO osm_group (osm_supervisor_id, note) VALUE (%s, NULL)
-                """, (osm_id,))
-                new_group_id = cursor.lastrowid
 
+            cursor.execute("""
+                SELECT group_id FROM osm_group_member WHERE osm_id = %s
+            """, (osm_id,))
+            existing_member = cursor.fetchall()
+
+            if existing_member:
                 cursor.execute("""
-                    INSERT INTO osm_group_member (group_id, osm_id) VALUES (%s, %s)
-                """, (new_group_id, osm_id))
-                db.commit()
+                    DELETE FROM osm_group_member WHERE osm_id = %s
+                """, (osm_id,))
+            
+            cursor.execute("""
+                INSERT INTO osm_group (osm_supervisor_id, note) VALUE (%s, NULL)
+            """, (osm_id,))
+            new_group_id = cursor.lastrowid
+
+            cursor.execute("""
+                INSERT INTO osm_group_member (group_id, osm_id) VALUES (%s, %s)
+            """, (new_group_id, osm_id))
+            db.commit()
             
             return jsonify({'message': 'Group created and user added as member', 'group_id': new_group_id}), 200
             
