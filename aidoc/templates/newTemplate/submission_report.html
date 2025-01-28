@@ -145,30 +145,117 @@
 
   if (data.patient_and_osm) {
     // Extract osm, patient, and total data
-    const { osm, patient, total } = data.patient_and_osm;
-
+    const { patient, osm, total } = data.patient_and_osm;
     const createRow = (label, entry) => {
       const row = document.createElement('tr');
       row.innerHTML = `
         <td>${label}</td>
-        <td class="text-center">${entry.total_pic}</td>
-        <td class="text-center">${entry.ai_predict.opmd}</td>
-        <td class="text-center">${entry.ai_predict.oscc}</td>
-        <td class="text-center">${entry.ai_predict.normal}</td>
-        <td class="text-center">${entry.dentist_diagnose.opmd}</td>
-        <td class="text-center">${entry.dentist_diagnose.oscc}</td>
-        <td class="text-center">${entry.dentist_diagnose.normal}</td>
-        <td class="text-center">${entry.dentist_diagnose.poor_image}</td>
-        <td class="text-center">${entry.dentist_diagnose.others}</td>
-        <td class="text-center">${entry.accuracy}</td>
-        <td class="text-center">${entry.dentist_diagnose.not_diagnosed}</td>
+        <td class="text-center">
+        {% set default_data = {'search': ''} %}
+        <form action="/record/admin" method="POST">
+          <input
+            type="text"
+            id="search-input"
+            name="search"
+            value="{{ default_data.search }}"
+            style="display:none"
+        >
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;">
+            ${entry.total_pic}
+          </button>
+        </td>
+        <td class="text-center">
+        {% set default_data = {'search': 'opmd'} %}
+        <form action="/record/admin" method="POST">
+          <input
+            type="text"
+            id="search-input"
+            name="search"
+            value="{{ default_data.search }}"
+            style="display:none"
+        >
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;">
+            ${entry.ai_predict.opmd}
+          </button>
+        </form>
+        </td>
+        <td class="text-center">
+        {% set default_data = {'search': 'oscc'} %}
+        <form action="/record/admin" method="POST">
+          <input
+            type="text"
+            id="search-input"
+            name="search"
+            value="{{ default_data.search }}"
+            style="display:none"
+        >
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;">
+            ${entry.ai_predict.oscc}
+          </button>
+        </form>
+        </td>
+        <td class="text-center">
+        {% set default_data = {'search': 'normal'} %}
+        <form action="/record/admin" method="POST">
+          <input
+            type="text"
+            id="search-input"
+            name="search"
+            value="{{ default_data.search }}"
+            style="display:none"
+        >
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;">
+            ${entry.ai_predict.normal}
+          </button>
+        </form>
+        </td>
+        <td class="text-center">
+            <a href="/record/admin?value=opmd"
+            style="text-decoration: none; color: black; cursor: pointer;">
+              ${entry.dentist_diagnose.opmd}
+            </a>
+        </td>
+        <td class="text-center">
+            <a href="/record/admin?value=oscc"
+            style="text-decoration: none; color: black; cursor: pointer;">
+              ${entry.dentist_diagnose.oscc}
+            </a>
+        </td>
+        <td class="text-center">
+            <a href="/record/admin"&value=normal"
+            style="text-decoration: none; color: black; cursor: pointer;">
+              ${entry.dentist_diagnose.normal}
+            </a>
+        </td>
+        <td class="text-center">
+            <a href="/record/admin&value=BAD_IMG"
+            style="text-decoration: none; color: black; cursor: pointer;">
+              ${entry.dentist_diagnose.poor_image}
+            </a>
+        </td>
+        <td class="text-center">
+            <a href="/record/admin?value=others"
+            style="text-decoration: none; color: black; cursor: pointer;">
+              ${entry.dentist_diagnose.others}
+            </a>
+        </td>
+        <td class="text-center">
+              ${entry.accuracy}
+        </td>
+        <td class="text-center">
+            <a href="/record/admin?value=not_diagnosed"
+            style="text-decoration: none; color: black; cursor: pointer;">
+              ${entry.dentist_diagnose.not_diagnosed}
+            </a>
+        </td>
+
       `;
       firstTable.appendChild(row);
     };
 
     // Add rows for osm, patient, and total
-    createRow('ประชาชน', osm);
-    createRow('อสม.', patient);
+    createRow('ประชาชน', patient);
+    createRow('อสม.', osm);
     createRow('รวมทั้งหมด', total);
     }
   }
