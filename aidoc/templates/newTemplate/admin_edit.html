@@ -1,471 +1,320 @@
-{% extends "./base.html" %} {% block title %} AIDOC | Edit User {% endblock %}
+{% extends "./base.html" %}
+
+{% block title %} AIDOC | Edit User {% endblock %}
+
 {% block content %}
-<div
-  id="loadingIndicator"
-  style="
-    display: none;
-    text-align: center;
-    font-weight: bold;
-    font-size: 60px;
-    color: red;
-  "
->
+<div id="loadingIndicator" style="display: none; text-align: center; font-weight: bold; font-size: 60px; color: red; ">
   กำลังโหลดข้อมูล...
 </div>
-<div id="mainContainer">
+<div id = "mainContainer">
   <div>
     <h3>ข้อมูลผู้ใช้</h3>
-  </div>
-  <div class="container-md">
+</div>
+<div class="container-md">
     <form id="editUserForm" action="/edit_page" method="POST">
-      <input type="hidden" name="_method" value="PUT" />
-      <div id="formContent" class="row g-3 my-4">
-        <!--populateContect from script-->
-      </div>
-      <fieldset class="row my-3">
-        <legend class="col-form-label col-sm-2 pt-0">Permission</legend>
-
-        <div class="col-sm-10">
-          <div class="form-check">
-            <input
-              class="form-check-input"
-              type="checkbox"
-              name="role"
-              id="admin"
-              value="admin"
-            />
-            <label class="form-check-label" for="admin">Admin</label>
-          </div>
-          <div class="form-check">
-            <input
-              class="form-check-input"
-              type="checkbox"
-              name="role"
-              id="specialist"
-              value="specialist"
-            />
-            <label class="form-check-label" for="dentist">Specialist</label>
-          </div>
-
-          <div class="d-flex">
-            <div class="form-check">
-              <input
-                class="form-check-input"
-                type="checkbox"
-                name="role"
-                id="osm"
-                value="osm"
-              />
-              <label class="form-check-label" for="osm">Osm</label>
-            </div>
-            <!-- osm supervisor check box appear when osm is checked-->
-            <div id="promoteSupervisorContainer" style="display: none">
-              <div class="form-check mx-3">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  name="promote_supervisor"
-                  id="promoteSupervisor"
-                  value="osmSupervisor"
-                />
-                <label class="form-check-label" for="promoteSupervisor"
-                  >OSM Supervisor</label
-                >
-              </div>
-            </div>
-          </div>
-
-          <div class="form-check">
-            <input
-              class="form-check-input"
-              type="checkbox"
-              name="role"
-              id="patient"
-              value="patient"
-            />
-            <label class="form-check-label" for="user">Patient</label>
-          </div>
+        <input type="hidden" name="_method" value="PUT">
+        <div id="formContent" class="row g-3 my-4">
+          <!--populateContect from script-->
         </div>
-      </fieldset>
+        <fieldset class="row my-3">
+            <legend class="col-form-label col-sm-2 pt-0">Permission</legend>
 
-      <!-- submit button -->
-      <div class="col-12 d-flex justify-content-end">
-        <button type="submit" class="btn btn-primary" id="editUserForm">
-          Submit
-        </button>
-      </div>
+            <div class="col-sm-10">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="role" id="admin" value="admin" >
+                    <label class="form-check-label" for="admin">Admin</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="role" id="specialist" value="specialist">
+                    <label class="form-check-label" for="dentist">Specialist</label>
+                </div>
+
+                <div class="d-flex">
+                  <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="role" id="osm" value="osm">
+                  <label class="form-check-label" for="osm">Osm</label>
+                  </div>
+                  <!-- osm supervisor check box appear when osm is checked-->
+                  <div id="promoteSupervisorContainer" style="display: none;">
+                    <div class="form-check mx-3">
+                        <input class="form-check-input" type="checkbox" name="promote_supervisor" id="promoteSupervisor" value="osmSupervisor">
+                        <label class="form-check-label" for="promoteSupervisor">OSM Supervisor</label>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="role" id="patient" value="patient">
+                    <label class="form-check-label" for="user">Patient</label>
+                </div>
+            </div>
+        </fieldset>
+
+        <!-- submit button -->
+        <div class="col-12 d-flex justify-content-end">
+            <button type="submit" class="btn btn-primary" id="editUserForm">Submit</button>
+        </div>
+
     </form>
   </div>
 </div>
 
 <script>
-  let is_supervisor = false;
 
-  function fetchUserData() {
-    const loadingIndicator = document.getElementById("loadingIndicator");
-    const mainContent = document.getElementById("mainContainer");
-    mainContent.style.display = "none";
-    loadingIndicator.style.display = "block";
-    const urlParams = new URLSearchParams(window.location.search);
-    const userId = urlParams.get("id"); // Get the user ID from the URL query parameter
+    let is_supervisor = false;
 
-    if (!userId) {
-      console.warn("User ID is missing in the query parameter.");
-      return;
-    }
+    function fetchUserData() {
+      const loadingIndicator = document.getElementById('loadingIndicator');
+      const mainContent = document.getElementById('mainContainer');
+      mainContent.style.display = 'none';
+      loadingIndicator.style.display = 'block';
+      const urlParams = new URLSearchParams(window.location.search);
+      const userId = urlParams.get('id'); // Get the user ID from the URL query parameter
+  
+      if (!userId) {
+        console.warn("User ID is missing in the query parameter.");
+        return;
+      }
 
-    fetch(`/osm_group/osm_permission/${userId}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        is_supervisor = data.is_supervisor;
-        const promoteSupervisorCheckbox =
-          document.getElementById("promoteSupervisor");
-        promoteSupervisorCheckbox.checked = is_supervisor;
+      fetch(`/osm_group/osm_permission/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }).then(response => response.json())
+        .then(data => {
+          is_supervisor = data.is_supervisor;
+          const promoteSupervisorCheckbox = document.getElementById('promoteSupervisor');
+          promoteSupervisorCheckbox.checked = is_supervisor
+        })
+        .catch(error => {
+          console.log(error)
+          is_supervisor = false
+        });
+  
+      fetch(`/edit_user_info_api/?id=${userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       })
-      .catch((error) => {
-        console.log(error);
-        is_supervisor = false;
-      });
+        .then((response) => response.json())
+        .then((data) => {
+          // Populate form fields with data
+          populateHTMLByRole(data)
+          // Update roles checkboxes
+          if (data.is_admin || data.is_osm || data.is_specialist || data.is_patient) {
+            document.getElementById('admin').checked = data.is_admin === 1;
+            document.getElementById('specialist').checked = data.is_specialist === 1;
+            document.getElementById('osm').checked = data.is_osm === 1;
+            document.getElementById('patient').checked = data.is_patient === 1;
+          }
+          
+          // show or hide is osm supervisor checkbox
+          const promoteSupervisorContainer = document.getElementById('promoteSupervisorContainer');
+          const promoteSupervisorCheckbox = document.getElementById('promoteSupervisor');
+          if (data.is_osm === 1) {
+            promoteSupervisorContainer.style.display = 'block';
+          } else {
+            promoteSupervisorContainer.style.display = 'none';
+            promoteSupervisorCheckbox.checked = false
+          }
 
-    fetch(`/edit_user_info_api/?id=${userId}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        // Populate form fields with data
-        populateHTMLByRole(data);
-        // Update roles checkboxes
-        if (
-          data.is_admin ||
-          data.is_osm ||
-          data.is_specialist ||
-          data.is_patient
-        ) {
-          document.getElementById("admin").checked = data.is_admin === 1;
-          document.getElementById("specialist").checked =
-            data.is_specialist === 1;
-          document.getElementById("osm").checked = data.is_osm === 1;
-          document.getElementById("patient").checked = data.is_patient === 1;
-        }
-
-        // show or hide is osm supervisor checkbox
-        const promoteSupervisorContainer = document.getElementById(
-          "promoteSupervisorContainer"
-        );
-        const promoteSupervisorCheckbox =
-          document.getElementById("promoteSupervisor");
-        if (data.is_osm === 1) {
-          promoteSupervisorContainer.style.display = "block";
-        } else {
-          promoteSupervisorContainer.style.display = "none";
-          promoteSupervisorCheckbox.checked = false;
-        }
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-        alert("เกิดข้อผิดพลาดขณะโหลดข้อมูล");
+        })
+        .catch((error) => {
+        console.error('Error:', error);
+        alert('เกิดข้อผิดพลาดขณะโหลดข้อมูล');
       })
       .finally(() => {
-        mainContent.style.display = "block";
-        loadingIndicator.style.display = "none";
+        mainContent.style.display= 'block';
+        loadingIndicator.style.display = 'none';
       });
-  }
+    }
+  
+    async function submitFormData(event) {
+      event.preventDefault();  // Prevent the default form submission
+  
+      const urlParams = new URLSearchParams(window.location.search);
+      const userId = urlParams.get('id'); // Get the user ID
+  
+      const formData = {
+        id: userId,
+        name: document.getElementById('firstname').value,
+        surname: document.getElementById('lastname').value,
+        job_position: document.getElementById('job_position').value,
+        license : document.getElementById('license')? document.getElementById('license').value: '',
+        hospital: document.getElementById('hospital').value,
+        province: document.getElementById('province').value,
+        email: document.getElementById('email').value,
+        national_id : document.getElementById('nationalId')? document.getElementById('nationalId').value : '',
+        phone : document.getElementById('phone').value,
+        is_admin: document.getElementById('admin').checked ? 1 : 0,
+        is_specialist: document.getElementById('specialist').checked ? 1 : 0,
+        is_osm: document.getElementById('osm').checked ? 1 : 0,
+        is_patient: document.getElementById('patient').checked ? 1 : 0,
+      };
 
-  async function submitFormData(event) {
-    event.preventDefault(); // Prevent the default form submission
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const userId = urlParams.get("id"); // Get the user ID
-
-    const formData = {
-      id: userId,
-      name: document.getElementById("firstname").value,
-      surname: document.getElementById("lastname").value,
-      job_position: document.getElementById("job_position").value,
-      license: document.getElementById("license")
-        ? document.getElementById("license").value
-        : "",
-      hospital: document.getElementById("hospital").value,
-      province: document.getElementById("province").value,
-      email: document.getElementById("email").value,
-      national_id: document.getElementById("nationalId")
-        ? document.getElementById("nationalId").value
-        : "",
-      phone: document.getElementById("phone").value,
-      is_admin: document.getElementById("admin").checked ? 1 : 0,
-      is_specialist: document.getElementById("specialist").checked ? 1 : 0,
-      is_osm: document.getElementById("osm").checked ? 1 : 0,
-      is_patient: document.getElementById("patient").checked ? 1 : 0,
-    };
-
-    // create/remove group for osm supervisor
-    const set_supervisor = document.getElementById("promoteSupervisor").checked
-      ? 1
-      : 0;
-    const is_osm = document.getElementById("osm").checked ? 1 : 0;
-
-    console.log("is osm", is_osm);
-    console.log("is osmmmm", set_supervisor);
-    console.log("is osmmmmmmmm", is_supervisor);
-    try {
-      if (is_osm == 1 && set_supervisor != (is_supervisor ? 1 : 0)) {
-        if (set_supervisor == 1) {
-          const response = await fetch("/osm_group/promote_supervisor/", {
-            method: "POST", // Use POST method for make osm to supervisor
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ user_id: userId }),
-          });
-          if (!response.ok) {
-            alert("Failed to add osm to supervisor!");
-          }
-          console.log("response", response);
-        } else {
-          const response = await fetch("/osm_group/promote_supervisor/", {
-            method: "DELETE", // Use POST method for make osm to supervisor
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ user_id: userId }),
-          });
-          if (!response.ok) {
-            alert("Failed to remove osm supervisor!");
+      // create/remove group for osm supervisor
+      const set_supervisor = document.getElementById('promoteSupervisor').checked ? 1 : 0
+      const is_osm = document.getElementById('osm').checked ? 1 : 0
+      
+      try {
+        if(is_osm == 1 && set_supervisor != (is_supervisor ? 1 : 0)){
+          if(set_supervisor == 1){
+            const response = await fetch("/osm_group/promote_supervisor/", {
+              method: "POST",  // Use POST method for make osm to supervisor
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({user_id: userId}),
+            });
+          }else{
+            const response = await fetch("/osm_group/promote_supervisor/", {
+              method: "DELETE",  // Use POST method for make osm to supervisor
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({user_id: userId}),
+            });
           }
         }
+      } catch (error){
+        console.error("Error updating osm supervisor:", error);
       }
-    } catch (error) {
-      console.error("Error updating osm supervisor:", error);
+  
+      try {
+        const response = await fetch("/submit_info_api/", {
+          method: "PUT",  // Use PUT method for updating
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        });
+        
+        if (response.ok) {
+          alert("User information updated successfully!");
+          window.location.href = '/admin_page/'
+        } else {
+          alert("Failed to update user information.");
+        }
+      } catch (error) {
+        console.error("Error submitting form data:", error);
+      }
     }
 
-    try {
-      const response = await fetch("/submit_info_api/", {
-        method: "PUT", // Use PUT method for updating
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
-        alert("User information updated successfully!");
-        window.location.href = "/admin_page/";
+        // toggle show osm supervisor checkbox
+    document.getElementById('osm').addEventListener('change', function () {
+      promoteSupervisorCheckbox = document.getElementById('promoteSupervisor');
+      promoteSupervisorContainer = document.getElementById('promoteSupervisorContainer');
+      
+      if(this.checked){
+        promoteSupervisorCheckbox.checked = is_supervisor;
+        promoteSupervisorContainer.style.display = 'block';
       } else {
-        alert("Failed to update user information.");
+        promoteSupervisorCheckbox.checked = false;
+        promoteSupervisorContainer.style.display = 'none';
       }
-    } catch (error) {
-      console.error("Error submitting form data:", error);
-    }
-  }
+    });
+  
+    document.getElementById('editUserForm').addEventListener('submit', submitFormData);
 
-  // toggle show osm supervisor checkbox
-  document.getElementById("osm").addEventListener("change", function () {
-    promoteSupervisorCheckbox = document.getElementById("promoteSupervisor");
-    promoteSupervisorContainer = document.getElementById(
-      "promoteSupervisorContainer"
-    );
-
-    if (this.checked) {
-      promoteSupervisorCheckbox.checked = is_supervisor;
-      promoteSupervisorContainer.style.display = "block";
-    } else {
-      promoteSupervisorCheckbox.checked = false;
-      promoteSupervisorContainer.style.display = "none";
-    }
-  });
-
-  document
-    .getElementById("editUserForm")
-    .addEventListener("submit", submitFormData);
-
-  function populateHTMLByRole(data) {
+    function populateHTMLByRole(data) {
     const formContent = document.getElementById("formContent");
     formContent.innerHTML = ""; // Clear previous fields
     // Common fields for all roles
     const commonFields = `
         <div class="col-md-6">
             <label for="firstname" class="form-label">Firstname</label>
-            <input class="form-control" type="text" name="name" id="firstname" value="${
-              data.name || ""
-            }">
+            <input class="form-control" type="text" name="name" id="firstname" value="${data.name || ''}">
         </div>
         <div class="col-md-6">
             <label for="lastname" class="form-label">Lastname</label>
-            <input class="form-control" type="text" name="surname" id="lastname" value="${
-              data.surname || ""
-            }">
+            <input class="form-control" type="text" name="surname" id="lastname" value="${data.surname || ''}">
         </div>
         <div class="col-md-6">
                 <label for="province" class="form-label">Province</label>
-                <input class="form-control" type="text" name="province" id="province" value="${
-                  data.province || ""
-                }">
+                <input class="form-control" type="text" name="province" id="province" value="${data.province || ''}">
         </div>
         <div class="col-md-6">
             <label for="email" class="form-label">E-mail</label>
-            <input class="form-control" type="email" name="email" id="email" value="${
-              data.email || ""
-            }">
+            <input class="form-control" type="email" name="email" id="email" value="${data.email || ""}">
         </div>
         <div class="col-md-6">
             <label for="phone" class="form-label">Phone</label>
-            <input class="form-control" type="text" name="phone" id="phone" maxlength="10" value="${
-              data.phone || ""
-            }">
+            <input class="form-control" type="text" name="phone" id="phone" maxlength="10" value="${data.phone || ''}">
         </div>
     `;
 
     formContent.innerHTML += commonFields;
 
     if (data.username) {
-      formContent.innerHTML += `
+        formContent.innerHTML += `
           <div class="col-md-6">
             <label for="job_position" class="form-label">Work</label>
             <select id="job_position" name="job_position" class="form-control" required>
                 <option value="" hidden>Select a job position</option>
-                <option value="OSM" ${
-                  data.job_position === "OSM" ? "selected" : ""
-                }>อสม.</option>
-                <option value="Dental Nurse" ${
-                  data.job_position === "Dental Nurse" ? "selected" : ""
-                }>ทันตาภิบาล/เจ้าพนักงานทันตสาธารณสุข</option>
-                <option value="Dentist" ${
-                  data.job_position === "Dentist" ? "selected" : ""
-                }>ทันตแพทย์</option>
-                <option value="Oral Pathologist" ${
-                  data.job_position === "Oral Pathologist" ? "selected" : ""
-                }>ทันตแพทย์เฉพาะทาง วิทยาการวินิจฉัยโรคช่องปาก</option>
-                <option value="Oral and Maxillofacial Surgeon" ${
-                  data.job_position === "Oral and Maxillofacial Surgeon"
-                    ? "selected"
-                    : ""
-                }>ทันตแพทย์เฉพาะทาง ศัลยศาสตร์ช่องปากและแม็กซิลโลเฟเชียล</option>
-                <option value="Physician" ${
-                  data.job_position === "Physician" ? "selected" : ""
-                }>แพทย์</option>
-                <option value="Public Health Technical Officer" ${
-                  data.job_position === "Public Health Technical Officer"
-                    ? "selected"
-                    : ""
-                }>นักวิชาการสาธารณสุข</option>
-                <option value="Computer Technical Officer" ${
-                  data.job_position === "Computer Technical Officer"
-                    ? "selected"
-                    : ""
-                }>นักวิชาการคอมพิวเตอร์/นักวิจัย/ผู้พัฒนาระบบ</option>
-                <option value="Other Public Health Officer" ${
-                  data.job_position === "Other Public Health Officer"
-                    ? "selected"
-                    : ""
-                }>ข้าราชการ/เจ้าพนักงานกระทรวงสาธารณสุข</option>
-                <option value="Other Government Officer" ${
-                  data.job_position === "Other Government Officer"
-                    ? "selected"
-                    : ""
-                }>เจ้าหน้าที่รัฐอื่น</option>
-                <option value="General Public" ${
-                  data.job_position === "General Public" ? "selected" : ""
-                }>บุคคลทั่วไป</option>
+                <option value="OSM" ${data.job_position === "OSM" ? "selected" : ""}>อสม.</option>
+                <option value="Dental Nurse" ${data.job_position === "Dental Nurse" ? "selected" : ""}>ทันตาภิบาล/เจ้าพนักงานทันตสาธารณสุข</option>
+                <option value="Dentist" ${data.job_position === "Dentist" ? "selected" : ""}>ทันตแพทย์</option>
+                <option value="Oral Pathologist" ${data.job_position === "Oral Pathologist" ? "selected" : ""}>ทันตแพทย์เฉพาะทาง วิทยาการวินิจฉัยโรคช่องปาก</option>
+                <option value="Oral and Maxillofacial Surgeon" ${data.job_position === "Oral and Maxillofacial Surgeon" ? "selected" : ""}>ทันตแพทย์เฉพาะทาง ศัลยศาสตร์ช่องปากและแม็กซิลโลเฟเชียล</option>
+                <option value="Physician" ${data.job_position === "Physician" ? "selected" : ""}>แพทย์</option>
+                <option value="Public Health Technical Officer" ${data.job_position === "Public Health Technical Officer" ? "selected" : ""}>นักวิชาการสาธารณสุข</option>
+                <option value="Computer Technical Officer" ${data.job_position === "Computer Technical Officer" ? "selected" : ""}>นักวิชาการคอมพิวเตอร์/นักวิจัย/ผู้พัฒนาระบบ</option>
+                <option value="Other Public Health Officer" ${data.job_position === "Other Public Health Officer" ? "selected" : ""}>ข้าราชการ/เจ้าพนักงานกระทรวงสาธารณสุข</option>
+                <option value="Other Government Officer" ${data.job_position === "Other Government Officer" ? "selected" : ""}>เจ้าหน้าที่รัฐอื่น</option>
+                <option value="General Public" ${data.job_position === "General Public" ? "selected" : ""}>บุคคลทั่วไป</option>
             </select>
         </div>
 
             <div class="col-md-6">
                 <label for="license" class="form-label">License</label>
-                <input class="form-control" type="text" name="license" id="license" value="${
-                  data.license
-                }">
+                <input class="form-control" type="text" name="license" id="license" value="${data.license}">
             </div>
             <div class="col-md-6">
                 <label for="hospital" class="form-label">Hospital</label>
-                <input class="form-control" type="text" name="hospital" id="hospital" value="${
-                  data.hospital
-                }">
+                <input class="form-control" type="text" name="hospital" id="hospital" value="${data.hospital}">
             </div>
         `;
     } else if (data.is_osm === 1) {
-      formContent.innerHTML += `
+        formContent.innerHTML += `
             <div class="col-md-6">
                 <label for="job_position" class="form-label">Work</label>
                 <select id="job_position" name="job_position" class="form-control" required>
                   <option value="" hidden>Select a job position</option>
-                  <option value="OSM" ${
-                    data.job_position === "OSM" ? "selected" : ""
-                  }>อสม.</option>
-                  <option value="Dental Nurse" ${
-                    data.job_position === "Dental Nurse" ? "selected" : ""
-                  }>ทันตาภิบาล/เจ้าพนักงานทันตสาธารณสุข</option>
-                  <option value="Dentist" ${
-                    data.job_position === "Dentist" ? "selected" : ""
-                  }>ทันตแพทย์</option>
-                  <option value="Oral Pathologist" ${
-                    data.job_position === "Oral Pathologist" ? "selected" : ""
-                  }>ทันตแพทย์เฉพาะทาง วิทยาการวินิจฉัยโรคช่องปาก</option>
-                  <option value="Oral and Maxillofacial Surgeon" ${
-                    data.job_position === "Oral and Maxillofacial Surgeon"
-                      ? "selected"
-                      : ""
-                  }>ทันตแพทย์เฉพาะทาง ศัลยศาสตร์ช่องปากและแม็กซิลโลเฟเชียล</option>
-                  <option value="Physician" ${
-                    data.job_position === "Physician" ? "selected" : ""
-                  }>แพทย์</option>
-                  <option value="Public Health Technical Officer" ${
-                    data.job_position === "Public Health Technical Officer"
-                      ? "selected"
-                      : ""
-                  }>นักวิชาการสาธารณสุข</option>
-                  <option value="Computer Technical Officer" ${
-                    data.job_position === "Computer Technical Officer"
-                      ? "selected"
-                      : ""
-                  }>นักวิชาการคอมพิวเตอร์/นักวิจัย/ผู้พัฒนาระบบ</option>
-                  <option value="Other Public Health Officer" ${
-                    data.job_position === "Other Public Health Officer"
-                      ? "selected"
-                      : ""
-                  }>ข้าราชการ/เจ้าพนักงานกระทรวงสาธารณสุข</option>
-                  <option value="Other Government Officer" ${
-                    data.job_position === "Other Government Officer"
-                      ? "selected"
-                      : ""
-                  }>เจ้าหน้าที่รัฐอื่น</option>
-                  <option value="General Public" ${
-                    data.job_position === "General Public" ? "selected" : ""
-                  }>บุคคลทั่วไป</option>
+                  <option value="OSM" ${data.job_position === "OSM" ? "selected" : ""}>อสม.</option>
+                  <option value="Dental Nurse" ${data.job_position === "Dental Nurse" ? "selected" : ""}>ทันตาภิบาล/เจ้าพนักงานทันตสาธารณสุข</option>
+                  <option value="Dentist" ${data.job_position === "Dentist" ? "selected" : ""}>ทันตแพทย์</option>
+                  <option value="Oral Pathologist" ${data.job_position === "Oral Pathologist" ? "selected" : ""}>ทันตแพทย์เฉพาะทาง วิทยาการวินิจฉัยโรคช่องปาก</option>
+                  <option value="Oral and Maxillofacial Surgeon" ${data.job_position === "Oral and Maxillofacial Surgeon" ? "selected" : ""}>ทันตแพทย์เฉพาะทาง ศัลยศาสตร์ช่องปากและแม็กซิลโลเฟเชียล</option>
+                  <option value="Physician" ${data.job_position === "Physician" ? "selected" : ""}>แพทย์</option>
+                  <option value="Public Health Technical Officer" ${data.job_position === "Public Health Technical Officer" ? "selected" : ""}>นักวิชาการสาธารณสุข</option>
+                  <option value="Computer Technical Officer" ${data.job_position === "Computer Technical Officer" ? "selected" : ""}>นักวิชาการคอมพิวเตอร์/นักวิจัย/ผู้พัฒนาระบบ</option>
+                  <option value="Other Public Health Officer" ${data.job_position === "Other Public Health Officer" ? "selected" : ""}>ข้าราชการ/เจ้าพนักงานกระทรวงสาธารณสุข</option>
+                  <option value="Other Government Officer" ${data.job_position === "Other Government Officer" ? "selected" : ""}>เจ้าหน้าที่รัฐอื่น</option>
+                  <option value="General Public" ${data.job_position === "General Public" ? "selected" : ""}>บุคคลทั่วไป</option>
             </select>
             </div>
             <div class="col-md-6">
                 <label for="hospital" class="form-label">Hospital</label>
-                <input class="form-control" type="text" name="hospital" id="hospital" value="${
-                  data.hospital
-                }">
+                <input class="form-control" type="text" name="hospital" id="hospital" value="${data.hospital}">
             </div>
             <div class="col-md-6">
                 <label for="nationalId" class="form-label">National ID</label>
-                <input class="form-control" type="text" name="nationalId" id="nationalId" value="${
-                  data.national_id
-                }" maxlength="13">
+                <input class="form-control" type="text" name="nationalId" id="nationalId" value="${data.national_id}" maxlength="13">
             </div>
         `;
     } else {
-      formContent.innerHTML += `
+        formContent.innerHTML += `
             <div class="col-md-6">
                 <label for="job_position" class="form-label">Work</label>
-                <input class="form-control" type="text" name="job_position" id="job_position" value="${
-                  data.job_position || ""
-                }"> 
+                <input class="form-control" type="text" name="job_position" id="job_position" value="${data.job_position || ''}"> 
             </div>
         `;
     }
-  }
-  fetchUserData(); // Call the function when the page loads
-</script>
+}
+    fetchUserData(); // Call the function when the page loads
+    
+  </script>
 
 {% endblock %}
