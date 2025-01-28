@@ -236,20 +236,5 @@
         });
     }
     
-    function confirmAndDelete(button, userId, name) {
-    
-
-    const originalText = button.innerHTML;
-    button.disabled = true;
-    button.innerHTML = `
-      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-      กำลังลบ...
-    `;
-
-    const formData = { user_id: userId, group_id: groupId };
-
-    
-  }
-    
 </script>
 {% endblock %}
