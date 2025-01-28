@@ -28,10 +28,21 @@
                     <input class="form-check-input" type="checkbox" name="role" id="specialist" value="specialist">
                     <label class="form-check-label" for="dentist">Specialist</label>
                 </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="role" id="osm" value="osm">
-                    <label class="form-check-label" for="user">Osm</label>
+
+                <div class="d-flex">
+                  <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="role" id="osm" value="osm">
+                  <label class="form-check-label" for="osm">Osm</label>
+                  </div>
+                  <!-- osm supervisor check box appear when osm is checked-->
+                  <div id="promoteSupervisorContainer" style="display: none;">
+                    <div class="form-check mx-3">
+                        <input class="form-check-input" type="checkbox" name="promote_supervisor" id="promoteSupervisor" value="osmSupervisor">
+                        <label class="form-check-label" for="promoteSupervisor">OSM Supervisor</label>
+                    </div>
+                  </div>
                 </div>
+                
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" name="role" id="patient" value="patient">
                     <label class="form-check-label" for="user">Patient</label>
@@ -49,6 +60,9 @@
 </div>
 
 <script>
+
+    let is_supervisor = false;
+
     function fetchUserData() {
       const loadingIndicator = document.getElementById('loadingIndicator');
       const mainContent = document.getElementById('mainContainer');
@@ -61,6 +75,23 @@
         console.warn("User ID is missing in the query parameter.");
         return;
       }
+
+      // get is osm supervisor data from db
+      fetch(`/osm_group/osm_permission/${userId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }).then(response => response.json())
+        .then(data => {
+          is_supervisor = data.is_supervisor;
+          const promoteSupervisorCheckbox = document.getElementById('promoteSupervisor');
+          promoteSupervisorCheckbox.checked = is_supervisor
+        })
+        .catch(error => {
+          console.log(error)
+          is_supervisor = false
+        });
   
       fetch(`/edit_user_info_api/?id=${userId}`, {
         method: 'GET',
@@ -79,6 +110,17 @@
             document.getElementById('osm').checked = data.is_osm === 1;
             document.getElementById('patient').checked = data.is_patient === 1;
           }
+          
+          // show or hide is osm supervisor checkbox
+          const promoteSupervisorContainer = document.getElementById('promoteSupervisorContainer');
+          const promoteSupervisorCheckbox = document.getElementById('promoteSupervisor');
+          if (data.is_osm === 1) {
+            promoteSupervisorContainer.style.display = 'block';
+          } else {
+            promoteSupervisorContainer.style.display = 'none';
+            promoteSupervisorCheckbox.checked = false
+          }
+
         })
         .catch((error) => {
         console.error('Error:', error);
@@ -112,6 +154,41 @@
         is_osm: document.getElementById('osm').checked ? 1 : 0,
         is_patient: document.getElementById('patient').checked ? 1 : 0,
       };
+
+      // create/remove group for osm supervisor
+      const set_supervisor = document.getElementById('promoteSupervisor').checked ? 1 : 0
+      const is_osm = document.getElementById('osm').checked ? 1 : 0
+      
+      try {
+        if(set_supervisor != (is_supervisor ? 1 : 0)){
+          if(is_osm == 1 && set_supervisor == 1){
+            const response = await fetch("/osm_group/promote_supervisor/", {
+              method: "POST",  // Use POST method for make osm to supervisor
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({user_id: userId}),
+              
+            });
+            if (!response.ok){
+              alert("Failed to update osm supervisor.")
+            }
+          }else{
+            const response = await fetch("/osm_group/promote_supervisor/", {
+              method: "DELETE",  // Use DELETE method for make osm to supervisor
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({user_id: userId}),
+            });
+            if (!response.ok){
+              alert("Failed to reomve osm supervisor.")
+            }
+          }
+        }
+      } catch (error){
+        console.error("Error updating osm supervisor:", error);
+      }
   
       try {
         const response = await fetch("/submit_info_api/", {
@@ -121,7 +198,7 @@
           },
           body: JSON.stringify(formData),
         });
-  
+        
         if (response.ok) {
           alert("User information updated successfully!");
           window.location.href = '/admin_page/'
@@ -132,6 +209,22 @@
         console.error("Error submitting form data:", error);
       }
     }
+
+    // toggle show osm supervisor checkbox
+    document.getElementById('osm').addEventListener('change', function () {
+      promoteSupervisorCheckbox = document.getElementById('promoteSupervisor');
+      promoteSupervisorContainer = document.getElementById('promoteSupervisorContainer');
+      
+      if(this.checked){
+        promoteSupervisorCheckbox.checked = is_supervisor;
+        promoteSupervisorContainer.style.display = 'block';
+      } else {
+        promoteSupervisorCheckbox.checked = false;
+        promoteSupervisorContainer.style.display = 'none';
+      }
+    });
+  
+    document.getElementById('editUserForm').addEventListener('submit', submitFormData);
 
     function populateHTMLByRole(data) {
     const formContent = document.getElementById("formContent");

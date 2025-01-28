@@ -1,0 +1,457 @@
+{% extends "./base.html" %} {% block title %} RiskOCA | Group {% endblock %} {%
+block content %}
+<div>
+  <div
+    id="groupData"
+    data-group-id="{{group_id}}"
+    data-user-supervisor="{{is_user_supervisor}}"
+  ></div>
+
+  {% if group_id != -1 %}
+
+  <div class="my-5">
+    <h2>ระบบจัดการสมาชิกกลุ่มผู้ตรวจคัดกรอง</h2>
+    <p>
+      หมายเหตุของกลุ่ม:
+      <span
+        ><i
+          >{% if group_note != None%} {{group_note}} {% else %} ไม่มีข้อมูล {%
+          endif %} {% if is_user_supervisor %}</i
+        >
+        <span>
+          <button class="btn btn-link" onclick="editGroupNote()">แก้ไข</button>
+        </span>
+        {% endif %}
+      </span>
+    </p>
+
+    <div class="text-end">
+      {% if is_user_supervisor %}
+      <button
+        class="btn btn-primary"
+        data-bs-toggle="modal"
+        data-bs-target="#addUserModal"
+        onclick="fetchOSMUsers()"
+      >
+        เพิ่มผู้ตรวจคัดกรอง
+      </button>
+      {% endif %}
+      <button
+        class="btn btn-primary"
+        onclick="window.location.href='/osm_group/';"
+      >
+        รายงานกลุ่มผู้ตรวจคัดกรอง
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div
+    class="modal fade"
+    id="addUserModal"
+    tabindex="-1"
+    aria-labelledby="addUserModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="addUserModalLabel">
+            เลือกผู้ตรวจคัดกรอง
+          </h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+            onclick="handleComplete()"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <table id="add_list" class="dataTable">
+            <thead>
+              <tr class="text-dark">
+                <th>ชื่อ - นามสกุล</th>
+                <th>โรงพยาบาลที่สังกัด</th>
+                <th>จังหวัด</th>
+                <th>เพิ่มผู้ตรวจคัดกรอง</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <div id="loadingAddSpinner" class="d-none my-2">
+            <div class="d-flex justify-content-center align-items-center">
+              <div class="spinner-border text-primary" role="status"></div>
+              <span class="ms-2">กำลังโหลดข้อมูล...</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+            onclick="handleComplete()"
+          >
+            เสร็จสิ้น
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table id="user_manage" class="dataTable">
+      <thead>
+        <tr class="text-dark">
+          <th>ชื่อ - นามสกุล</th>
+          <th>โรงพยาบาลที่สังกัด</th>
+          <th>จังหวัด</th>
+          <th>จำนวนอัพโหลด (อัพโหลดล่าสุด)</th>
+          <th>เบอร์โทรศัพท์</th>
+          {% if is_user_supervisor %}
+          <th>จัดการ</th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div id="loadingManageSpinner" class="d-none my-2">
+    <div class="d-flex justify-content-center align-items-center">
+      <div class="spinner-border text-primary" role="status"></div>
+      <span class="ms-2">กำลังโหลดข้อมูล...</span>
+    </div>
+  </div>
+  {% else %}
+  <div class="alert alert-danger" role="alert">
+    คุณไม่ได้อยู่ในกลุ่มผู้ตรวจคัดกรองใดๆ โปรดติดต่อผู้ดูแลเพื่อเข้าร่วมกลุ่ม
+  </div>
+  {% endif %}
+</div>
+
+<script>
+  let fetchedGroupData = [];
+  let fetchedOSMData = [];
+  let groupDataTableInstance = null; // Group member dataTables instance
+  let osmDataTableInstance = null; // OSM add dataTables instance
+
+  let userAdded = false; // Track whether a user has been added
+  let addFirstLoad = true;
+
+  const groupData = document.getElementById("groupData");
+  const groupId = groupData.dataset.groupId;
+  const is_user_supervisor = groupData.dataset.userSupervisor;
+
+  function toggleSpinner(show, elem) {
+    const spinner = document.getElementById(elem);
+    if (show) {
+      spinner.classList.remove("d-none");
+    } else {
+      spinner.classList.add("d-none");
+    }
+  }
+
+  function fetchGroup() {
+    toggleSpinner(true, "loadingManageSpinner"); // Show spinner
+    fetch(`/osm_group/group/${groupId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        fetchedGroupData = data; // Save fetched data
+        renderManageTable(fetchedGroupData); // Render the table initially
+        toggleSpinner(false, "loadingManageSpinner"); // Hide spinner
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        const tbody = document.querySelector(`#user_manage tbody`);
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">เกิดข้อผิดพลาดในการดึงข้อมูล</td></tr>`;
+        toggleSpinner(false, "loadingManageSpinner"); // Hide spinner
+      });
+  }
+
+  function renderManageTable(data) {
+    const tbody = document.querySelector(`#user_manage tbody`);
+    const { group_list } = data;
+    tbody.innerHTML = ""; // Clear existing rows
+
+    group_list.forEach((user) => {
+      const row = document.createElement("tr");
+
+      row.innerHTML = `<td>${user.name} <span>${user.surname}</span> ${
+        user.is_supervisor == "1"
+          ? " <span>(หัวหน้ากลุ่มผู้ตรวจคัดกรอง)</span>"
+          : ""
+      }</td>
+      <td>${user.hospital ? user.hospital : "ไม่มีโรงพยาบาลที่สังกัด"}</td>
+      <td>${user.province}</td>
+      <td>${
+        user.submission_count
+          ? `
+          <form action="/osm_group/" method="post" id="filterForm">
+            <div class="col my-1">
+              <input name="filterSender" id="filterSender" class="d-none" value="${user.osm_id}">
+            </input>
+            </div>
+            <button type="submit" class="btn btn-link">${user.submission_count} รูป (${user.last_activity})</button>
+            </div>
+          </form>
+          `
+          : "-"
+      } </td>
+      <td>${user.phone_number}</td>
+      ${
+        is_user_supervisor == 1
+          ? `<td>
+            ${
+              user.is_supervisor == 1
+                ? `<button class="btn btn-secondary" disabled style="width: 100%">ผู้ดูแล</button>`
+                : `<button class="btn btn-danger" style="width: 100%" onclick="confirmAndDelete(this, '${user.osm_id}', '${user.name} ${user.surname}');">ลบ</button>`
+            }
+            </td>`
+          : ""
+      }`;
+      tbody.appendChild(row);
+    });
+
+    // Reinitialize DataTables to ensure proper pagination
+    if (groupDataTableInstance) {
+      groupDataTableInstance.destroy(); // Destroy existing instance
+    }
+    groupDataTableInstance = $("#user_manage").DataTable({
+      order: [],
+      pageLength: 10, // Items per page
+      language: {
+        search: "ค้นหา:",
+        lengthMenu: "แสดง _MENU_ รายการต่อหน้า",
+        info: "แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ",
+        paginate: {
+          first: "หน้าแรก",
+          last: "หน้าสุดท้าย",
+          next: "ถัดไป",
+          previous: "ก่อนหน้า",
+        },
+      },
+    });
+  }
+
+  function fetchOSMUsers() {
+    if (addFirstLoad) {
+      toggleSpinner(true, "loadingAddSpinner");
+    }
+
+    fetch(`/osm_group/get_osm_for_search`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        fetchedOSMData = data; // Save fetched data
+        renderAddTable(fetchedOSMData);
+        addFirstLoad = false;
+        if (!addFirstLoad) {
+          toggleSpinner(false, "loadingAddSpinner");
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        if (!addFirstLoad) {
+          toggleSpinner(false, "loadingAddSpinner");
+        }
+      });
+  }
+
+  function renderAddTable(data) {
+    const tbody = document.querySelector(`#add_list tbody`);
+    const { osm_list, province } = data;
+    tbody.innerHTML = ""; // Clear existing rows
+
+    if (osm_list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger">ไม่พบผู้ตรวจคัดกรองในจังหวัด${province}</td></tr>`;
+      return;
+    }
+
+    osm_list.forEach((user) => {
+      const row = document.createElement("tr");
+
+      row.innerHTML = `<td>${user.name} <span>${user.surname}</span></td>
+    <td>${user.hospital ? user.hospital : "ไม่มีโรงพยาบาลที่สังกัด"}</td>
+    <td>${user.province}</td>
+    ${
+      is_user_supervisor
+        ? `<td>
+                 <button class="btn btn-primary" style="width: 100%" onclick="addUserToGroup(this, '${user.id}', '${user.name} ${user.surname}')">
+                  เพิ่ม
+                  </button>
+            </td>`
+        : ""
+    }`;
+      tbody.appendChild(row);
+    });
+
+    // Reinitialize DataTables to ensure proper pagination
+    if (osmDataTableInstance) {
+      osmDataTableInstance.destroy(); // Destroy existing instance
+    }
+    osmDataTableInstance = $("#add_list").DataTable({
+      order: [[0, "asc"]],
+      pageLength: 10, // Items per page
+      language: {
+        search: "ค้นหา:",
+        lengthMenu: "แสดง _MENU_ รายการต่อหน้า",
+        info: "แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ",
+        paginate: {
+          first: "หน้าแรก",
+          last: "หน้าสุดท้าย",
+          next: "ถัดไป",
+          previous: "ก่อนหน้า",
+        },
+      },
+    });
+  }
+
+  function confirmAndDelete(button, userId, name) {
+    if (!confirm(`คุณต้องการลบ ${name} ออกจากกลุ่มใช่หรือไม่ ?`)) return;
+
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = `
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      กำลังลบ...
+    `;
+
+    const formData = { user_id: userId, group_id: groupId };
+
+    fetch(`/osm_group/remove`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(
+            `Failed to delete user from group: ${response.statusText}`
+          );
+        }
+        alert(`${name} ถูกลบสำเร็จ!`);
+        button.innerHTML = `
+          <i class="bi bi-check-circle-fill"></i> ลบแล้ว
+        `;
+        button.classList.remove("btn-danger");
+        button.classList.add("btn-secondary");
+        window.location.reload(); // Refresh page after deleting user
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        alert(`เกิดข้อผิดพลาดในการลบ ${name}`);
+        button.disabled = false;
+        button.innerHTML = originalText;
+      });
+  }
+
+  function addUserToGroup(button, userId, addingName) {
+    const originalText = button.innerHTML;
+    button.disabled = true; // Disable the button temporarily
+
+    button.innerHTML = `
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      กำลังเพิ่ม...
+    `;
+
+    const formData = { user_id: userId, group_id: groupId };
+
+    fetch(`/osm_group/add`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          alert(
+            "เกิดข้อผิดพลาดไม่สามารถเพิ่มผู้ใช้ไปในกลุ่มได้ โปรดลองรีเฟรชหน้านี้และใหม่อีกครั้ง"
+          );
+          userAdded = true;
+          button.innerHTML = `
+            <i class="bi bi-circle-fill"></i> เกิดข้อผิดพลาด
+          `;
+          button.classList.remove("btn-primary");
+          button.classList.add("btn-danger");
+        } else {
+          userAdded = true;
+          button.innerHTML = `
+            <i class="bi bi-check-circle-fill"></i> เพิ่มแล้ว
+          `;
+          button.classList.remove("btn-primary");
+          button.classList.add("btn-success");
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        alert("เกิดข้อผิดพลาดในการเพิ่มผู้ใช้");
+        button.disabled = false;
+        button.innerHTML = originalText;
+      });
+  }
+
+  function editGroupNote() {
+    const newNote = prompt("กรุณาใส่หมายเหตุใหม่:");
+    if (newNote === null || newNote.trim() === "") {
+      return; // Exit if no input
+    }
+
+    const formData = { group_id: groupId, note: newNote };
+
+    fetch("/osm_group/change_group_note/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          alert("เกิดข้อผิดพลาดในการอัปเดตหมายเหตุกลุ่ม");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        alert("บันทึกหมายเหตุกลุ่มเสร็จสิ้น");
+        window.location.reload(); // Reload the page to reflect changes
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+        alert("เกิดข้อผิดพลาดในการอัปเดตหมายเหตุกลุ่ม");
+      });
+  }
+
+  function handleComplete() {
+    if (userAdded) {
+      window.location.reload(); // Reload the page if a user was added
+    }
+  }
+
+  if (groupId != -1) fetchGroup(); // Fetch data and render table on page load
+</script>
+
+{% endblock %}

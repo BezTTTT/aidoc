@@ -36,6 +36,13 @@ def load_logged_in_user():
                                     "Physician":"แพทย์", "Public Health Technical Officer":"นักวิชาการสาธารณสุข", "Computer Technical Officer":"นักวิชาการคอมพิวเตอร์/นักวิจัย/ผู้พัฒนาระบบ",
                                     "Other Public Health Officer":"ข้าราชการ/เจ้าพนักงานกระทรวงสาธารณสุข", "Other Government Officer":"เจ้าหน้าที่รัฐอื่น", "General Public":"บุคคลทั่วไป"}
                 g.user['job_position_th'] = job_position_dict[g.user['job_position']]
+                
+            # add has group for osm to show osm group option on navbar
+            if g.user['is_osm']:
+                db, cursor = get_db()
+                cursor.execute('SELECT group_id FROM osm_group_member WHERE osm_id = %s LIMIT 1', (user_id,))
+                group = cursor.fetchone()
+                g.user['has_group'] = True if group else False
 
 @bp.route('/')
 def index():
