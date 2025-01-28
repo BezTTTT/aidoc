@@ -374,22 +374,29 @@ block content %}
 
 
   function editGroupName(button) {
-  // Hide the <i> element and show the input field
-  const groupNameElement = document.getElementById("groupName");
-  const inputGroup = document.getElementById("inputGroupName");
-  const inputElement = document.getElementById("groupNameInput");
-  const editGroupName = document.getElementById("editGroupName");
+    // Hide the <i> element and show the input field
+    const groupNameElement = document.getElementById("groupName");
+    const inputGroup = document.getElementById("inputGroupName");
+    const inputElement = document.getElementById("groupNameInput");
+    const editGroupName = document.getElementById("editGroupName");
 
-  // Set the input's initial value to the current group name
-  inputElement.value = groupNameElement.textContent.trim();
-  groupNameElement.style.display = "none";
-  inputGroup.style.display = "inline";
-  editGroupName.style.display = "none";
-}
+    // Set the input's initial value to the current group name
+    inputElement.value = groupNameElement.textContent.trim();
+    groupNameElement.style.display = "none";
+    inputGroup.style.display = "inline";
+    editGroupName.style.display = "none";
+  }
 
-async function saveGroupName(button) {
-  const inputElement = document.getElementById("groupNameInput");
-  const newName = inputElement.value.trim();
+  async function saveGroupName(button) {
+    const inputElement = document.getElementById("groupNameInput");
+    const newName = inputElement.value.trim();
+    const groupNameElement = document.getElementById("groupName");
+
+    // Check if the new name is empty or the same as the current name no update
+    if (newName == "" || newName == groupNameElement.textContent.trim()) {
+      cancelEditGroupName();
+      return;
+    }
 
     try {
       // Add spinner or disable the button
