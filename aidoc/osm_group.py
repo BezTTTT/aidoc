@@ -1,158 +1,32 @@
 import json
-from flask import Blueprint, jsonify, render_template, request, session
-from aidoc.auth import login_required, role_validation
+from flask import Blueprint, jsonify, render_template, request, session, g
+from aidoc.auth import login_required
 from aidoc.db import get_db
 
-from datetime import date
-from dateutil.parser import parse
+from aidoc.webapp import calculate_age, construct_osm_filter_sql, format_thai_datetime
 
 bp = Blueprint('osm_group', __name__)
 
-def format_thai_datetime(x):
-    month_list_th = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน','กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
-    output_thai_datetime_str = '{} {} {} {}:{}'.format(
-        x.strftime('%d'),
-        month_list_th[int(x.strftime('%m'))-1],
-        int(x.strftime('%Y'))+543,
-        x.strftime('%H'),
-        x.strftime('%M')
-    )
-    return output_thai_datetime_str
-
-def calculate_age(born):
-    if isinstance(born,str):
-        born = parse(born)
-    today = date.today()
-    return today.year - born.year - ((today.month, today.day) < (born.month, born.day))
-
-
-# render osm group manage page
-@bp.route('/member-manage/', methods=['GET']) 
-@login_required
-def render_osm_group():
-    user_id = session.get('user_id')
-    db, cursor = get_db()
-    
-    try:
-        cursor.execute(
-            """
-            SELECT o.group_id, o.note, (ogm.osm_id = osm_supervisor_id) as is_supervisor
-            FROM osm_group_member as ogm
-            JOIN osm_group o ON ogm.group_id = o.group_id
-            WHERE osm_id = %s
-            """,
-            (user_id,)
-        )
-        user_data = cursor.fetchone()
-
-        
-        if not user_data:
-            return render_template('/newTemplate/osm_hierarchy_manage.html', group_id=-1, is_user_supervisor=0, group_note="ไม่มีข้อมูล")
-
-        group_id = user_data['group_id']
-        is_supervisor = user_data['is_supervisor']
-        group_note = user_data['note']
-        print(group_note)
-        return render_template('/newTemplate/osm_hierarchy_manage.html', group_id=group_id, is_user_supervisor=is_supervisor, group_note=group_note)
-    finally:
-        cursor.close()
-        db.close()
-
-
-#render osm hierarchy record page
+# render osm hierarchy record page
+# region Group Record
 @bp.route('/', methods=('GET', 'POST'))
 @login_required
-def render_osm_group_record(): # Submission records
-    user_id = session.get('user_id')
-    group_id = -1
-    ids = []
-    osm_option_list = []
-    try:
-        db, cursor = get_db()
-        cursor.execute( 'Select group_id from osm_group_member where osm_id = %s', (user_id,))
-        qury = cursor.fetchone()
-        group_id = qury["group_id"] if qury else -1
-        
-        if group_id == -1:
-            return render_template("/newTemplate/osm_hierarchy_record.html", 
-                    data={'has_group': False, 'osm_option_list': [], 'search': '', 'agree': ''}, 
-                    dataCount=0, 
-                    pagination=[], 
-                    current_page=1, 
-                    total_pages=0, 
-                    search_query="", 
-                    filters=[])
-        else:
-            
-            cursor.execute(
-                """SELECT osm_id, user.name, user.surname 
-                FROM osm_group_member 
-                LEFT JOIN user ON osm_id = user.id
-                WHERE group_id = %s""",
-                (group_id,)
-            )
-            osm_list = cursor.fetchall()
-            
-            cursor.execute(
-                """SELECT osm_group.note, user.name, user.surname, user.phone 
-                FROM osm_group 
-                LEFT JOIN user ON osm_group.osm_supervisor_id = user.id 
-                WHERE osm_group.group_id = %s""",
-                (group_id,)
-            )
-            group_info = cursor.fetchone()
-           
-            ids = [int(x['osm_id']) for x in osm_list]
-            
-            for osm in osm_list:
-                osm_option_list.append({'osm_id': osm['osm_id'], 'name': f"{osm['name']} {osm['surname']}"})
-            
-    except Exception as e: 
-        return render_template("/newTemplate/osm_hierarchy_record.html", 
-                    data={'has_group': False, 'osm_option_list': [], 'search': '', 'agree': ''}, 
-                    dataCount=0, 
-                    pagination=[], 
-                    current_page=1, 
-                    total_pages=0, 
-                    search_query="", 
-                    filters=[])
+def render_osm_group_record():
     
+    # Prevent not supervisor accesses
+    if(g.user['group_info']['is_supervisor'] == 0 or g.user['group_info']['group_id'] == -1 ):
+        return render_template('newTemplate/osm_group_record.html', dataCount=0, paginated_data=[], current_page=1, total_pages=1, data={}, osm_filter_data={})
     
-    osm_sql_construct = ''
-    
-    if not ids:
-        osm_sql_construct = f'sender_id = {user_id} OR'
-    else:   
-        try: 
-            for id in ids:
-                osm_sql_construct += f'sender_id = {id} OR '
-        except ValueError:
-            osm_sql_construct = f'sender_id = {user_id} OR'
+    role = 'osm'
 
-    db, cursor = get_db()
-    sql = f'''SELECT submission_record.id, channel, fname,
-                patient_user.name, patient_user.surname, patient_user.birthdate, patient_user.province,
-                case_id, sender_id, patient_id, dentist_id, special_request, sender_phone, 
-                location_province, location_zipcode, 
-                dentist_feedback_comment,dentist_feedback_code,
-                ai_prediction, submission_record.created_at,
-                osm_user.name AS sender_name, osm_user.surname AS sender_surname
-            FROM submission_record
-            INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
-            LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
-            LEFT JOIN user AS sender_user ON submission_record.sender_phone = sender_user.phone
-            LEFT JOIN user AS osm_user ON sender_id = osm_user.id
-            WHERE ({osm_sql_construct} submission_record.sender_phone is not NULL ) AND submission_record.channel = "OSM"
-            ORDER BY case_id DESC'''
-    cursor.execute(sql, )
-    db_query =  cursor.fetchall()
+    session['sender_mode'] = role
 
-    # Filter data if search query is provided
+    # Filter Preparation
     if 'record_filter' not in session:
         session['record_filter'] = {}
-    if request.method == 'POST':  
+    if request.method == 'POST':
         search_query = request.form.get("search", session['record_filter'].get('search_query', ""))
-        agree = request.form.get("agree", "")
+        agree = request.form.get("agree", "")   # This is exclusively for dentist system
         filterStatus = request.form.get("filterStatus", "") 
         filterPriority = request.form.get("filterPriority", "") 
         filterProvince = request.form.get("filterProvince", "") 
@@ -160,6 +34,8 @@ def render_osm_group_record(): # Submission records
         filterFollowup = request.form.get("filterFollowup", "")
         filterRetrain = request.form.get("filterRetrain", "")
         filterSender = request.form.get("filterSender", "")
+
+        # Save filter parameters to the session 
         session['record_filter']['search_query'] = search_query
         session['record_filter']['agree'] = agree
         session['record_filter']['filterStatus'] = filterStatus
@@ -170,148 +46,210 @@ def render_osm_group_record(): # Submission records
         session['record_filter']['filterRetrain'] = filterRetrain
         session['record_filter']['filterSender'] = filterSender
     else:
+        # Load values from session or use an empty string
         search_query = session['record_filter'].get('search_query', "")
-        agree = session['record_filter'].get('agree', "")
-        filterStatus = session['record_filter'].get('filterStatus', "")
-        filterPriority = session['record_filter'].get('filterPriority', "")
-        filterProvince = session['record_filter'].get('filterProvince', "")
-        filterSpecialist = session['record_filter'].get('filterSpecialist', "")
+        agree = session['record_filter'].get("agree", "")   # This is exclusively for dentist system
+        filterStatus = session['record_filter'].get("filterStatus", "") 
+        filterPriority = session['record_filter'].get("filterPriority", "") 
+        filterProvince = session['record_filter'].get("filterProvince", "") 
+        filterSpecialist = session['record_filter'].get("filterSpecialist", "")
         filterFollowup = session['record_filter'].get("filterFollowup", "")
         filterRetrain = session['record_filter'].get("filterRetrain", "")
         filterSender = session['record_filter'].get("filterSender", "")
-    # Initialize an empty list to store filtered results
-    filtered_data = []
 
-    # Loop through the data and apply both search and filter criteria
-    # This section must be researched for the efficiency (and refactored), but for now just let it be
-    for record in db_query:
-        record_fname = record.get("fname").lower()
-        record_case_id = record.get("case_id")
-        record_feedback_code = record.get("dentist_feedback_code")
-        record_ai_prediction = record.get("ai_prediction")
-        record_patient_name = record.get("name")
-        record_patient_surname = record.get("surname")
-        record_special_request = record.get("special_request")
-        record_province = record.get("location_province")
-        record_district = record.get("location_district")
-        record_amphoe = record.get("location_amphoe")
-        record_zipcode = record.get("location_zipcode")
-        record_sender_id= record.get("sender_id")
-        record_sender_name = record.get("sender_name")
-        record_sender_surname = record.get("sender_surname")
-        
-        if search_query!="" or filterStatus!="" or filterPriority!="" or filterProvince!="" or filterSender!="":
-            cumulativeFilterFlag = True
-
-            if search_query!="":
-                cumulativeFilterFlag &= (search_query in record_fname) or (str(record_case_id) == search_query) or \
-                    (record_patient_name is not None) and (record_patient_name in search_query or record_patient_surname in search_query) or \
-                    (record_feedback_code is not None) and (record_feedback_code.lower() == search_query.lower()) or \
-                    (search_query.lower() == 'opmd') and (record_ai_prediction==1) or \
-                    (search_query.lower() == 'oscc') and (record_ai_prediction==2) or \
-                    (record_district is not None) and (search_query in record_district) or \
-                    (record_amphoe is not None) and (search_query in record_amphoe) or \
-                    (record_province is not None) and (search_query in record_province) or \
-                    (record_zipcode is not None) and (search_query == record_zipcode) or \
-                    (record_sender_name is not None) and (search_query in record_sender_name) or \
-                    (record_sender_surname is not None) and (search_query in record_sender_surname)
-            if filterStatus!="":
-                cumulativeFilterFlag &= (filterStatus == "1" and record_feedback_code!=None) or (filterStatus == "0" and record_feedback_code==None)
-            if filterPriority!="":
-                cumulativeFilterFlag &= (filterPriority=="1" and record_special_request==1) or (filterPriority=="0" and record_special_request==0)
-            # filter by osm sender
-            if filterSender!="":
-                cumulativeFilterFlag &= (filterSender == str(record_sender_id))
-                
-            if cumulativeFilterFlag:
-                filtered_data.append(record)
-        else:
-            filtered_data.append(record)
-   
-    # Pagination
-    page = request.args.get("page", 1, type=int)
-    if request.method == "POST":
-        if 'current_record_page' in session:
-            page = session['current_record_page']
-        else:
-            page = 1
-        
-    PER_PAGE = 12 #number images data show on record page per page
-    total_pages = (len(filtered_data) - 1) // PER_PAGE + 1
-    start_idx = (page - 1) * PER_PAGE
-    end_idx = start_idx + PER_PAGE
-    paginated_data = filtered_data[start_idx:end_idx]
-    
-    # Process each item in paginated_data
-    for item in paginated_data:
-        if item['channel']=='PATIENT':
-            item['owner_id'] = item['patient_id']
-        else:
-            item['owner_id'] = item['sender_id']
-        item["formatted_created_at"] = item["created_at"].strftime("%d/%m/%Y %H:%M")
-        if ("birthdate" in item and item["birthdate"]):
-            item["age"] = 55# calculate_age(item["birthdate"])
-
-    data = {}
-    data["has_group"] = True
-    data["group_info"] = group_info
-    data["osm_option_list"] = osm_option_list
-    data['search'] = search_query
-    data['agree'] = agree
-    
+    page = request.args.get("page", session.get('current_record_page', 1), type=int)
     session['current_record_page'] = page
+    session['records_per_page'] = 12
 
+    paginated_data, supplemental_data, dataCount, osm_filter_data = record_osm_group()
 
+    # Further process each item in paginated_data
+    for item in paginated_data:
+        item["formatted_created_at"] = item["created_at"].strftime("%d/%m/%Y %H:%M")
+
+    if dataCount is not None:
+        dataCount = dataCount['full_count']
+    else:
+        dataCount = 0
+    total_pages = (dataCount - 1) // session['records_per_page'] + 1
     return render_template(
-                "/newTemplate/osm_hierarchy_record.html",
-                data=data,
-                dataCount=len(filtered_data),
-                pagination=paginated_data,
+                "newTemplate/osm_group_record.html",
+                dataCount=dataCount,
+                paginated_data=paginated_data,
                 current_page=page,
                 total_pages=total_pages,
-                search_query=search_query,
-                filters=[filterStatus,filterPriority,filterProvince,filterSpecialist,filterFollowup,filterRetrain, filterSender])
+                data=supplemental_data,
+                osm_filter_data=osm_filter_data)
 
 
+def record_osm_group():
+    # Construct filter query and supplemental data
+    filter_query, supplemental_data = construct_osm_filter_sql()
+
+    # Add sender filter if present
+    filter_sender = session['record_filter'].get('filterSender', "")
+    if filter_sender:
+        filter_query += f" AND (sender_id = {filter_sender})" if filter_query else f"(sender_id = {filter_sender})"
+        supplemental_data['filterSender'] = filter_sender
+
+    # Pagination setup
+    page = session['current_record_page']
+    records_per_page = session['records_per_page']
+    offset = (page - 1) * records_per_page
+
+    db, cursor = get_db()
+    
+    # SQL query parts
+    sql_select = '''
+        SELECT submission_record.id, channel, fname,
+            patient_user.name, patient_user.surname, patient_user.birthdate, patient_user.province,
+            case_id, sender_id, patient_id, dentist_id, special_request, sender_phone, 
+            location_province, location_zipcode, 
+            dentist_feedback_comment, dentist_feedback_code,
+            ai_prediction, submission_record.created_at, osm_user.name as sender_name, osm_user.surname as sender_surname
+    '''
+    sql_count = 'SELECT count(*) AS full_count'
+    sql_from = '''
+        FROM submission_record
+        INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
+        LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
+        LEFT JOIN user AS sender_user ON submission_record.sender_phone = sender_user.phone
+        LEFT JOIN user AS osm_user ON submission_record.sender_id = osm_user.id
+        WHERE 
+    '''
+    sql_limit = '''
+        ORDER BY submission_record.id DESC
+        LIMIT %s
+        OFFSET %s
+    '''
+
+    # Retrieve OSM group members
+    cursor.execute('''
+        SELECT osm_id as sender_id, user.phone as sender_phone, user.name as osm_name, user.surname as osm_surname 
+        FROM osm_group_member 
+        LEFT JOIN user ON user.id = osm_group_member.osm_id 
+        WHERE group_id = (SELECT group_id FROM osm_group WHERE osm_supervisor_id = %s)
+    ''', (session['user_id'],))
+    member_list = cursor.fetchall()
+
+    osm_filter_data = [{
+        'sender_id': member['sender_id'],
+        'osm_name': f"{member['osm_name']} {member['osm_surname']}"
+    } for member in member_list]
+
+    # Construct group member SQL condition
+    group_member_conditions = [
+        f"(sender_id = {member['sender_id']} OR (submission_record.sender_phone IS NOT NULL AND submission_record.sender_phone = {member['sender_phone']}))"
+        for member in member_list
+    ]
+    sql_group_member = '(' + ' OR '.join(group_member_conditions) + ')'
+
+    # Combine SQL parts
+    sql_where = f' AND {filter_query}' if filter_query else ''
+    sql_count_query = sql_count + sql_from + sql_group_member + sql_where
+    sql_select_query = sql_select + sql_from + sql_group_member + sql_where + sql_limit
+
+    # Execute queries
+    cursor.execute(sql_count_query)
+    data_count = cursor.fetchone()
+
+    cursor.execute(sql_select_query, (records_per_page, offset))
+    paginated_data = cursor.fetchall()
+
+    # Process each record
+    for item in paginated_data:
+        item['owner_id'] = item['patient_id'] if item['channel'] == 'PATIENT' else item['sender_id']
+        if 'birthdate' in item and item['birthdate']:
+            item['age'] = calculate_age(item['birthdate'])
+
+    return paginated_data, supplemental_data, data_count, osm_filter_data
+
+
+# render osm group manage page
+# region Group Manage
+@bp.route('/member-manage/', methods=['GET'])
+@login_required
+def render_osm_group_manage():
+    user_id = session['user_id']
+    db, cursor = get_db()
+
+    try:
+        cursor.execute(
+            """
+            SELECT 
+                og.group_id, 
+                og.group_name, 
+                (ogm.osm_id = og.osm_supervisor_id) AS is_supervisor
+            FROM osm_group_member AS ogm
+            JOIN osm_group AS og ON ogm.group_id = og.group_id
+            WHERE ogm.osm_id = %s
+            """,
+            (user_id,)
+        )
+        user_data = cursor.fetchone()
+
+        if not user_data:
+            return render_template(
+                'newTemplate/osm_group_manage.html',
+                group_id=-1,
+                is_user_supervisor=0,
+                group_name="ไม่มีข้อมูล"
+            )
+
+        group_id = user_data['group_id']
+        is_supervisor = user_data['is_supervisor']
+        group_name = user_data['group_name']
+        return render_template(
+            'newTemplate/osm_group_manage.html',
+            group_id=group_id,
+            is_user_supervisor=is_supervisor,
+            group_name=group_name
+        )
+    finally:
+        cursor.close()
+        db.close()
+
+
+#region APIs
 @bp.route('/group/<int:group_id>', methods=['GET'])
 @login_required
 def get_group_users(group_id):
     if group_id == -1:
         return jsonify({'group_list': []})
+
     db, cursor = get_db()
     try:
         cursor.execute(
             """
-            SELECT oh.group_id, oh.osm_id AS osm_id, (oh.osm_id = og.osm_supervisor_id) as is_supervisor, u.name, u.surname, u.hospital, u.province, u.phone,
-            (SELECT COUNT(*) FROM submission_record 
-            WHERE sender_id = oh.osm_id AND channel = 'OSM') AS submission_count,
-            (SELECT created_at FROM submission_record WHERE sender_id = oh.osm_id ORDER BY created_at DESC LIMIT 1) AS last_activity
+            SELECT 
+                oh.group_id, oh.osm_id, (oh.osm_id = og.osm_supervisor_id) as is_supervisor, u.name, u.surname, u.hospital, u.province, u.phone,
+                (SELECT COUNT(*) FROM submission_record WHERE sender_id = oh.osm_id AND channel = 'OSM') AS submission_count,
+                (SELECT created_at FROM submission_record WHERE sender_id = oh.osm_id ORDER BY created_at DESC LIMIT 1) AS last_activity
             FROM osm_group_member oh
             LEFT JOIN user u ON oh.osm_id = u.id
-            LEFT JOIN osm_group as og ON oh.group_id = og.group_id
+            LEFT JOIN osm_group og ON oh.group_id = og.group_id
             WHERE oh.group_id = %s
             ORDER BY CASE WHEN (oh.osm_id = og.osm_supervisor_id) = 1 THEN 1 ELSE 2 END
             """,
             (group_id,)
         )
+
         hierarchy = cursor.fetchall()
-        
-        
         group_list = [
             {
-                "osm_id": osm["osm_id"],
-                "name": osm["name"],
-                "surname": osm["surname"],
-                "is_supervisor": osm["is_supervisor"],
-                "hospital": osm["hospital"],
-                "province": osm["province"],
-                "submission_count": osm["submission_count"],
-                "phone_number": osm["phone"],
-                "last_activity": format_thai_datetime(osm["last_activity"]) if osm["last_activity"] else "-"
-
+                'osm_id': item['osm_id'],
+                'name': item['name'],
+                'surname': item['surname'],
+                'is_supervisor': item['is_supervisor'],
+                'hospital': item['hospital'],
+                'province': item['province'],
+                'submission_count': item['submission_count'],
+                'phone_number': item['phone'],
+                'last_activity': format_thai_datetime(item['last_activity']) if item['last_activity'] else '-'
             }
-            for osm in hierarchy if osm["name"] and osm["surname"]
+            for item in hierarchy if item['name'] and item['surname']
         ]
+
         return jsonify({'group_list': group_list})
     finally:
         cursor.close()
@@ -320,31 +258,33 @@ def get_group_users(group_id):
 
 @bp.route('/add', methods=['POST'])
 @login_required
-def add_to_group():
-    data = request.get_json()
-    
-    if not data or 'user_id' not in data or 'group_id' not in data:
-        return json.dumps({'error': 'No osm_id/group_id provided'}), 400  
+def add_user_to_group():
+    request_data = request.get_json()
+    if not request_data:
+        return json.dumps({'error': 'No request data provided'}), 400
 
-    user_id_to_add = data.get('user_id')
-    group_id = data.get('group_id')
+    user_id = request_data.get('user_id')
+    group_id = request_data.get('group_id')
+
+    if not user_id or not group_id:
+        return json.dumps({'error': 'No user_id/group_id provided'}), 400
 
     if group_id == -1:
         return json.dumps({'error': 'Invalid group_id'}), 400
-    
+
     db, cursor = get_db()
     try:
         cursor.execute(
             "SELECT 1 FROM osm_group_member WHERE osm_id = %s",
-            (user_id_to_add,)
+            (user_id,)
         )
-        exitsting_member = cursor.fetchone()
-        if exitsting_member:
-            return json.dumps({'error': 'User is already in other group'}), 400
-        
+        existing_member = cursor.fetchone()
+        if existing_member:
+            return json.dumps({'error': 'User is already in another group'}), 400
+
         cursor.execute(
             "INSERT INTO osm_group_member (group_id, osm_id) VALUES (%s, %s)",
-            (group_id, user_id_to_add)
+            (group_id, user_id)
         )
         db.commit()
         return json.dumps({'message': 'User added to group'}), 200
@@ -359,17 +299,15 @@ def add_to_group():
 @bp.route('/remove', methods=['DELETE'])
 @login_required
 def remove_from_group():
-    body = request.get_json()
-    
-    if not body or 'user_id' not in body or 'group_id' not in body:
-        return json.dumps({'error': 'No osm_id/group_id provided'}), 400    
-    
-    user_id = body.get('user_id')
-    group_id = body.get('group_id')
+    request_body = request.get_json()
+    if not request_body or 'user_id' not in request_body or 'group_id' not in request_body:
+        return json.dumps({'error': 'No user_id/group_id provided'}), 400
+    user_id = request_body['user_id']
+    group_id = request_body['group_id']
 
     if group_id == -1:
         return json.dumps({'error': 'Invalid group_id'}), 400
-    
+
     db, cursor = get_db()
     try:
         cursor.execute(
@@ -388,91 +326,104 @@ def remove_from_group():
 
 @bp.route('/get_osm_for_search', methods=['GET'])
 @login_required
-def search_users():
+def search_osm_users():
     user_id = session.get('user_id')
     db, cursor = get_db()
+
     try:
+        # Get the current user's province
         cursor.execute("SELECT province FROM user WHERE id = %s", (user_id,))
         province = cursor.fetchone()["province"]
+
+        # Search for OSM users in the same province
         cursor.execute("""
             SELECT id, name, surname, phone as phone_number, province, hospital
-            FROM user 
-            WHERE is_osm = 1 
+            FROM user
+            WHERE is_osm = 1
             AND id NOT IN (SELECT osm_id FROM osm_group_member)
             AND province = %s
         """, (province,))
-        users = cursor.fetchall()
-        return jsonify({'osm_list': users, "province": province})
+
+        osm_users = cursor.fetchall()
+
+        return jsonify({
+            'osm_list': osm_users,
+            "province": province
+        })
     finally:
         cursor.close()
         db.close()
 
+
 @bp.route('/promote_supervisor/', methods=['POST', 'DELETE'])
-# @login_required
+@login_required
 def update_osm_role():
-    body = request.get_json()
-    osm_id = body['user_id']
-    if (not osm_id): 
-        return jsonify({'error': 'No osm_id provided'}), 400
-
     try:
-        db, cursor = get_db()
-        if request.method == 'POST':
+        user_id = request.get_json()['user_id']
+        if not user_id:
+            return jsonify({'error': 'No osm_id provided'}), 400
 
-            cursor.execute("""
-                SELECT group_id FROM osm_group WHERE osm_supervisor_id = %s
-            """, (osm_id,))
-            existing_group = cursor.fetchone()
+        db, cursor = get_db()
+
+        if request.method == 'POST':
+            existing_group = cursor.execute(
+                "SELECT group_id FROM osm_group WHERE osm_supervisor_id = %s",
+                (user_id,)
+            ).fetchone()
 
             if existing_group:
                 return jsonify({'message': 'User is already a supervisor', 'group_id': existing_group['group_id']}), 200
 
-            cursor.execute("""
-                SELECT group_id FROM osm_group_member WHERE osm_id = %s
-            """, (osm_id,))
-            existing_member = cursor.fetchall()
+            existing_member = cursor.execute(
+                "SELECT group_id FROM osm_group_member WHERE osm_id = %s",
+                (user_id,)
+            ).fetchall()
 
             if existing_member:
-                cursor.execute("""
-                    DELETE FROM osm_group_member WHERE osm_id = %s
-                """, (osm_id,))
-            
-            cursor.execute("""
-                INSERT INTO osm_group (osm_supervisor_id, note) VALUE (%s, NULL)
-            """, (osm_id,))
+                cursor.execute(
+                    "DELETE FROM osm_group_member WHERE osm_id = %s",
+                    (user_id,)
+                )
+
+            cursor.execute(
+                "INSERT INTO osm_group (osm_supervisor_id, group_name) VALUES (%s, NULL)",
+                (user_id,)
+            )
             new_group_id = cursor.lastrowid
 
-            cursor.execute("""
-                INSERT INTO osm_group_member (group_id, osm_id) VALUES (%s, %s)
-            """, (new_group_id, osm_id))
+            cursor.execute(
+                "INSERT INTO osm_group_member (group_id, osm_id) VALUES (%s, %s)",
+                (new_group_id, user_id)
+            )
             db.commit()
-            
+
             return jsonify({'message': 'Group created and user added as member', 'group_id': new_group_id}), 200
-            
 
         elif request.method == 'DELETE':
-            #remove group and all member in group
-            cursor.execute("""
-                SELECT group_id FROM osm_group WHERE osm_supervisor_id = %s
-            """, (osm_id,))
-            is_supervisor = cursor.fetchone()
+            is_supervisor = cursor.execute(
+                "SELECT group_id FROM osm_group WHERE osm_supervisor_id = %s",
+                (user_id,)
+            ).fetchone()
             if not is_supervisor:
                 return jsonify({'error': 'User is not a supervisor'}), 403
             else:
-                cursor.execute("""
-                    DELETE osm_group_member FROM osm_group_member 
-                    JOIN (SELECT group_id FROM osm_group WHERE osm_supervisor_id = %s) AS subquery 
-                    ON osm_group_member.group_id = subquery.group_id
-                """, (osm_id,))
-                cursor.execute("""
-                    DELETE FROM osm_group WHERE osm_supervisor_id = %s
-                """, (osm_id,))
+                cursor.execute(
+                    "DELETE osm_group_member FROM osm_group_member "
+                    "JOIN (SELECT group_id FROM osm_group WHERE osm_supervisor_id = %s) AS subquery "
+                    "ON osm_group_member.group_id = subquery.group_id",
+                    (user_id,)
+                )
+                cursor.execute(
+                    "DELETE FROM osm_group WHERE osm_supervisor_id = %s",
+                    (user_id,)
+                )
                 db.commit()
-        
-        return jsonify({'message': 'Group and user removed'}), 200
+
+            return jsonify({'message': 'Group and user removed'}), 200
+
     except Exception as e:
-                db.rollback()
-                return jsonify({'error': f'An error occurred: {e}'}), 500
+        db.rollback()
+        return jsonify({'error': f'An error occurred: {e}'}), 500
     finally:
         cursor.close()
         db.close()
@@ -480,23 +431,25 @@ def update_osm_role():
 
 @bp.route('/osm_permission/<int:user_id>', methods=['GET'])
 @login_required
-def check_is_supervisor_or_member(user_id):
-    result = {}
+def check_osm_permission(user_id):
+    result = {'is_supervisor': False, 'is_member': False}
     try:
         db, cursor = get_db()
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT 
             (SELECT group_id FROM osm_group WHERE osm_supervisor_id = %s LIMIT 1) AS supervisor_group_id,
             (SELECT group_id FROM osm_group_member WHERE osm_id = %s LIMIT 1) AS member_group_id
-        """, (user_id, user_id))
-        result_data = cursor.fetchone()
+            """,
+            (user_id, user_id)
+        )
+        data = cursor.fetchone()
 
-        result["is_supervisor"] = bool(result_data["supervisor_group_id"])
-        result["is_member"] = bool(result_data["member_group_id"])
-    except Exception as e :
-        print("erererere", e)
-        result["is_member"] = False
-        result["is_supervisor"] = False
+        if data['supervisor_group_id']:
+            result['is_supervisor'] = True
+        if data['member_group_id']:
+            result['is_member'] = True
+
     finally:
         cursor.close()
         db.close()
@@ -504,26 +457,24 @@ def check_is_supervisor_or_member(user_id):
     return jsonify(result)
 
 
-
-@bp.route('/change_group_note/', methods=['POST'])
+@bp.route('/change_group_name/', methods=['POST'])
 @login_required
-def update_group_note():  
+def update_group_name():
     try:
-        body = request.get_json()
-        db, cursor = get_db()
-        group_id = body.get('group_id')
-        note = body.get('note')
-        print(body)
-        if not group_id or not note:
-            return jsonify({'error': 'Group ID and note are required'}), 400
+        group_id = request.json.get('group_id')
+        group_name = request.json.get('group_name')
 
+        if not group_id or not group_name:
+            return jsonify({'error': 'Group ID and group_name are required'}), 400
+
+        db, cursor = get_db()
         cursor.execute(
-            "UPDATE osm_group SET note = %s WHERE group_id = %s",
-            (note, group_id)
+            "UPDATE osm_group SET group_name = %s WHERE group_id = %s",
+            (group_name, group_id)
         )
-        
+
         db.commit()
-        return jsonify({'message': 'Note updated successfully'})
+        return jsonify({'message': 'Name updated successfully'})
     except Exception as e:
         db.rollback()
         return jsonify({'error': f'An error occurred: {e}'})
