@@ -3,9 +3,25 @@
 {% block title %} AIDOC | OSM Records {% endblock %}
 
 {% block content %}
-
 <h2>ระบบการวิเคราะห์รอยโรคมะเร็งช่องปากด้วย AI สำหรับผู้นำส่งข้อมูล</h2>
-<p>{{ g.user['name'] }} {{ g.user['surname'] }} ({{ g.user['job_position_th'] }}) </p>
+<p class="d-flex justify-content-between w-100 align-items-center text-dark">
+    <span>{{ g.user['name'] }} {{ g.user['surname'] }} ({{ g.user['job_position_th'] }})</span>
+    {% if g.user['group_info']['is_member'] %}
+    <span class="text-muted">
+        {% if not g.user['group_info']['is_supervisor'] %}
+        คุณเป็นสมาชิกในกลุ่มผู้ตรวจคัดกรอง: <i>{{ g.user['group_info']['note'] }}</i> 
+        <button class="btn btn-link p-0 ms-2" data-user-id="{{ g.user.id }}" data-group-id="{{ g.user['group_info']['group_id'] }}" onclick="leaveGroup(this)">
+            คลิกเพื่อออกจากกลุ่มหากข้อมูลไม่ถูกต้อง
+        </button>
+        {% elif g.user['group_info']['is_supervisor'] %}
+        คุณเป็นหัวหน้ากลุ่มผู้ตรวจคัดกรอง: <i>{{ g.user['group_info']['note'] }}</i> 
+        <button class="btn btn-link p-0 ms-2" onclick="window.location.href='/osm_group/member-manage/'">
+            จัดการสมาชิกในกลุ่ม
+        </button>
+        {% endif %}
+    </span>
+    {% endif %}
+</p>
 <a class="btn btn-outline-success" style="width: 100%" type="submit" href="{{ url_for('image.upload_image', role='osm') }}">
     คลิกเพื่อนำส่งภาพถ่ายช่องปากเพื่อวิเคราะห์รอยโรคใหม่
 </a>
@@ -183,6 +199,57 @@
     if (filterPriorityValue) {
         filterPriority.value = filterPriorityValue;
     }
+
+    function leaveGroup(button){
+        if (!confirm(`คุณต้องการออกจากกลุ่มนี้ใช่หรือไม่ ?`)) return;
+
+        const originalText = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = `
+        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            กำลังออกจากกลุ่ม...
+        `;
+        const userId = button.getAttribute('data-user-id');
+        const groupId = button.getAttribute('data-group-id');
+        const formData = { user_id: userId, group_id: groupId };
         
+        fetch(`/osm_group/remove`, {
+        method: "DELETE",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+        })
+        .then((response) => {
+            if (!response.ok) {
+            throw new Error(
+                `Failed to delete user from group: ${response.statusText}`
+            );
+            }
+            window.location.reload(); // Refresh page after deleting user
+        })
+        .catch((error) => {
+            console.error("Error:", error);
+            alert(`เกิดข้อผิดพลาดในการลบ`);
+            button.disabled = false;
+            button.innerHTML = originalText;
+        });
+    }
+    
+    function confirmAndDelete(button, userId, name) {
+    
+
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = `
+      <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+      กำลังลบ...
+    `;
+
+    const formData = { user_id: userId, group_id: groupId };
+
+    
+  }
+    
 </script>
 {% endblock %}
