@@ -144,7 +144,7 @@
         surname: document.getElementById('lastname').value,
         job_position: document.getElementById('job_position').value,
         license : document.getElementById('license')? document.getElementById('license').value: '',
-        hospital: document.getElementById('hospital').value,
+        hospital: document.getElementById('hospital')? document.getElementById('hospital').value:'',
         province: document.getElementById('province').value,
         email: document.getElementById('email').value,
         national_id : document.getElementById('nationalId')? document.getElementById('nationalId').value : '',
@@ -241,15 +241,15 @@
         </div>
         <div class="col-md-6">
                 <label for="province" class="form-label">Province</label>
-                <input class="form-control" type="text" name="province" id="province" value="${data.province || ''}">
+                <input class="form-control" type="text" name="province" id="province" value="${data.province || ''}" readonly>
         </div>
         <div class="col-md-6">
             <label for="email" class="form-label">E-mail</label>
-            <input class="form-control" type="email" name="email" id="email" value="${data.email || ""}">
+            <input class="form-control" type="email" name="email" id="email" value="${data.email || ""}" readonly>
         </div>
         <div class="col-md-6">
             <label for="phone" class="form-label">Phone</label>
-            <input class="form-control" type="text" name="phone" id="phone" maxlength="10" value="${data.phone || ''}">
+            <input class="form-control" type="text" name="phone" id="phone" maxlength="10" value="${data.phone || ''}" readonly>
         </div>
     `;
 
@@ -277,7 +277,7 @@
 
             <div class="col-md-6">
                 <label for="license" class="form-label">License</label>
-                <input class="form-control" type="text" name="license" id="license" value="${data.license}">
+                <input class="form-control" type="text" name="license" id="license" value="${data.license}" readonly>
             </div>
             <div class="col-md-6">
                 <label for="hospital" class="form-label">Hospital</label>
@@ -309,7 +309,7 @@
             </div>
             <div class="col-md-6">
                 <label for="nationalId" class="form-label">National ID</label>
-                <input class="form-control" type="text" name="nationalId" id="nationalId" value="${data.national_id}" maxlength="13">
+                <input class="form-control" type="text" name="nationalId" id="nationalId" value="${data.national_id}" maxlength="13" readonly>
             </div>
         `;
     } else {
@@ -320,9 +320,9 @@
             </div>
         `;
     }
-}
-    fetchUserData(); // Call the function when the page loads
-    
+  }
+  document.getElementById('editUserForm').addEventListener('submit',submitFormData);
+  fetchUserData(); // Call the function when the page loads
   </script>
 
 {% endblock %}
