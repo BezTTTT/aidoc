@@ -65,9 +65,6 @@ def create_app(test_config=None):
     from . import osm_group
     app.register_blueprint(osm_group.bp, url_prefix='/osm_group')
 
-    # Enable debug mode
-    app.config['DEBUG'] = True
-
     # Add special endpoints
     app.add_url_rule('/', endpoint='index')
 
