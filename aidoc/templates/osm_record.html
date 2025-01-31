@@ -13,11 +13,6 @@
         <button class="btn btn-link p-0 ms-2" data-user-id="{{ g.user.id }}" data-group-id="{{ g.user['group_info']['group_id'] }}" onclick="leaveGroup(this)">
             คลิกเพื่อออกจากกลุ่มหากข้อมูลไม่ถูกต้อง
         </button>
-        {% elif g.user['group_info']['is_supervisor'] %}
-        คุณเป็นหัวหน้ากลุ่มผู้ตรวจคัดกรอง: <i>{{ g.user['group_info']['group_name'] }}</i> 
-        <button class="btn btn-link p-0 ms-2" onclick="window.location.href='/osm_group/member-manage/'">
-            จัดการสมาชิกในกลุ่ม
-        </button>
         {% endif %}
     </span>
     {% endif %}

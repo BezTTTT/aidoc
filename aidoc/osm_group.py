@@ -81,7 +81,7 @@ def render_osm_group_record():
                 data=supplemental_data,
                 osm_filter_data=osm_filter_data)
 
-
+# function to retrieve osm group records
 def record_osm_group():
     # Construct filter query and supplemental data
     filter_query, supplemental_data = construct_osm_filter_sql()
@@ -173,41 +173,37 @@ def render_osm_group_manage():
     user_id = session['user_id']
     db, cursor = get_db()
 
-    try:
-        cursor.execute(
-            """
-            SELECT 
-                og.group_id, 
-                og.group_name, 
-                (ogm.osm_id = og.osm_supervisor_id) AS is_supervisor
-            FROM osm_group_member AS ogm
-            JOIN osm_group AS og ON ogm.group_id = og.group_id
-            WHERE ogm.osm_id = %s
-            """,
-            (user_id,)
-        )
-        user_data = cursor.fetchone()
+    cursor.execute(
+        """
+        SELECT 
+            og.group_id, 
+            og.group_name, 
+            (ogm.osm_id = og.osm_supervisor_id) AS is_supervisor
+        FROM osm_group_member AS ogm
+        JOIN osm_group AS og ON ogm.group_id = og.group_id
+        WHERE ogm.osm_id = %s
+        """,
+        (user_id,)
+    )
+    user_data = cursor.fetchone()
 
-        if not user_data:
-            return render_template(
-                'newTemplate/osm_group_manage.html',
-                group_id=-1,
-                is_user_supervisor=0,
-                group_name="ไม่มีข้อมูล"
-            )
-
-        group_id = user_data['group_id']
-        is_supervisor = user_data['is_supervisor']
-        group_name = user_data['group_name']
+    if not user_data:
         return render_template(
             'newTemplate/osm_group_manage.html',
-            group_id=group_id,
-            is_user_supervisor=is_supervisor,
-            group_name=group_name
+            group_id=-1,
+            is_user_supervisor=0,
+            group_name="ไม่มีข้อมูล"
         )
-    finally:
-        cursor.close()
-        db.close()
+
+    group_id = user_data['group_id']
+    is_supervisor = user_data['is_supervisor']
+    group_name = user_data['group_name']
+    return render_template(
+        'newTemplate/osm_group_manage.html',
+        group_id=group_id,
+        is_user_supervisor=is_supervisor,
+        group_name=group_name
+    )
 
 
 #region APIs
@@ -218,42 +214,38 @@ def get_group_users(group_id):
         return jsonify({'group_list': []})
 
     db, cursor = get_db()
-    try:
-        cursor.execute(
-            """
-            SELECT 
-                oh.group_id, oh.osm_id, (oh.osm_id = og.osm_supervisor_id) as is_supervisor, u.name, u.surname, u.hospital, u.province, u.phone,
-                (SELECT COUNT(*) FROM submission_record WHERE sender_id = oh.osm_id AND channel = 'OSM') AS submission_count,
-                (SELECT created_at FROM submission_record WHERE sender_id = oh.osm_id ORDER BY created_at DESC LIMIT 1) AS last_activity
-            FROM osm_group_member oh
-            LEFT JOIN user u ON oh.osm_id = u.id
-            LEFT JOIN osm_group og ON oh.group_id = og.group_id
-            WHERE oh.group_id = %s
-            ORDER BY CASE WHEN (oh.osm_id = og.osm_supervisor_id) = 1 THEN 1 ELSE 2 END
-            """,
-            (group_id,)
-        )
+    cursor.execute(
+        """
+        SELECT 
+            oh.group_id, oh.osm_id, (oh.osm_id = og.osm_supervisor_id) as is_supervisor, u.name, u.surname, u.hospital, u.province, u.phone,
+            (SELECT COUNT(*) FROM submission_record WHERE sender_id = oh.osm_id AND channel = 'OSM') AS submission_count,
+            (SELECT created_at FROM submission_record WHERE sender_id = oh.osm_id ORDER BY created_at DESC LIMIT 1) AS last_activity
+        FROM osm_group_member oh
+        LEFT JOIN user u ON oh.osm_id = u.id
+        LEFT JOIN osm_group og ON oh.group_id = og.group_id
+        WHERE oh.group_id = %s
+        ORDER BY CASE WHEN (oh.osm_id = og.osm_supervisor_id) = 1 THEN 1 ELSE 2 END
+        """,
+        (group_id,)
+    )
 
-        hierarchy = cursor.fetchall()
-        group_list = [
-            {
-                'osm_id': item['osm_id'],
-                'name': item['name'],
-                'surname': item['surname'],
-                'is_supervisor': item['is_supervisor'],
-                'hospital': item['hospital'],
-                'province': item['province'],
-                'submission_count': item['submission_count'],
-                'phone_number': item['phone'],
-                'last_activity': format_thai_datetime(item['last_activity']) if item['last_activity'] else '-'
-            }
-            for item in hierarchy if item['name'] and item['surname']
-        ]
+    hierarchy = cursor.fetchall()
+    group_list = [
+        {
+            'osm_id': item['osm_id'],
+            'name': item['name'],
+            'surname': item['surname'],
+            'is_supervisor': item['is_supervisor'],
+            'hospital': item['hospital'],
+            'province': item['province'],
+            'submission_count': item['submission_count'],
+            'phone_number': item['phone'],
+            'last_activity': format_thai_datetime(item['last_activity']) if item['last_activity'] else '-'
+        }
+        for item in hierarchy if item['name'] and item['surname']
+    ]
 
-        return jsonify({'group_list': group_list})
-    finally:
-        cursor.close()
-        db.close()
+    return jsonify({'group_list': group_list})
 
 
 @bp.route('/add', methods=['POST'])
@@ -273,27 +265,20 @@ def add_user_to_group():
         return json.dumps({'error': 'Invalid group_id'}), 400
 
     db, cursor = get_db()
-    try:
-        cursor.execute(
-            "SELECT 1 FROM osm_group_member WHERE osm_id = %s",
-            (user_id,)
-        )
-        existing_member = cursor.fetchone()
-        if existing_member:
-            return json.dumps({'error': 'User is already in another group'}), 400
+    cursor.execute(
+        "SELECT 1 FROM osm_group_member WHERE osm_id = %s",
+        (user_id,)
+    )
+    existing_member = cursor.fetchone()
+    if existing_member:
+        return json.dumps({'error': 'User is already in another group'}), 400
 
-        cursor.execute(
-            "INSERT INTO osm_group_member (group_id, osm_id) VALUES (%s, %s)",
-            (group_id, user_id)
-        )
-        db.commit()
-        return json.dumps({'message': 'User added to group'}), 200
-    except Exception as e:
-        db.rollback()
-        return json.dumps({'error': f'An error occurred while adding user to group: {e}'}), 500
-    finally:
-        cursor.close()
-        db.close()
+    cursor.execute(
+        "INSERT INTO osm_group_member (group_id, osm_id) VALUES (%s, %s)",
+        (group_id, user_id)
+    )
+    return json.dumps({'message': 'User added to group'}), 200
+    
 
 
 @bp.route('/remove', methods=['DELETE'])
@@ -309,177 +294,143 @@ def remove_from_group():
         return json.dumps({'error': 'Invalid group_id'}), 400
 
     db, cursor = get_db()
-    try:
-        cursor.execute(
-            "DELETE FROM osm_group_member WHERE osm_id = %s AND group_id = %s",
-            (user_id, group_id)
-        )
-        db.commit()
-        return json.dumps({"message": "User removed from group."}), 200
-    except Exception as e:
-        db.rollback()
-        return json.dumps({"error": f"An error occurred while removing user from group: {e}"}), 500
-    finally:
-        cursor.close()
-        db.close()
+    cursor.execute(
+        "DELETE FROM osm_group_member WHERE osm_id = %s AND group_id = %s",
+        (user_id, group_id)
+    )
+    return json.dumps({"message": "User removed from group."}), 200
 
 
 @bp.route('/get_osm_for_search', methods=['GET'])
 @login_required
-def search_osm_users():
+def get_osm_for_search():
     user_id = session.get('user_id')
     db, cursor = get_db()
 
-    try:
-        # Get the current user's province
-        cursor.execute("SELECT province FROM user WHERE id = %s", (user_id,))
-        province = cursor.fetchone()["province"]
+    # Get the current user's province
+    cursor.execute("SELECT province FROM user WHERE id = %s", (user_id,))
+    province = cursor.fetchone()["province"]
 
-        # Search for OSM users in the same province
-        cursor.execute("""
-            SELECT id, name, surname, phone as phone_number, province, hospital
-            FROM user
-            WHERE is_osm = 1
-            AND id NOT IN (SELECT osm_id FROM osm_group_member)
-            AND province = %s
-        """, (province,))
+    # Search for OSM users in the same province
+    cursor.execute("""
+        SELECT id, name, surname, phone as phone_number, province, hospital
+        FROM user
+        WHERE is_osm = 1
+        AND id NOT IN (SELECT osm_id FROM osm_group_member)
+        AND province = %s
+    """, (province,))
 
-        osm_users = cursor.fetchall()
+    osm_users = cursor.fetchall()
 
-        return jsonify({
-            'osm_list': osm_users,
-            "province": province
-        })
-    finally:
-        cursor.close()
-        db.close()
+    return jsonify({
+        'osm_list': osm_users,
+        "province": province
+    })
 
 
 @bp.route('/promote_supervisor/', methods=['POST', 'DELETE'])
 @login_required
-def update_osm_role():
-    try:
-        user_id = request.get_json()['user_id']
-        if not user_id:
-            return jsonify({'error': 'No osm_id provided'}), 400
+def promote_supervisor():
+    user_id = request.get_json()['user_id']
 
-        db, cursor = get_db()
+    # Check if user_id is provided
+    if not user_id:
+        return jsonify({'error': 'No osm_id provided'}), 400
 
-        if request.method == 'POST':
-            existing_group = cursor.execute(
-                "SELECT group_id FROM osm_group WHERE osm_supervisor_id = %s",
-                (user_id,)
-            ).fetchone()
+    db, cursor = get_db()
 
-            if existing_group:
-                return jsonify({'message': 'User is already a supervisor', 'group_id': existing_group['group_id']}), 200
-
-            existing_member = cursor.execute(
-                "SELECT group_id FROM osm_group_member WHERE osm_id = %s",
-                (user_id,)
-            ).fetchall()
-
-            if existing_member:
-                cursor.execute(
-                    "DELETE FROM osm_group_member WHERE osm_id = %s",
-                    (user_id,)
-                )
-
-            cursor.execute(
-                "INSERT INTO osm_group (osm_supervisor_id, group_name) VALUES (%s, NULL)",
-                (user_id,)
-            )
-            new_group_id = cursor.lastrowid
-
-            cursor.execute(
-                "INSERT INTO osm_group_member (group_id, osm_id) VALUES (%s, %s)",
-                (new_group_id, user_id)
-            )
-            db.commit()
-
-            return jsonify({'message': 'Group created and user added as member', 'group_id': new_group_id}), 200
-
-        elif request.method == 'DELETE':
-            is_supervisor = cursor.execute(
-                "SELECT group_id FROM osm_group WHERE osm_supervisor_id = %s",
-                (user_id,)
-            ).fetchone()
-            if not is_supervisor:
-                return jsonify({'error': 'User is not a supervisor'}), 403
-            else:
-                cursor.execute(
-                    "DELETE osm_group_member FROM osm_group_member "
-                    "JOIN (SELECT group_id FROM osm_group WHERE osm_supervisor_id = %s) AS subquery "
-                    "ON osm_group_member.group_id = subquery.group_id",
-                    (user_id,)
-                )
-                cursor.execute(
-                    "DELETE FROM osm_group WHERE osm_supervisor_id = %s",
-                    (user_id,)
-                )
-                db.commit()
-
-            return jsonify({'message': 'Group and user removed'}), 200
-
-    except Exception as e:
-        db.rollback()
-        return jsonify({'error': f'An error occurred: {e}'}), 500
-    finally:
-        cursor.close()
-        db.close()
-
-
-@bp.route('/osm_permission/<int:user_id>', methods=['GET'])
-@login_required
-def check_osm_permission(user_id):
-    result = {'is_supervisor': False, 'is_member': False}
-    try:
-        db, cursor = get_db()
+    
+    if request.method == 'POST':
+        # Check if user is already a supervisor
         cursor.execute(
-            """
-            SELECT 
-            (SELECT group_id FROM osm_group WHERE osm_supervisor_id = %s LIMIT 1) AS supervisor_group_id,
-            (SELECT group_id FROM osm_group_member WHERE osm_id = %s LIMIT 1) AS member_group_id
-            """,
-            (user_id, user_id)
+            "SELECT group_id FROM osm_group WHERE osm_supervisor_id = %s",
+            (user_id,)
         )
-        data = cursor.fetchone()
+        existing_group = cursor.fetchone()
+        if existing_group:
+            return jsonify({'error': 'User is already a supervisor'}), 400
 
-        if data['supervisor_group_id']:
-            result['is_supervisor'] = True
-        if data['member_group_id']:
-            result['is_member'] = True
+        # Check if user is a member remove from groups and add as supervisor
+        cursor.execute(
+            "SELECT group_id FROM osm_group_member WHERE osm_id = %s",
+            (user_id,)
+        )
+        existing_member = cursor.fetchall()
+        if existing_member:
+            cursor.execute(
+                "DELETE FROM osm_group_member WHERE osm_id = %s",
+                (user_id,)
+            )
 
-    finally:
-        cursor.close()
-        db.close()
+        # Create a new group and add the user as a member
+        cursor.execute(
+            "INSERT INTO osm_group (osm_supervisor_id, group_name) VALUES (%s, NULL)",
+            (user_id,)
+        )
+        new_group_id = cursor.lastrowid
+        cursor.execute(
+            "INSERT INTO osm_group_member (group_id, osm_id) VALUES (%s, %s)",
+            (new_group_id, user_id)
+        )
+    elif request.method == 'DELETE':
+        # Remove the user from the group
+        cursor.execute(
+            "SELECT group_id FROM osm_group WHERE osm_supervisor_id = %s",
+            (user_id,)
+        )
+        is_supervisor = cursor.fetchone()
+        if not is_supervisor:
+            return jsonify({'error': 'User is not a supervisor'}), 400
+        
+        # Remove the user from the group and delete the group
+        cursor.execute(
+            "DELETE osm_group_member FROM osm_group_member "
+            "JOIN (SELECT group_id FROM osm_group WHERE osm_supervisor_id = %s) AS subquery "
+            "ON osm_group_member.group_id = subquery.group_id",
+            (user_id,)
+        )
+        cursor.execute(
+            "DELETE FROM osm_group WHERE osm_supervisor_id = %s",
+            (user_id,)
+        )
 
-    return jsonify(result)
+    return jsonify({'message': 'Supervisor removed successfully'}), 200
 
 
-@bp.route('/change_group_name/', methods=['POST'])
+@bp.route('/is_supervisor/<int:user_id>', methods=['GET'])
+@login_required
+def is_supervisor(user_id):
+    is_supervisor = False
+    db, cursor = get_db()
+    cursor.execute(
+        """
+            SELECT group_id FROM osm_group WHERE osm_supervisor_id = %s LIMIT 1;
+        """,
+        (user_id,)
+    )
+    data = cursor.fetchone()
+
+    if data:
+        is_supervisor = True
+
+    return jsonify({"is_supervisor": is_supervisor}), 200
+
+
+@bp.route('/update_group_name/', methods=['POST'])
 @login_required
 def update_group_name():
-    try:
-        group_id = request.json.get('group_id')
-        group_name = request.json.get('group_name')
+    group_id = request.json.get('group_id')
+    group_name = request.json.get('group_name')
 
-        if not group_id or not group_name:
-            return jsonify({'error': 'Group ID and group_name are required'}), 400
+    if not group_id or not group_name:
+        return jsonify({'error': 'Group ID and group_name are required'}), 400
 
-        db, cursor = get_db()
-        cursor.execute(
-            "UPDATE osm_group SET group_name = %s WHERE group_id = %s",
-            (group_name, group_id)
-        )
+    db, cursor = get_db()
+    cursor.execute(
+        "UPDATE osm_group SET group_name = %s WHERE group_id = %s",
+        (group_name, group_id)
+    )
 
-        db.commit()
-        return jsonify({'message': 'Name updated successfully'})
-    except Exception as e:
-        db.rollback()
-        return jsonify({'error': f'An error occurred: {e}'})
-    finally:
-        cursor.close()
-        db.close()
+    return jsonify({'message': 'Name updated successfully'}), 200
 
 

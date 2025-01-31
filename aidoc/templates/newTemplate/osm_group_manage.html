@@ -403,7 +403,7 @@ block content %}
       button.disabled = true;
       button.textContent = "กำลังบันทึก...";
 
-      const response = await fetch("/osm_group/change_group_name/", {
+      const response = await fetch("/osm_group/update_group_name/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
