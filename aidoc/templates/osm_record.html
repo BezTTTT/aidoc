@@ -4,19 +4,52 @@
 
 {% block content %}
 <h2>ระบบการวิเคราะห์รอยโรคมะเร็งช่องปากด้วย AI สำหรับผู้นำส่งข้อมูล</h2>
-<p class="d-flex justify-content-between w-100 align-items-center text-dark">
-    <span>{{ g.user['name'] }} {{ g.user['surname'] }} ({{ g.user['job_position_th'] }})</span>
+<p>{{ g.user['name'] }} {{ g.user['surname'] }} ({{ g.user['job_position_th'] }})</p>
+{% if g.user['group_info']['is_member'] %}
+<div class="d-flex flex-column w-100 text-dark">
     {% if g.user['group_info']['is_member'] %}
-    <span class="text-muted">
+    <div class="mb-4 p-2 bg-light border rounded d-flex flex-column flex-md-row justify-content-between align-items-start">
         {% if not g.user['group_info']['is_supervisor'] %}
-        คุณเป็นสมาชิกในกลุ่มผู้ตรวจคัดกรอง: <i>{{ g.user['group_info']['group_name'] }}</i> 
-        <button class="btn btn-link p-0 ms-2" data-user-id="{{ g.user.id }}" data-group-id="{{ g.user['group_info']['group_id'] }}" onclick="leaveGroup(this)">
-            คลิกเพื่อออกจากกลุ่มหากข้อมูลไม่ถูกต้อง
+        <div>
+            <p class="mb-1">
+                <strong>สถานะ:</strong> คุณเป็นสมาชิกในกลุ่มผู้ตรวจคัดกรองของ:
+                <i>{{ g.user['group_info']['group_supervisor'] }}</i>
+            </p>
+            <p class="mb-0 text-muted">
+                ข้อมูลการนำส่งภาพของคุณจะปรากฏในกลุ่มผู้ตรวจคัดกรองของ: 
+                <i>{{ g.user['group_info']['group_supervisor'] }}</i>
+            </p>
+        </div>
+    
+        <button class="btn btn-sm btn-outline-danger mt-2 mt-md-0 align-self-start" 
+            data-user-id="{{ g.user.id }}" 
+            data-group-id="{{ g.user['group_info']['group_id'] }}" 
+            onclick="leaveGroup(this)">
+            ออกจากกลุ่ม
+        </button>
+        {% elif g.user['group_info']['is_supervisor'] %}
+        <div>
+            <p class="mb-1">
+                <strong>สถานะ:</strong> คุณเป็นหัวหน้ากลุ่มผู้ตรวจคัดกรองของ
+            </p>
+            <p class="mb-0 text-muted">
+                ข้อมูลการนำส่งภาพของสมาชิกในกลุ่มผู้ตรวจคัดกรองของ จะปรากฏในหน้ากลุ่มผู้ตรวจคัดกรอง 
+            </p>
+        </div>
+    
+        <button class="btn btn-sm btn-outline-primary mt-2 mt-md-0 align-self-start" 
+            data-user-id="{{ g.user.id }}" 
+            data-group-id="{{ g.user['group_info']['group_id'] }}" 
+            onclick="leaveGroup(this)">
+            กลุ่มผู้ตรวจคัดกรอง
         </button>
         {% endif %}
-    </span>
+    </div>
     {% endif %}
-</p>
+    
+</div>
+{% endif %}
+
 <a class="btn btn-outline-success" style="width: 100%" type="submit" href="{{ url_for('image.upload_image', role='osm') }}">
     คลิกเพื่อนำส่งภาพถ่ายช่องปากเพื่อวิเคราะห์รอยโรคใหม่
 </a>
