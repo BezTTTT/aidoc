@@ -2,39 +2,74 @@
 block content %}
 
 <!-- data for js -->
-<div id="groupData" data-group-id="{{group_id}}" data-user-supervisor="{{is_user_supervisor}}"
+<div
+  id="groupData"
+  data-group-id="{{group_id}}"
+  data-user-supervisor="{{is_user_supervisor}}"
 ></div>
 
-{%if g.user['group_info']['is_supervisor'] and g.user['group_info']['group_id'] != -1 %}
+{%if g.user['group_info']['is_supervisor'] and g.user['group_info']['group_id']
+!= -1 %}
 <h2>ระบบจัดการสมาชิกกลุ่มผู้ตรวจคัดกรอง</h2>
 <p class="d-flex justify-content-between w-100 align-items-center text-dark">
-  <span>ชื่อกลุ่ม: <i id="groupName">
-    {% if group_name != None %} {{group_name}} {% else %} ไม่มีชื่อ {% endif %}
+  <span
+    >หมายเหตุ:
+    <i id="groupName">
+      {% if group_name != None %} {{group_name}} {% else %} - {% endif %}
     </i>
-    <span id="inputGroupName" style="display: none;">
-      <input type="text" id="groupNameInput" required class="form-control" style="display: inline; width: auto;">
-      <button class="btn btn-primary btn-sm" onclick="saveGroupName(this)">บันทึก</button>
-      <button class="btn btn-secondary btn-sm" onclick="cancelEditGroupName(this)">ยกเลิก</button>
+    <span id="inputGroupName" style="display: none">
+      <input
+        type="text"
+        id="groupNameInput"
+        required
+        class="form-control"
+        style="display: inline; width: auto"
+      />
+      <button class="btn btn-primary btn-sm" onclick="saveGroupName(this)">
+        บันทึก
+      </button>
+      <button
+        class="btn btn-secondary btn-sm"
+        onclick="cancelEditGroupName(this)"
+      >
+        ยกเลิก
+      </button>
     </span>
     <span id="editGroupName" class="text-start">
-      <button class="btn btn-link" onclick="editGroupName(this)">แก้ไข</button>
+      <button class="btn btn-outline-primary" onclick="editGroupName(this)">แก้ไข</button>
     </span>
   </span>
-  
+
   <span class="text-muted">
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal" onclick="fetchOSMUsers()">
-    เพิ่มผู้ตรวจคัดกรอง
+    <button
+      class="btn btn-primary"
+      data-bs-toggle="modal"
+      data-bs-target="#addUserModal"
+      onclick="fetchOSMUsers()"
+    >
+      เพิ่มผู้ตรวจคัดกรอง
     </button>
   </span>
 </p>
 
 <!-- Modal -->
-<div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+<div
+  class="modal fade"
+  id="addUserModal"
+  tabindex="-1"
+  aria-labelledby="addUserModalLabel"
+  aria-hidden="true"
+>
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="addUserModalLabel">เลือกผู้ตรวจคัดกรอง</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="handleComplete()"
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+          onclick="handleComplete()"
         ></button>
       </div>
       <div class="modal-body">
@@ -58,7 +93,12 @@ block content %}
       </div>
 
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="handleComplete()">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          data-bs-dismiss="modal"
+          onclick="handleComplete()"
+        >
           เสร็จสิ้น
         </button>
       </div>
@@ -91,7 +131,8 @@ block content %}
 </div>
 {% else %}
 <div class="alert alert-danger" role="alert">
-  ขออภัย ท่านไม่มีสิทธิ์ในการเข้าถึงข้อมูลนี้ หากท่านเชื่อว่านี่เป็นความผิดพลาด กรุณาติดต่อผู้ดูแลระบบ
+  ขออภัย ท่านไม่มีสิทธิ์ในการเข้าถึงข้อมูลนี้ หากท่านเชื่อว่านี่เป็นความผิดพลาด
+  กรุณาติดต่อผู้ดูแลระบบ
 </div>
 {% endif %}
 
@@ -246,7 +287,6 @@ block content %}
   }
 
   function renderAddTable(data) {
-    
     const tbody = document.querySelector(`#add_list tbody`);
     const { osm_list, province } = data;
     tbody.innerHTML = "";
@@ -267,7 +307,7 @@ block content %}
           </td>`
             : ""
         }`;
-    tbody.appendChild(row);
+      tbody.appendChild(row);
     });
 
     // Add event listeners for add buttons
@@ -372,7 +412,6 @@ block content %}
     }
   }
 
-
   function editGroupName(button) {
     // Hide the <i> element and show the input field
     const groupNameElement = document.getElementById("groupName");
@@ -417,13 +456,13 @@ block content %}
 
       // Update the group name in the DOM
       const groupNameElement = document.getElementById("groupName");
-      groupNameElement.textContent = newName || "ไม่มีชื่อ";
+      groupNameElement.textContent = newName || "-";
 
       // Switch back to the display mode
       cancelEditGroupName();
     } catch (error) {
       console.error("Error:", error);
-      alert("เกิดข้อผิดพลาดในการเปลี่ยนชื่อกลุ่ม");
+      alert("เกิดข้อผิดพลาดในการเปลี่ยนข้อมูล");
     } finally {
       // Restore the button state
       button.disabled = false;
@@ -457,9 +496,9 @@ block content %}
     form.submit();
   }
 
-  function handleComplete(){
-    if (userAdded){
-      fetchGroup()
+  function handleComplete() {
+    if (userAdded) {
+      fetchGroup();
       userAdded = false;
     }
   }
