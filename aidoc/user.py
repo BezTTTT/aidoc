@@ -68,7 +68,7 @@ def register(role):
         session['register_later'] = {}
         session['register_later']['order'] = request.form.get('order', None)
         session['register_later']['return_page'] = request.form.get('return_page', None)
-        session['register_later']['sender_mode'] = request.form.get('role', None)
+        session['register_later']['login_mode'] = request.form.get('role', None)
         session['register_later']['img_id'] = request.form.get('img_id', None)
 
         if session['register_later']['order']=='register-osm':
@@ -117,7 +117,6 @@ def register(role):
             data['current_year'] = datetime.date.today().year # set the current Thai Year to the global variable
             return render_template("patient_register.html", data=data)
     
-    session['sender_mode'] = role
     if role=='patient':
         target_template = "patient_register.html"
         data['current_year'] = datetime.date.today().year # set the current Thai Year to the global variable
@@ -215,8 +214,8 @@ def register(role):
             if 'register_later' not in session:
                 return redirect(url_for('image.upload_image', role='patient'))
             elif session['register_later']['return_page'] == 'diagnosis':
-                role = session['register_later']['sender_mode']
-                session['sender_mode'] = role
+                role = session['register_later']['login_mode']
+                session['login_mode'] = role
                 img_id = session['register_later']['img_id']
                 session.pop('register_later', None)
                 session.pop('noNationalID', None)
@@ -295,8 +294,8 @@ def register(role):
             if 'register_later' not in session:
                 return redirect('/')
             elif session['register_later']['return_page'] == 'diagnosis':
-                role = session['register_later']['sender_mode']
-                session['sender_mode'] = role
+                role = session['register_later']['login_mode']
+                session['login_mode'] = role
                 img_id = session['register_later']['img_id']
                 session.pop('register_later', None)
                 session['user_id'] = g.user['id'] 
@@ -433,8 +432,8 @@ def cancel_register():
         return redirect('/logout')
     elif session['register_later']['return_page'] == 'diagnosis':
         session['user_id'] = g.user['id'] 
-        role = session['register_later']['sender_mode']
-        session['sender_mode'] = role
+        role = session['register_later']['login_mode']
+        session['login_mode'] = role
         img_id = session['register_later']['img_id']
         session.pop('register_later', None)
         return redirect(url_for('webapp.diagnosis', role=role, img_id=img_id))
@@ -489,7 +488,7 @@ def submit_compliance(user_id):
         returning_page = session['returning_page']
         session.pop('returning_page', None)
         if returning_page=='upload_image':
-            return redirect(url_for('image.upload_image', role=session['sender_mode']))
+            return redirect(url_for('image.upload_image', role=session['login_mode']))
     elif answer=='reject':
         legalDir = current_app.config['LEGAL_DIR']
         agreementVer = current_app.config['CURRENT_AGREEMENT_VER']

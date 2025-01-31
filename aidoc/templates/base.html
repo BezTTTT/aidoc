@@ -173,7 +173,7 @@
                 <!--  navbar footer -->
                 
                 {% if g.user is none %}
-                    {% if session['sender_mode'] == 'general' %}
+                    {% if session['login_mode'] == 'general' %}
                         <a class="btn btn-success" type="submit" href="/general">Login</a>
                     {% else %}
                         <a class="btn btn-success" type="submit" href="/">เข้าสู่ระบบ</a>

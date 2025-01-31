@@ -17,10 +17,6 @@ def render_osm_group_record():
     if(g.user['group_info']['is_supervisor'] == 0 or g.user['group_info']['group_id'] == -1 ):
         return render_template('newTemplate/osm_group_record.html', dataCount=0, paginated_data=[], current_page=1, total_pages=1, data={}, osm_filter_data={})
     
-    role = 'osm'
-
-    session['sender_mode'] = role
-
     # Filter Preparation
     if 'record_filter' not in session:
         session['record_filter'] = {}

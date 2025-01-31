@@ -38,7 +38,6 @@ bp = Blueprint('image', __name__)
 @role_validation
 def upload_image(role):
     data = {}
-    session['sender_mode'] = role
     submission = request.args.get('submission', default='false', type=str)
     if request.method == 'POST':
         if request.form.get('rotation_submitted'):

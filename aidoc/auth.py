@@ -18,7 +18,7 @@ def load_logged_in_user():
         g.user = None
     else:
         db, cursor = get_db()
-        if 'sender_mode' in session and session['sender_mode']=='general':
+        if 'login_mode' in session and session['login_mode']=='general':
             cursor.execute('SELECT * FROM general_user WHERE id = %s', (user_id,))
         else:
             cursor.execute('SELECT * FROM user WHERE id = %s', (user_id,))
@@ -26,7 +26,7 @@ def load_logged_in_user():
         if g.user is None:
             session.pop('user_id', None)
         else:
-            if 'sender_mode' in session and session['sender_mode']=='general':
+            if 'login_mode' in session and session['login_mode']=='general':
                 session['general_user'] = True
             elif g.user['is_patient']:
                 g.user['job_position_th'] = g.user['job_position']
@@ -56,9 +56,9 @@ def index():
         session.clear() # logged out from everything
         return render_template("patient_login.html") # default index page (patient and osm login)
     else: # if user is already logged in
-        if 'sender_mode' in session and session['sender_mode']=='dentist':
+        if 'login_mode' in session and session['login_mode']=='dentist':
             return redirect(url_for("webapp.record", role='dentist'))
-        elif 'sender_mode' in session and session['sender_mode']=='osm':
+        elif 'login_mode' in session and session['login_mode']=='osm':
             return redirect(url_for("webapp.record", role='osm'))
         else:
             return redirect(url_for("image.upload_image", role='patient'))
@@ -69,7 +69,7 @@ def dentist_index():
         session.clear() # logged out from everything
 
     if g.user: # already logged in
-        if 'sender_mode' in session and session['sender_mode']=='dentist':
+        if 'login_mode' in session and session['login_mode']=='dentist':
             return redirect(url_for("webapp.record", role='dentist'))
     else:
         return render_template("dentist_login.html")
@@ -87,16 +87,15 @@ def role_validation(view):
             (kwargs['role']=='admin' and isUserDefinedInSession and g.user['is_admin']==0) or \
             (kwargs['role']=='dentist' and isUserDefinedInSession and g.user['username'] is None) \
         :
-            session.pop('sender_mode', None)
+            session.pop('login_mode', None)
             return render_template('unauthorized_access.html', error_msg='คุณไม่มีสิทธิ์เข้าถึงข้อมูล Unauthorized Access [role_validation]')
         return view(**kwargs)
     return wrapped_view
 
 @bp.route('/login/<role>', methods=('Post',))
-@role_validation
 def login(role):
     
-    session['sender_mode'] = role
+    session['login_mode'] = role
     
     if role=='patient':
         national_id = request.form['national_id']
@@ -198,10 +197,10 @@ def login(role):
 
 @bp.route('/logout')
 def logout():
-    if 'sender_mode' in session and session['sender_mode']=='general':
+    if 'login_mode' in session and session['login_mode']=='general':
         session.clear()
         return redirect('/general')
-    elif 'sender_mode' in session and session['sender_mode']=='dentist':
+    elif 'login_mode' in session and session['login_mode']=='dentist':
         session.clear()
         return redirect(url_for('auth.dentist_index'))
     else:
@@ -212,10 +211,10 @@ def login_required(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
         if g.user is None:
-            if 'sender_mode' in session:
-                if session['sender_mode'] in ['dentist', 'osm', 'specialist', 'admin']:
-                    return redirect(url_for('auth.login', role=session['sender_mode']))
-                elif session['sender_mode']=='general':
+            if 'login_mode' in session:
+                if session['login_mode'] in ['dentist', 'osm', 'specialist', 'admin']:
+                    return redirect(url_for('auth.login', role=session['login_mode']))
+                elif session['login_mode']=='general':
                     return redirect('/general')
             return redirect('/')
         return view(**kwargs)

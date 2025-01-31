@@ -198,7 +198,7 @@ def diagnosis(role, img_id):
     # Authorization check
     if data is None:
         return render_template('unauthorized_access.html', error_msg='ไม่พบข้อมูลที่ร้องขอ Data Not Found')
-    elif (session['sender_mode']!=role) or \
+    elif (session['login_mode']!=role) or \
         (role=='patient' and (session['user_id']!=data['patient_id'])) or \
         (role=='osm' and session['user_id']!=data['sender_id'] and data['sender_phone']!=data['osm_phone']) or \
         (role=='dentist' and session['user_id']!=data['sender_id']):
@@ -319,8 +319,6 @@ def diagnosis(role, img_id):
 @login_required
 @role_validation
 def record(role): 
-
-    session['sender_mode'] = role
 
     # There is no pagination for patient's record page (a special case)
     if role=='patient':
@@ -1048,7 +1046,7 @@ def update_submission_record(ai_predictions, ai_scores):
     for i, filename in enumerate(session['imageNameList']):
         db, cursor = get_db()
         
-        if session['sender_mode']=='dentist':
+        if session['login_mode']=='dentist':
             
             if g.user['default_location'] is None or str(g.user['default_location'])!=str(session['location']):
                 sql = "UPDATE user SET default_location=%s WHERE id=%s"
@@ -1087,7 +1085,7 @@ def update_submission_record(ai_predictions, ai_scores):
             cursor.execute(sql, val)
 
 
-        elif session['sender_mode']=='patient':
+        elif session['login_mode']=='patient':
 
             if g.user['default_location'] is None or str(g.user['default_location'])!=str(session['location']):
                 sql = "UPDATE user SET default_location=%s WHERE id=%s"
@@ -1147,7 +1145,7 @@ def update_submission_record(ai_predictions, ai_scores):
             val = (row['LAST_INSERT_ID()'],)
             cursor.execute(sql, val)
 
-        elif session['sender_mode']=='osm':
+        elif session['login_mode']=='osm':
 
             if g.user['default_location'] is None or str(g.user['default_location'])!=str(session['location']):
                 sql = "UPDATE user SET default_location=%s WHERE id=%s"
