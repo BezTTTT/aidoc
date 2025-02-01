@@ -18,7 +18,7 @@ def load_logged_in_user():
         g.user = None
     else:
         db, cursor = get_db()
-        if 'sender_mode' in session and session['sender_mode']=='general':
+        if 'login_mode' in session and session['login_mode']=='general':
             cursor.execute('SELECT * FROM general_user WHERE id = %s', (user_id,))
         else:
             cursor.execute('SELECT * FROM user WHERE id = %s', (user_id,))
@@ -26,7 +26,7 @@ def load_logged_in_user():
         if g.user is None:
             session.pop('user_id', None)
         else:
-            if 'sender_mode' in session and session['sender_mode']=='general':
+            if 'login_mode' in session and session['login_mode']=='general':
                 session['general_user'] = True
             elif g.user['is_patient']:
                 g.user['job_position_th'] = g.user['job_position']
@@ -36,6 +36,19 @@ def load_logged_in_user():
                                     "Physician":"แพทย์", "Public Health Technical Officer":"นักวิชาการสาธารณสุข", "Computer Technical Officer":"นักวิชาการคอมพิวเตอร์/นักวิจัย/ผู้พัฒนาระบบ",
                                     "Other Public Health Officer":"ข้าราชการ/เจ้าพนักงานกระทรวงสาธารณสุข", "Other Government Officer":"เจ้าหน้าที่รัฐอื่น", "General Public":"บุคคลทั่วไป"}
                 g.user['job_position_th'] = job_position_dict[g.user['job_position']]
+                
+            # get osm group info if exsiting to show osm group option on navbar
+            if g.user['is_osm']:
+                db, cursor = get_db()
+                cursor.execute("""SELECT (CASE WHEN ogm.osm_supervisor_id = %s THEN 1 ELSE 0 END) AS is_supervisor, (CASE WHEN ogm_member.osm_id = %s THEN 1 ELSE 0 END) AS is_member, g.group_name , g.group_id
+                               FROM osm_group g LEFT JOIN osm_group_member ogm_member ON g.group_id = ogm_member.group_id LEFT JOIN osm_group ogm ON g.group_id = ogm.group_id WHERE ogm_member.osm_id = %s LIMIT 1;
+                            """, (user_id, user_id, user_id))
+                group = cursor.fetchone()
+                if group:
+                    g.user['group_info'] = {"is_supervisor": group['is_supervisor'], "is_member": group['is_member'], "group_name": group["group_name"] if group["group_name"] else "ไม่มีชื่อกลุ่ม", "group_id": group["group_id"]}
+                else:
+                    g.user['group_info'] = {"is_supervisor": 0, "is_member": 0, "group_name": "ไม่มีชื่อกลุ่ม", "group_id": -1}
+                
 
 @bp.route('/')
 def index():
@@ -43,9 +56,9 @@ def index():
         session.clear() # logged out from everything
         return render_template("patient_login.html") # default index page (patient and osm login)
     else: # if user is already logged in
-        if 'sender_mode' in session and session['sender_mode']=='dentist':
+        if 'login_mode' in session and session['login_mode']=='dentist':
             return redirect(url_for("webapp.record", role='dentist'))
-        elif 'sender_mode' in session and session['sender_mode']=='osm':
+        elif 'login_mode' in session and session['login_mode']=='osm':
             return redirect(url_for("webapp.record", role='osm'))
         else:
             return redirect(url_for("image.upload_image", role='patient'))
@@ -56,7 +69,7 @@ def dentist_index():
         session.clear() # logged out from everything
 
     if g.user: # already logged in
-        if 'sender_mode' in session and session['sender_mode']=='dentist':
+        if 'login_mode' in session and session['login_mode']=='dentist':
             return redirect(url_for("webapp.record", role='dentist'))
     else:
         return render_template("dentist_login.html")
@@ -65,25 +78,39 @@ def role_validation(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
         allowed_roles = ['patient', 'osm', 'dentist', 'specialist', 'admin']
-        isUserDefinedInSession = g.user is not None
-        byPassValidation = 'register_later' in session
-        if ('role' not in kwargs) or (kwargs['role'] not in allowed_roles) or \
-            (not byPassValidation and kwargs['role']=='osm' and isUserDefinedInSession and g.user['is_osm']==0) or \
-            (not byPassValidation and kwargs['role']=='patient' and isUserDefinedInSession and g.user['is_patient']==0) or \
-            (kwargs['role']=='specialist' and isUserDefinedInSession and g.user['is_specialist']==0) or \
-            (kwargs['role']=='admin' and isUserDefinedInSession and g.user['is_admin']==0) or \
-            (kwargs['role']=='dentist' and isUserDefinedInSession and g.user['username'] is None) \
+        userNotInSession = (g.user is None) or ('is_patient' not in g.user) or ('is_osm' not in g.user)
+        byPassValidation = ('register_later' in session)
+        if ('role' not in kwargs) or \
+            (kwargs['role'] not in allowed_roles) or \
+            (userNotInSession) or \
+            (kwargs['role']=='osm' and (g.user['is_osm']==0 or session['login_mode']!='osm') and not byPassValidation) or \
+            (kwargs['role']=='patient' and (g.user['is_patient']==0 or session['login_mode']!='patient') and not byPassValidation) or \
+            (kwargs['role']=='specialist' and (g.user['is_specialist']==0 or session['login_mode']!='dentist')) or \
+            (kwargs['role']=='admin' and (g.user['is_admin']==0 or session['login_mode']!='dentist')) or \
+            (kwargs['role']=='dentist' and (g.user['username'] is None or session['login_mode']!='dentist')) \
         :
-            session.pop('sender_mode', None)
             return render_template('unauthorized_access.html', error_msg='คุณไม่มีสิทธิ์เข้าถึงข้อมูล Unauthorized Access [role_validation]')
         return view(**kwargs)
     return wrapped_view
 
+def admin_only(view):
+    @functools.wraps(view)
+    def wrapped_view(**kwargs):
+        if g.user is None or g.user['is_admin']==0 or session['login_mode']!='dentist':
+            return render_template('unauthorized_access.html', error_msg='คุณไม่มีสิทธิ์เข้าถึงข้อมูล Unauthorized Access [admin_only]')
+        return view(**kwargs)
+    return wrapped_view
+
+def specialist_only(view):
+    @functools.wraps(view)
+    def wrapped_view(**kwargs):
+        if g.user is None or g.user['is_specialist']==0 or session['login_mode']!='dentist':
+            return render_template('unauthorized_access.html', error_msg='คุณไม่มีสิทธิ์เข้าถึงข้อมูล Unauthorized Access [specialist_only]')
+        return view(**kwargs)
+    return wrapped_view
+
 @bp.route('/login/<role>', methods=('Post',))
-@role_validation
 def login(role):
-    
-    session['sender_mode'] = role
     
     if role=='patient':
         national_id = request.form['national_id']
@@ -100,6 +127,8 @@ def login(role):
             return redirect(url_for('user.register', role='patient'))
         elif user['is_patient']: # Logged in sucessfully
             session['user_id'] = user['id']
+            log_last_user_login(user['id'])
+            session['login_mode'] = 'patient'
             return redirect(url_for('image.upload_image', role='patient'))
         else: # Duplicate account found, ask for merging
             error_msg = "พบข้อมูลเบื้องต้นในระบบ แต่ท่านยังไม่ได้ถูกลงทะเบียนในฐานะคนไข้ กรุณาลงทะเบียนก่อน"
@@ -145,6 +174,8 @@ def login(role):
         elif user['is_osm'] and national_id==user['national_id'] and phone==user['phone']: # osm logged in successfully
             # Logged in sucessfully
             session['user_id'] = user['id']
+            log_last_user_login(user['id'])
+            session['login_mode'] = 'osm'
             return redirect('/')
         else:
             error_msg = "พบข้อมูลเบื้องต้นของท่านในระบบ แต่ท่านยังไม่ได้ถูกลงทะเบียนในฐานะผู้ตรวจคัดกรอง กรุณาลงทะเบียนก่อน"
@@ -177,18 +208,24 @@ def login(role):
             error_msg = "รหัสผ่านไม่ถูกต้อง โปรดลองอีกครั้งหนึ่ง ... หากลืมรหัสผ่าน กรุณากดเลือก ลืมรหัสผ่าน"
         if error_msg is None: # Logged in sucessfully
             session['user_id'] = user['id']
-            sql = "UPDATE user SET last_login = NOW() WHERE id = %s"
-            cursor.execute(sql, (user['id'],))
+            log_last_user_login(user['id'])
+            session['login_mode'] = 'dentist'
             return redirect(url_for('webapp.record', role='dentist'))
         flash(error_msg)
         return render_template("dentist_login.html")
 
+def log_last_user_login(user_id):
+    # Log last_login to the user
+    db, cursor = get_db()
+    sql = "UPDATE user SET last_login = NOW() WHERE id = %s"
+    cursor.execute(sql, (user_id,))
+
 @bp.route('/logout')
 def logout():
-    if 'sender_mode' in session and session['sender_mode']=='general':
+    if 'login_mode' in session and session['login_mode']=='general':
         session.clear()
         return redirect('/general')
-    elif 'sender_mode' in session and session['sender_mode']=='dentist':
+    elif 'login_mode' in session and session['login_mode']=='dentist':
         session.clear()
         return redirect(url_for('auth.dentist_index'))
     else:
@@ -199,10 +236,10 @@ def login_required(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
         if g.user is None:
-            if 'sender_mode' in session:
-                if session['sender_mode'] in ['dentist', 'osm', 'specialist', 'admin']:
-                    return redirect(url_for('auth.login', role=session['sender_mode']))
-                elif session['sender_mode']=='general':
+            if 'login_mode' in session:
+                if session['login_mode'] in ['dentist', 'osm', 'specialist', 'admin']:
+                    return redirect(url_for('auth.login', role=session['login_mode']))
+                elif session['login_mode']=='general':
                     return redirect('/general')
             return redirect('/')
         return view(**kwargs)

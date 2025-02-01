@@ -4,7 +4,7 @@
 
 {% block content %}
 <br />
-{% if 'sender_mode' not in session or session['sender_mode']!='patient' or session['user_id']!=data['patient_id'] %}
+{% if 'login_mode' not in session or session['login_mode']!='patient' or session['user_id']!=data['patient_id'] %}
     <h2 class="mb-2 text-center"> คุณไม่มีสิทธิ์เข้าถึงข้อมูล Unauthorized Access </h2>
 {% else %}
 

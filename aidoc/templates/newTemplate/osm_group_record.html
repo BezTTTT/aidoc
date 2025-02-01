@@ -3,30 +3,14 @@
 {% block title %} AIDOC | OSM Records {% endblock %}
 
 {% block content %}
-<h2>ระบบการวิเคราะห์รอยโรคมะเร็งช่องปากด้วย AI สำหรับผู้นำส่งข้อมูล</h2>
-<p class="d-flex justify-content-between w-100 align-items-center text-dark">
-    <span>{{ g.user['name'] }} {{ g.user['surname'] }} ({{ g.user['job_position_th'] }})</span>
-    {% if g.user['group_info']['is_member'] %}
-    <span class="text-muted">
-        {% if not g.user['group_info']['is_supervisor'] %}
-        คุณเป็นสมาชิกในกลุ่มผู้ตรวจคัดกรอง: <i>{{ g.user['group_info']['group_name'] }}</i> 
-        <button class="btn btn-link p-0 ms-2" data-user-id="{{ g.user.id }}" data-group-id="{{ g.user['group_info']['group_id'] }}" onclick="leaveGroup(this)">
-            คลิกเพื่อออกจากกลุ่มหากข้อมูลไม่ถูกต้อง
-        </button>
-        {% elif g.user['group_info']['is_supervisor'] %}
-        คุณเป็นหัวหน้ากลุ่มผู้ตรวจคัดกรอง: <i>{{ g.user['group_info']['group_name'] }}</i> 
-        <button class="btn btn-link p-0 ms-2" onclick="window.location.href='/osm_group/member-manage/'">
-            จัดการสมาชิกในกลุ่ม
-        </button>
-        {% endif %}
-    </span>
-    {% endif %}
-</p>
-<a class="btn btn-outline-success" style="width: 100%" type="submit" href="{{ url_for('image.upload_image', role='osm') }}">
-    คลิกเพื่อนำส่งภาพถ่ายช่องปากเพื่อวิเคราะห์รอยโรคใหม่
-</a>
+{%if g.user['group_info']['is_supervisor'] and g.user['group_info']['group_id'] != -1 %}
+<h2>ระบบการบริหารจัดการภาพของสมาชิกกลุ่มผู้ตรวจคัดกรอง</h2>
+<p>{{ g.user['name'] }} {{ g.user['surname'] }} ({{ g.user['job_position_th'] }}) </p>
+<div class="text-end">
+    <button class="btn btn-primary" onclick="window.location.href='/osm_group/member-manage/'">จัดการสมาชิกกลุ่มผู้ตรวจคัดกรอง</button>
+</div>
 
-<form action="/record/osm" method="post">
+<form action="/osm_group/" method="post">
     <div class="row">
         <!-- Search Box -->
         <div class="col mt-3">
@@ -45,7 +29,7 @@
     </div>
     <div class="row row-cols-auto my-3">
         <div class="col mt-1">
-            <label for="filterPriority">คำขอตรวจพิเศษ:</label>
+            <label for="filterPriority">ระดับความสำคัญ:</label>
             <select name="filterPriority" id="filterPriority" class="btn btn-light border border-1 mx-1" onchange="this.form.submit()">
                 <option value="">ทั้งหมด</option>
                 <option value="1">พิเศษ</option>
@@ -53,11 +37,20 @@
             </select>
         </div>
         <div class="col mt-1">
-            <label for="filterStatus">สถานะการตรวจจากทันตแพทย์:</label>
+            <label for="filterStatus">สถานะ:</label>
             <select name="filterStatus" id="filterStatus" class="btn btn-light border border-1 mx-1" onchange="this.form.submit()">
                 <option value="">ทั้งหมด</option>
                 <option value="1">ตรวจแล้ว</option>
                 <option value="0">ยังไม่ได้ตรวจ</option>
+            </select>
+        </div>
+        <div class="col my-1">
+            <label for="filterSender">ผู้นำส่ง:</label>
+            <select name="filterSender" id="filterSender" class="btn btn-light border border-1 mx-1" onchange="this.form.submit()">
+                <option value="">ทั้งหมด</option>
+                {% for osm in osm_filter_data %}
+                    <option value="{{ osm['sender_id'] }}">{{osm['osm_name']}}</option>
+                {% endfor %}
             </select>
         </div>
     </div>
@@ -121,43 +114,23 @@
                             ระบบประชาชน
                         {% endif %}
                     </h6>
+                    <h6>ชื่อผู้นำส่ง : {{ item['sender_name'] }} {{ item['sender_surname'] }}</h6>
                     <h6 class="">นำส่งวันที่ : {{ item['formatted_created_at'] }} น.</h6>
                     <h6 class="fs-6 card-subtitle text-muted mb-2">
                         ผลการพยากรณ์ของ AI :
                             {% if item['ai_prediction']==0 %}
-                                ไม่พบรอยโรค
+                                Normal
+                            {% elif item['ai_prediction']==1 %}
+                                OPMD
                             {% else %}
-                                พบรอยโรค
+                                OSCC
                             {% endif %}
                     </h6>
                     <div class="d-grid gap-2 d-md-flex justify-content-md-center">
                         <form action="{{ url_for('webapp.diagnosis', role='osm', img_id=item['id']) }}" id="form_id{{item['id']}}" method="post"> </form>
                         <button class="btn btn-outline-success" type="submit" form="form_id{{item['id']}}">ดูผลการวิเคราะห์</button>
-                        <button class="btn btn-outline-danger" type="button" data-bs-toggle="modal" data-bs-target="#submissionDeleteModal{{ item['id'] }}" >ลบข้อมูล</button>
                     </div>
                 </div>
-
-                <!-- Submission Delete Modal -->
-                <div class="modal fade" id="submissionDeleteModal{{ item['id'] }}" tabindex="-1"
-                    aria-labelledby="submissionDeleteModalLabel" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h1 class="modal-title fs-5" id="submissionDeleteModalLabel"> ลบประวัติ </h1>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">คุณแน่ใจที่จะลบประวัตินี้ ใช่หรือไม่</div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> ยกเลิก </button>
-                                <form action="{{ url_for('image.delete_image', role='osm') }}" method="post" enctype="multipart/form-data">
-                                    <input name="img_id" type="text" value="{{ item['id'] }}" hidden />
-                                    <input class="btn btn-outline-danger" style="width: 100%" type="submit" value="ลบข้อมูล" />
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
             </div>
         </div>
     {% endfor %}
@@ -179,16 +152,26 @@
         <a href="?page={{ total_pages }}" class="btn page-link m-2 text-secondary">หลังสุด &raquo;</a>
     {% endif %}
 </div>
+{% else %}
+<div class="alert alert-danger" role="alert">
+    ขออภัย ท่านไม่มีสิทธิ์ในการเข้าถึงข้อมูลนี้ หากท่านเชื่อว่านี่เป็นความผิดพลาด กรุณาติดต่อผู้ดูแลระบบ
+</div>
+{% endif %}
+
+
+
 {% endblock %}
 
 {% block script %}
 <script>
     const filterStatus = document.getElementById("filterStatus");
     const filterPriority = document.getElementById("filterPriority");
+    const finterSender = document.getElementById("filterSender");
 
     // Get the filters element and set its value from Flask
     const filterStatusValue     = "{{ data['filterStatus'] }}";
     const filterPriorityValue   = "{{ data['filterPriority'] }}";
+    const filterSenderValue     = "{{ data['filterSender'] }}";
 
     // Set the selected filters value if it exists
     if (filterStatusValue) {
@@ -197,42 +180,9 @@
     if (filterPriorityValue) {
         filterPriority.value = filterPriorityValue;
     }
-
-    function leaveGroup(button){
-        if (!confirm(`คุณต้องการออกจากกลุ่มนี้ใช่หรือไม่ ?`)) return;
-
-        const originalText = button.innerHTML;
-        button.disabled = true;
-        button.innerHTML = `
-        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-            กำลังออกจากกลุ่ม...
-        `;
-        const userId = button.getAttribute('data-user-id');
-        const groupId = button.getAttribute('data-group-id');
-        const formData = { user_id: userId, group_id: groupId };
-        
-        fetch(`/osm_group/remove`, {
-        method: "DELETE",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-        })
-        .then((response) => {
-            if (!response.ok) {
-            throw new Error(
-                `Failed to delete user from group: ${response.statusText}`
-            );
-            }
-            window.location.reload(); // Refresh page after deleting user
-        })
-        .catch((error) => {
-            console.error("Error:", error);
-            alert(`เกิดข้อผิดพลาดในการลบ`);
-            button.disabled = false;
-            button.innerHTML = originalText;
-        });
+    if (filterSenderValue) {
+        finterSender.value = filterSenderValue;
     }
-    
+        
 </script>
 {% endblock %}

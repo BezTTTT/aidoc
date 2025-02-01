@@ -61,6 +61,9 @@ def create_app(test_config=None):
     app.register_blueprint(report.routes.report_bp)
     from .API import admin
     app.register_blueprint(admin.routes.admin_bp)
+    
+    from . import osm_group
+    app.register_blueprint(osm_group.bp, url_prefix='/osm_group')
 
     # Add special endpoints
     app.add_url_rule('/', endpoint='index')

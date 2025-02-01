@@ -11,11 +11,10 @@ from reportlab.lib.pagesizes import A4
 import datetime
 import io
 import os
-import shutil
 from aidoc.utils import *
 
 from aidoc.db import get_db
-from aidoc.auth import login_required, load_logged_in_user, role_validation
+from aidoc.auth import login_required, load_logged_in_user, role_validation, log_last_user_login
 
 # 'user' blueprint manages user management system
 bp = Blueprint('user', __name__)
@@ -59,7 +58,6 @@ def get_patient_info():
 
 # region register
 @bp.route('/register/<role>', methods=('GET', 'POST'))
-@role_validation
 def register(role):
     data = {}
 
@@ -68,7 +66,7 @@ def register(role):
         session['register_later'] = {}
         session['register_later']['order'] = request.form.get('order', None)
         session['register_later']['return_page'] = request.form.get('return_page', None)
-        session['register_later']['sender_mode'] = request.form.get('role', None)
+        session['register_later']['login_mode'] = request.form.get('role', None)
         session['register_later']['img_id'] = request.form.get('img_id', None)
 
         if session['register_later']['order']=='register-osm':
@@ -117,7 +115,6 @@ def register(role):
             data['current_year'] = datetime.date.today().year # set the current Thai Year to the global variable
             return render_template("patient_register.html", data=data)
     
-    session['sender_mode'] = role
     if role=='patient':
         target_template = "patient_register.html"
         data['current_year'] = datetime.date.today().year # set the current Thai Year to the global variable
@@ -207,6 +204,9 @@ def register(role):
                 val = (data["name"], data["surname"], data["national_id"], data["email"], data["phone"], data["sex"], dob_obj, data["province"], data['address'], True, session['user_id'])
                 cursor.execute(sql, val)
 
+            log_last_user_login(session['user_id'])
+            session['login_mode'] = 'patient'
+
             # session['national_id'] is used to carry out id from login to register
             # After the registration is complete, this (sensitive) variable should be deleted
             if 'national_id' in session:  
@@ -215,8 +215,8 @@ def register(role):
             if 'register_later' not in session:
                 return redirect(url_for('image.upload_image', role='patient'))
             elif session['register_later']['return_page'] == 'diagnosis':
-                role = session['register_later']['sender_mode']
-                session['sender_mode'] = role
+                role = session['register_later']['login_mode']
+                session['login_mode'] = role
                 img_id = session['register_later']['img_id']
                 session.pop('register_later', None)
                 session.pop('noNationalID', None)
@@ -292,11 +292,14 @@ def register(role):
                     val = (session['user_id'], session['register_later']['img_id'])
                     cursor.execute(sql, val)
 
+            log_last_user_login(session['user_id'])
+            session['login_mode'] = 'osm'
+
             if 'register_later' not in session:
                 return redirect('/')
             elif session['register_later']['return_page'] == 'diagnosis':
-                role = session['register_later']['sender_mode']
-                session['sender_mode'] = role
+                role = session['register_later']['login_mode']
+                session['login_mode'] = role
                 img_id = session['register_later']['img_id']
                 session.pop('register_later', None)
                 session['user_id'] = g.user['id'] 
@@ -361,6 +364,9 @@ def register(role):
                 val = (data["name"], data["surname"], data["email"], data["phone"], data["username"],generate_password_hash(data["password"]), data["job_position"], data["osm_job"], data["hospital"],data["province"], data["license"], session['user_id'])
                 cursor.execute(sql, val)
                 
+            log_last_user_login(session['user_id'])
+            session['login_mode'] = 'dentist'
+
             return redirect(url_for('webapp.record', role='dentist'))
         else:
             return render_template(target_template, data=data)
@@ -433,8 +439,8 @@ def cancel_register():
         return redirect('/logout')
     elif session['register_later']['return_page'] == 'diagnosis':
         session['user_id'] = g.user['id'] 
-        role = session['register_later']['sender_mode']
-        session['sender_mode'] = role
+        role = session['register_later']['login_mode']
+        session['login_mode'] = role
         img_id = session['register_later']['img_id']
         session.pop('register_later', None)
         return redirect(url_for('webapp.diagnosis', role=role, img_id=img_id))
@@ -489,7 +495,7 @@ def submit_compliance(user_id):
         returning_page = session['returning_page']
         session.pop('returning_page', None)
         if returning_page=='upload_image':
-            return redirect(url_for('image.upload_image', role=session['sender_mode']))
+            return redirect(url_for('image.upload_image', role=session['login_mode']))
     elif answer=='reject':
         legalDir = current_app.config['LEGAL_DIR']
         agreementVer = current_app.config['CURRENT_AGREEMENT_VER']

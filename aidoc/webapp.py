@@ -3,9 +3,10 @@ from flask import (
 )
 
 import json
+from datetime import datetime
 from aidoc.utils import *
 from aidoc.db import get_db
-from aidoc.auth import login_required, role_validation, load_logged_in_user
+from aidoc.auth import login_required, admin_only, specialist_only, role_validation, load_logged_in_user
 
 # 'webapp' blueprint manages Diagnosis and Record systems, including report and admin managment system
 bp = Blueprint('webapp', __name__)
@@ -197,7 +198,7 @@ def diagnosis(role, img_id):
     # Authorization check
     if data is None:
         return render_template('unauthorized_access.html', error_msg='ไม่พบข้อมูลที่ร้องขอ Data Not Found')
-    elif (session['sender_mode']!=role) or \
+    elif (session['login_mode']!=role) or \
         (role=='patient' and (session['user_id']!=data['patient_id'])) or \
         (role=='osm' and session['user_id']!=data['sender_id'] and data['sender_phone']!=data['osm_phone']) or \
         (role=='dentist' and session['user_id']!=data['sender_id']):
@@ -319,8 +320,6 @@ def diagnosis(role, img_id):
 @role_validation
 def record(role): 
 
-    session['sender_mode'] = role
-
     # There is no pagination for patient's record page (a special case)
     if role=='patient':
         data = record_patient()
@@ -392,6 +391,7 @@ def record(role):
 
 @bp.route('/edit/<role>', methods=('GET', 'POST'))
 @login_required
+@role_validation
 def editByRole(role):
     data = {}
     thai_months = [
@@ -621,20 +621,21 @@ def editByRole(role):
 # region report
 @bp.route('/admin/report/')
 @login_required
-#@role_validation
+@specialist_only
 def report():
     return render_template("/newTemplate/submission_report.html")
 
 # region admin_page
 @bp.route('/admin_page/', methods=('GET','POST','DELETE'))
 @login_required
-#@role_validation
+@admin_only
 def userManagement():
     return render_template("/newTemplate/admin_management.html")
 
 # region edit
 @bp.route('/edit/', methods=('GET','POST'))
 @login_required
+@admin_only
 def edit():
     return render_template("/newTemplate/admin_edit.html")
 
@@ -799,7 +800,7 @@ def record_specialist(admin=False):
     sql = '''SELECT name, surname, license, user.id
         FROM submission_record
         LEFT JOIN user ON submission_record.dentist_id=user.id
-        WHERE submission_record.dentist_id IS NOT NULL AND channel != 'DENTIST'
+        WHERE channel != 'DENTIST' AND submission_record.dentist_id IS NOT NULL
         GROUP BY user.id
         ORDER BY COUNT(user.id) DESC'''
     cursor.execute(sql)
@@ -872,7 +873,7 @@ def record_dentist():
     sql_join_part = '''
         FROM submission_record
         LEFT JOIN user ON submission_record.patient_id = user.id
-        WHERE (sender_id = %s)'''
+        WHERE (channel = 'DENTIST' AND sender_id = %s)'''
     sql_limit_part = '''
         ORDER BY id DESC
         LIMIT %s
@@ -971,7 +972,10 @@ def record_osm():
         INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
         LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
         LEFT JOIN user AS sender_user ON submission_record.sender_phone = sender_user.phone
-        WHERE (sender_id = %s OR (submission_record.sender_phone is not NULL AND submission_record.sender_phone = %s))'''
+        WHERE
+            (channel = 'OSM' AND sender_id = %s) OR
+            (channel = 'PATIENT' AND submission_record.sender_phone = %s)
+            '''
     sql_limit_part = '''
         ORDER BY submission_record.id DESC
         LIMIT %s
@@ -1047,7 +1051,7 @@ def update_submission_record(ai_predictions, ai_scores):
     for i, filename in enumerate(session['imageNameList']):
         db, cursor = get_db()
         
-        if session['sender_mode']=='dentist':
+        if session['login_mode']=='dentist':
             
             if g.user['default_location'] is None or str(g.user['default_location'])!=str(session['location']):
                 sql = "UPDATE user SET default_location=%s WHERE id=%s"
@@ -1086,7 +1090,7 @@ def update_submission_record(ai_predictions, ai_scores):
             cursor.execute(sql, val)
 
 
-        elif session['sender_mode']=='patient':
+        elif session['login_mode']=='patient':
 
             if g.user['default_location'] is None or str(g.user['default_location'])!=str(session['location']):
                 sql = "UPDATE user SET default_location=%s WHERE id=%s"
@@ -1146,7 +1150,7 @@ def update_submission_record(ai_predictions, ai_scores):
             val = (row['LAST_INSERT_ID()'],)
             cursor.execute(sql, val)
 
-        elif session['sender_mode']=='osm':
+        elif session['login_mode']=='osm':
 
             if g.user['default_location'] is None or str(g.user['default_location'])!=str(session['location']):
                 sql = "UPDATE user SET default_location=%s WHERE id=%s"
