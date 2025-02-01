@@ -173,10 +173,12 @@
                     <div class="col">
                         {% if data['quality_ai_prediction'] is not none %}
                             {% if data['quality_ai_prediction']==0 %}
-                                ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ผลลัพธ์อาจผิดพลาด)</b></span>
+                                ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ศรีษะคนไข้ไม่ตั้งตรง)</b></span>
                             {% elif data['quality_ai_prediction']==1 %}
-                                ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่พบช่องปาก (ภาพอาจไม่เกี่ยวข้อง)</b></span>
+                                ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ผลลัพธ์อาจผิดพลาด)</b></span>
                             {% elif data['quality_ai_prediction']==2 %}
+                                ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่พบช่องปาก (ภาพอาจไม่เกี่ยวข้อง)</b></span>
+                            {% elif data['quality_ai_prediction']==3 %}
                                 ตรวจคุณภาพรูป: <span style="color: green;"><b>ผ่านมาตรฐาน</b></span>
                             {% endif %}
                         {% else %}
@@ -230,10 +232,12 @@
                 <p>
                 {% if data['quality_ai_prediction'] is not none %}
                     {% if data['quality_ai_prediction']==0 %}
-                        ตรวจคุณภาพรูป: <span style="color: red;">ไม่ผ่านมาตรฐาน (ผลลัพธ์อาจผิดพลาด)</span>
+                        ตรวจคุณภาพรูป: <span style="color: red;">ไม่ผ่านมาตรฐาน (ศรีษะคนไข้ไม่ตั้งตรง)</span>
                     {% elif data['quality_ai_prediction']==1 %}
-                        ตรวจคุณภาพรูป: <span style="color: red;">ไม่พบช่องปาก (ภาพอาจไม่เกี่ยวข้อง)</span>
+                        ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ผลลัพธ์อาจผิดพลาด)</b></span>
                     {% elif data['quality_ai_prediction']==2 %}
+                        ตรวจคุณภาพรูป: <span style="color: red;">ไม่พบช่องปาก (ภาพอาจไม่เกี่ยวข้อง)</span>
+                    {% elif data['quality_ai_prediction']==3 %}
                         ตรวจคุณภาพรูป: <span style="color: green;">ผ่านมาตรฐาน</span>
                     {% endif %}
                 {% else %}

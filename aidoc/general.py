@@ -123,8 +123,10 @@ def general_upload():
                     global qualityChecker
                     qualityResults = qualityChecker.predict(pil_img)
                     if qualityResults['Class_ID'] == 0:
-                        flash('System detects that the picture failed the quality test. The mouth might be too blury, too small, or too dark (please use flash light). Please send only the high quality images')
+                        flash('System detects that the patient head is not in the upright position. Please rotate the image to the right')
                     elif qualityResults['Class_ID'] == 1:
+                        flash('System detects that the picture failed the quality test. The mouth might be too blury, too small, or too dark (please use flash light). Please send only the high quality images')
+                    elif qualityResults['Class_ID'] == 2:
                         flash('System detects that the picture may not contain a mouth. Please follow the guidelines below for taking the oral images')
                     data['imageQuality'] = qualityResults['Class_ID']
 
