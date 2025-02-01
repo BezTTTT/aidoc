@@ -42,8 +42,9 @@ def upload_image(role):
     if request.method == 'POST':
         if request.form.get('rotation_submitted'):
             imageName = request.form.get('uploadedImage')
-            rotate_temp_image(imageName)
             data = {'uploadedImage': imageName}
+            data['imageQuality'] = rotate_temp_image(imageName)
+            print(data['imageQuality'])
         elif submission=='false': # Load and show the image, wait for the confirmation
             imageName = None
             imageList = request.files.getlist("imageList")
@@ -461,9 +462,13 @@ def rotate_temp_image(imagename):
     pil_img = pil_img.rotate(-90, expand=True)
     pil_img.save(imagePath)
 
+    quality_result = qualityChecker.predict(pil_img)
+
     # Create the thumbnails
     pil_img = create_thumbnail(pil_img)
     pil_img.save(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', 'thumb_' + imagename))
+
+    return quality_result['Class_ID']
 
 # region oral_lesion_prediction
 # AI Prediction Engine
