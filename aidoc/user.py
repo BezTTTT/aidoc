@@ -11,11 +11,10 @@ from reportlab.lib.pagesizes import A4
 import datetime
 import io
 import os
-import shutil
 from aidoc.utils import *
 
 from aidoc.db import get_db
-from aidoc.auth import login_required, load_logged_in_user, role_validation
+from aidoc.auth import login_required, load_logged_in_user, role_validation, log_last_user_login
 
 # 'user' blueprint manages user management system
 bp = Blueprint('user', __name__)
@@ -59,7 +58,6 @@ def get_patient_info():
 
 # region register
 @bp.route('/register/<role>', methods=('GET', 'POST'))
-@role_validation
 def register(role):
     data = {}
 
@@ -206,6 +204,9 @@ def register(role):
                 val = (data["name"], data["surname"], data["national_id"], data["email"], data["phone"], data["sex"], dob_obj, data["province"], data['address'], True, session['user_id'])
                 cursor.execute(sql, val)
 
+            log_last_user_login(session['user_id'])
+            session['login_mode'] = 'patient'
+
             # session['national_id'] is used to carry out id from login to register
             # After the registration is complete, this (sensitive) variable should be deleted
             if 'national_id' in session:  
@@ -291,6 +292,9 @@ def register(role):
                     val = (session['user_id'], session['register_later']['img_id'])
                     cursor.execute(sql, val)
 
+            log_last_user_login(session['user_id'])
+            session['login_mode'] = 'osm'
+
             if 'register_later' not in session:
                 return redirect('/')
             elif session['register_later']['return_page'] == 'diagnosis':
@@ -360,6 +364,9 @@ def register(role):
                 val = (data["name"], data["surname"], data["email"], data["phone"], data["username"],generate_password_hash(data["password"]), data["job_position"], data["osm_job"], data["hospital"],data["province"], data["license"], session['user_id'])
                 cursor.execute(sql, val)
                 
+            log_last_user_login(session['user_id'])
+            session['login_mode'] = 'dentist'
+
             return redirect(url_for('webapp.record', role='dentist'))
         else:
             return render_template(target_template, data=data)

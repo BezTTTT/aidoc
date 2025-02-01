@@ -46,9 +46,11 @@
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>
 
+    {% if not session['login_mode'] %}
     <div class="banner">
         <img src="{{ url_for('static', filename='logos/ai_banner.jpg') }}" alt="Banner Image">
     </div>
+    {% endif %}
 
     <nav class="navbar bg-dark navbar-expand-lg bg-body-tertiary border-bottom border-2 border-secondary"
         data-bs-theme="light">
@@ -67,7 +69,7 @@
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     {% if g.user is not none %}
                         <!--  Dentist navbar -->
-                        {% if not session['general_user'] and g.user['username'] is not none %} 
+                        {% if session['login_mode']=='dentist' %} 
                             <li class="nav-item">
                                 <a class="nav-link active" aria-current="page" href="/upload_image/dentist">นำส่งข้อมูลเพิ่มเติม</a>
                             </li>
@@ -89,37 +91,27 @@
                             </li>
                             <li class="nav-item dropdown">
                                 <a
-                                class="nav-link dropdown-toggle active"
-                                id="userManagementDropdown"
-                                role="button"
-                                data-bs-toggle="dropdown"
-                                aria-expanded="false"
-                                >
-                                ระบบดูแลผู้ใช้งาน
+                                    class="nav-link dropdown-toggle active"
+                                    id="userManagementDropdown"
+                                    role="button"
+                                    data-bs-toggle="dropdown"
+                                    aria-expanded="false"
+                                    >
+                                    ระบบดูแลผู้ใช้งาน
                                 </a>
-                                <ul
-                                class="dropdown-menu"
-                                aria-labelledby="userManagementDropdown"
-                                >
-                                <li>
-                                    <a
-                                    class="dropdown-item"
-                                    href="/admin_page"
-                                    >จัดการผู้ใช้งาน</a
-                                    >
-                                </li>
-                                <li>
-                                    <a
-                                    class="dropdown-item"
-                                    href="/record/admin"
-                                    >จัดการรูปภาพ</a
-                                    >
-                                </li>
+                                <ul class="dropdown-menu" aria-labelledby="userManagementDropdown">
+                                    <li>
+                                        <a class="dropdown-item" href="/admin_page">จัดการผู้ใช้งาน</a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="/record/admin">จัดการรูปภาพ</a>
+                                    </li>
                                 </ul>
                             </li>
                             {% endif %}
+
                         <!--  osm navbar -->
-                        {% elif g.user['is_osm']==1 %}
+                        {% elif session['login_mode']=='osm' %}
                             <li class="nav-item">
                                 <a class="nav-link active" aria-current="page" href="/upload_image/osm">นำส่งข้อมูลเพิ่มเติม</a>
                             </li>
@@ -137,8 +129,9 @@
                             <li class="nav-item">
                                 <a class="nav-link active" aria-current="page" href="/edit/osm">แก้ไขข้อมูลส่วนตัว</a>
                             </li>
+
                         <!--  patient navbar -->
-                        {% elif g.user['is_patient']==1 %}
+                        {% elif session['login_mode']=='patient' %}
                             <li class="nav-item">
                                 <a class="nav-link active" aria-current="page" href="/upload_image/patient">นำส่งข้อมูลเพิ่มเติม</a>
                             </li>

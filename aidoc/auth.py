@@ -78,24 +78,39 @@ def role_validation(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
         allowed_roles = ['patient', 'osm', 'dentist', 'specialist', 'admin']
-        isUserDefinedInSession = g.user is not None
-        byPassValidation = 'register_later' in session
-        if ('role' not in kwargs) or (kwargs['role'] not in allowed_roles) or \
-            (not byPassValidation and kwargs['role']=='osm' and isUserDefinedInSession and g.user['is_osm']==0) or \
-            (not byPassValidation and kwargs['role']=='patient' and isUserDefinedInSession and g.user['is_patient']==0) or \
-            (kwargs['role']=='specialist' and isUserDefinedInSession and g.user['is_specialist']==0) or \
-            (kwargs['role']=='admin' and isUserDefinedInSession and g.user['is_admin']==0) or \
-            (kwargs['role']=='dentist' and isUserDefinedInSession and g.user['username'] is None) \
+        userNotInSession = (g.user is None) or ('is_patient' not in g.user) or ('is_osm' not in g.user)
+        byPassValidation = ('register_later' in session)
+        if ('role' not in kwargs) or \
+            (kwargs['role'] not in allowed_roles) or \
+            (userNotInSession) or \
+            (kwargs['role']=='osm' and (g.user['is_osm']==0 or session['login_mode']!='osm') and not byPassValidation) or \
+            (kwargs['role']=='patient' and (g.user['is_patient']==0 or session['login_mode']!='patient') and not byPassValidation) or \
+            (kwargs['role']=='specialist' and (g.user['is_specialist']==0 or session['login_mode']!='dentist')) or \
+            (kwargs['role']=='admin' and (g.user['is_admin']==0 or session['login_mode']!='dentist')) or \
+            (kwargs['role']=='dentist' and (g.user['username'] is None or session['login_mode']!='dentist')) \
         :
-            session.pop('login_mode', None)
             return render_template('unauthorized_access.html', error_msg='คุณไม่มีสิทธิ์เข้าถึงข้อมูล Unauthorized Access [role_validation]')
+        return view(**kwargs)
+    return wrapped_view
+
+def admin_only(view):
+    @functools.wraps(view)
+    def wrapped_view(**kwargs):
+        if g.user is None or g.user['is_admin']==0 or session['login_mode']!='dentist':
+            return render_template('unauthorized_access.html', error_msg='คุณไม่มีสิทธิ์เข้าถึงข้อมูล Unauthorized Access [admin_only]')
+        return view(**kwargs)
+    return wrapped_view
+
+def specialist_only(view):
+    @functools.wraps(view)
+    def wrapped_view(**kwargs):
+        if g.user is None or g.user['is_specialist']==0 or session['login_mode']!='dentist':
+            return render_template('unauthorized_access.html', error_msg='คุณไม่มีสิทธิ์เข้าถึงข้อมูล Unauthorized Access [specialist_only]')
         return view(**kwargs)
     return wrapped_view
 
 @bp.route('/login/<role>', methods=('Post',))
 def login(role):
-    
-    session['login_mode'] = role
     
     if role=='patient':
         national_id = request.form['national_id']
@@ -112,6 +127,8 @@ def login(role):
             return redirect(url_for('user.register', role='patient'))
         elif user['is_patient']: # Logged in sucessfully
             session['user_id'] = user['id']
+            log_last_user_login(user['id'])
+            session['login_mode'] = 'patient'
             return redirect(url_for('image.upload_image', role='patient'))
         else: # Duplicate account found, ask for merging
             error_msg = "พบข้อมูลเบื้องต้นในระบบ แต่ท่านยังไม่ได้ถูกลงทะเบียนในฐานะคนไข้ กรุณาลงทะเบียนก่อน"
@@ -157,6 +174,8 @@ def login(role):
         elif user['is_osm'] and national_id==user['national_id'] and phone==user['phone']: # osm logged in successfully
             # Logged in sucessfully
             session['user_id'] = user['id']
+            log_last_user_login(user['id'])
+            session['login_mode'] = 'osm'
             return redirect('/')
         else:
             error_msg = "พบข้อมูลเบื้องต้นของท่านในระบบ แต่ท่านยังไม่ได้ถูกลงทะเบียนในฐานะผู้ตรวจคัดกรอง กรุณาลงทะเบียนก่อน"
@@ -189,11 +208,17 @@ def login(role):
             error_msg = "รหัสผ่านไม่ถูกต้อง โปรดลองอีกครั้งหนึ่ง ... หากลืมรหัสผ่าน กรุณากดเลือก ลืมรหัสผ่าน"
         if error_msg is None: # Logged in sucessfully
             session['user_id'] = user['id']
-            sql = "UPDATE user SET last_login = NOW() WHERE id = %s"
-            cursor.execute(sql, (user['id'],))
+            log_last_user_login(user['id'])
+            session['login_mode'] = 'dentist'
             return redirect(url_for('webapp.record', role='dentist'))
         flash(error_msg)
         return render_template("dentist_login.html")
+
+def log_last_user_login(user_id):
+    # Log last_login to the user
+    db, cursor = get_db()
+    sql = "UPDATE user SET last_login = NOW() WHERE id = %s"
+    cursor.execute(sql, (user_id,))
 
 @bp.route('/logout')
 def logout():

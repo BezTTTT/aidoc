@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 from aidoc.utils import *
 from aidoc.db import get_db
-from aidoc.auth import login_required, role_validation, load_logged_in_user
+from aidoc.auth import login_required, admin_only, specialist_only, role_validation, load_logged_in_user
 
 # 'webapp' blueprint manages Diagnosis and Record systems, including report and admin managment system
 bp = Blueprint('webapp', __name__)
@@ -391,6 +391,7 @@ def record(role):
 
 @bp.route('/edit/<role>', methods=('GET', 'POST'))
 @login_required
+@role_validation
 def editByRole(role):
     data = {}
     thai_months = [
@@ -620,20 +621,21 @@ def editByRole(role):
 # region report
 @bp.route('/admin/report/')
 @login_required
-#@role_validation
+@specialist_only
 def report():
     return render_template("/newTemplate/submission_report.html")
 
 # region admin_page
 @bp.route('/admin_page/', methods=('GET','POST','DELETE'))
 @login_required
-#@role_validation
+@admin_only
 def userManagement():
     return render_template("/newTemplate/admin_management.html")
 
 # region edit
 @bp.route('/edit/', methods=('GET','POST'))
 @login_required
+@admin_only
 def edit():
     return render_template("/newTemplate/admin_edit.html")
 
@@ -798,7 +800,7 @@ def record_specialist(admin=False):
     sql = '''SELECT name, surname, license, user.id
         FROM submission_record
         LEFT JOIN user ON submission_record.dentist_id=user.id
-        WHERE submission_record.dentist_id IS NOT NULL AND channel != 'DENTIST'
+        WHERE channel != 'DENTIST' AND submission_record.dentist_id IS NOT NULL
         GROUP BY user.id
         ORDER BY COUNT(user.id) DESC'''
     cursor.execute(sql)
@@ -871,7 +873,7 @@ def record_dentist():
     sql_join_part = '''
         FROM submission_record
         LEFT JOIN user ON submission_record.patient_id = user.id
-        WHERE (sender_id = %s)'''
+        WHERE (channel = 'DENTIST' AND sender_id = %s)'''
     sql_limit_part = '''
         ORDER BY id DESC
         LIMIT %s
@@ -970,7 +972,10 @@ def record_osm():
         INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
         LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
         LEFT JOIN user AS sender_user ON submission_record.sender_phone = sender_user.phone
-        WHERE (sender_id = %s OR (submission_record.sender_phone is not NULL AND submission_record.sender_phone = %s))'''
+        WHERE
+            (channel = 'OSM' AND sender_id = %s) OR
+            (channel = 'PATIENT' AND submission_record.sender_phone = %s)
+            '''
     sql_limit_part = '''
         ORDER BY submission_record.id DESC
         LIMIT %s
