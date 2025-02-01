@@ -5,8 +5,9 @@ from PIL import Image
 
 class ImageQualityChecker:
     classes = [
+        'Misorientation',
         'Non Standard',
-        'Others',
+        'No Mouth',
         'Standard'
     ]
     
@@ -29,7 +30,7 @@ class ImageQualityChecker:
             image = alpha
 
         # pre-process the image
-        resized_image = image.resize((640, 640))
+        resized_image = image.resize((256, 256))
         input_data = np.array(resized_image).astype(np.float32) / 255.0 # for narm image
         input_data = np.expand_dims(input_data, axis=0)  
         

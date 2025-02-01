@@ -198,7 +198,7 @@ def diagnosis(role, img_id):
     # Authorization check
     if data is None:
         return render_template('unauthorized_access.html', error_msg='ไม่พบข้อมูลที่ร้องขอ Data Not Found')
-    elif (session['login_mode']!=role) or \
+    elif \
         (role=='patient' and (session['user_id']!=data['patient_id'])) or \
         (role=='osm' and session['user_id']!=data['sender_id'] and data['sender_phone']!=data['osm_phone']) or \
         (role=='dentist' and session['user_id']!=data['sender_id']):
