@@ -44,7 +44,6 @@ def upload_image(role):
             imageName = request.form.get('uploadedImage')
             data = {'uploadedImage': imageName}
             data['imageQuality'] = rotate_temp_image(imageName)
-            print(data['imageQuality'])
         elif submission=='false': # Load and show the image, wait for the confirmation
             imageName = None
             imageList = request.files.getlist("imageList")
@@ -68,7 +67,6 @@ def upload_image(role):
                     # Check image quality
                     global qualityChecker
                     quality_result = qualityChecker.predict(pil_img)
-                    print(quality_result['Class_Name'])
                     if quality_result['Class_ID'] == 0:
                         flash(f'ระบบตรวจสอบพบว่าไฟล์ {imageName} ปรากฎศีรษะของคนไข้ไม่ตั้งขึ้น กรุณาหมุนรูปไปทางขวาเพื่อทำให้ศีรษะของคนไข้อยู่ในทิศทางตั้งขึ้น')
                     elif quality_result['Class_ID'] == 1:
