@@ -73,6 +73,23 @@ def create_app(test_config=None):
     from . import db
     db.init_app(app)
 
+    # Create log file for each application run
+    import logging
+    from logging.handlers import RotatingFileHandler
+    import datetime
+    os.makedirs('aidoc_logs', exist_ok=True)
+    file_handler = RotatingFileHandler(os.path.join('aidoc_logs', f'aidoc_{datetime.datetime.now()}.log'), maxBytes=10*2**20, backupCount=10)
+    file_handler.setLevel(logging.DEBUG)
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.DEBUG)
+    app.logger.setLevel(logging.DEBUG)
+    app.logger.addHandler(file_handler)
+    app.logger.addHandler(console_handler)
+    werkzeug_logger = logging.getLogger('werkzeug')
+    werkzeug_logger.setLevel(logging.DEBUG)
+    werkzeug_logger.addHandler(file_handler)
+    werkzeug_logger.addHandler(console_handler)
+
     print('\033[1m' + '\033[93m' + 'AIDOC Application Ready ...' + '\033[0m')
 
     return app

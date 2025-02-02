@@ -40,14 +40,23 @@ def load_logged_in_user():
             # get osm group info if exsiting to show osm group option on navbar
             if g.user['is_osm']:
                 db, cursor = get_db()
-                cursor.execute("""SELECT (CASE WHEN ogm.osm_supervisor_id = %s THEN 1 ELSE 0 END) AS is_supervisor, (CASE WHEN ogm_member.osm_id = %s THEN 1 ELSE 0 END) AS is_member, g.group_name , g.group_id
-                               FROM osm_group g LEFT JOIN osm_group_member ogm_member ON g.group_id = ogm_member.group_id LEFT JOIN osm_group ogm ON g.group_id = ogm.group_id WHERE ogm_member.osm_id = %s LIMIT 1;
+                cursor.execute("""SELECT 
+                                    (CASE WHEN ogm.osm_supervisor_id = %s THEN 1 ELSE 0 END) AS is_supervisor, 
+                                    (CASE WHEN ogm_member.osm_id = %s THEN 1 ELSE 0 END) AS is_member, 
+                                    g.group_name, 
+                                    g.group_id,
+                                    u.name, u.surname
+                                FROM osm_group g
+                                LEFT JOIN osm_group_member ogm_member ON g.group_id = ogm_member.group_id AND ogm_member.osm_id = %s
+                                LEFT JOIN osm_group ogm ON g.group_id = ogm.group_id
+                                LEFT JOIN user u ON ogm.osm_supervisor_id = u.id
+                                LIMIT 1;
                             """, (user_id, user_id, user_id))
                 group = cursor.fetchone()
                 if group:
-                    g.user['group_info'] = {"is_supervisor": group['is_supervisor'], "is_member": group['is_member'], "group_name": group["group_name"] if group["group_name"] else "ไม่มีชื่อกลุ่ม", "group_id": group["group_id"]}
+                    g.user['group_info'] = {"is_supervisor": group['is_supervisor'], "is_member": group['is_member'], "group_name": group["group_name"] if group["group_name"] else "-", "group_supervisor": group["name"] + " " + group["surname"], "group_id": group["group_id"]}
                 else:
-                    g.user['group_info'] = {"is_supervisor": 0, "is_member": 0, "group_name": "ไม่มีชื่อกลุ่ม", "group_id": -1}
+                    g.user['group_info'] = {"is_supervisor": 0, "is_member": 0, "group_name": "", "group_id": -1}
                 
 
 @bp.route('/')
