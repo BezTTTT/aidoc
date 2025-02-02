@@ -38,7 +38,7 @@
                   <div id="promoteSupervisorContainer" style="display: none;">
                     <div class="form-check mx-3">
                         <input class="form-check-input" type="checkbox" name="promote_supervisor" id="promoteSupervisor" value="osmSupervisor">
-                        <label class="form-check-label" for="promoteSupervisor">OSM Supervisor</label>
+                        <label class="form-check-label" for="promoteSupervisor">Osm Supervisor</label>
                     </div>
                   </div>
                 </div>
@@ -77,7 +77,7 @@
       }
 
       // get is osm supervisor data from db
-      fetch(`/osm_group/osm_permission/${userId}`, {
+      fetch(`/osm_group/is_supervisor/${userId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -86,7 +86,7 @@
         .then(data => {
           is_supervisor = data.is_supervisor;
           const promoteSupervisorCheckbox = document.getElementById('promoteSupervisor');
-          promoteSupervisorCheckbox.checked = is_supervisor
+          promoteSupervisorCheckbox.checked = is_supervisor;
         })
         .catch(error => {
           console.log(error)
@@ -158,6 +158,7 @@
       // create/remove group for osm supervisor
       const set_supervisor = document.getElementById('promoteSupervisor').checked ? 1 : 0
       const is_osm = document.getElementById('osm').checked ? 1 : 0
+      let is_supervisor_updated = false
       
       try {
         if(set_supervisor != (is_supervisor ? 1 : 0)){
@@ -172,17 +173,19 @@
             });
             if (!response.ok){
               alert("Failed to update osm supervisor.")
+              return;
             }
           }else{
             const response = await fetch("/osm_group/promote_supervisor/", {
-              method: "DELETE",  // Use DELETE method for make osm to supervisor
+              method: "DELETE",  // Use DELETE method for remove osm to supervisor
               headers: {
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({user_id: userId}),
             });
             if (!response.ok){
-              alert("Failed to reomve osm supervisor.")
+              alert("Failed to update osm supervisor.")
+              return;
             }
           }
         }
