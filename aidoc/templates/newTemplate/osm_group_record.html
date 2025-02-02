@@ -29,7 +29,7 @@
     </div>
     <div class="row row-cols-auto my-3">
         <div class="col mt-1">
-            <label for="filterPriority">ระดับความสำคัญ:</label>
+            <label for="filterPriority">คำขอตรวจพิเศษ:</label>
             <select name="filterPriority" id="filterPriority" class="btn btn-light border border-1 mx-1" onchange="this.form.submit()">
                 <option value="">ทั้งหมด</option>
                 <option value="1">พิเศษ</option>
@@ -37,7 +37,7 @@
             </select>
         </div>
         <div class="col mt-1">
-            <label for="filterStatus">สถานะ:</label>
+            <label for="filterStatus">สถานะการตรวจจากทันตแพทย์:</label>
             <select name="filterStatus" id="filterStatus" class="btn btn-light border border-1 mx-1" onchange="this.form.submit()">
                 <option value="">ทั้งหมด</option>
                 <option value="1">ตรวจแล้ว</option>
@@ -119,11 +119,9 @@
                     <h6 class="fs-6 card-subtitle text-muted mb-2">
                         ผลการพยากรณ์ของ AI :
                             {% if item['ai_prediction']==0 %}
-                                Normal
-                            {% elif item['ai_prediction']==1 %}
-                                OPMD
+                                ไม่พบรอยโรค
                             {% else %}
-                                OSCC
+                                พบรอยโรค
                             {% endif %}
                     </h6>
                     <div class="d-grid gap-2 d-md-flex justify-content-md-center">

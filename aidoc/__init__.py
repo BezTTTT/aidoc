@@ -77,6 +77,7 @@ def create_app(test_config=None):
     import logging
     from logging.handlers import RotatingFileHandler
     import datetime
+    os.makedirs('aidoc_logs', exist_ok=True)
     file_handler = RotatingFileHandler(os.path.join('aidoc_logs', f'aidoc_{datetime.datetime.now()}.log'), maxBytes=10*2**20, backupCount=10)
     file_handler.setLevel(logging.DEBUG)
     console_handler = logging.StreamHandler()
