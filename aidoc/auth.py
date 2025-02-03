@@ -30,15 +30,14 @@ def load_logged_in_user():
                 session['general_user'] = True
             elif g.user['is_patient']:
                 g.user['job_position_th'] = g.user['job_position']
-            else:
+            elif g.user['is_osm']: # is_osm is true
                 job_position_dict = {"OSM":"อสม.", "Dental Nurse":"ทันตาภิบาล/เจ้าพนักงานทันตสาธารณสุข", "Dentist":"ทันตแพทย์",
                                     "Oral Pathologist": "ทันตแพทย์เฉพาะทาง วิทยาการวินิจฉัยโรคช่องปาก", "Oral and Maxillofacial Surgeon":"ทันตแพทย์เฉพาะทาง ศัลยศาสตร์ช่องปากและแม็กซิลโลเฟเชียล",
                                     "Physician":"แพทย์", "Public Health Technical Officer":"นักวิชาการสาธารณสุข", "Computer Technical Officer":"นักวิชาการคอมพิวเตอร์/นักวิจัย/ผู้พัฒนาระบบ",
                                     "Other Public Health Officer":"ข้าราชการ/เจ้าพนักงานกระทรวงสาธารณสุข", "Other Government Officer":"เจ้าหน้าที่รัฐอื่น", "General Public":"บุคคลทั่วไป"}
                 g.user['job_position_th'] = job_position_dict[g.user['job_position']]
                 
-            # get osm group info if exsiting to show osm group option on navbar
-            if g.user['is_osm']:
+                # check and get osm group info for showing the osm group option on navbar
                 db, cursor = get_db()
                 cursor.execute("""SELECT 
                                     (CASE WHEN ogm.osm_supervisor_id = %s THEN 1 ELSE 0 END) AS is_supervisor, 
@@ -87,7 +86,7 @@ def role_validation(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
         allowed_roles = ['patient', 'osm', 'dentist', 'specialist', 'admin']
-        userNotInSession = (g.user is None) or ('is_patient' not in g.user) or ('is_osm' not in g.user)
+        userNotInSession = (g.user is None) or ('is_patient' not in g.user) or ('login_mode' not in session)
         byPassValidation = ('register_later' in session)
         if ('role' not in kwargs) or \
             (kwargs['role'] not in allowed_roles) or \
