@@ -87,7 +87,7 @@ def role_validation(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
         allowed_roles = ['patient', 'osm', 'dentist', 'specialist', 'admin']
-        userNotInSession = (g.user is None) or ('is_patient' not in g.user) or ('is_osm' not in g.user)
+        userNotInSession = (g.user is None) or ('is_patient' not in g.user) or ('login_mode' not in session)
         byPassValidation = ('register_later' in session)
         if ('role' not in kwargs) or \
             (kwargs['role'] not in allowed_roles) or \
