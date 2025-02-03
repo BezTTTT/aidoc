@@ -4,7 +4,7 @@ import os
 # Application Factory
 def create_app(test_config=None):
 
-    print('\033[1m' + '\033[93m' + 'AIDOC Application Starting ...' + '\033[0m')
+    print('\033[1m' + '\033[93m' + ' AIDOC Application Starting ... ' + '\033[0m')
 
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
@@ -92,6 +92,6 @@ def create_app(test_config=None):
     werkzeug_logger.addHandler(file_handler)
     werkzeug_logger.addHandler(console_handler)
 
-    print('\033[1m' + '\033[93m' + 'AIDOC Application Ready ...' + '\033[0m')
+    print('\033[1m' + '\033[93m' + ' AIDOC Application Ready ... ' + '\033[0m')
 
     return app

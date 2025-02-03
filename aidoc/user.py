@@ -14,7 +14,7 @@ import os
 from aidoc.utils import *
 
 from aidoc.db import get_db
-from aidoc.auth import login_required, load_logged_in_user, role_validation, log_last_user_login
+from aidoc.auth import login_required, reload_user_profile, role_validation, log_last_user_login
 
 # 'user' blueprint manages user management system
 bp = Blueprint('user', __name__)
@@ -181,7 +181,7 @@ def register(role):
                 new_user = cursor.fetchone()
                 if 'register_later' not in session:
                     session['user_id'] = new_user['id']
-                    load_logged_in_user()
+                    reload_user_profile(new_user['id'])
                 elif session['noNationalID']: # If the record has no national_id of the patient, add it here
                     sql = "UPDATE submission_record SET patient_id=%s, patient_national_id=%s WHERE id=%s"
                     val = (new_user['id'], data["national_id"], session['register_later']['img_id'])
@@ -276,7 +276,7 @@ def register(role):
                 new_user = cursor.fetchone()
                 if 'register_later' not in session:
                     session['user_id'] = new_user['id']
-                    load_logged_in_user()
+                    reload_user_profile(new_user['id'])
                 else: # If the record has no national_id of the patient, add it here
                     sql = "UPDATE submission_record SET sender_id=%s WHERE id=%s"
                     val = (new_user['id'], session['register_later']['img_id'])
@@ -357,7 +357,7 @@ def register(role):
                 cursor.execute('SELECT id FROM user WHERE username=%s', (data["username"],))
                 new_user = cursor.fetchone()
                 session['user_id'] = new_user['id']
-                load_logged_in_user()    
+                reload_user_profile(new_user['id'])  
                 
             else:
                 sql = "UPDATE user SET name=%s, surname=%s, email=%s, phone=%s, username=%s, password=%s, job_position=%s, osm_job=%s, hospital=%s, province=%s, license=%s WHERE id=%s"
