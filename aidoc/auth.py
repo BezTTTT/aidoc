@@ -13,32 +13,36 @@ bp = Blueprint('auth', __name__)
 @bp.before_app_request
 def load_logged_in_user():
     user_id = session.get('user_id')
-
     if user_id is None:
         g.user = None
+    elif 'g_user' not in session or session['g_user']['id'] != user_id:
+        reload_user_profile(user_id)
     else:
-        db, cursor = get_db()
+        g.user = session['g_user']
+
+def reload_user_profile(user_id):
+    db, cursor = get_db()
+    if 'login_mode' in session and session['login_mode']=='general':
+        cursor.execute('SELECT * FROM general_user WHERE id = %s', (user_id,))
+    else:
+        cursor.execute('SELECT * FROM user WHERE id = %s', (user_id,))
+    user = cursor.fetchone()
+    if user is None:
+        session.pop('user_id', None)
+    else:
         if 'login_mode' in session and session['login_mode']=='general':
-            cursor.execute('SELECT * FROM general_user WHERE id = %s', (user_id,))
+            session['general_user'] = True
         else:
-            cursor.execute('SELECT * FROM user WHERE id = %s', (user_id,))
-        g.user = cursor.fetchone()
-        if g.user is None:
-            session.pop('user_id', None)
-        else:
-            if 'login_mode' in session and session['login_mode']=='general':
-                session['general_user'] = True
-            elif g.user['is_patient']:
-                g.user['job_position_th'] = g.user['job_position']
-            else:
+            if user['is_patient']:
+                user['job_position_th'] = user['job_position']
+            if user['is_osm']: # is_osm is true
                 job_position_dict = {"OSM":"อสม.", "Dental Nurse":"ทันตาภิบาล/เจ้าพนักงานทันตสาธารณสุข", "Dentist":"ทันตแพทย์",
                                     "Oral Pathologist": "ทันตแพทย์เฉพาะทาง วิทยาการวินิจฉัยโรคช่องปาก", "Oral and Maxillofacial Surgeon":"ทันตแพทย์เฉพาะทาง ศัลยศาสตร์ช่องปากและแม็กซิลโลเฟเชียล",
                                     "Physician":"แพทย์", "Public Health Technical Officer":"นักวิชาการสาธารณสุข", "Computer Technical Officer":"นักวิชาการคอมพิวเตอร์/นักวิจัย/ผู้พัฒนาระบบ",
                                     "Other Public Health Officer":"ข้าราชการ/เจ้าพนักงานกระทรวงสาธารณสุข", "Other Government Officer":"เจ้าหน้าที่รัฐอื่น", "General Public":"บุคคลทั่วไป"}
-                g.user['job_position_th'] = job_position_dict[g.user['job_position']]
+                user['job_position_th'] = job_position_dict[user['job_position']]
                 
-            # get osm group info if exsiting to show osm group option on navbar
-            if g.user['is_osm']:
+                # check and get osm group info for showing the osm group option on navbar
                 db, cursor = get_db()
                 cursor.execute("""SELECT 
                                     (CASE WHEN ogm.osm_supervisor_id = %s THEN 1 ELSE 0 END) AS is_supervisor, 
@@ -54,10 +58,11 @@ def load_logged_in_user():
                             """, (user_id, user_id, user_id))
                 group = cursor.fetchone()
                 if group:
-                    g.user['group_info'] = {"is_supervisor": group['is_supervisor'], "is_member": group['is_member'], "group_name": group["group_name"] if group["group_name"] else "-", "group_supervisor": group["name"] + " " + group["surname"], "group_id": group["group_id"]}
+                    user['group_info'] = {"is_supervisor": group['is_supervisor'], "is_member": group['is_member'], "group_name": group["group_name"] if group["group_name"] else "-", "group_supervisor": group["name"] + " " + group["surname"], "group_id": group["group_id"]}
                 else:
-                    g.user['group_info'] = {"is_supervisor": 0, "is_member": 0, "group_name": "", "group_id": -1}
-                
+                    user['group_info'] = {"is_supervisor": 0, "is_member": 0, "group_name": "", "group_id": -1}
+    session['g_user'] = user
+    g.user = session['g_user']
 
 @bp.route('/')
 def index():
@@ -87,7 +92,7 @@ def role_validation(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
         allowed_roles = ['patient', 'osm', 'dentist', 'specialist', 'admin']
-        userNotInSession = (g.user is None) or ('is_patient' not in g.user) or ('is_osm' not in g.user)
+        userNotInSession = (g.user is None) or ('is_patient' not in g.user) or ('login_mode' not in session)
         byPassValidation = ('register_later' in session)
         if ('role' not in kwargs) or \
             (kwargs['role'] not in allowed_roles) or \
