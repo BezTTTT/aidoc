@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 from aidoc.utils import *
 from aidoc.db import get_db
-from aidoc.auth import login_required, admin_only, specialist_only, role_validation, load_logged_in_user
+from aidoc.auth import login_required, admin_only, specialist_only, role_validation, reload_user_profile
 
 # 'webapp' blueprint manages Diagnosis and Record systems, including report and admin managment system
 bp = Blueprint('webapp', __name__)
@@ -1057,7 +1057,7 @@ def update_submission_record(ai_predictions, ai_scores):
                 sql = "UPDATE user SET default_location=%s WHERE id=%s"
                 val = (str(session['location']), session['user_id'])
                 cursor.execute(sql, val)
-                load_logged_in_user() # Update the user info on g variable
+                reload_user_profile(session['user_id']) # Update the user info on g variable
 
             sql = '''INSERT INTO submission_record
                 (fname,
@@ -1096,19 +1096,19 @@ def update_submission_record(ai_predictions, ai_scores):
                 sql = "UPDATE user SET default_location=%s WHERE id=%s"
                 val = (str(session['location']), session['user_id'])
                 cursor.execute(sql, val)
-                load_logged_in_user() # Update the user info on g variable
+                reload_user_profile(session['user_id']) # Update the user info on g variable
 
             if 'sender_phone' in session and session['sender_phone']:
                 sql = "UPDATE user SET default_sender_phone=%s WHERE id=%s"
                 val = (session['sender_phone'], session['user_id'])
                 cursor.execute(sql, val)
-                load_logged_in_user() # Update the user info on g variable
+                reload_user_profile(session['user_id']) # Update the user info on g variable
             
             if (g.user['default_sender_phone'] and ('sender_phone' not in session or session['sender_phone'] is None)):
                 sql = "UPDATE user SET default_sender_phone=NULL WHERE id=%s"
                 val = (session['user_id'], )
                 cursor.execute(sql, val)
-                load_logged_in_user() # Update the user info on g variable
+                reload_user_profile(session['user_id']) # Update the user info on g variable
             
             sql = '''INSERT INTO submission_record 
                     (fname,
@@ -1156,7 +1156,7 @@ def update_submission_record(ai_predictions, ai_scores):
                 sql = "UPDATE user SET default_location=%s WHERE id=%s"
                 val = (str(session['location']), session['user_id'])
                 cursor.execute(sql, val)
-                load_logged_in_user() # Update the user info on g variable
+                reload_user_profile(session['user_id']) # Update the user info on g variable
 
             sql = '''INSERT INTO submission_record 
                     (fname, 
