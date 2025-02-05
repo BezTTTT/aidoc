@@ -4,12 +4,17 @@ form {
   display: inline;
 }
 
-#hiddenContent {
-    display: none;
-}
-
 body {
   height: 100%;
+  font-family: "Prompt", sans-serif;
+}
+
+p {
+  margin: 10px 0;
+}
+
+#hiddenContent {
+  display: none;
 }
 
 .banner {
@@ -32,10 +37,6 @@ body {
 .img-responsive {
   height: auto;
   width: 100%;
-}
-
-body {
-  font-family: "Prompt", sans-serif;
 }
 
 .navbar-toggler-icon {
@@ -89,4 +90,49 @@ table.dataTable tbody tr:nth-child(even) {
   border-radius: 100%;
   margin-left: 5px;
   vertical-align: middle;
+}
+
+
+/* Default (small screens): one column */
+.diagnosis-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem; /* Bootstrap’s spacing between items */
+}
+
+/* On medium screens (≥768px) redefine the grid */
+@media (min-width: 768px) {
+  .diagnosis-grid {
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto auto auto auto;
+  grid-template-areas:
+      "IP PPP"
+      "DHP PPP"
+      "DFP CRP"
+      "DFP CRP"
+      "BP CRP";
+  }
+  .grid-item-image-panel { grid-area: IP; }
+  .grid-item-dentist-history-panel { grid-area: DHP; }
+  .grid-item-patient-profile-panel { grid-area: PPP; }
+  .grid-item-dentist-feedback-panel { grid-area: DFP; }
+  .grid-item-case-report-panel { grid-area: CRP; }
+  .grid-item-biopsy-panel { grid-area: BP; }
+}
+
+/* On large screens (≥992px) redefine the grid */
+@media (min-width: 992px) {
+  .diagnosis-grid {
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: auto auto;
+  grid-template-areas:
+      "IP DFP PPP"
+      "DHP CRP BP";
+  }
+  .grid-item-image-panel { grid-area: IP; }
+  .grid-item-dentist-history-panel { grid-area: DHP; }
+  .grid-item-patient-profile-panel { grid-area: PPP; }
+  .grid-item-dentist-feedback-panel { grid-area: DFP; }
+  .grid-item-case-report-panel { grid-area: CRP; }
+  .grid-item-biopsy-panel { grid-area: BP; }
 }
