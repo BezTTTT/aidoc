@@ -118,6 +118,9 @@ table.dataTable tbody tr:nth-child(even) {
   .grid-item-dentist-feedback-panel { grid-area: DFP; }
   .grid-item-case-report-panel { grid-area: CRP; }
   .grid-item-biopsy-panel { grid-area: BP; }
+  .grid-item-dentist-ai-agreement-panel { grid-area: DFP; }
+  .grid-item-dentist-additional-feedback-panel { grid-area: CRP; }
+  .grid-item-dentist-comment-panel { grid-area: BP; }
 }
 
 /* On large screens (≥992px) redefine the grid */
@@ -135,4 +138,7 @@ table.dataTable tbody tr:nth-child(even) {
   .grid-item-dentist-feedback-panel { grid-area: DFP; }
   .grid-item-case-report-panel { grid-area: CRP; }
   .grid-item-biopsy-panel { grid-area: BP; }
+  .grid-item-dentist-ai-agreement-panel { grid-area: DFP; }
+  .grid-item-dentist-additional-feedback-panel { grid-area: CRP; }
+  .grid-item-dentist-comment-panel { grid-area: BP; }
 }
