@@ -56,8 +56,9 @@
     </div>
 </form>
 
-<div class="col-12 mt-3">
+<div class="col-12 mt-3 d-flex justify-content-between">
     <p>ประวัติการนำส่งภาพถ่ายช่องปากของคนไข้</p>
+    <button class="btn btn-outline-secondary" onclick="toggleView()">สลับมุมมอง</button>
 </div>
 {% if paginated_data|length == 0 %}
     <div class="col-12 mt-2">
@@ -70,7 +71,8 @@
 {% endif %}
 
 <!-- Loop through paginated data -->
-<div class="row mt-4">
+<!-- Card View (Default) -->
+<div id="card-view" class="row mt-4">
     {% for item in paginated_data %}
         <div class="col-lg-3 col-md-4 col-sm-6 col-xs-12 mb-3">
             <div class="card h-100"
@@ -136,6 +138,26 @@
     {% endfor %}
 </div>
 
+<!-- Table View (Initially Hidden) -->
+<div id="table-view" style="display: none;">
+    <table class="dataTable">
+        <thead>
+            <tr class="text-dark">
+                <th>Case ID</th>
+                <th>ชื่อผู้ป่วย</th>
+                <th>สถานที่คัดกรอง</th>
+                <th>ช่องทาง</th>
+                <th>ชื่อผู้นำส่ง</th>
+                <th>นำส่งวันที่</th>
+                <th>ผล AI</th>
+                <th>ดำเนินการ</th>
+            </tr>
+        </thead>
+            <tbody data-record-data="{{ paginated_data | tojson }}"></tbody>
+        </tbody>
+    </table>
+</div>
+
 <!-- Pagination links -->
 <div class="pagination d-flex justify-content-center align-items-center">
     {% if current_page > 1 %}
@@ -183,6 +205,89 @@
     if (filterSenderValue) {
         finterSender.value = filterSenderValue;
     }
+    function toggleView() {
+        const cardView = document.getElementById("card-view");
+        const tableView = document.getElementById("table-view");
+
+        if (sessionStorage.getItem("tableView") === "true") {
+            cardView.style.display = "flex";
+            cardView.style.flexWrap = "wrap";
+            tableView.style.display = "none";
+        } else {
+            cardView.style.display = "none";
+            tableView.style.display = "block";
+            renderTable()
+        }
+
+        // Save the current state to session storage
+        if (tableView.style.display === "none") {
+            sessionStorage.setItem("tableView", "false");
+        } else {
+            sessionStorage.setItem("tableView", "true");
+        }
+    }
+
+    function loadView(){
+        const cardView = document.getElementById("card-view");
+        const tableView = document.getElementById("table-view");
+        if (sessionStorage.getItem("tableView") === "true") {
+            cardView.style.display = "none";
+            tableView.style.display = "block";
+            renderTable()
+        } else {
+            cardView.style.display = "flex";
+            cardView.style.flexWrap = "wrap";
+            tableView.style.display = "none";
+        }
+    }
+
+
+
+    function renderTable() {    
+        
+        const tbody = document.querySelector("#table-view tbody");
+        tbody.innerHTML = "";
+        const data = tbody.dataset.recordData
+        console.log(data)
+        data.forEach((record) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>1</td>
+            <td>2</td>
+            <td>3</td>
+            <td>4</td>
+            <td>6</td>
+            <td>5</td>
+            <td>7</td>
+            <td>8</td>
+        `;
+
+        tbody.appendChild(row);
+        });
+
+        // Reinitialize DataTables to ensure proper pagination
+        if (dataTableInstance) {
+        dataTableInstance.destroy(); // Destroy existing instance
+        }
+        dataTableInstance = $("#record_table").DataTable({
+        order: [[0, "asc"]],
+        pageLength: 10, // Items per page
+        language: {
+            search: "ค้นหา:",
+            lengthMenu: "แสดง _MENU_ รายการต่อหน้า",
+            info: "แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ",
+            paginate: {
+            first: "หน้าแรก",
+            last: "หน้าสุดท้าย",
+            next: "ถัดไป",
+            previous: "ก่อนหน้า",
+            },
+        },
+        });
+    }
+
+    // Initialize after load
+    loadView()
         
 </script>
 {% endblock %}
