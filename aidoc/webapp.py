@@ -85,8 +85,8 @@ def diagnosis(role, img_id):
             val = (1, img_id)
             cursor.execute(sql, val)
 
-        if (role=='dentist' or (role=='admin' and request.args.get('channel')=='DENTIST')) and request.args.get('dentist_action'):
-            dentist_action_code = request.args.get('dentist_action')
+        if (role=='dentist' or (role=='admin' and request.args.get('channel')=='DENTIST')) and request.form.get('dentist_action'):
+            dentist_action_code = request.form.get('dentist_action')
             print(request.args)
             if(dentist_action_code == 'ai_agreement'):
                 dentist_feedback_code = request.form.get('agree_option')

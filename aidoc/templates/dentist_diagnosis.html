@@ -60,6 +60,7 @@
     </div>
 </div>
 
+{% block menu %}
 <div class="row d-flex justify-content-center my-2">
     <div class="col text-center">
         <a class="btn btn-outline-success btn-lg my-1 mx-2" href="/upload_image/dentist">วิเคราะห์รูปภาพอื่นเพิ่มเติม</a>
@@ -89,6 +90,7 @@
         </form>
     </div>
 </div>
+{% endblock %}
 
 <div class="row d-flex justify-content-center text-align-left my-3">
     <div class="col">
@@ -199,11 +201,13 @@
     </div>
 </div>
 
+{% block dianosis_cards %}
 <div class="d-grid diagnosis-grid">
     <div class="card grid-item-dentist-ai-agreement-panel">
         <div class="card-body px-4">
             <h5 class="card-title text-start mb-3">ท่านเห็นด้วยกับผลการวิเคราะทาง AI ดังที่ปรากฏหรือไม่?</h5>
-            <form action="{{ url_for('webapp.diagnosis', role='dentist', img_id=data['img_id'], dentist_action='ai_agreement') }}" method="post" enctype="multipart/form-data">
+            <form action="{{ url_for('webapp.diagnosis', role='dentist', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="dentist_action" value="ai_agreement">
                 <div class="form-check">
                     <input class="form-check-input" type="radio" name="agree_option" id="agree_option1" value="AGREE"
                         {% if data['dentist_feedback_code']=='AGREE' %} checked {% endif %}/>
@@ -221,7 +225,8 @@
     <div class="card grid-item-dentist-additional-feedback-panel">
         <div class="card-body px-4">
             <h5 class="card-title text-start mb-3">คำวินิจฉัยเพิ่มเติม</h5>
-            <form action="{{ url_for('webapp.diagnosis', role='dentist', img_id=data['img_id'], dentist_action='additional_feedback') }}" method="post" enctype="multipart/form-data">
+            <form action="{{ url_for('webapp.diagnosis', role='dentist', img_id=data['img_id']) }}" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="dentist_action" value="additional_feedback">
                 <div id="inner-container" class="d-flex justify-content-lg-start my-3">
                     <div id="lesion-location-container">
                         <label class="mb-1">ตำแหน่งที่ตรวจพบรอยโรค</label>
@@ -252,7 +257,8 @@
     <div class="card grid-item-dentist-comment-panel">
         <div class="card-body px-4">
             <h5 class="card-title text-start mb-3">ความคิดเห็น</h5>
-            <form action="{{ url_for('webapp.diagnosis', role='dentist', img_id=data['img_id'], dentist_action='comment') }}" method="post" enctype="multipart/form-data">
+            <form action="{{ url_for('webapp.diagnosis', role='dentist', img_id=data['img_id']) }}" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="dentist_action" value="comment">
                 <div id="dentist-comment-container" class="my-3">
                     <textarea class="form-control" rows="3" name="dentist_comment">{{data['dentist_feedback_comment']}}</textarea> 
                 </div>
@@ -261,8 +267,7 @@
         </div>
     </div>
 </div>
-
-
+{% endblock %}
 {% endblock %}
 
 {% block script %}
@@ -272,27 +277,26 @@
   
     if (windowWidth < 920) {
         
-        const outerContainer = document.getElementById("outer-container");
         
-        const innerContainer = document.getElementById("inner-container");
-        const lesionTypeContainer = document.getElementById("lesion-type-container");
-        const dentistCommentContainer = document.getElementById("dentist-comment-container");
+        // const innerContainer = document.getElementById("inner-container");
+        // const lesionTypeContainer = document.getElementById("lesion-type-container");
+        // const dentistCommentContainer = document.getElementById("dentist-comment-container");
 
-        innerContainer.removeChild(lesionTypeContainer);
-        outerContainer.removeChild(dentistCommentContainer);
+        // innerContainer.removeChild(lesionTypeContainer);
+        // outerContainer.removeChild(dentistCommentContainer);
 
-        outerContainer.appendChild(lesionTypeContainer);
-        outerContainer.appendChild(dentistCommentContainer);
+        // outerContainer.appendChild(lesionTypeContainer);
+        // outerContainer.appendChild(dentistCommentContainer);
 
-        document.getElementById("normal-check-box-col1").style.width = "10%"
-        document.getElementById("normal-check-box-col2").style.width = "65%"
-        document.getElementById("normal-check-box-col3").style.width = "25%"
-        document.getElementById("opmd-check-box-col1").style.width = "10%"
-        document.getElementById("opmd-check-box-col2").style.width = "65%"
-        document.getElementById("opmd-check-box-col3").style.width = "25%"
-        document.getElementById("oscc-check-box-col1").style.width = "10%"
-        document.getElementById("oscc-check-box-col2").style.width = "65%"
-        document.getElementById("oscc-check-box-col3").style.width = "25%"
+        // document.getElementById("normal-check-box-col1").style.width = "10%"
+        // document.getElementById("normal-check-box-col2").style.width = "65%"
+        // document.getElementById("normal-check-box-col3").style.width = "25%"
+        // document.getElementById("opmd-check-box-col1").style.width = "10%"
+        // document.getElementById("opmd-check-box-col2").style.width = "65%"
+        // document.getElementById("opmd-check-box-col3").style.width = "25%"
+        // document.getElementById("oscc-check-box-col1").style.width = "10%"
+        // document.getElementById("oscc-check-box-col2").style.width = "65%"
+        // document.getElementById("oscc-check-box-col3").style.width = "25%"
     }
 </script>
 
