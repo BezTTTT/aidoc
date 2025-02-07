@@ -108,38 +108,36 @@
 
 <div class="d-grid diagnosis-grid">
     <div class="card grid-item-osm-image-info-panel">
-        <div class="card-body px-4">
-            <div class="card-body px-4">
-                <h5 class="card-title text-start mb-3">ข้อมูลภาพ</h5>
-                <p>Case ID: {{data['case_id']}} </p>
-                <p>ชื่อไฟล์: {{data['fname']}}</p>
-                <p>
-                {% if data['quality_ai_prediction'] is not none %}
-                    {% if data['quality_ai_prediction']==0 %}
-                        ตรวจคุณภาพรูป: <span style="color: red;">ไม่ผ่านมาตรฐาน (ศรีษะคนไข้ไม่ตั้งตรง)</span>
-                    {% elif data['quality_ai_prediction']==1 %}
-                        ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ผลลัพธ์อาจผิดพลาด)</b></span>
-                    {% elif data['quality_ai_prediction']==2 %}
-                        ตรวจคุณภาพรูป: <span style="color: red;">ไม่พบช่องปาก (ภาพอาจไม่เกี่ยวข้อง)</span>
-                    {% elif data['quality_ai_prediction']==3 %}
-                        ตรวจคุณภาพรูป: <span style="color: green;">ผ่านมาตรฐาน</span>
-                    {% endif %}
-                {% else %}
-                    ตรวจคุณภาพรูป: ไม่มีผลลัพธ์ (กด Recompute ใหม่)
+        <div class="card-body">
+            <h5 class="card-title text-start mb-3">ข้อมูลภาพ</h5>
+            <p>Case ID: {{data['case_id']}} </p>
+            <p>ชื่อไฟล์: {{data['fname']}}</p>
+            <p>
+            {% if data['quality_ai_prediction'] is not none %}
+                {% if data['quality_ai_prediction']==0 %}
+                    ตรวจคุณภาพรูป: <span style="color: red;">ไม่ผ่านมาตรฐาน (ศรีษะคนไข้ไม่ตั้งตรง)</span>
+                {% elif data['quality_ai_prediction']==1 %}
+                    ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ผลลัพธ์อาจผิดพลาด)</b></span>
+                {% elif data['quality_ai_prediction']==2 %}
+                    ตรวจคุณภาพรูป: <span style="color: red;">ไม่พบช่องปาก (ภาพอาจไม่เกี่ยวข้อง)</span>
+                {% elif data['quality_ai_prediction']==3 %}
+                    ตรวจคุณภาพรูป: <span style="color: green;">ผ่านมาตรฐาน</span>
                 {% endif %}
-                </p>
-                <p>วันที่นำส่ง: {{data['thai_datetime']}}</p>
-                <p>สถานที่คัดกรอง: {{data['location_text']}}</p>
-                <p>ช่องทางการนำส่งรูป:
-                    {% if data['sender_phone'] is none %}
-                        ระบบผู้ตรวจคัดกรอง
-                    {% else %}
-                        ระบบประชาชน
-                    {% endif %}
-                </p>
-                <p>ผู้นำส่งรูป: {{data['sender_description']}}</p>
-                <p>โรงพยาบาลที่สังกัด: {{data['sender_hospital']}} จ.{{data['sender_province']}}</p>
-            </div>
+            {% else %}
+                ตรวจคุณภาพรูป: ไม่มีผลลัพธ์ (กด Recompute ใหม่)
+            {% endif %}
+            </p>
+            <p>วันที่นำส่ง: {{data['thai_datetime']}}</p>
+            <p>สถานที่คัดกรอง: {{data['location_text']}}</p>
+            <p>ช่องทางการนำส่งรูป:
+                {% if data['sender_phone'] is none %}
+                    ระบบผู้ตรวจคัดกรอง
+                {% else %}
+                    ระบบประชาชน
+                {% endif %}
+            </p>
+            <p>ผู้นำส่งรูป: {{data['sender_description']}}</p>
+            <p>โรงพยาบาลที่สังกัด: {{data['sender_hospital']}} จ.{{data['sender_province']}}</p>
         </div> 
     </div> 
 
@@ -173,20 +171,21 @@
         </div>
         {% else %}
         <div class="card-body">
-            <h5 class="card-title text-start mb-3"> ข้อมูลภาพนี้ได้รับการส่งคำขอตรวจเป็นกรณีพิเศษเรียบร้อยแล้ว </h5>
+            <h5 class="card-title text-start mb-3">หากท่านต้องการให้ผู้เชี่ยวชาญตรวจสอบภาพนี้เป็นกรณีพิเศษ</h5>
+            <div class="mt-2"><i>ข้อมูลภาพนี้ได้รับการส่งคำขอตรวจเป็นกรณีพิเศษเรียบร้อยแล้ว</i></div>
         </div>
         {% endif %}
     </div>
 
     <div class="card grid-item-osm-question-info-panel">
-        <div class="card-body px-4">
+        <div class="card-body">
             <h5>หากท่านมีข้อสงสัยต่อการพยากรณ์นี้หรือต้องการขอคำแนะนำทางการแพทย์ </h5>
             <div class="mt-2"><i>กรุณาติดต่อผู้ประสานงานโครงการได้ที่ ช่องแชทของไลน์ “ตรวจมะเร็งช่องปาก” โดยการแอดเพิ่มเพื่อนได้ที่ Line ID @riskoca และแจ้งหมายเลข Case ID: {{ data['case_id'] }} เพื่อใช้ในการตรวจสอบข้อมูล</i></div>
         </div>
     </div>
 
     <div class="card grid-item-osm-patient-profile-panel">
-        <div class="card-body px-4">
+        <div class="card-body">
             <h5 class="card-title text-start mb-4">เวชระเบียนผู้ป่วย</h5>
             {%if data['patient_id'] is none %}
                 {% if data['saved_patient_national_id'] is not none %}
@@ -207,7 +206,7 @@
                         <input name="return_page" type="hidden" value="diagnosis">
                         <input name="role" type="hidden" value="osm">
                         <input name="img_id" type="hidden" value="{{data['img_id']}}">
-                        <div id="patientIDContainer" class="col-6" style="display: block;">
+                        <div id="patientIDContainer" class="col-7 " style="display: block;">
                             <input id="patientIDInput" class="form-control" placeholder="เลขประจำตัว ปชช. ผู้ป่วย 13 หลัก (ถ้าทราบ) " maxlength="13" type="text" name="patient_national_id"> 
                         </div>
                         <button id="submitbtn" class="btn btn-outline-success my-2" type="submit">เชื่อมโยงข้อมูลคนไข้</button>
@@ -241,46 +240,6 @@
         </div>
     </div>
 </div>
-
-<script>
-    const windowWidth = window.innerWidth;
-  
-    if (windowWidth < 920) {
-        const outerContainer = document.getElementById("outer-container");
-        
-        const innerLeftContainer = document.getElementById("inner-left-container");
-        const specialRequestContainer = document.getElementById("special-request-container");
-        const contactUsContainer = document.getElementById("contact-us-container");
-
-        const patientContainer = document.getElementById("patient-container");
-
-        // Move the containers outside the inner-left-container to outer-container (which placed after the patient-container)
-        innerLeftContainer.removeChild(specialRequestContainer);
-        innerLeftContainer.removeChild(contactUsContainer);
-        outerContainer.appendChild(specialRequestContainer);
-        outerContainer.appendChild(contactUsContainer);
-
-        specialRequestContainer.style.padding = 0; 
-
-        innerLeftContainer.style.width = "100%"; // Push patient-container down
-        innerLeftContainer.style.margin = 0;
-        
-        patientContainer.style.width = "100%"; // Restore the width of patient-container to 100%
-        patientContainer.style.margin = 0;  // Set left margin to 0 (instead of 0.5% left margin)
-        patientContainer.style.marginBottom = "16px"; // Create down margin for the patient-container (dentist-feedback-history-container is next)
-        
-        document.getElementById("patientIDContainer").style.width = "100%"
-    }
-</script>
-
-<style>
-    #image-info-container p {
-      margin-bottom: 0.25rem; /* Apply margin bottom equivalent to mb-1 */
-    }
-    #patient-container p {
-        margin-bottom: 0.25rem; /* Apply margin bottom equivalent to mb-1 */
-    }
-</style>
 
 <script>
     const patientIDInput = document.getElementById('patientIDInput')
