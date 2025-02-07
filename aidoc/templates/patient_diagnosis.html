@@ -158,14 +158,33 @@
     <div class="card grid-item-patient-request-spacialist-panel">
         <div class="card-body px-4">
             <h5 class="card-title text-start mb-3">หากท่านต้องการให้ผู้เชี่ยวชาญตรวจสอบภาพนี้เป็นกรณีพิเศษ</h5>
-            <button type="button" class="btn btn-outline-primary mb-2"
-                data-bs-toggle="modal" data-bs-target="#specialRequestModal">
-                <div class="px-4">
-                    ใช่
-                </div>
+            <button type="button" class="btn btn-outline-primary mb-2" data-bs-toggle="modal" data-bs-target="#specialRequestModal">
+                <div class="px-4">ใช่</div>
             </button>
             <div class="mt-2"><i>(คำขอตรวจสอบภาพกรณีพิเศษใช้กับกรณีที่ท่านตรวจพบรอยโรคในภาพแล้วเท่านั้น)</i></div>
         </div>
+    </div>
+    <!-- Modal -->
+    <div class="modal fade" id="specialRequestModal" tabindex="-1" aria-labelledby="specialRequestModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="specialRequestModalLabel">ส่งคำขอตรวจสอบภาพเป็นพิเศษ</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-start"> คำขอตรวจสอบภาพกรณีพิเศษใช้กับกรณีที่ท่านตรวจพบรอยโรคในภาพแล้วเท่านั้น </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <form action="{{ url_for('webapp.diagnosis', role='patient', img_id=data['img_id'], special_request='true') }}" method="POST" >
+                        <input class="btn btn-primary " id="specialRequestSubmit" type="submit" value="ตกลง" style="width: 100%"/>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="card-body px-4">
+        <h5 class="card-title text-start mb-3"> ข้อมูลภาพนี้ได้รับการส่งคำขอตรวจเป็นกรณีพิเศษเรียบร้อยแล้ว</h5>
     </div>
     {% endif %}
 
@@ -179,24 +198,7 @@
 </div>
 
 {% if data['special_request']==0 %}
-<!-- Modal -->
-<div class="modal fade" id="specialRequestModal" tabindex="-1" aria-labelledby="specialRequestModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h1 class="modal-title fs-5" id="specialRequestModalLabel">ส่งคำขอตรวจสอบภาพเป็นพิเศษ</h1>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-start"> คำขอตรวจสอบภาพกรณีพิเศษใช้กับกรณีที่ท่านตรวจพบรอยโรคในภาพแล้วเท่านั้น </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                <form action="{{ url_for('webapp.diagnosis', role='patient', img_id=data['img_id'], special_request='true') }}" method="POST" >
-                    <input class="btn btn-primary " id="specialRequestSubmit" type="submit" value="ตกลง" style="width: 100%"/>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
+
 {% endif %}
 
 {% endif %}
