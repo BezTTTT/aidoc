@@ -106,51 +106,51 @@ table.dataTable tbody tr:nth-child(even) {
   grid-template-columns: 1fr 1fr;
   grid-template-rows: auto auto auto auto auto;
   grid-template-areas:
-      "IP PPP"
-      "DHP PPP"
-      "DFP CRP"
-      "DFP CRP"
-      "BP CRP";
+      "TL TR"
+      "TML TR"
+      "ML MR"
+      "ML MR"
+      "BL BR";
   }
-  .grid-item-image-panel { grid-area: IP; }
-  .grid-item-dentist-history-panel { grid-area: DHP; }
-  .grid-item-patient-profile-panel { grid-area: PPP; }
-  .grid-item-dentist-feedback-panel { grid-area: DFP; }
-  .grid-item-case-report-panel { grid-area: CRP; }
-  .grid-item-biopsy-panel { grid-area: BP; }
-  .grid-item-dentist-ai-agreement-panel { grid-area: DFP; }
-  .grid-item-dentist-additional-feedback-panel { grid-area: CRP; }
-  .grid-item-dentist-comment-panel { grid-area: BP; }
-  .grid-item-patient-request-spacialist-panel { grid-area: IP; }
-  .grid-item-patient-question-info-panel { grid-area: PPP; }
-  .grid-item-osm-image-info-panel { grid-area: IP; }
-  .grid-item-osm-request-spacialist-panel { grid-area: DFP; }
-  .grid-item-osm-question-info-panel { grid-area: CRP; }
-  .grid-item-osm-patient-profile-panel { grid-area: PPP; }
+  .grid-item-image-panel { grid-area: TL; }
+  .grid-item-dentist-history-panel { grid-area: TML; }
+  .grid-item-patient-profile-panel { grid-area: TR; }
+  .grid-item-dentist-feedback-panel { grid-area: ML; }
+  .grid-item-case-report-panel { grid-area: MR; }
+  .grid-item-biopsy-panel { grid-area: BL; }
+  .grid-item-dentist-ai-agreement-panel { grid-area: ML; }
+  .grid-item-dentist-additional-feedback-panel { grid-area: MR; }
+  .grid-item-dentist-comment-panel { grid-area: BL; }
+  .grid-item-patient-request-spacialist-panel { grid-area: TL; }
+  .grid-item-patient-question-info-panel { grid-area: TR; }
+  .grid-item-osm-image-info-panel { grid-area: TL; }
+  .grid-item-osm-request-spacialist-panel { grid-area: ML; }
+  .grid-item-osm-question-info-panel { grid-area: MR; }
+  .grid-item-osm-patient-profile-panel { grid-area: TR; }
 }
 
 /* On large screens (≥992px) redefine the grid */
 @media (min-width: 992px) {
   .diagnosis-grid {
-  grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: auto auto;
-  grid-template-areas:
-      "IP DFP PPP"
-      "DHP CRP BP";
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+      "TL ML TR"
+      "BL MR BR";
   }
-  .grid-item-image-panel { grid-area: IP; }
-  .grid-item-dentist-history-panel { grid-area: DHP; }
-  .grid-item-patient-profile-panel { grid-area: PPP; }
-  .grid-item-dentist-feedback-panel { grid-area: DFP; }
-  .grid-item-case-report-panel { grid-area: CRP; }
-  .grid-item-biopsy-panel { grid-area: BP; }
-  .grid-item-dentist-ai-agreement-panel { grid-area: DFP; }
-  .grid-item-dentist-additional-feedback-panel { grid-area: CRP; }
-  .grid-item-dentist-comment-panel { grid-area: BP; }
-  .grid-item-patient-request-spacialist-panel { grid-area: IP; }
-  .grid-item-patient-question-info-panel { grid-area: DFP; }
-  .grid-item-osm-image-info-panel { grid-area: IP; }
-  .grid-item-osm-request-spacialist-panel { grid-area: DFP; }
-  .grid-item-osm-question-info-panel { grid-area: CRP; }
-  .grid-item-osm-patient-profile-panel { grid-area: PPP; }
+  .grid-item-image-panel { grid-area: TL; }
+  .grid-item-dentist-history-panel { grid-area: ML; }
+  .grid-item-patient-profile-panel { grid-area: TR; }
+  .grid-item-dentist-feedback-panel { grid-area: ML; }
+  .grid-item-case-report-panel { grid-area: MR; }
+  .grid-item-biopsy-panel { grid-area: BR; }
+  .grid-item-dentist-ai-agreement-panel { grid-area: ML; }
+  .grid-item-dentist-additional-feedback-panel { grid-area: MR; }
+  .grid-item-dentist-comment-panel { grid-area: BR; }
+  .grid-item-patient-request-spacialist-panel { grid-area: TL; }
+  .grid-item-patient-question-info-panel { grid-area: ML; }
+  .grid-item-osm-image-info-panel { grid-area: TL; }
+  .grid-item-osm-request-spacialist-panel { grid-area: ML; }
+  .grid-item-osm-question-info-panel { grid-area: MR; }
+  .grid-item-osm-patient-profile-panel { grid-area: TR; }
 }
