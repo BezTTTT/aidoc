@@ -78,6 +78,11 @@ def retrain_request(role, img_id):
 @login_required
 @role_validation
 def diagnosis(role, img_id):
+
+    # In the case of returning from the register_later system, clear the variable
+    if 'register_later' in session:
+        session.pop('register_later', None)
+
     if request.method=='POST':
         db, cursor = get_db()
         if request.args.get('special_request')=='true':
