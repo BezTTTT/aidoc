@@ -229,7 +229,7 @@
                 <form id="newOSMForm" action="{{ url_for('user.register', role='specialist') }}" method="post" >
                     <input name="order" type="hidden" value="register-osm">
                     <input name="return_page" type="hidden" value="diagnosis">
-                    <input name="role" type="hidden" value="specialist">
+                    <input name="login_mode" type="hidden" value="dentist">
                     <input name="img_id" type="hidden" value="{{data['img_id']}}">
                     <input name="sender_phone" type="hidden" value="{{data['sender_phone']}}">
                     <button id="submitbtn" class="btn btn-outline-success my-2" type="submit">คลิกเพื่อลงทะเบียนผู้นำส่งข้อมูล</button>
@@ -267,7 +267,7 @@
                     <form id="newPatientForm" action="{{ url_for('user.register', role='specialist') }}" method="post" >
                         <input name="order" type="hidden" value="register-patient">
                         <input name="return_page" type="hidden" value="diagnosis">
-                        <input name="role" type="hidden" value="specialist">
+                        <input name="login_mode" type="hidden" value="dentist">
                         <input name="img_id" type="hidden" value="{{data['img_id']}}">
                         <input name="saved_patient_national_id" type="hidden" value="{{data['saved_patient_national_id']}}">
                         <button id="submitbtn" class="btn btn-success mb-2" type="submit">คลิกเพื่อลงทะเบียนข้อมูลคนไข้</button>
@@ -277,11 +277,9 @@
                     <form id="newPatientForm" action="{{ url_for('user.register', role='specialist') }}" method="post" >
                         <input id='register_order' name="order" type="hidden" value="register-patient">
                         <input name="return_page" type="hidden" value="diagnosis">
-                        <input name="role" type="hidden" value="specialist">
+                        <input name="login_mode" type="hidden" value="dentist">
                         <input name="img_id" type="hidden" value="{{data['img_id']}}">
-                        <div id="patientIDContainer" class="col-6" style="display: block;">
-                            <input id="patientIDInput" class="form-control" placeholder="เลขประจำตัว ปชช. ผู้ป่วย 13 หลัก (ถ้าทราบ) " maxlength="13" type="text" name="patient_national_id"> 
-                        </div>
+                        <input id="patientIDInput" class="form-control" placeholder="เลขประจำตัว ปชช. ผู้ป่วย 13 หลัก (ถ้าทราบ) " maxlength="13" type="text" name="patient_national_id"> 
                         <button id="submitbtn" class="btn btn-outline-success my-2" type="submit">เชื่อมโยงข้อมูลคนไข้</button>
                         <input id="patient_id" name="patient_id" type="hidden">
                         <div id="patientInfoContainer" class="mt-3 d-flex"></div>
@@ -304,7 +302,7 @@
                 <form id="editPatientForm" action="{{ url_for('user.register', role='specialist') }}" method="post" >
                     <input name="order" type="hidden" value="edit-patient">
                     <input name="return_page" type="hidden" value="diagnosis">
-                    <input name="role" type="hidden" value="specialist">
+                    <input name="login_mode" type="hidden" value="dentist">
                     <input name="img_id" type="hidden" value="{{data['img_id']}}">
                     <input name="patient_national_id" type="hidden" value="{{data['db_patient_national_id']}}">
                     <button id="submitbtn" class="btn btn-outline-success mb-2" type="submit">คลิกเพื่อแก้ไขข้อมูลคนไข้</button>

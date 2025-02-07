@@ -99,8 +99,8 @@ def role_validation(view):
             (userNotInSession) or \
             (kwargs['role']=='osm' and (g.user['is_osm']==0 or session['login_mode']!='osm') and not byPassValidation) or \
             (kwargs['role']=='patient' and (g.user['is_patient']==0 or session['login_mode']!='patient') and not byPassValidation) or \
-            (kwargs['role']=='specialist' and (g.user['is_specialist']==0 or session['login_mode']!='dentist')) or \
-            (kwargs['role']=='admin' and (g.user['is_admin']==0 or session['login_mode']!='dentist')) or \
+            (kwargs['role']=='specialist' and (g.user['is_specialist']==0 or session['login_mode']!='dentist') and not byPassValidation) or \
+            (kwargs['role']=='admin' and (g.user['is_admin']==0 or session['login_mode']!='dentist') and not byPassValidation) or \
             (kwargs['role']=='dentist' and (g.user['username'] is None or session['login_mode']!='dentist')) \
         :
             return render_template('unauthorized_access.html', error_msg='คุณไม่มีสิทธิ์เข้าถึงข้อมูล Unauthorized Access [role_validation]')
@@ -252,7 +252,7 @@ def login_required(view):
         if g.user is None:
             if 'login_mode' in session:
                 if session['login_mode'] in ['dentist', 'osm', 'specialist', 'admin']:
-                    return redirect(url_for('auth.login', role=session['login_mode']))
+                    return redirect(url_for('auth.dentist_index'))
                 elif session['login_mode']=='general':
                     return redirect('/general')
             return redirect('/')

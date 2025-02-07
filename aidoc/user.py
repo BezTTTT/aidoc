@@ -66,8 +66,9 @@ def register(role):
         session['register_later'] = {}
         session['register_later']['order'] = request.form.get('order', None)
         session['register_later']['return_page'] = request.form.get('return_page', None)
-        session['register_later']['login_mode'] = request.form.get('role', None)
+        session['register_later']['login_mode'] = request.form.get('login_mode', None)
         session['register_later']['img_id'] = request.form.get('img_id', None)
+        session['register_later']['role'] = role
 
         if session['register_later']['order']=='register-osm':
 
@@ -90,9 +91,9 @@ def register(role):
         else: # patient register-later
             session['register_later']['user_id'] = request.form.get('patient_id', None)
             session['national_id'] = request.form.get('patient_national_id', None)
+            session['noNationalID'] = False
 
-            if session['register_later']['order']=='register-patient':
-                session['noNationalID'] = False
+            if session['register_later']['order']=='register-patient':    
                 if request.form.get('saved_patient_national_id', None) == None: # Check if the the submission has a patient_national_id
                     session['noNationalID'] = True
                 else:
@@ -141,7 +142,7 @@ def register(role):
             # this section validate the input data, if fails, redirect back to the form
             # If the validation fails, automatically redirect to the target template
             duplicate_users = []
-            if 'register_later' in session and session['register_later']['order']=='edit-patient':
+            if 'register_later' in session:
                 valid_func_list = [validate_province_name,
                                 validate_duplicate_phone]
             else:    
@@ -182,7 +183,7 @@ def register(role):
                 if 'register_later' not in session:
                     session['user_id'] = new_user['id']
                     reload_user_profile(new_user['id'])
-                elif session['noNationalID']: # If the record has no national_id of the patient, add it here
+                elif session['noNationalID']: # For 'register_later' mode check if the record has no national_id of the patient, add it here
                     sql = "UPDATE submission_record SET patient_id=%s, patient_national_id=%s WHERE id=%s"
                     val = (new_user['id'], data["national_id"], session['register_later']['img_id'])
                     cursor.execute(sql, val)
@@ -204,22 +205,20 @@ def register(role):
                 val = (data["name"], data["surname"], data["national_id"], data["email"], data["phone"], data["sex"], dob_obj, data["province"], data['address'], True, session['user_id'])
                 cursor.execute(sql, val)
 
-            log_last_user_login(session['user_id'])
-            session['login_mode'] = 'patient'
-
             # session['national_id'] is used to carry out id from login to register
             # After the registration is complete, this (sensitive) variable should be deleted
             if 'national_id' in session:  
                 session.pop('national_id',None)  
             
             if 'register_later' not in session:
+                log_last_user_login(session['user_id'])
+                session['login_mode'] = 'patient'
                 return redirect(url_for('image.upload_image', role='patient'))
             elif session['register_later']['return_page'] == 'diagnosis':
-                role = session['register_later']['login_mode']
-                session['login_mode'] = role
-                img_id = session['register_later']['img_id']
-                session.pop('register_later', None)
                 session.pop('noNationalID', None)
+                session['login_mode'] = session['register_later']['login_mode']
+                role=session['register_later']['role']
+                img_id = session['register_later']['img_id']
                 return redirect(url_for('webapp.diagnosis', role=role, img_id=img_id))
         else:
             return render_template(target_template, data=data)
@@ -227,6 +226,7 @@ def register(role):
         target_template = "osm_register.html"
         if request.method == 'POST':
             
+            session['saved_user_id'] = session.get('user_id', None)
             session.pop('user_id', None) # User id will later be used to check duplicate users
 
             # This section extract the submitted form to 
@@ -292,17 +292,15 @@ def register(role):
                     val = (session['user_id'], session['register_later']['img_id'])
                     cursor.execute(sql, val)
 
-            log_last_user_login(session['user_id'])
-            session['login_mode'] = 'osm'
-
             if 'register_later' not in session:
+                log_last_user_login(session['user_id'])
+                session['login_mode'] = 'osm'
                 return redirect('/')
             elif session['register_later']['return_page'] == 'diagnosis':
-                role = session['register_later']['login_mode']
-                session['login_mode'] = role
+                session['user_id'] = session['saved_user_id'] # Restore user_id from the saved session
+                session['login_mode'] = session['register_later']['login_mode']
+                role=session['register_later']['role']
                 img_id = session['register_later']['img_id']
-                session.pop('register_later', None)
-                session['user_id'] = g.user['id'] 
                 return redirect(url_for('webapp.diagnosis', role=role, img_id=img_id))
         else:
             return render_template(target_template, data=data)
@@ -439,10 +437,9 @@ def cancel_register():
         return redirect('/logout')
     elif session['register_later']['return_page'] == 'diagnosis':
         session['user_id'] = g.user['id'] 
-        role = session['register_later']['login_mode']
-        session['login_mode'] = role
+        session['login_mode'] = session['register_later']['login_mode']
+        role=session['register_later']['role']
         img_id = session['register_later']['img_id']
-        session.pop('register_later', None)
         return redirect(url_for('webapp.diagnosis', role=role, img_id=img_id))
 
 # region load_legal_docs
