@@ -20,6 +20,42 @@ def close_db(e=None):
 
     if db is not None:
         db.close()
+        
+def get_db_2():
+    if 'db' not in g:
+        g.db = mysql.connector.connect(
+            host=current_app.config['DB_HOST'],
+            database=current_app.config['DB_DATABASE_2'],
+            user=current_app.config['DB_USER'],
+            password=current_app.config['DB_PASSWORD']
+        )
+        g.db.autocommit = True
+    
+    return (g.db, g.db.cursor(dictionary=True))
+
+def close_db(e=None):
+    db = g.pop('db', None)
+
+    if db is not None:
+        db.close()
+        
+def get_db_3():
+    if 'db' not in g:
+        g.db = mysql.connector.connect(
+            host=current_app.config['DB_HOST'],
+            database=current_app.config['DB_DATABASE_3'],
+            user=current_app.config['DB_USER'],
+            password=current_app.config['DB_PASSWORD']
+        )
+        g.db.autocommit = True
+    
+    return (g.db, g.db.cursor(dictionary=True))
+
+def close_db(e=None):
+    db = g.pop('db', None)
+
+    if db is not None:
+        db.close()
 
 @click.command('init-db')
 def init_db():
