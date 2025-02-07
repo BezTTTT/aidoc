@@ -13,7 +13,7 @@ def get_db():
         )
         g.db.autocommit = True
     
-    return (g.db, g.db.cursor(dictionary=True))
+    return (g.db, g.db.cursor(dictionary=True,buffered=True))
 
 def close_db(e=None):
     db = g.pop('db', None)
@@ -31,7 +31,7 @@ def get_db_2():
         )
         g.db.autocommit = True
     
-    return (g.db, g.db.cursor(dictionary=True))
+    return (g.db, g.db.cursor(dictionary=True,buffered=True))
 
 def close_db(e=None):
     db = g.pop('db', None)
@@ -49,7 +49,7 @@ def get_db_3():
         )
         g.db.autocommit = True
     
-    return (g.db, g.db.cursor(dictionary=True))
+    return (g.db, g.db.cursor(dictionary=True,buffered=True))
 
 def close_db(e=None):
     db = g.pop('db', None)
