@@ -123,6 +123,10 @@ table.dataTable tbody tr:nth-child(even) {
   .grid-item-dentist-comment-panel { grid-area: BP; }
   .grid-item-patient-request-spacialist-panel { grid-area: IP; }
   .grid-item-patient-question-info-panel { grid-area: PPP; }
+  .grid-item-osm-image-info-panel { grid-area: IP; }
+  .grid-item-osm-request-spacialist-panel { grid-area: DFP; }
+  .grid-item-osm-question-info-panel { grid-area: CRP; }
+  .grid-item-osm-patient-profile-panel { grid-area: PPP; }
 }
 
 /* On large screens (≥992px) redefine the grid */
@@ -145,4 +149,8 @@ table.dataTable tbody tr:nth-child(even) {
   .grid-item-dentist-comment-panel { grid-area: BP; }
   .grid-item-patient-request-spacialist-panel { grid-area: IP; }
   .grid-item-patient-question-info-panel { grid-area: DFP; }
+  .grid-item-osm-image-info-panel { grid-area: IP; }
+  .grid-item-osm-request-spacialist-panel { grid-area: DFP; }
+  .grid-item-osm-question-info-panel { grid-area: CRP; }
+  .grid-item-osm-patient-profile-panel { grid-area: PPP; }
 }
