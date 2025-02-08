@@ -60,6 +60,7 @@
     </div>
 </div>
 
+{% block menu %}
 <div class="row d-flex justify-content-center my-2">
     <div class="col text-center">
         <form action="{{url_for('webapp.record', role='specialist', page=session['current_record_page'])}}" method="post" enctype="multipart/form-data">
@@ -87,7 +88,7 @@
         </form>
     </div>
 </div>
-
+{% endblock %}
 
 <div class="row d-flex justify-content-center text-align-left my-3">
     <div class="col">
@@ -198,6 +199,7 @@
     </div>
 </div>
 
+{% block dianosis_cards %}
 <div class="d-grid diagnosis-grid">
     <div class="card grid-item-image-panel">
         <div class="card-body px-4">
@@ -402,6 +404,7 @@
         </div>
     </div>
 </div>
+{% endblock %}
 {% endblock %}
 
 {% block script %}

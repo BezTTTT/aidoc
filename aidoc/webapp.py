@@ -95,15 +95,26 @@ def diagnosis(role, img_id):
             val = (1, img_id)
             cursor.execute(sql, val)
 
-        if (role=='dentist' or (role=='admin' and request.args.get('channel')=='DENTIST')) and 'feedback_submit' in request.form:
-            dentist_feedback_code = request.form.get('agree_option')
-            dentist_feedback_location = request.form.get('lesion_location')
-            dentist_feedback_lesion = request.form.get('lesion_type')
-            dentist_feedback_comment = request.form.get('dentist_comment')
-            sql = "UPDATE submission_record SET dentist_id=%s, dentist_feedback_code=%s, dentist_feedback_comment=%s, dentist_feedback_lesion=%s, dentist_feedback_location=%s, dentist_feedback_date=%s WHERE id=%s"
-            val = (session["user_id"], dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location, datetime.now(), img_id)
-            cursor.execute(sql, val)
-        
+        if (role=='dentist' or (role=='admin' and request.args.get('channel')=='DENTIST')) and request.form.get('dentist_action'):
+            dentist_action_code = request.form.get('dentist_action')
+            print(request.args)
+            if(dentist_action_code == 'ai_agreement'):
+                dentist_feedback_code = request.form.get('agree_option')
+                sql = "UPDATE submission_record SET dentist_id=%s, dentist_feedback_code=%s, dentist_feedback_date=%s WHERE id=%s"
+                val = (session["user_id"], dentist_feedback_code, datetime.now(), img_id)
+                cursor.execute(sql, val)
+            if(dentist_action_code == 'additional_feedback'):
+                dentist_feedback_location = request.form.get('lesion_location')
+                dentist_feedback_lesion = request.form.get('lesion_type')
+                sql = "UPDATE submission_record SET dentist_id=%s, dentist_feedback_lesion=%s, dentist_feedback_location=%s, dentist_feedback_date=%s WHERE id=%s"
+                val = (session["user_id"], dentist_feedback_lesion, dentist_feedback_location, datetime.now(), img_id)
+                cursor.execute(sql, val)
+            if(dentist_action_code == 'comment'):
+                dentist_feedback_comment = request.form.get('dentist_comment')
+                sql = "UPDATE submission_record SET dentist_id=%s, dentist_feedback_comment=%s, dentist_feedback_date=%s WHERE id=%s"
+                val = (session["user_id"], dentist_feedback_comment, datetime.now(), img_id)
+                cursor.execute(sql, val)
+    
         if (role=='specialist' or (role=='admin' and request.args.get('channel')!='DENTIST')) and request.args.get('specialist_feedback')=='true':
             dentist_feedback_code = request.form.get('dt_comment_option')
             dentist_feedback_lesion = None
