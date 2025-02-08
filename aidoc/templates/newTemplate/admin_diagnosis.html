@@ -173,7 +173,7 @@
                     <div class="col">
                         {% if data['quality_ai_prediction'] is not none %}
                             {% if data['quality_ai_prediction']==0 %}
-                                ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ศรีษะคนไข้ไม่ตั้งตรง)</b></span>
+                                ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ศีรษะคนไข้ไม่ตั้งตรง)</b></span>
                             {% elif data['quality_ai_prediction']==1 %}
                                 ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ผลลัพธ์อาจผิดพลาด)</b></span>
                             {% elif data['quality_ai_prediction']==2 %}
@@ -290,7 +290,7 @@
                     <p>
                     {% if data['quality_ai_prediction'] is not none %}
                         {% if data['quality_ai_prediction']==0 %}
-                            ตรวจคุณภาพรูป: <span style="color: red;">ไม่ผ่านมาตรฐาน (ศรีษะคนไข้ไม่ตั้งตรง)</span>
+                            ตรวจคุณภาพรูป: <span style="color: red;">ไม่ผ่านมาตรฐาน (ศีรษะคนไข้ไม่ตั้งตรง)</span>
                         {% elif data['quality_ai_prediction']==1 %}
                             ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ผลลัพธ์อาจผิดพลาด)</b></span>
                         {% elif data['quality_ai_prediction']==2 %}

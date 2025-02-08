@@ -63,11 +63,11 @@
 {% block menu %}
 <div class="row d-flex justify-content-center my-2">
     <div class="col text-center">
-        <a class="btn btn-outline-success btn-lg my-1 mx-2" href="/upload_image/dentist">วิเคราะห์รูปภาพอื่นเพิ่มเติม</a>
-
         <form action="/record/dentist" method="post" enctype="multipart/form-data">
             <a class="btn btn-outline-success btn-lg my-1 mx-2" onclick='this.parentNode.submit(); return false;'>ย้อนกลับ</a>
         </form>
+
+        <a class="btn btn-outline-success btn-lg my-1 mx-2" href="/upload_image/dentist">วิเคราะห์รูปภาพอื่นเพิ่มเติม</a>
 
         <a class="btn btn-outline-success btn-lg my-1 mx-2" href="/download_image/{{data['sender_id']}}/{{data['fname']}}" download>Download</a>
 
@@ -151,7 +151,7 @@
                         <div class="col">
                             {% if data['quality_ai_prediction'] is not none %}
                                 {% if data['quality_ai_prediction']==0 %}
-                                    ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ศรีษะคนไข้ไม่ตั้งตรง)</b></span>
+                                    ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ศีรษะคนไข้ไม่ตั้งตรง)</b></span>
                                 {% elif data['quality_ai_prediction']==1 %}
                                     ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ผลลัพธ์อาจผิดพลาด)</b></span>
                                 {% elif data['quality_ai_prediction']==2 %}
@@ -257,6 +257,7 @@
     <div class="card grid-item-dentist-comment-panel">
         <div class="card-body px-4">
             <h5 class="card-title text-start mb-3">ความคิดเห็น</h5>
+            <p><i>ข้อความในช่องความคิดเห็นนี้ จะสามารถค้นหาได้ในกล่องค้นหาคำสำคัญ</i></p>
             <form action="{{ url_for('webapp.diagnosis', role='dentist', img_id=data['img_id']) }}" method="post" enctype="multipart/form-data">
                 <input type="hidden" name="dentist_action" value="comment">
                 <div id="dentist-comment-container" class="my-3">

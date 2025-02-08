@@ -95,6 +95,7 @@
     <div class="card grid-item-dentist-comment-panel">
         <div class="card-body px-4">
             <h5 class="card-title text-start mb-3">ความคิดเห็น</h5>
+            <p><i>ข้อความในช่องความคิดเห็นนี้ จะสามารถค้นหาได้ในกล่องค้นหาคำสำคัญ</i></p>
             <form action="{{ url_for('webapp.diagnosis', role='admin', img_id=data['img_id'], channel=data['channel'])}}" method="post" enctype="multipart/form-data">
                 <input type="hidden" name="dentist_action" value="comment">
                 <div id="dentist-comment-container" class="my-3">
@@ -115,7 +116,7 @@
             <p>
             {% if data['quality_ai_prediction'] is not none %}
                 {% if data['quality_ai_prediction']==0 %}
-                    ตรวจคุณภาพรูป: <span style="color: red;">ไม่ผ่านมาตรฐาน (ศรีษะคนไข้ไม่ตั้งตรง)</span>
+                    ตรวจคุณภาพรูป: <span style="color: red;">ไม่ผ่านมาตรฐาน (ศีรษะคนไข้ไม่ตั้งตรง)</span>
                 {% elif data['quality_ai_prediction']==1 %}
                     ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ผลลัพธ์อาจผิดพลาด)</b></span>
                 {% elif data['quality_ai_prediction']==2 %}

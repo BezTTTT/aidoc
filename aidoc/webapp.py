@@ -97,7 +97,6 @@ def diagnosis(role, img_id):
 
         if (role=='dentist' or (role=='admin' and request.args.get('channel')=='DENTIST')) and request.form.get('dentist_action'):
             dentist_action_code = request.form.get('dentist_action')
-            print(request.args)
             if(dentist_action_code == 'ai_agreement'):
                 dentist_feedback_code = request.form.get('agree_option')
                 sql = "UPDATE submission_record SET dentist_id=%s, dentist_feedback_code=%s, dentist_feedback_date=%s WHERE id=%s"
@@ -379,9 +378,15 @@ def record(role):
         filterFollowup = session['record_filter'].get("filterFollowup", "")
         filterRetrain = session['record_filter'].get("filterRetrain", "")
 
-    page = request.args.get("page", session.get('current_record_page', 1), type=int)
-    session['current_record_page'] = page
-    session['records_per_page'] = 12
+    if 'current_record_role' in session and session['current_record_role'] == role:
+        page = request.args.get("page", session['current_record_page'], type=int)
+        session['current_record_page'] = page
+    else: # There is a switch of role (e.g. dentist -> admin)
+        page = 1 
+        session['current_record_page'] = 1  # Reset currrent page to 1
+        session['current_record_role'] = role # Reassign role
+
+    session['records_per_page'] = 12 # Subject to change in the future
 
     if role=='specialist':
         paginated_data, supplemental_data, dataCount = record_specialist()
@@ -915,7 +920,6 @@ def record_dentist():
     val = (session['user_id'], records_per_page, offset)
     cursor.execute(sql2,val)
     paginated_data = cursor.fetchall()
-    
     return paginated_data, supplemental_data, dataCount
 
 # region construct_osm_filter_sql
