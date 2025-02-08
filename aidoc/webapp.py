@@ -593,11 +593,10 @@ def editByRole(role):
                 data["email"] = None
             if data["phone"]=='':
                 data["phone"] = None
-            if data["license"] == '':
-                data["license"] = None
             if data["osm_job"] == '':
                 data["osm_job"] = None
 
+            print(data['license'])
             inval = []
             valid_func_list = [ validate_province_name,
                                 validate_phone,
@@ -607,7 +606,10 @@ def editByRole(role):
                 valid_check, data , inval = valid_func(args)
                 if not valid_check:
                     return render_template(target_template,data=data)
-
+            
+            if data["license"] == '':
+                data["license"] = None
+                
             sql = '''UPDATE user SET 
                     name = %s,
                     surname = %s,
