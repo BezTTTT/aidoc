@@ -184,9 +184,9 @@
                                     </li>
                                 </ul>
                             </li>
-                            <li class="nav-item">
+                            <!-- <li class="nav-item">
                                 <a class="nav-link active" aria-current="page" href="/followup/admin">ตรวจสอบด่วน</a>
-                            </li>
+                            </li> -->
                         {% endif %}
                     {% endif %}
                 </ul>
@@ -221,9 +221,11 @@
                         )
                     </div>
                     <div class="d-flex align-items-center">
+                        {% if session['login_mode']=='dentist' %} 
                         <a href="/edit/dentist" class="btn btn-secondary me-1">
                             <i class="bi bi-person"></i>
                         </a>
+                        {% endif %}
                         <form action="{{ url_for('auth.logout') }}" method="get" enctype="multipart/form-data">
                             <button class="btn btn-danger" type="submit" id="Logoutbtn">
                                 ออกจากระบบ
