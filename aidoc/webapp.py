@@ -1,8 +1,8 @@
 from flask import (
-    Blueprint, redirect, render_template, request, session, url_for, g, flash, current_app,
+    Blueprint, redirect, render_template, request, session, url_for, g, flash, current_app, send_from_directory,
 )
 
-import json
+import json, os
 from datetime import datetime
 from aidoc.utils import *
 from aidoc.db import get_db
@@ -12,6 +12,11 @@ from aidoc.auth import login_required, admin_only, specialist_only, role_validat
 bp = Blueprint('webapp', __name__)
 
 # Flask views
+
+# region aidoc logo
+@bp.route('/favicon.ico') 
+def favicon(): 
+    return send_from_directory(os.path.join(current_app.root_path, 'static', 'icons'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 # region quick_confirm
 @bp.route('/quick_confirm/<role>/<int:img_id>', methods=('POST', ))
@@ -78,6 +83,11 @@ def retrain_request(role, img_id):
 @login_required
 @role_validation
 def diagnosis(role, img_id):
+
+    # In the case of returning from the register_later system, clear the variable
+    if 'register_later' in session:
+        session.pop('register_later', None)
+
     if request.method=='POST':
         db, cursor = get_db()
         if request.args.get('special_request')=='true':
