@@ -109,19 +109,11 @@
 {% endif %}
 
 {% if 'dentist_feedback_code' in data and data['dentist_feedback_code'] is not none %}
-<div class="row d-flex justify-content-center">
-    <button id="seeMoreButton" style="
-            padding: 5px 10px;
-            font-size: 15px;
-            width: 25%;
-            border-radius: 10px;
-            background-color: grey;
-            color: white;
-            border: none;
-        ">คลิกเพื่อดูผลการพยากรณ์ของ AI</button>
+<div class="row d-flex justify-content-center my-3">
+    <button id="seeMoreButton" class="btn btn-secondary" style="width: 25%;">คลิกเพื่อดูผลการพยากรณ์ของ AI</button>
 </div>
 
-<div id="hiddenContent" class="m-2">
+<div id="hiddenContent">
 {% endif %}
     <div class="row d-flex justify-content-center text-align-left my-3">
         <div class="col">
