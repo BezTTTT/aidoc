@@ -60,6 +60,7 @@
     </div>
 </div>
 
+{% block menu %}
 <div class="row d-flex justify-content-center my-2">
     <div class="col text-center">
         <form action="{{url_for('webapp.record', role='specialist', page=session['current_record_page'])}}" method="post" enctype="multipart/form-data">
@@ -87,7 +88,7 @@
         </form>
     </div>
 </div>
-
+{% endblock %}
 
 <div class="row d-flex justify-content-center text-align-left my-3">
     <div class="col">
@@ -148,7 +149,7 @@
                         <div class="col">
                             {% if data['quality_ai_prediction'] is not none %}
                                 {% if data['quality_ai_prediction']==0 %}
-                                    ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ศรีษะคนไข้ไม่ตั้งตรง)</b></span>
+                                    ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ศีรษะคนไข้ไม่ตั้งตรง)</b></span>
                                 {% elif data['quality_ai_prediction']==1 %}
                                     ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ผลลัพธ์อาจผิดพลาด)</b></span>
                                 {% elif data['quality_ai_prediction']==2 %}
@@ -198,6 +199,7 @@
     </div>
 </div>
 
+{% block dianosis_cards %}
 <div class="d-grid diagnosis-grid">
     <div class="card grid-item-image-panel">
         <div class="card-body px-4">
@@ -207,7 +209,7 @@
             <p>
             {% if data['quality_ai_prediction'] is not none %}
                 {% if data['quality_ai_prediction']==0 %}
-                    ตรวจคุณภาพรูป: <span style="color: red;">ไม่ผ่านมาตรฐาน (ศรีษะคนไข้ไม่ตั้งตรง)</span>
+                    ตรวจคุณภาพรูป: <span style="color: red;">ไม่ผ่านมาตรฐาน (ศีรษะคนไข้ไม่ตั้งตรง)</span>
                 {% elif data['quality_ai_prediction']==1 %}
                     ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ผลลัพธ์อาจผิดพลาด)</b></span>
                 {% elif data['quality_ai_prediction']==2 %}
@@ -402,6 +404,7 @@
         </div>
     </div>
 </div>
+{% endblock %}
 {% endblock %}
 
 {% block script %}
