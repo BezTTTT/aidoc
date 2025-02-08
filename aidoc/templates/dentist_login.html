@@ -16,14 +16,16 @@
     }
 </style>
 
-<div class="row d-flex justify-content-center py-4">
-    <div class="card" style="width: auto; color:red ">
-      <div class="card-body">
-        <b>ระบบกำลังอยู่ระหว่างการพัฒนาและทดสอบอย่างต่อเนื่อง ยังไม่รองรับการใช้งานจริง ข้อมูลของท่านอาจถูกลบได้ทุกเมื่อ</b> <br>
-      </div>
+<div class="d-flex justify-content-center align-items-center">
+    <div class="alert alert-primary d-flex align-items-center" role="alert">
+      <p class="text-center">
+          ระบบนี้มีวัตถุประสงค์เพื่ออำนวยความสะดวกในการตรวจคัดกรองรอยโรคมะเร็งของทันตบุคลากรเท่านั้น ... ระบบนี้ไม่ใช่เครื่องมือทางการแพทย์และยังไม่ได้รับการรับรองมาตรฐาน ผลลัพธ์อาจมีความผิดพลาดได้เสมอ ... 
+          การที่ท่านใช้งานระบบนี้ หมายความว่า ท่านอนุญาตให้เราเก็บรักษาข้อมูลส่วนบุคคลของท่านไว้ได้และท่านยินดีที่จะเข้าร่วมโครงการวิจัยกับเรา ... 
+          หากท่านต้องการทราบรายละเอียดโครงการวิจัยหรือมีข้อสงสัยต่อการใช้งานของระบบ กรุณาติดต่อ ศูนย์ทันตสาธารณสุขระหว่างประเทศ กรมอนามัย โทรศัพท์ 0-5314-0141-2 หรือ Line: @riskoca
+      </p>
     </div>
-</div>
-
+  </div>
+<br>
 <div class="container-sm my-4">
     <div class="card m-auto loginContainer">
         <div class="card-body">
@@ -58,7 +60,6 @@
         </div>
     </div>
 </div>
-<br>
 {% include 'terms_footer.html' %}
 {% endblock %}
 
