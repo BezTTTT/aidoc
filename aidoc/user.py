@@ -69,7 +69,6 @@ def register(role):
         session['register_later']['login_mode'] = request.form.get('login_mode', None)
         session['register_later']['img_id'] = request.form.get('img_id', None)
         session['register_later']['role'] = role
-
         if session['register_later']['order']=='register-osm':
 
             # Check if any user uses the same phone, if yes, use the info as the initial info.
