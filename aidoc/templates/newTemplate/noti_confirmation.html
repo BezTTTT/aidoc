@@ -1,0 +1,79 @@
+{% extends "./base.html" %} 
+{% block title %} AIDOC | Notification Confirmation {% endblock %} 
+
+{% block content %}
+<div class="container mt-5">
+  <h2 class="text-center">Confirm Notifications</h2>
+  <div id="messagesContainer"></div> <!-- Dynamic messages will be inserted here -->
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    fetch(`/get-default-message`)
+      .then((response) => response.json())
+      .then((data) => {
+        const container = document.getElementById("messagesContainer");
+
+        if (data.messages && data.messages.length > 0) {
+          data.messages.forEach((msg) => {
+            const messageBlock = document.createElement("div");
+            messageBlock.className = "message-block p-3 border rounded mb-3";
+            messageBlock.id = `messageBlock-${msg.case_id}`;
+
+            messageBlock.innerHTML = `
+              <div class="form-group">
+                <label>Notification Message (Case ID: ${msg.case_id}):</label>
+                <textarea class="form-control message-text" id="notificationMessage-${msg.case_id}" rows="4">${msg.message}</textarea>
+              </div>
+              <button type="button" class="btn btn-primary mt-2" onclick="confirmNotification('${msg.case_id}')">
+                Confirm
+              </button>
+            `;
+
+            container.appendChild(messageBlock);
+          });
+        } else {
+          container.innerHTML = `<p class="text-center text-danger">No messages available.</p>`;
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching messages:", error);
+        alert("Failed to fetch messages.");
+      });
+  });
+
+  function confirmNotification(caseId) {
+    const message = document.getElementById(`notificationMessage-${caseId}`).value;
+
+    fetch(`/send-adjusted-message`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ case_id: caseId, message: message }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.error) {
+          alert("Error: " + data.error);
+        } else {
+          alert("Line message sent successfully!");
+          // Remove the message block after successful confirmation
+          const messageBlock = document.getElementById(`messageBlock-${caseId}`);
+          if (messageBlock) {
+            messageBlock.remove();
+          }
+        }
+      })
+      .catch((error) => {
+        console.error("Error sending message:", error);
+        alert("Failed to send Line message.");
+      });
+  }
+</script>
+
+<style>
+  .message-block {
+    background-color: #f8f9fa;
+  }
+</style>
+
+{% endblock %}

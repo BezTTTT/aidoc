@@ -38,8 +38,6 @@ def image_manage_list(data):
             }
     except Exception as e:
         return json.dumps({"error": f"An error occurred while fetching image records: {e}"}), 500
-    finally:
-        db.close_db()
 
     return output
 

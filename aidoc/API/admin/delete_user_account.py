@@ -17,9 +17,6 @@ def delete_user(id):
 
     except Exception as e:
         return json.dumps({"error": f"An error occurred while deleting user: {e}"}), 500
-    
-    finally:
-        db.close_db()
 
     return json.dumps({"message": f"User with ID {id} deleted successfully."}), 200
 

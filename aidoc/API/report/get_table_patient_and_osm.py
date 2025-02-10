@@ -37,9 +37,6 @@ def get_table(channel, province):
             "total_pic": 0
         }
 
-    finally:
-        db.close_db()
-
     return output
 
 
