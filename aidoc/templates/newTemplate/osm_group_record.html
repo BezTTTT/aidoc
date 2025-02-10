@@ -29,7 +29,7 @@
     </div>
     <div class="row row-cols-auto my-3">
         <div class="col mt-1">
-            <label for="filterPriority">คำขอตรวจพิเศษ:</label>
+            <label for="filterPriority">ระดับความสำคัญ:</label>
             <select name="filterPriority" id="filterPriority" class="btn btn-light border border-1 mx-1" onchange="this.form.submit()">
                 <option value="">ทั้งหมด</option>
                 <option value="1">พิเศษ</option>
@@ -37,7 +37,7 @@
             </select>
         </div>
         <div class="col mt-1">
-            <label for="filterStatus">สถานะการตรวจจากทันตแพทย์:</label>
+            <label for="filterStatus">สถานะ:</label>
             <select name="filterStatus" id="filterStatus" class="btn btn-light border border-1 mx-1" onchange="this.form.submit()">
                 <option value="">ทั้งหมด</option>
                 <option value="1">ตรวจแล้ว</option>
@@ -121,9 +121,11 @@
                     <h6 class="fs-6 card-subtitle text-muted mb-2">
                         ผลการพยากรณ์ของ AI :
                             {% if item['ai_prediction']==0 %}
-                                ไม่พบรอยโรค
+                                Normal
+                            {% elif item['ai_prediction']==1 %}
+                                OPMD
                             {% else %}
-                                พบรอยโรค
+                                OSCC
                             {% endif %}
                     </h6>
                     <div class="d-grid gap-2 d-md-flex justify-content-md-center">
@@ -147,11 +149,52 @@
                 <th>ช่องทาง</th>
                 <th>ชื่อผู้นำส่ง</th>
                 <th>นำส่งวันที่</th>
-                <th>ผล AI</th>
+                <th>ผลการพยากรณ์ของ AI</th>
                 <th>ดำเนินการ</th>
             </tr>
         </thead>
-            <tbody data-record-data="{{ paginated_data | tojson }}"></tbody>
+            <tbody>
+                {% for item in paginated_data %}
+                <tr>
+                    <td>{{ item['case_id'] }}
+                        {% if item['dentist_id'] %}
+                            [ตรวจแล้ว]
+                        {% else %}
+                            [ยังไม่ได้ตรวจ]
+                        {% endif %}
+                        {% if item['special_request']==1 %}
+                            [มีคำขอตรวจพิเศษ]
+                        {% endif %}
+                    </td>
+                    <td>{% if item['name'] is not none %} {{ item['name'] }} {{ item['surname'] }} ( {{ item["age"] }} ปี ) {% else %} ไม่มีข้อมูล {% endif %}</td>
+                    <td>จ.{{ item['location_province'] }} {%if item['location_zipcode'] is not none %} ({{ item['location_zipcode'] }}){% endif %}</td>
+                    <td>
+                        {% if item['sender_phone'] is none %}
+                            ระบบผู้ตรวจคัดกรอง
+                        {% else %}
+                            ระบบประชาชน
+                        {% endif %}
+                    </td>
+                    <td>{{ item['sender_name'] }} {{ item['sender_surname'] }}</td>
+                    <td>{{ item['formatted_created_at'] }} น.</td>
+                    <td>
+                        {% if item['ai_prediction']==0 %}
+                            Normal
+                        {% elif item['ai_prediction']==1 %}
+                            OPMD
+                        {% else %}
+                            OSCC
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                            <form action="{{ url_for('webapp.diagnosis', role='osm', img_id=item['id']) }}" id="form_id{{item['id']}}" method="post"> </form>
+                            <button class="btn btn-outline-success" type="submit" form="form_id{{item['id']}}">ดูผลการวิเคราะห์</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
         </tbody>
     </table>
 </div>
@@ -172,6 +215,7 @@
         <a href="?page={{ total_pages }}" class="btn page-link m-2 text-secondary">หลังสุด &raquo;</a>
     {% endif %}
 </div>
+
 {% else %}
 <div class="alert alert-danger" role="alert">
     ขออภัย ท่านไม่มีสิทธิ์ในการเข้าถึงข้อมูลนี้ หากท่านเชื่อว่านี่เป็นความผิดพลาด กรุณาติดต่อผู้ดูแลระบบ
@@ -203,89 +247,72 @@
     if (filterSenderValue) {
         finterSender.value = filterSenderValue;
     }
+
     function toggleView() {
         const cardView = document.getElementById("card-view");
         const tableView = document.getElementById("table-view");
-
-        if (sessionStorage.getItem("tableView") === "true") {
-            cardView.style.display = "flex";
-            cardView.style.flexWrap = "wrap";
-            tableView.style.display = "none";
-        } else {
-            cardView.style.display = "none";
-            tableView.style.display = "block";
-            renderTable()
+        if(sessionStorage.getItem("tableView") == null){
+            sessionStorage.setItem("tableView", 1);
         }
 
-        // Save the current state to session storage
-        if (tableView.style.display === "none") {
-            sessionStorage.setItem("tableView", "false");
+        if (sessionStorage.getItem("tableView") == 0) {
+            cardView.style.display = "none";
+            tableView.style.display = "block";
+            sessionStorage.setItem("tableView", 1);
         } else {
-            sessionStorage.setItem("tableView", "true");
+            cardView.style.display = "flex";
+            cardView.style.flexWrap = "wrap";
+            tableView.style.display = "none"; 
+            sessionStorage.setItem("tableView", 0);
         }
     }
 
-    function loadView(){
+    function loadView() {
         const cardView = document.getElementById("card-view");
         const tableView = document.getElementById("table-view");
-        if (sessionStorage.getItem("tableView") === "true") {
+
+        if (sessionStorage.getItem("tableView") == 1) {
             cardView.style.display = "none";
             tableView.style.display = "block";
-            renderTable()
         } else {
             cardView.style.display = "flex";
             cardView.style.flexWrap = "wrap";
             tableView.style.display = "none";
         }
     }
-
-
-
-    function renderTable() {    
-        
-        const tbody = document.querySelector("#table-view tbody");
-        tbody.innerHTML = "";
-        const data = tbody.dataset.recordData
-        console.log(data)
-        data.forEach((record) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-            <td>1</td>
-            <td>2</td>
-            <td>3</td>
-            <td>4</td>
-            <td>6</td>
-            <td>5</td>
-            <td>7</td>
-            <td>8</td>
-        `;
-
-        tbody.appendChild(row);
-        });
-
-        // Reinitialize DataTables to ensure proper pagination
-        if (dataTableInstance) {
-        dataTableInstance.destroy(); // Destroy existing instance
-        }
-        dataTableInstance = $("#record_table").DataTable({
-        order: [[0, "asc"]],
-        pageLength: 10, // Items per page
-        language: {
-            search: "ค้นหา:",
-            lengthMenu: "แสดง _MENU_ รายการต่อหน้า",
-            info: "แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ",
-            paginate: {
-            first: "หน้าแรก",
-            last: "หน้าสุดท้าย",
-            next: "ถัดไป",
-            previous: "ก่อนหน้า",
-            },
-        },
-        });
-    }
-
-    // Initialize after load
     loadView()
-        
+
+    const download_data = async () => {
+        try {
+            const response = await fetch('http://localhost:4000/submission_record/csv', {
+                method: 'GET',
+                headers: {
+                    "Content-Type": "application/json"
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to download file: ${response.status} ${response.statusText}`);
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "exported_data.csv";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            // Revoke the object URL to free memory
+            setTimeout(() => URL.revokeObjectURL(url), 100);
+        } catch (error) {
+            console.error("Download failed:", error);
+        }
+    };
+
+
 </script>
+
+
 {% endblock %}
