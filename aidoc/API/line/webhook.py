@@ -28,7 +28,7 @@ def webhook_handler():
 
             elif message.isdigit() and len(message) == 10:
                 cursor = db.cursor(dictionary=True)
-                cursor.execute("SELECT phone FROM aidoc_development.user WHERE lineId = %s", (line_id,))
+                cursor.execute("SELECT phone FROM user WHERE lineId = %s", (line_id,))
                 existing_user = cursor.fetchone()
 
                 if existing_user:

@@ -1,48 +1,46 @@
-from flask import request, jsonify, current_app
-from ... import db
-from .line_utils import send_message, get_line_api
+import logging
+from flask import Blueprint, request, jsonify, render_template
+from .webhook import webhook_handler
+from .get_line_id import get_line_id_handler
+from .line_utils import send_line_message_handler, get_default_message
+from .line_utils import send_message
+from aidoc.db import get_db
 
-def webhook_handler():
-    if request.method != "POST":
-        return jsonify({"error": "Method not allowed"}), 405
+line_blueprint = Blueprint("line", __name__)
 
-    body = request.get_data(as_text=True)
-    print(f"Received body: {body}")  # Debugging
+@line_blueprint.route("/webhook", methods=["POST"])
+def handle_webhook():
+    return webhook_handler()
 
-    events = request.json.get("events", [])
-    print(f"Received events: {events}")  # Debugging
+@line_blueprint.route("/send-line-message/<int:case_id>", methods=["POST"])
+def send_line_message(case_id):
+    return send_line_message_handler(case_id)
 
-    line_bot_api = get_line_api()
+@line_blueprint.route("/get-default-message", methods=["GET"])
+def get_default_message_route():
+    return get_default_message()
 
-    for event in events:
-        line_id = event["source"]["userId"]
+@line_blueprint.route("/send-adjusted-message", methods=["POST"])
+def send_adjusted_message():
+    data = request.get_json()
+    case_id = data.get("case_id")
+    message = data.get("message")
 
-        if event["type"] == "follow":
-            send_message(line_id, "กรุณาพิมพ์เลข 7 เพื่อลงทะเบียน")
+    db, cursor = get_db()
+    cursor.execute(
+        "SELECT p.lineId FROM submission_record ph INNER JOIN user p ON ph.patient_id = p.id WHERE ph.id = %s LIMIT 1",
+        (case_id,),
+    )
+    row = cursor.fetchone()
+    logging.info(f"Case ID {case_id}: LINE ID found: {row}")
 
-        elif event["type"] == "message" and event.get("message", {}).get("type") == "text":
-            message = event["message"]["text"]
+    if not row or not row.get("lineId"):
+        return jsonify({"error": "No LINE ID found"}), 400
 
-            if message == "7":
-                send_message(line_id, "กรุณากรอกเบอร์โทรศัพท์ของคุณ")
+    line_id = row["lineId"]
+    send_message(line_id, message)
+    return jsonify({"message": "Message sent successfully"}), 200
 
-            elif message.isdigit() and len(message) == 10:
-                cursor = db.cursor(dictionary=True)
-                cursor.execute("SELECT phone FROM aidoc_development.user WHERE lineId = %s", (line_id,))
-                existing_user = cursor.fetchone()
-
-                if existing_user:
-                    send_message(line_id, "เบอร์โทรศัพท์ของคุณได้เชื่อมต่อเรียบร้อยแล้ว")
-                else:
-                    cursor.execute("UPDATE user SET lineId = %s WHERE phone = %s", (line_id, message))
-                    db.commit()
-
-                    if cursor.rowcount > 0:
-                        send_message(line_id, "ลงทะเบียนสำเร็จ! เบอร์โทรศัพท์ของคุณได้รับการเชื่อมต่อแล้ว")
-                    else:
-                        send_message(line_id, "ไม่พบข้อมูลในระบบ กรุณาสมัครสมาชิกที่ https://icohold.anamai.moph.go.th:82/patient")
-
-            else:
-                send_message(line_id, "กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง (10 หลัก)")
-
-    return "OK", 200
+@line_blueprint.route("/noti_confirmation", methods=["GET"])
+def noti_confirmation():
+    return render_template('newTemplate/noti_confirmation.html')
