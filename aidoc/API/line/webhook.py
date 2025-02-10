@@ -7,10 +7,10 @@ def webhook_handler():
         return jsonify({"error": "Method not allowed"}), 405
 
     body = request.get_data(as_text=True)
-    print(f"Received body: {body}")  # Debugging
+    # print(f"Received body: {body}")  # Debugging
 
     events = request.json.get("events", [])
-    print(f"Received events: {events}")  # Debugging
+    # print(f"Received events: {events}")  # Debugging
 
     line_bot_api = get_line_api()
 

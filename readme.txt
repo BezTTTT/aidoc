@@ -44,5 +44,6 @@ pip install opencv-python
 pip install python-dateutil
 pip install PyPDF2
 pip install reportlab
+pip install line-bot-sdk
 
-Updated: Jan 17, 2024
+Updated: Feb 11, 2025

@@ -4,8 +4,6 @@ from linebot.models import TextSendMessage, ImageSendMessage
 from aidoc.db import get_db
 import logging
 
-logging.basicConfig(level=logging.INFO)
-
 def get_line_api():
     LINE_CHANNEL_ACCESS_TOKEN = current_app.config.get("LINE_CHANNEL_ACCESS_TOKEN")
     return LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
@@ -36,7 +34,7 @@ def get_default_message():
 
     messages = []
     for row in rows:
-        print(f"Processing row: {row}")  # Debugging step
+        # print(f"Processing row: {row}")  # Debugging step
 
         # Extract values from dictionary
         case_id = row.get("id")
@@ -51,7 +49,7 @@ def get_default_message():
         except (TypeError, ValueError):
             ai_prediction = 0
 
-        print(f"Case ID: {case_id}, AI Prediction: {ai_prediction}, Dentist Feedback: {dentist_feedback_code}")  # Debugging step
+        # print(f"Case ID: {case_id}, AI Prediction: {ai_prediction}, Dentist Feedback: {dentist_feedback_code}")  # Debugging step
 
         # Define the messages based on ai_prediction and dentist_feedback_code
         if dentist_feedback_code == 'NORMAL' and ai_prediction == 0:
@@ -131,7 +129,7 @@ def send_line_message_handler(case_id):
     
     message = messages.get((dentist_feedback_code, ai_prediction), None)
     if message:
-        print(message)
+        # print(message)
         send_message(line_id, message)
         logging.info(message)
     elif dentist_feedback_code == 'BAD_IMG':

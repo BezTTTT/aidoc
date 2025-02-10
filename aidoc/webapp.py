@@ -612,7 +612,6 @@ def editByRole(role):
             if data["osm_job"] == '':
                 data["osm_job"] = None
 
-            print(data['license'])
             inval = []
             valid_func_list = [ validate_province_name,
                                 validate_phone,
@@ -703,11 +702,11 @@ def construct_specialist_filter_sql():
 
     if search_query!="":
         search_query_list.append(f"(INSTR(LOWER(fname), '{search_query}'))")
-        # search_query_list.append(f"(sub.patient_name IS NOT NULL AND (INSTR('{search_query}', sub.patient_name) OR INSTR('{search_query}', sub.patient_surname)))")
+        search_query_list.append(f"(patient_user.name IS NOT NULL AND (INSTR('{search_query}', patient_user.name) OR INSTR('{search_query}', patient_user.surname)))")
         search_query_list.append(f"(case_report IS NOT NULL AND (INSTR(case_report, '{search_query}')))")
         search_query_list.append(f"(dentist_feedback_code IS NOT NULL AND (LOWER(dentist_feedback_code) = '{search_query.lower()}'))")
-        # if search_query.isdigit():
-        #     search_query_list.append(f"(case_id = {int(search_query)})")
+        if search_query.isdigit():
+            search_query_list.append(f"(case_id = {int(search_query)})")
         search_query_list.append(f"(location_district IS NOT NULL AND (INSTR(location_district, '{search_query}')))")
         search_query_list.append(f"(location_amphoe IS NOT NULL AND (INSTR(location_amphoe, '{search_query}')))")
         search_query_list.append(f"(location_province IS NOT NULL AND (INSTR(location_province, '{search_query}')))")
@@ -750,14 +749,16 @@ def record_specialist(admin=False):
 
     db, cursor = get_db()
     if admin: # Admin
-        sql_select_part ='''SELECT submission_record.id, channel, fname, patient_user.name AS patient_name, patient_user.surname AS patient_surname, patient_user.birthdate,
+        sql_select_part ='''SELECT submission_record.id, case_id, channel, fname, patient_user.name, patient_user.surname, patient_user.birthdate,
                     sender.name as sender_name, sender.surname as sender_surname, sender.hospital as sender_hospital,
                     sender_id, patient_id, dentist_id, sender_phone, special_request,
                     location_province, location_amphoe, location_district, location_zipcode, 
                     dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, case_report,
-                    ai_prediction, submission_record.created_at, retrain_request_status, followup_request_status'''
+                    ai_prediction, submission_record.created_at, retrain_request_status, followup_request_status
+                FROM ( SELECT id FROM submission_record ORDER BY id DESC LIMIT %s OFFSET %s ) submission_record_limited
+                LEFT JOIN submission_record ON submission_record.id = submission_record_limited.id'''
         sql_join_part = '''
-                FROM submission_record
+                LEFT JOIN patient_case_id ON submission_record.id = patient_case_id.id
                 LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
                 LEFT JOIN user AS sender ON submission_record.sender_id = sender.id
                 LEFT JOIN followup_request ON submission_record.id = followup_request.submission_id
@@ -766,48 +767,38 @@ def record_specialist(admin=False):
     else: # Specialist
         sql_select_part ='''
             SELECT
-                submission_record.id, case_id, channel, fname, patient_user.name AS patient_name, patient_user.surname AS patient_surname, patient_user.birthdate,
+                submission_record.id, case_id, channel, fname, patient_user.name, patient_user.surname, patient_user.birthdate,
                 sender_id, patient_id, dentist_id, sender_phone, special_request,
                 location_province, location_amphoe, location_district, location_zipcode, 
                 dentist_feedback_comment,dentist_feedback_code,case_report,
-                ai_prediction, submission_record.created_at, retrain_request_status, followup_request_status'''
+                ai_prediction, submission_record.created_at, retrain_request_status, followup_request_status
+            FROM ( SELECT id FROM submission_record ORDER BY id DESC LIMIT %s OFFSET %s ) submission_record_limited
+            LEFT JOIN submission_record ON submission_record.id = submission_record_limited.id'''
         sql_join_part = '''
-            FROM submission_record
-            INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
+            LEFT JOIN patient_case_id ON submission_record.id = patient_case_id.id
             LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
             LEFT JOIN followup_request ON submission_record.id = followup_request.submission_id
             LEFT JOIN retrain_request ON submission_record.id = retrain_request.submission_id
             '''
-        
-    sql_count = "SELECT count(submission_record.id) AS full_count"
-    sql_limit_part = '''
-                ORDER BY submission_record.created_at DESC
-                LIMIT %s
-                OFFSET %s'''
+    sql_count = '''SELECT count(submission_record.id) AS full_count
+                FROM submission_record'''
+    sql_order_part = "ORDER BY submission_record.created_at DESC"
     
     if filter_query!='':
         sql_where = 'WHERE ' + filter_query
         sql1 = sql_count + sql_join_part + sql_where
-        sql2 = sql_select_part + sql_join_part + sql_where + sql_limit_part
-        if admin:
-            sql_select_with_case_id = 'select sub.*,case_id FROM('
-            sql_case_id = ') as sub LEFT JOIN patient_case_id ON sub.id = patient_case_id.id '
-            sql2 = sql_select_with_case_id + sql_select_part + sql_join_part  + sql_limit_part + sql_case_id + sql_where
-        
+        sql2 = sql_select_part + sql_join_part + sql_where + sql_order_part
     else:
         sql1 = sql_count + sql_join_part
-        sql2 = sql_select_part + sql_join_part + sql_limit_part
-        if admin:
-            sql_select_with_case_id = 'select sub.*,case_id FROM('
-            sql_case_id = ') as sub LEFT JOIN patient_case_id ON sub.id = patient_case_id.id'
-            sql2 = sql_select_with_case_id + sql2 + sql_case_id
+        sql2 = sql_select_part + sql_join_part + sql_order_part
+
     cursor.execute(sql1)
     dataCount = cursor.fetchone()
 
     val = (records_per_page, offset)
     cursor.execute(sql2,val)
     paginated_data = cursor.fetchall()
-    print(paginated_data)
+
     # Process each item in paginated_data
     for item in paginated_data:
         if item['channel']=='PATIENT':
@@ -900,27 +891,37 @@ def record_dentist():
     db, cursor = get_db()
     sql_select_part ='''
         SELECT submission_record.id, channel, fname, name, surname, birthdate,
-                    sender_id, patient_id, dentist_id, special_request, province,
-                    dentist_feedback_comment,dentist_feedback_code,
-                    ai_prediction, submission_record.created_at
+            sender_id, patient_id, dentist_id, special_request, province,
+            dentist_feedback_comment,dentist_feedback_code,
+            ai_prediction, submission_record.created_at
+        FROM (
+            SELECT id
+            FROM submission_record
+            WHERE (channel = 'DENTIST' AND sender_id = %s)
+            ORDER BY id DESC
+            LIMIT %s OFFSET %s
+            ) submission_record_limited
+        INNER JOIN submission_record ON submission_record.id = submission_record_limited.id
         '''
-    sql_count = "SELECT count(*) AS full_count"
-    sql_join_part = '''
-        FROM submission_record
-        LEFT JOIN user ON submission_record.patient_id = user.id
-        WHERE (channel = 'DENTIST' AND sender_id = %s)'''
-    sql_limit_part = '''
-        ORDER BY id DESC
-        LIMIT %s
-        OFFSET %s'''
+    sql_count = '''SELECT count(submission_record.id) AS full_count
+                FROM (
+                    SELECT id
+                    FROM submission_record
+                    WHERE (channel = 'DENTIST' AND sender_id = %s)
+                    ) submission_record_limited
+                INNER JOIN submission_record ON submission_record.id = submission_record_limited.id
+                '''
+    sql_join_part = '''LEFT JOIN user ON submission_record.patient_id = user.id
+                    '''
+    sql_order_part = "ORDER BY submission_record.created_at DESC"
     
     if filter_query!='':
-        sql_where = 'AND ' + filter_query
+        sql_where = 'WHERE ' + filter_query
         sql1 = sql_count + sql_join_part + sql_where
-        sql2 = sql_select_part + sql_join_part + sql_where + sql_limit_part
+        sql2 = sql_select_part + sql_join_part + sql_where + sql_order_part
     else:
         sql1 = sql_count + sql_join_part
-        sql2 = sql_select_part + sql_join_part + sql_limit_part
+        sql2 = sql_select_part + sql_join_part + sql_order_part
 
     val = (session['user_id'],)
     cursor.execute(sql1,val)
@@ -995,39 +996,50 @@ def record_osm():
 
     db, cursor = get_db()
     sql_select_part = '''SELECT submission_record.id, channel, fname,
-            patient_user.name, patient_user.surname, patient_user.birthdate, patient_user.province,
+            patient_user.name as patient_name, patient_user.surname as patient_surname, patient_user.birthdate, patient_user.province,
             case_id, sender_id, patient_id, dentist_id, special_request, sender_phone, 
             location_province, location_zipcode, 
             dentist_feedback_comment,dentist_feedback_code,
-            ai_prediction, submission_record.created_at'''
-    sql_count = 'SELECT count(*) AS full_count'
+            ai_prediction, submission_record.created_at
+        FROM (
+                SELECT id
+                FROM submission_record
+                WHERE
+                    (channel = 'OSM' AND sender_id = %s) OR
+                    (channel = 'PATIENT' AND submission_record.sender_phone = %s)
+                ORDER BY id DESC
+                LIMIT %s OFFSET %s
+                ) submission_record_limited
+                INNER JOIN submission_record ON submission_record.id = submission_record_limited.id'''
+    sql_count = '''SELECT count(submission_record.id) AS full_count
+                FROM (
+                    SELECT id
+                    FROM submission_record
+                    WHERE
+                        (channel = 'OSM' AND sender_id = %s) OR
+                        (channel = 'PATIENT' AND submission_record.sender_phone = %s)
+                    ) submission_record_limited
+                    INNER JOIN submission_record ON submission_record.id = submission_record_limited.id'''
     sql_join_part = '''
-        FROM submission_record
-        INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
+        LEFT JOIN patient_case_id ON submission_record.id = patient_case_id.id
         LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
         LEFT JOIN user AS sender_user ON submission_record.sender_phone = sender_user.phone
-        WHERE
-            (channel = 'OSM' AND sender_id = %s) OR
-            (channel = 'PATIENT' AND submission_record.sender_phone = %s)
             '''
-    sql_limit_part = '''
-        ORDER BY submission_record.id DESC
-        LIMIT %s
-        OFFSET %s'''
-    
+    sql_order_part = "ORDER BY submission_record.created_at DESC"
+
     if filter_query!='':
-        sql_where = ' AND ' + filter_query
+        sql_where = ' WHERE ' + filter_query
         sql1 = sql_count + sql_join_part + sql_where
-        sql2 = sql_select_part + sql_join_part + sql_where + sql_limit_part
+        sql2 = sql_select_part + sql_join_part + sql_where + sql_order_part
     else:
         sql1 = sql_count + sql_join_part
-        sql2 = sql_select_part + sql_join_part + sql_limit_part
+        sql2 = sql_select_part + sql_join_part + sql_order_part
     
     val = (session['user_id'],g.user['phone'])
     cursor.execute(sql1, val)
     dataCount = cursor.fetchone()
 
-    val = (session['user_id'],g.user['phone'], records_per_page, offset)
+    val = (session['user_id'],g.user['phone'],records_per_page, offset)
     cursor.execute(sql2,val)
     paginated_data = cursor.fetchall()
 
