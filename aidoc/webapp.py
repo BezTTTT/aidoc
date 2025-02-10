@@ -1,16 +1,22 @@
 from flask import (
-    Blueprint, redirect, render_template, request, session, url_for, g, flash, current_app,
+    Blueprint, redirect, render_template, request, session, url_for, g, flash, current_app, send_from_directory,
 )
 
-import json
+import json, os
+from datetime import datetime
 from aidoc.utils import *
 from aidoc.db import get_db
-from aidoc.auth import login_required, role_validation, load_logged_in_user
+from aidoc.auth import login_required, admin_only, specialist_only, role_validation, reload_user_profile
 
 # 'webapp' blueprint manages Diagnosis and Record systems, including report and admin managment system
 bp = Blueprint('webapp', __name__)
 
 # Flask views
+
+# region aidoc logo
+@bp.route('/favicon.ico') 
+def favicon(): 
+    return send_from_directory(os.path.join(current_app.root_path, 'static', 'icons'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 # region quick_confirm
 @bp.route('/quick_confirm/<role>/<int:img_id>', methods=('POST', ))
@@ -77,6 +83,11 @@ def retrain_request(role, img_id):
 @login_required
 @role_validation
 def diagnosis(role, img_id):
+
+    # In the case of returning from the register_later system, clear the variable
+    if 'register_later' in session:
+        session.pop('register_later', None)
+
     if request.method=='POST':
         db, cursor = get_db()
         if request.args.get('special_request')=='true':
@@ -84,15 +95,25 @@ def diagnosis(role, img_id):
             val = (1, img_id)
             cursor.execute(sql, val)
 
-        if (role=='dentist' or (role=='admin' and request.args.get('channel')=='DENTIST')) and 'feedback_submit' in request.form:
-            dentist_feedback_code = request.form.get('agree_option')
-            dentist_feedback_location = request.form.get('lesion_location')
-            dentist_feedback_lesion = request.form.get('lesion_type')
-            dentist_feedback_comment = request.form.get('dentist_comment')
-            sql = "UPDATE submission_record SET dentist_id=%s, dentist_feedback_code=%s, dentist_feedback_comment=%s, dentist_feedback_lesion=%s, dentist_feedback_location=%s, dentist_feedback_date=%s WHERE id=%s"
-            val = (session["user_id"], dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location, datetime.now(), img_id)
-            cursor.execute(sql, val)
-        
+        if (role=='dentist' or (role=='admin' and request.args.get('channel')=='DENTIST')) and request.form.get('dentist_action'):
+            dentist_action_code = request.form.get('dentist_action')
+            if(dentist_action_code == 'ai_agreement'):
+                dentist_feedback_code = request.form.get('agree_option')
+                sql = "UPDATE submission_record SET dentist_id=%s, dentist_feedback_code=%s, dentist_feedback_date=%s WHERE id=%s"
+                val = (session["user_id"], dentist_feedback_code, datetime.now(), img_id)
+                cursor.execute(sql, val)
+            if(dentist_action_code == 'additional_feedback'):
+                dentist_feedback_location = request.form.get('lesion_location')
+                dentist_feedback_lesion = request.form.get('lesion_type')
+                sql = "UPDATE submission_record SET dentist_id=%s, dentist_feedback_lesion=%s, dentist_feedback_location=%s, dentist_feedback_date=%s WHERE id=%s"
+                val = (session["user_id"], dentist_feedback_lesion, dentist_feedback_location, datetime.now(), img_id)
+                cursor.execute(sql, val)
+            if(dentist_action_code == 'comment'):
+                dentist_feedback_comment = request.form.get('dentist_comment')
+                sql = "UPDATE submission_record SET dentist_id=%s, dentist_feedback_comment=%s, dentist_feedback_date=%s WHERE id=%s"
+                val = (session["user_id"], dentist_feedback_comment, datetime.now(), img_id)
+                cursor.execute(sql, val)
+    
         if (role=='specialist' or (role=='admin' and request.args.get('channel')!='DENTIST')) and request.args.get('specialist_feedback')=='true':
             dentist_feedback_code = request.form.get('dt_comment_option')
             dentist_feedback_lesion = None
@@ -197,7 +218,7 @@ def diagnosis(role, img_id):
     # Authorization check
     if data is None:
         return render_template('unauthorized_access.html', error_msg='ไม่พบข้อมูลที่ร้องขอ Data Not Found')
-    elif (session['sender_mode']!=role) or \
+    elif \
         (role=='patient' and (session['user_id']!=data['patient_id'])) or \
         (role=='osm' and session['user_id']!=data['sender_id'] and data['sender_phone']!=data['osm_phone']) or \
         (role=='dentist' and session['user_id']!=data['sender_id']):
@@ -319,8 +340,6 @@ def diagnosis(role, img_id):
 @role_validation
 def record(role): 
 
-    session['sender_mode'] = role
-
     # There is no pagination for patient's record page (a special case)
     if role=='patient':
         data = record_patient()
@@ -359,9 +378,15 @@ def record(role):
         filterFollowup = session['record_filter'].get("filterFollowup", "")
         filterRetrain = session['record_filter'].get("filterRetrain", "")
 
-    page = request.args.get("page", session.get('current_record_page', 1), type=int)
-    session['current_record_page'] = page
-    session['records_per_page'] = 12
+    if 'current_record_role' in session and session['current_record_role'] == role:
+        page = request.args.get("page", session['current_record_page'], type=int)
+        session['current_record_page'] = page
+    else: # There is a switch of role (e.g. dentist -> admin)
+        page = 1 
+        session['current_record_page'] = 1  # Reset currrent page to 1
+        session['current_record_role'] = role # Reassign role
+
+    session['records_per_page'] = 12 # Subject to change in the future
 
     if role=='specialist':
         paginated_data, supplemental_data, dataCount = record_specialist()
@@ -392,6 +417,7 @@ def record(role):
 
 @bp.route('/edit/<role>', methods=('GET', 'POST'))
 @login_required
+@role_validation
 def editByRole(role):
     data = {}
     thai_months = [
@@ -583,11 +609,10 @@ def editByRole(role):
                 data["email"] = None
             if data["phone"]=='':
                 data["phone"] = None
-            if data["license"] == '':
-                data["license"] = None
             if data["osm_job"] == '':
                 data["osm_job"] = None
 
+            print(data['license'])
             inval = []
             valid_func_list = [ validate_province_name,
                                 validate_phone,
@@ -597,7 +622,10 @@ def editByRole(role):
                 valid_check, data , inval = valid_func(args)
                 if not valid_check:
                     return render_template(target_template,data=data)
-
+            
+            if data["license"] == '':
+                data["license"] = None
+                
             sql = '''UPDATE user SET 
                     name = %s,
                     surname = %s,
@@ -621,20 +649,21 @@ def editByRole(role):
 # region report
 @bp.route('/admin/report/')
 @login_required
-#@role_validation
+@specialist_only
 def report():
     return render_template("/newTemplate/submission_report.html")
 
 # region admin_page
 @bp.route('/admin_page/', methods=('GET','POST','DELETE'))
 @login_required
-#@role_validation
+@admin_only
 def userManagement():
     return render_template("/newTemplate/admin_management.html")
 
 # region edit
 @bp.route('/edit/', methods=('GET','POST'))
 @login_required
+@admin_only
 def edit():
     return render_template("/newTemplate/admin_edit.html")
 
@@ -799,7 +828,7 @@ def record_specialist(admin=False):
     sql = '''SELECT name, surname, license, user.id
         FROM submission_record
         LEFT JOIN user ON submission_record.dentist_id=user.id
-        WHERE submission_record.dentist_id IS NOT NULL AND channel != 'DENTIST'
+        WHERE channel != 'DENTIST' AND submission_record.dentist_id IS NOT NULL
         GROUP BY user.id
         ORDER BY COUNT(user.id) DESC'''
     cursor.execute(sql)
@@ -872,7 +901,7 @@ def record_dentist():
     sql_join_part = '''
         FROM submission_record
         LEFT JOIN user ON submission_record.patient_id = user.id
-        WHERE (sender_id = %s)'''
+        WHERE (channel = 'DENTIST' AND sender_id = %s)'''
     sql_limit_part = '''
         ORDER BY id DESC
         LIMIT %s
@@ -893,7 +922,6 @@ def record_dentist():
     val = (session['user_id'], records_per_page, offset)
     cursor.execute(sql2,val)
     paginated_data = cursor.fetchall()
-    
     return paginated_data, supplemental_data, dataCount
 
 # region construct_osm_filter_sql
@@ -971,7 +999,10 @@ def record_osm():
         INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
         LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
         LEFT JOIN user AS sender_user ON submission_record.sender_phone = sender_user.phone
-        WHERE (sender_id = %s OR (submission_record.sender_phone is not NULL AND submission_record.sender_phone = %s))'''
+        WHERE
+            (channel = 'OSM' AND sender_id = %s) OR
+            (channel = 'PATIENT' AND submission_record.sender_phone = %s)
+            '''
     sql_limit_part = '''
         ORDER BY submission_record.id DESC
         LIMIT %s
@@ -1047,13 +1078,13 @@ def update_submission_record(ai_predictions, ai_scores):
     for i, filename in enumerate(session['imageNameList']):
         db, cursor = get_db()
         
-        if session['sender_mode']=='dentist':
+        if session['login_mode']=='dentist':
             
             if g.user['default_location'] is None or str(g.user['default_location'])!=str(session['location']):
                 sql = "UPDATE user SET default_location=%s WHERE id=%s"
                 val = (str(session['location']), session['user_id'])
                 cursor.execute(sql, val)
-                load_logged_in_user() # Update the user info on g variable
+                reload_user_profile(session['user_id']) # Update the user info on g variable
 
             sql = '''INSERT INTO submission_record
                 (fname,
@@ -1086,25 +1117,25 @@ def update_submission_record(ai_predictions, ai_scores):
             cursor.execute(sql, val)
 
 
-        elif session['sender_mode']=='patient':
+        elif session['login_mode']=='patient':
 
             if g.user['default_location'] is None or str(g.user['default_location'])!=str(session['location']):
                 sql = "UPDATE user SET default_location=%s WHERE id=%s"
                 val = (str(session['location']), session['user_id'])
                 cursor.execute(sql, val)
-                load_logged_in_user() # Update the user info on g variable
+                reload_user_profile(session['user_id']) # Update the user info on g variable
 
             if 'sender_phone' in session and session['sender_phone']:
                 sql = "UPDATE user SET default_sender_phone=%s WHERE id=%s"
                 val = (session['sender_phone'], session['user_id'])
                 cursor.execute(sql, val)
-                load_logged_in_user() # Update the user info on g variable
+                reload_user_profile(session['user_id']) # Update the user info on g variable
             
             if (g.user['default_sender_phone'] and ('sender_phone' not in session or session['sender_phone'] is None)):
                 sql = "UPDATE user SET default_sender_phone=NULL WHERE id=%s"
                 val = (session['user_id'], )
                 cursor.execute(sql, val)
-                load_logged_in_user() # Update the user info on g variable
+                reload_user_profile(session['user_id']) # Update the user info on g variable
             
             sql = '''INSERT INTO submission_record 
                     (fname,
@@ -1146,13 +1177,13 @@ def update_submission_record(ai_predictions, ai_scores):
             val = (row['LAST_INSERT_ID()'],)
             cursor.execute(sql, val)
 
-        elif session['sender_mode']=='osm':
+        elif session['login_mode']=='osm':
 
             if g.user['default_location'] is None or str(g.user['default_location'])!=str(session['location']):
                 sql = "UPDATE user SET default_location=%s WHERE id=%s"
                 val = (str(session['location']), session['user_id'])
                 cursor.execute(sql, val)
-                load_logged_in_user() # Update the user info on g variable
+                reload_user_profile(session['user_id']) # Update the user info on g variable
 
             sql = '''INSERT INTO submission_record 
                     (fname, 
@@ -1193,3 +1224,136 @@ def update_submission_record(ai_predictions, ai_scores):
             sql = "INSERT INTO patient_case_id (id) VALUES (%s)"
             val = (row['LAST_INSERT_ID()'],)
             cursor.execute(sql, val)
+
+@bp.route('/about')
+def about():
+    return render_template("about.html")
+
+@bp.route('/example')
+def example():
+    img_names =['oscc1.png', 'oscc2.png', 'oscc3.png', 'oscc4.png', 'oscc5.png', 'oscc6.png',
+                'opmd1.png', 'opmd2.png', 'opmd3.png', 'opmd4.png', 'opmd5.png', 'opmd6.png',
+                'opmd7.png', 'opmd8.png', 'opmd10.png', 'opmd11.png', 'opmd12.png', 'opmd13.png',
+                'opmd14.png','opmd15.png','opmd16.png', 'opmd17.png', 'opmd18.png', 'opmd19.png', 'opmd20.png',
+                'normal1.png', 'normal2.png', 'normal3.png','normal4.png', 'normal5.png',
+                'normal6.png', 'normal7.png', 'normal8.png', 'normal9.png', 'normal10.png']
+
+    texts = [
+        '''ตัวอย่างที่ 1 รูปภาพผลลัพธ์การระบุรอยโรคของภาพถ่ายช่องปากของคนไข้ที่ได้รับการวินิจฉัยทางพยาธิวิทยาว่าเป็นมะเร็งชนิด Oral Squamous Cell Carcinoma (OSCC) โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นสูงถึง 94.01%
+    ภาพนี้ได้รับความอนุเคราะห์จาก ผศ.ทพ.กฤษสิทธิ์ วารินทร์ คณะทันตแพทยศาสตร์ มหาวิทยาลัยธรรมศาสตร์'''
+        ,
+        '''ตัวอย่างที่ 2 รูปภาพผลลัพธ์การระบุรอยโรคของภาพถ่ายช่องปากของคนไข้ที่ได้รับการวินิจฉัยทางพยาธิวิทยาว่าเป็นมะเร็งชนิด Oral Squamous Cell Carcinoma (OSCC) โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นสูงถึง 96.93%
+    ภาพนี้ได้รับความอนุเคราะห์จาก ผศ.ทพ.กฤษสิทธิ์ วารินทร์ คณะทันตแพทยศาสตร์ มหาวิทยาลัยธรรมศาสตร์'''
+        ,
+        '''ตัวอย่างที่ 3 รูปภาพผลลัพธ์การระบุรอยโรคของภาพถ่ายช่องปากของคนไข้ที่ได้รับการวินิจฉัยทางพยาธิวิทยาว่าเป็นมะเร็งชนิด Oral Squamous Cell Carcinoma (OSCC) โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นสูงถึง 93.83%
+    ภาพนี้ได้รับความอนุเคราะห์จาก ผศ.ทพ.กฤษสิทธิ์ วารินทร์ คณะทันตแพทยศาสตร์ มหาวิทยาลัยธรรมศาสตร์'''
+        ,
+    '''ตัวอย่างที่ 4 รูปภาพผลลัพธ์การระบุรอยโรคของภาพถ่ายช่องปากของคนไข้ที่ได้รับการวินิจฉัยทางพยาธิวิทยาว่าเป็นมะเร็งชนิด Oral Squamous Cell Carcinoma (OSCC) โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นสูงถึง 94.31%
+    ภาพนี้ได้รับความอนุเคราะห์จาก ผศ.ทพ.กฤษสิทธิ์ วารินทร์ คณะทันตแพทยศาสตร์ มหาวิทยาลัยธรรมศาสตร์'''
+        ,
+    '''ตัวอย่างที่ 5 รูปภาพผลลัพธ์การระบุรอยโรคของภาพถ่ายช่องปากของคนไข้ ที่ถูกระบุว่าเป็น Oral Squamous Cell Carcinoma (OSCC) โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะที่ 93.21% 
+    ภาพนี้ผู้พัฒนานำมาจาก Google Search Engine'''
+        ,
+        '''ตัวอย่างที่ 6 รูปภาพผลลัพธ์การระบุรอยโรคของภาพถ่ายช่องปากของคนไข้ ที่ถูกระบุว่าเป็น Oral Squamous Cell Carcinoma (OSCC) โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะที่ 96.34%
+    ภาพนี้ผู้พัฒนานำมาจาก Google Search Engine'''
+        ,
+        '''ตัวอย่างที่ 7 รูปภาพผลลัพธ์การระบุรอยโรคของภาพถ่ายช่องปากของคนไข้ที่ได้รับการวินิจฉัยทางพยาธิวิทยาว่าเป็นรอยโรคก่อนมะเร็ง หรือ Oral Potentially Malignant Disorder (OPMD) โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 68.28% 
+        โปรดสังเกตุว่า หากช่องปากปรากฎรอยโรคหลายรอยหรือรอยโรคกินเนื้อเยื่อในบริเวณกว้าง ระบบจะระบุรอยที่ชัดเจนที่สุดเท่านั้น 
+        ภาพนี้ได้รับความอนุเคราะห์จาก ผศ.ทพ.กฤษสิทธิ์ วารินทร์ คณะทันตแพทยศาสตร์ มหาวิทยาลัยธรรมศาสตร์'''
+        ,
+        '''
+        ตัวอย่างที่ 8 รูปภาพผลลัพธ์การระบุรอยโรคของภาพถ่ายช่องปากของคนไข้ที่ได้รับการวินิจฉัยทางพยาธิวิทยาว่าเป็นรอยโรคก่อนมะเร็ง หรือ Oral Potentially Malignant Disorder (OPMD) โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 96.05%
+    โปรดสังเกตุว่า หากช่องปากปรากฎรอยโรคหลายรอยหรือรอยโรคกินเนื้อเยื่อในบริเวณกว้าง ระบบจะระบุรอยที่ชัดเจนที่สุดเท่านั้น
+    ภาพนี้ได้รับความอนุเคราะห์จาก ผศ.ทพ.กฤษสิทธิ์ วารินทร์ คณะทันตแพทยศาสตร์ มหาวิทยาลัยธรรมศาสตร์'''
+        ,
+        '''ตัวอย่างที่ 9 รูปภาพผลลัพธ์การระบุรอยโรคของภาพถ่ายช่องปากของคนไข้ที่ได้รับการวินิจฉัยทางพยาธิวิทยาว่าเป็นรอยโรคก่อนมะเร็ง หรือ Oral Potentially Malignant Disorder (OPMD) โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 85.95%
+    ภาพนี้ได้รับความอนุเคราะห์จาก ผศ.ทพ.กฤษสิทธิ์ วารินทร์ คณะทันตแพทยศาสตร์ มหาวิทยาลัยธรรมศาสตร์
+    '''
+        ,
+        '''ตัวอย่างที่ 10 รูปภาพผลลัพธ์การระบุรอยโรคของภาพถ่ายช่องปากของคนไข้ที่ได้รับการวินิจฉัยทางพยาธิวิทยาว่าเป็นรอยโรคก่อนมะเร็ง หรือ Oral Potentially Malignant Disorder (OPMD) โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 89.62%
+    ภาพนี้ได้รับความอนุเคราะห์จาก ผศ.ทพ.กฤษสิทธิ์ วารินทร์ คณะทันตแพทยศาสตร์ มหาวิทยาลัยธรรมศาสตร์'''
+        ,
+        '''ตัวอย่างที่ 11 รูปภาพผลลัพธ์การระบุรอยโรคของภาพถ่ายช่องปากของคนไข้ที่ได้รับการวินิจฉัยทางพยาธิวิทยาว่าเป็นรอยโรคก่อนมะเร็ง หรือ Oral Potentially Malignant Disorder (OPMD) โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 90.41%
+    โปรดสังเกตุว่า หากช่องปากปรากฎรอยโรคหลายรอยหรือรอยโรคกินเนื้อเยื่อในบริเวณกว้าง ระบบจะระบุรอยที่ชัดเจนที่สุดเท่านั้น 
+    ภาพนี้ได้รับความอนุเคราะห์จาก ผศ.ทพ.กฤษสิทธิ์ วารินทร์ คณะทันตแพทยศาสตร์ มหาวิทยาลัยธรรมศาสตร์'''
+        ,
+        '''ตัวอย่างที่ 12 รูปภาพผลลัพธ์การระบุรอยโรคของภาพถ่ายช่องปากของคนไข้ที่ได้รับการวินิจฉัยทางพยาธิวิทยาว่าเป็นรอยโรคก่อนมะเร็ง หรือ Oral Potentially Malignant Disorder (OPMD) โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 92.98%
+    ภาพนี้ได้รับความอนุเคราะห์จาก ผศ.ทพ.ดร. จิตจิโรจน์ อิทธิชัยเจริญ คณะทันตแพทยศาสตร์ มหาวิทยาลัยเชียงใหม่'''
+        ,
+        '''ตัวอย่างที่ 13 รูปภาพผลลัพธ์การระบุรอยโรคของภาพถ่ายช่องปากของคนไข้ที่ได้รับการวินิจฉัยทางพยาธิวิทยาว่าเป็นรอยโรคก่อนมะเร็ง หรือ Oral Potentially Malignant Disorder (OPMD) โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 94.57%
+    ภาพนี้ได้รับความอนุเคราะห์จาก ผศ.ทพ.ดร. จิตจิโรจน์ อิทธิชัยเจริญ คณะทันตแพทยศาสตร์ มหาวิทยาลัยเชียงใหม่'''
+        ,
+        '''ตัวอย่างที่ 14 รูปภาพผลลัพธ์การระบุรอยโรคของภาพถ่ายช่องปากของคนไข้ที่ได้รับการวินิจฉัยทางพยาธิวิทยาว่าเป็นรอยโรคก่อนมะเร็ง หรือ Oral Potentially Malignant Disorder (OPMD) โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 90.19%
+    ภาพนี้ได้รับความอนุเคราะห์จาก ผศ.ทพ.ดร. จิตจิโรจน์ อิทธิชัยเจริญ คณะทันตแพทยศาสตร์ มหาวิทยาลัยเชียงใหม่'''
+        ,
+        '''ตัวอย่างที่ 15 รูปภาพผลลัพธ์การระบุรอยโรคของภาพถ่ายช่องปากของคนไข้ที่ได้รับการวินิจฉัยทางพยาธิวิทยาว่าเป็นรอยโรคก่อนมะเร็ง หรือ Oral Potentially Malignant Disorder (OPMD) โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 84.11%
+    ภาพนี้ได้รับความอนุเคราะห์จาก ผศ.ทพ.ดร. จิตจิโรจน์ อิทธิชัยเจริญ คณะทันตแพทยศาสตร์ มหาวิทยาลัยเชียงใหม่'''
+        ,
+        '''ตัวอย่างที่ 16 รูปภาพผลลัพธ์การระบุรอยโรคของภาพถ่ายช่องปากของคนไข้ที่ได้รับการวินิจฉัยทางพยาธิวิทยาว่าเป็นรอยโรคก่อนมะเร็ง หรือ Oral Potentially Malignant Disorder (OPMD) โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 85.26%
+    ภาพนี้ได้รับความอนุเคราะห์จาก ผศ.ทพ.ดร. จิตจิโรจน์ อิทธิชัยเจริญ คณะทันตแพทยศาสตร์ มหาวิทยาลัยเชียงใหม่'''
+        ,
+        '''ตัวอย่างที่ 17 รูปภาพผลลัพธ์การระบุรอยโรคของภาพถ่ายช่องปากของคนไข้ที่ได้รับการวินิจฉัยทางพยาธิวิทยาว่าเป็นรอยโรคก่อนมะเร็ง หรือ Oral Potentially Malignant Disorder (OPMD) โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 92.87%
+    ภาพนี้ได้รับความอนุเคราะห์จาก ผศ.ทพ.ดร. จิตจิโรจน์ อิทธิชัยเจริญ คณะทันตแพทยศาสตร์ มหาวิทยาลัยเชียงใหม่'''
+        ,
+        '''ตัวอย่างที่ 18 รูปภาพผลลัพธ์การระบุรอยโรคของภาพถ่ายช่องปากของคนไข้ที่ได้รับการวินิจฉัยทางพยาธิวิทยาว่าเป็นรอยโรคก่อนมะเร็ง หรือ Oral Potentially Malignant Disorder (OPMD) โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 94.53%
+    ภาพนี้ได้รับความอนุเคราะห์จาก ผศ.ทพ.ดร. จิตจิโรจน์ อิทธิชัยเจริญ คณะทันตแพทยศาสตร์ มหาวิทยาลัยเชียงใหม่'''
+        ,
+        '''ตัวอย่างที่ 19 รูปภาพผลลัพธ์การระบุรอยโรคของภาพถ่ายช่องปากของคนไข้ที่ได้รับการวินิจฉัยทางพยาธิวิทยาว่าเป็นรอยโรคก่อนมะเร็ง หรือ Oral Potentially Malignant Disorder (OPMD) โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 88.06%
+    ภาพนี้ได้รับความอนุเคราะห์จาก ผศ.ทพ.ดร. จิตจิโรจน์ อิทธิชัยเจริญ คณะทันตแพทยศาสตร์ มหาวิทยาลัยเชียงใหม่'''
+        ,
+        '''ตัวอย่างที่ 20 รูปภาพผลลัพธ์การระบุรอยโรคของภาพถ่ายช่องปากของคนไข้ที่ได้รับการวินิจฉัยทางพยาธิวิทยาว่าเป็นรอยโรคก่อนมะเร็ง หรือ Oral Potentially Malignant Disorder (OPMD) โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 89.73%
+    ภาพนี้ได้รับความอนุเคราะห์จาก ผศ.ทพ.ดร. จิตจิโรจน์ อิทธิชัยเจริญ คณะทันตแพทยศาสตร์ มหาวิทยาลัยเชียงใหม่'''
+        ,
+        '''ตัวอย่างที่ 21 รูปภาพผลลัพธ์การระบุรอยโรคของภาพถ่ายช่องปากของคนไข้ที่ได้รับการวินิจฉัยทางพยาธิวิทยาว่าเป็นรอยโรคก่อนมะเร็ง หรือ Oral Potentially Malignant Disorder (OPMD) โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 89.05%
+    ภาพนี้ได้รับจากการลงพื้นที่ตรวจคัดกรองของ ศทป. โดยใช้กล้องมือถือในการถ่าย'''
+        ,
+        '''ตัวอย่างที่ 22 รูปภาพผลลัพธ์การระบุรอยโรคของภาพถ่ายช่องปากของคนไข้ ที่ถูกระบุว่าเป็นรอยโรคก่อนมะเร็ง หรือ Oral Potentially Malignant Disorder (OPMD) โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 90.61%
+        ภาพนี้ผู้พัฒนานำมาจาก Google Search Engine'''
+        ,
+        '''ตัวอย่างที่ 23 รูปภาพผลลัพธ์การระบุรอยโรคของภาพถ่ายช่องปากของคนไข้ ที่ถูกระบุว่าเป็นโรคก่อนมะเร็ง หรือ Oral Potentially Malignant Disorder (OPMF) โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 78.82%
+    ภาพนี้ผู้พัฒนานำมาจาก Google Search Engine'''
+        ,
+        '''ตัวอย่างที่ 24 รูปภาพผลลัพธ์การระบุรอยโรคของภาพถ่ายช่องปากของคนไข้ ที่ถูกระบุว่าเป็นรอยโรคก่อนมะเร็ง หรือ Oral Potentially Malignant Disorder (OPMD) โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 82.57%
+    ภาพนี้ผู้พัฒนานำมาจาก Google Search Engine'''
+        ,
+        '''ตัวอย่างที่ 25 รูปภาพผลลัพธ์การระบุรอยโรคของภาพถ่ายช่องปากของคนไข้ ที่ถูกระบุว่าเป็นรอยโรคก่อนมะเร็ง หรือ Oral Potentially Malignant Disorder (OPMD) โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 88.30%
+    ภาพนี้ผู้พัฒนานำมาจาก Google Search Engine'''
+        ,
+        '''ตัวอย่างที่ 26 ตัวอย่างรูปภาพที่ไม่พบรอยโรค หรือ Normal โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 100%
+    ภาพนี้ได้รับความอนุเคราะห์จาก ผศ.ทพ.กฤษสิทธิ์ วารินทร์ คณะทันตแพทยศาสตร์ มหาวิทยาลัยธรรมศาสตร์'''
+        ,
+        '''ตัวอย่างที่ 27 ตัวอย่างรูปภาพที่ไม่พบรอยโรค หรือ Normal โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 100%
+    ภาพนี้ได้รับความอนุเคราะห์จาก ผศ.ทพ.กฤษสิทธิ์ วารินทร์ คณะทันตแพทยศาสตร์ มหาวิทยาลัยธรรมศาสตร์'''
+        ,
+        '''ตัวอย่างที่ 28 ตัวอย่างรูปภาพที่ไม่พบรอยโรค หรือ Normal โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 100%
+    ภาพนี้ได้รับความอนุเคราะห์จาก ผศ.ทพ.กฤษสิทธิ์ วารินทร์ คณะทันตแพทยศาสตร์ มหาวิทยาลัยธรรมศาสตร์'''
+        ,
+        '''ตัวอย่างที่ 29 ตัวอย่างรูปภาพที่ไม่พบรอยโรค หรือ Normal โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 99.98%
+    ภาพนี้ได้รับความอนุเคราะห์จาก ผศ.ทพ.กฤษสิทธิ์ วารินทร์ คณะทันตแพทยศาสตร์ มหาวิทยาลัยธรรมศาสตร์'''
+        ,
+        '''ตัวอย่างที่ 30 ตัวอย่างรูปภาพที่ไม่พบรอยโรค หรือ Normal โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 100%
+    ภาพนี้ได้รับจากการลงพื้นที่ตรวจคัดกรองของ ศทป. โดยใช้กล้องมือถือในการถ่าย
+    ภาพนี้มีการแก้ไขทางคอมพิวเตอร์โดยทำให้เกิดการสะท้อนกระจกซ้ายขวาเพื่อประโยชน์ต่อการแสดงผล'''
+        ,
+        '''ตัวอย่างที่ 31 ตัวอย่างรูปภาพที่ไม่พบรอยโรค หรือ Normal โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 99.99%
+    ภาพนี้ได้รับจากการลงพื้นที่ตรวจคัดกรองของ ศทป. โดยใช้กล้องมือถือในการถ่าย
+    ภาพนี้มีการแก้ไขทางคอมพิวเตอร์โดยทำให้เกิดการสะท้อนกระจกซ้ายขวาเพื่อประโยชน์ต่อการแสดงผล'''
+        ,
+        '''ตัวอย่างที่ 32 ตัวอย่างรูปภาพที่ไม่พบรอยโรค หรือ Normal โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 99.88% 
+    ภาพนี้ได้รับจากการลงพื้นที่ตรวจคัดกรองของ ศทป. โดยใช้กล้องมือถือในการถ่าย
+    ภาพนี้มีการแก้ไขทางคอมพิวเตอร์โดยทำให้เกิดการสะท้อนกระจกซ้ายขวาเพื่อประโยชน์ต่อการแสดงผล'''
+        ,
+        '''ตัวอย่างที่ 33 ตัวอย่างรูปภาพที่ไม่พบรอยโรค หรือ Normal โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 99.86%
+    ภาพนี้ได้รับจากการลงพื้นที่ตรวจคัดกรองของ ศทป. โดยใช้กล้องมือถือในการถ่าย'''
+        ,
+        '''ตัวอย่างที่ 34 ตัวอย่างรูปภาพที่ไม่พบรอยโรค หรือ Normal โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 99.97%
+    ภาพนี้ได้รับจากการลงพื้นที่ตรวจคัดกรองของ ศทป. โดยใช้กล้องมือถือในการถ่าย'''
+        ,
+        '''ตัวอย่างที่ 35 ตัวอย่างรูปภาพที่ไม่พบรอยโรค หรือ Normal โดยระบบปัญญาประดิษฐ์แจ้งค่าความน่าจะเป็นที่ 99.89%
+    ภาพนี้ได้รับจากการลงพื้นที่ตรวจคัดกรองของ ศทป. โดยใช้กล้องมือถือในการถ่าย
+    ภาพนี้มีการแก้ไขทางคอมพิวเตอร์โดยทำให้เกิดการสะท้อนกระจกซ้ายขวาเพื่อประโยชน์ต่อการแสดงผล'''
+    ]
+    data = {}
+    data["imgs_name"] = img_names
+    data["texts"] = texts
+    return render_template("example.html", data=data)

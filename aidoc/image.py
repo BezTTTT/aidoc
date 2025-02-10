@@ -38,13 +38,12 @@ bp = Blueprint('image', __name__)
 @role_validation
 def upload_image(role):
     data = {}
-    session['sender_mode'] = role
     submission = request.args.get('submission', default='false', type=str)
     if request.method == 'POST':
         if request.form.get('rotation_submitted'):
             imageName = request.form.get('uploadedImage')
-            rotate_temp_image(imageName)
             data = {'uploadedImage': imageName}
+            data['imageQuality'] = rotate_temp_image(imageName)
         elif submission=='false': # Load and show the image, wait for the confirmation
             imageName = None
             imageList = request.files.getlist("imageList")
@@ -68,10 +67,11 @@ def upload_image(role):
                     # Check image quality
                     global qualityChecker
                     quality_result = qualityChecker.predict(pil_img)
-                    print(quality_result['Class_Name'])
                     if quality_result['Class_ID'] == 0:
-                        flash(f'ระบบตรวจสอบพบว่าไฟล์ {imageName} คุณภาพของรูปไม่ได้มาตรฐาน ภาพช่องปากอาจไม่ชัด (เบลอ) หรือมืดเกินไป (เปิดไฟส่องสว่างช่องปากด้วย) กรุณานำส่งรูปที่ได้คุณภาพเท่านั้น')
+                        flash(f'ระบบตรวจสอบพบว่าไฟล์ {imageName} ปรากฎศีรษะของคนไข้ไม่ตั้งขึ้น กรุณาหมุนรูปไปทางขวาเพื่อทำให้ศีรษะของคนไข้อยู่ในทิศทางตั้งขึ้น')
                     elif quality_result['Class_ID'] == 1:
+                        flash(f'ระบบตรวจสอบพบว่าไฟล์ {imageName} คุณภาพของรูปไม่ได้มาตรฐาน ภาพช่องปากอาจไม่ชัด (เบลอ) หรือมืดเกินไป (เปิดไฟส่องสว่างช่องปากด้วย) กรุณานำส่งรูปที่ได้คุณภาพเท่านั้น')
+                    elif quality_result['Class_ID'] == 2:
                         flash(f'ระบบตรวจสอบพบว่าไฟล์ {imageName} ไม่ปรากฎช่องปากในภาพ กรุณานำส่งภาพถ่ายที่ได้มุมมองมาตรฐานตามตัวอย่างเท่านั้น')
                     data['imageQuality'] = quality_result['Class_ID']
 
@@ -460,9 +460,13 @@ def rotate_temp_image(imagename):
     pil_img = pil_img.rotate(-90, expand=True)
     pil_img.save(imagePath)
 
+    quality_result = qualityChecker.predict(pil_img)
+
     # Create the thumbnails
     pil_img = create_thumbnail(pil_img)
     pil_img.save(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', 'thumb_' + imagename))
+
+    return quality_result['Class_ID']
 
 # region oral_lesion_prediction
 # AI Prediction Engine

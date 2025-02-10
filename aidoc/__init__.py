@@ -4,7 +4,7 @@ import os
 # Application Factory
 def create_app(test_config=None):
 
-    print('\033[1m' + '\033[93m' + 'AIDOC Application Starting ...' + '\033[0m')
+    print('\033[1m' + '\033[93m' + ' AIDOC Application Starting ... ' + '\033[0m')
 
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
@@ -61,6 +61,8 @@ def create_app(test_config=None):
     app.register_blueprint(report.routes.report_bp)
     from .API import admin
     app.register_blueprint(admin.routes.admin_bp)
+    from .API import database_migration
+    app.register_blueprint(database_migration.routes.migration_bp)
     
     from . import osm_group
     app.register_blueprint(osm_group.bp, url_prefix='/osm_group')
@@ -73,6 +75,25 @@ def create_app(test_config=None):
     from . import db
     db.init_app(app)
 
-    print('\033[1m' + '\033[93m' + 'AIDOC Application Ready ...' + '\033[0m')
+    # Create log file for each application run
+    import logging
+    from logging.handlers import RotatingFileHandler
+    import datetime
+    os.makedirs('aidoc_logs', exist_ok=True)
+    current_time = datetime.datetime.now()
+    current_time_str = current_time.strftime("%d-%b-%Y_%H-%M")
+    file_handler = RotatingFileHandler(os.path.join('aidoc_logs', f'aidoc_{current_time_str}.log'), maxBytes=10*2**20, backupCount=10)
+    file_handler.setLevel(logging.DEBUG)
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.DEBUG)
+    app.logger.setLevel(logging.DEBUG)
+    app.logger.addHandler(file_handler)
+    app.logger.addHandler(console_handler)
+    werkzeug_logger = logging.getLogger('werkzeug')
+    werkzeug_logger.setLevel(logging.DEBUG)
+    werkzeug_logger.addHandler(file_handler)
+    werkzeug_logger.addHandler(console_handler)
+
+    print('\033[1m' + '\033[93m' + ' AIDOC Application Ready ... ' + '\033[0m')
 
     return app

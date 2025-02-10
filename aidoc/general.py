@@ -26,16 +26,14 @@ def general_index():
         session.clear() # logged out from everything
 
     if g.user: # already logged in
-        if 'sender_mode' in session and session['sender_mode']=='general':
+        if 'login_mode' in session and session['login_mode']=='general':
             return redirect('/general/upload')
     else:
-        session['sender_mode'] = 'general'
         return render_template("general_login.html")
 
 # region login
 @bp.route('/general/login', methods=('Post',))
 def general_login():
-    session['sender_mode'] = 'general'
     email = request.form['email']
     error_msg = None
     db, cursor = get_db()
@@ -44,6 +42,7 @@ def general_login():
     if user is None:
         error_msg = "Please register the new user for the first time"
     if error_msg is None: # Logged in sucessfully
+        session['login_mode'] = 'general'
         session['user_id'] = user['id']
         return redirect('/general/upload')
     
@@ -93,7 +92,6 @@ def general_register():
 @login_required
 def general_upload():
     data = {}
-    session['sender_mode'] = 'general'
     submission = request.args.get('submission', default='false', type=str)
     if request.method == 'POST':
         if request.form.get('rotation_submitted'):
@@ -123,8 +121,10 @@ def general_upload():
                     global qualityChecker
                     qualityResults = qualityChecker.predict(pil_img)
                     if qualityResults['Class_ID'] == 0:
-                        flash('System detects that the picture failed the quality test. The mouth might be too blury, too small, or too dark (please use flash light). Please send only the high quality images')
+                        flash('System detects that the patient head is not in the upright position. Please rotate the image to the right')
                     elif qualityResults['Class_ID'] == 1:
+                        flash('System detects that the picture failed the quality test. The mouth might be too blury, too small, or too dark (please use flash light). Please send only the high quality images')
+                    elif qualityResults['Class_ID'] == 2:
                         flash('System detects that the picture may not contain a mouth. Please follow the guidelines below for taking the oral images')
                     data['imageQuality'] = qualityResults['Class_ID']
 
@@ -164,7 +164,7 @@ def general_upload():
 def general_diagnosis(img_id):       
 
     db, cursor = get_db()
-    if session['sender_mode']=='general':
+    if session['login_mode']=='general':
         sql = '''SELECT general_submission_record.id AS img_id, fname, general_sender_id AS sender_id, ai_prediction, ai_scores
                 FROM general_submission_record
                 WHERE id=%s'''
@@ -176,7 +176,7 @@ def general_diagnosis(img_id):
     # Authorization check
     if data is None:
         return render_template('unauthorized_access.html', error_msg='Data Not Found')
-    elif (session['sender_mode']!='general') or (session['sender_mode']=='general' and (session['user_id']!=data['sender_id'])):
+    elif (session['login_mode']!='general') or (session['login_mode']=='general' and (session['user_id']!=data['sender_id'])):
         return render_template('unauthorized_access.html', error_msg='Unauthorized Access')
 
     # Further process the data

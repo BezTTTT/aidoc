@@ -3,5 +3,6 @@ instance/*
 oralLesionNet/*
 imageData/*
 imageQualityChecker/*
+aidoc_logs/*
 aidoc/static/legal/*
 legal/*

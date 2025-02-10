@@ -4,14 +4,14 @@
 
 {% block content %}
 <br />
-{% if 'sender_mode' not in session or session['sender_mode']!='patient' or session['user_id']!=data['patient_id'] %}
+{% if 'login_mode' not in session or session['login_mode']!='patient' or session['user_id']!=data['patient_id'] %}
     <h2 class="mb-2 text-center"> คุณไม่มีสิทธิ์เข้าถึงข้อมูล Unauthorized Access </h2>
 {% else %}
 
-<h2 class="mb-2 text-center"> การตรวจคัดกรองรอยโรคมะเร็งช่องปากด้วยตนเอง </h2>
+<h2 class="text-center"> การตรวจคัดกรองรอยโรคมะเร็งช่องปากด้วยตนเอง </h2>
 
-<div class="row d-flex justify-content-center text-center mt-2" style="width: auto">
-    <div class="col-md-4">
+<div class="row d-flex justify-content-center text-center">
+    <div class="col-sm-6 col-md-4 mt-2">
         <div class="card"
                 {% if data['special_request']==1 %}
                     style="border-color: red; border-width: 3px;"
@@ -35,7 +35,7 @@
 </div>
 
 <div class="row d-flex justify-content-center text-center mt-2" style="width: auto">
-    <div class="col-md-8">
+    <div class="col">
         <div class="card">
             <div class="card-body">
                 <p class="card-text">[คำแนะนำ] [1. คนไข้หัวตั้งขึ้น] [2. ตั้งกล้องแนวนอน] [3. ภาพคมชัด ช่องปากขนาดใหญ่] [4. เปิดแฟลชขณะถ่ายรูป] [5. มุมมองมาตรฐาน]</p>
@@ -45,14 +45,15 @@
 </div>
 
 {% if 'dentistFeedbackRequest' in data and data['dentistFeedbackRequest']=='true' %}
-    <div class="p-3 text-center d-flex justify-content-center">
-        <div class="col-md-4">
-            <div class="col-md-4 d-flex justify-content-center" style="width: auto; margin-bottom: 5%;">
-                <a class="btn btn-success" href="/record/patient">ย้อนกลับหน้าประวัติ</a>
-            </div>
+<div class="p-3 text-center d-flex justify-content-center">
+    <div class="col-md-4">
+        <div class="col-md-4 d-flex justify-content-center" style="width: auto; margin-bottom: 5%;">
+            <a class="btn btn-success" href="/record/patient">ย้อนกลับหน้าประวัติ</a>
         </div>
     </div>
-    <div class="row d-flex justify-content-center text-align-left mb-4" style="width: auto">
+</div>
+<div class="row d-flex justify-content-center text-align-left my-3">
+    <div class="col">
         <div class="card">
             <div class="card-body">
                 <h5 class="card-title">ผลการวินิจฉัยโดยทันตเเพทย์</h5>
@@ -98,32 +99,24 @@
             </div>
         </div>
     </div>
+</div>
 {% else %}
-    <div class="p-3 text-center d-flex justify-content-center">
-        <div class="col-md-4">
-            <div class="col-md-4 d-flex justify-content-center" style="width: auto; margin-bottom: 5%;">
-                <a class="btn btn-success" href="/upload_image/patient">นำส่งภาพถ่ายช่องปากเพิ่มเติม</a>
-            </div>
-        </div>
+<div class="row d-flex justify-content-center text-align-left my-3">
+    <div class="col d-flex justify-content-center" style="width: auto; margin-bottom: 5%;">
+        <a class="btn btn-success" href="/upload_image/patient">นำส่งภาพถ่ายช่องปากเพิ่มเติม</a>
     </div>
+</div>
 {% endif %}
 
 {% if 'dentist_feedback_code' in data and data['dentist_feedback_code'] is not none %}
-    <div class="row d-flex justify-content-center">
-        <button id="seeMoreButton" style="
-                padding: 5px 10px;
-                font-size: 15px;
-                width: 25%;
-                border-radius: 10px;
-                background-color: grey;
-                color: white;
-                border: none;
-            ">คลิกเพื่อดูผลการพยากรณ์ของ AI</button>
-    </div>
-    <div id="hiddenContent" class="m-2">
+<div class="row d-flex justify-content-center my-3">
+    <button id="seeMoreButton" class="btn btn-secondary" style="width: 25%;">คลิกเพื่อดูผลการพยากรณ์ของ AI</button>
+</div>
+
+<div id="hiddenContent">
 {% endif %}
-    <div class="m-2">
-        <div class="row d-flex justify-content-center text-align-left" style="width: auto">
+    <div class="row d-flex justify-content-center text-align-left my-3">
+        <div class="col">
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">ผลการพยากรณ์ของ AI</h5>
@@ -147,58 +140,55 @@
             </div>
         </div>
     </div>
-{% if data['dentist_feedback_code'] is not none %}
-    </div>
+{% if 'dentist_feedback_code' in data and data['dentist_feedback_code'] is not none %}
+</div>
 {% endif %}
 
-{% if data['special_request']==0 %}
-    <div class="row d-flex justify-content-center my-4">
-        <div class="card" style="width: 100%;">
-            <div class="card-body">
-                <p class="card-title">
-                    หากท่านต้องการให้ผู้เชี่ยวชาญตรวจสอบภาพนี้เป็นกรณีพิเศษ กรุณากดใช่
-                    (คำขอตรวจสอบภาพกรณีพิเศษใช้กับกรณีที่ท่านตรวจพบรอยโรคในภาพแล้วเท่านั้น)
-                </p>
-                <div class="row mt-2 justify-content-center">
-                    <div class="col-3">
-                        <button type="button" class="btn btn-outline-primary mx-1" style="width: 100%"
-                            data-bs-toggle="modal" data-bs-target="#specialRequestModal">
-                            ใช่
-                        </button>
+
+<div class="d-grid diagnosis-grid">
+    <div class="card grid-item-patient-request-spacialist-panel">
+        {% if data['special_request']==0 %}
+        <div class="card-body">
+            <h5 class="card-title text-start mb-3">หากท่านต้องการให้ผู้เชี่ยวชาญตรวจสอบภาพนี้เป็นกรณีพิเศษ</h5>
+            <button type="button" class="btn btn-outline-primary mb-2" data-bs-toggle="modal" data-bs-target="#specialRequestModal">
+                <div class="px-4">ใช่</div>
+            </button>
+            <div class="mt-2"><i>(คำขอตรวจสอบภาพกรณีพิเศษใช้กับกรณีที่ท่านตรวจพบรอยโรคในภาพแล้วเท่านั้น)</i></div>
+        </div>
+        <!-- Modal -->
+        <div class="modal fade" id="specialRequestModal" tabindex="-1" aria-labelledby="specialRequestModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="specialRequestModalLabel">ส่งคำขอตรวจสอบภาพเป็นพิเศษ</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-start"> คำขอตรวจสอบภาพกรณีพิเศษใช้กับกรณีที่ท่านตรวจพบรอยโรคในภาพแล้วเท่านั้น </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                        <form action="{{ url_for('webapp.diagnosis', role='patient', img_id=data['img_id'], special_request='true') }}" method="POST" >
+                            <input class="btn btn-primary " id="specialRequestSubmit" type="submit" value="ตกลง" style="width: 100%"/>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    <!-- Modal -->
-    <div class="modal fade" id="specialRequestModal" tabindex="-1" aria-labelledby="specialRequestModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="specialRequestModalLabel">ส่งคำขอตรวจสอบภาพเป็นพิเศษ</h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body text-start"> คำขอตรวจสอบภาพกรณีพิเศษใช้กับกรณีที่ท่านตรวจพบรอยโรคในภาพแล้วเท่านั้น </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                    <form action="{{ url_for('webapp.diagnosis', role='patient', img_id=data['img_id'], special_request='true') }}" method="POST" >
-                        <input class="btn btn-primary " id="specialRequestSubmit" type="submit" value="ตกลง" style="width: 100%"/>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-{% endif %}
-
-<div class="row d-flex justify-content-center my-4">
-    <div class="card" style="width: 100%;">
+        {% else %}
         <div class="card-body">
-            <h6>หากท่านมีข้อสงสัยต่อการพยากรณ์นี้หรือต้องการขอคำแนะนำทางการแพทย์ กรุณาติดต่อผู้ประสานงานโครงการได้ที่ </h6>
-            <h6>ช่องแชทของไลน์ “ตรวจมะเร็งช่องปาก” โดยการแอดเพิ่มเพื่อนได้ที่ Line ID @riskoca และแจ้งหมายเลข Case ID: {{ data['case_id'] }} เพื่อใช้ในการตรวจสอบข้อมูล</h6>
+            <h5 class="card-title text-start mb-3">หากท่านต้องการให้ผู้เชี่ยวชาญตรวจสอบภาพนี้เป็นกรณีพิเศษ</h5>
+            <div class="mt-2"><i>ข้อมูลภาพนี้ได้รับการส่งคำขอตรวจเป็นกรณีพิเศษเรียบร้อยแล้ว</i></div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="card grid-item-patient-question-info-panel">
+        <div class="card-body">
+            <h5>หากท่านมีข้อสงสัยต่อการพยากรณ์นี้หรือต้องการขอคำแนะนำทางการแพทย์ </h5>
+            <div class="mt-2"><i>กรุณาติดต่อผู้ประสานงานโครงการได้ที่ ช่องแชทของไลน์ “ตรวจมะเร็งช่องปาก” โดยการแอดเพิ่มเพื่อนได้ที่ Line ID @riskoca และแจ้งหมายเลข Case ID: {{ data['case_id'] }} เพื่อใช้ในการตรวจสอบข้อมูล</i></div>
+
         </div>
     </div>
 </div>
-<br />
 {% endif %}
 
 <script>
@@ -219,5 +209,4 @@
     });
   });
 </script>
-
 {% endblock %}

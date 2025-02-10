@@ -48,7 +48,7 @@
         </button>
         </form>
         <form id="submitimgForm" action="{{ url_for('general.general_upload', submission='true') }}" method="post" enctype="multipart/form-data" >
-          {% if data['imageQuality']==2 %}
+          {% if data['imageQuality']==3 %}
             <button id="submitbtn" onclick="disableButton()" class="btn btn-success mb-2 btn-lg">Confirm</button>
           {% else %}
             <button id="confirmButton" input type="button" class="btn btn-outline-info mb-2" data-bs-toggle="modal" data-bs-target="#qualityCheckerModal">Confirm</button>
