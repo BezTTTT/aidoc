@@ -632,6 +632,50 @@ def report():
 def userManagement():
     return render_template("/newTemplate/admin_management.html")
 
+#followup for dentist page
+@bp.route('/followup/admin', methods=['GET'])
+@login_required
+@admin_only
+def followupManage():
+    page = request.args.get("page", session.get('current_record_page', 1), type=int)
+    session['current_record_page'] = page
+    session['records_per_page'] = 12
+    paginated_data, dataCount = record_followup() 
+
+    if dataCount is not None:
+        dataCount = dataCount['total_records']
+    else:
+        dataCount = 0
+    total_pages = (dataCount - 1) // session['records_per_page'] + 1
+
+    return render_template("/newTemplate/admin_followup.html",dataCount=dataCount,
+                current_page=page,
+                total_pages=total_pages,
+                data=paginated_data
+                )
+
+@bp.route('/followup/confirm/<int:submission_id>',methods = ['POST'])
+@login_required
+@admin_only
+def confirmFeedback(submission_id):
+    feedback = request.form.get('feedback')
+    print(feedback)
+    note = request.form.get('note')
+    print(note)
+
+    db, cursor = get_db()
+    sql = '''
+        UPDATE followup_request 
+        SET
+            followup_note = %s,
+            followup_feedback = %s
+        WHERE
+            submission_id = %s;
+    '''
+    values = (note,feedback,submission_id)
+    cursor.execute(sql,values)
+    return redirect('/followup/admin')
+
 # region edit
 @bp.route('/edit/', methods=('GET','POST'))
 @login_required
@@ -1197,6 +1241,50 @@ def update_submission_record(ai_predictions, ai_scores):
             sql = "INSERT INTO patient_case_id (id) VALUES (%s)"
             val = (row['LAST_INSERT_ID()'],)
             cursor.execute(sql, val)
+
+def record_followup():
+
+    page = session['current_record_page']
+    records_per_page = session['records_per_page']
+    offset = (page-1)*records_per_page
+    db, cursor = get_db()
+    sql_select_part = '''
+                SELECT 
+                sr.id, 
+                sr.ai_prediction,
+                sr.channel,
+                sr.sender_id,
+                sr.patient_id,
+                sr.fname,
+                pcid.case_id'''
+    sql_join_part = '''
+                FROM submission_record as sr INNER JOIN followup_request as fr ON sr.id = fr.submission_id
+                LEFT JOIN patient_case_id as pcid ON pcid.id=fr.submission_id'''
+    sql_limit_part = '''
+                ORDER BY sr.id DESC
+                LIMIT %s
+                OFFSET %s'''
+    sql_count = 'SELECT Count(*) AS total_records'
+                
+    sql1 = sql_count + sql_join_part
+    sql2 = sql_select_part + sql_join_part + sql_limit_part
+
+    val = (records_per_page,offset)
+    cursor.execute(sql1)
+    dataCount = cursor.fetchone()
+
+    cursor.execute(sql2,val)
+    paginated_data = cursor.fetchall()
+
+    for item in paginated_data:
+        if item['channel']=='PATIENT':
+            item['owner_id'] = item['patient_id']
+        else:
+            item['owner_id'] = item['sender_id']
+
+    print(paginated_data)
+    return paginated_data,dataCount
+
 
 @bp.route('/about')
 def about():
