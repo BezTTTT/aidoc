@@ -1,3 +1,4 @@
+from functools import singledispatch
 import json
 from flask import Blueprint, jsonify, render_template, request, session, g
 from aidoc.auth import login_required
@@ -57,7 +58,7 @@ def render_osm_group_record():
     session['current_record_page'] = page
     session['records_per_page'] = 12
 
-    paginated_data, supplemental_data, dataCount, osm_filter_data = record_osm_group()
+    paginated_data, supplemental_data, dataCount, osm_filter_data = record_osm_group("dummy")
 
     # Further process each item in paginated_data
     for item in paginated_data:
@@ -77,8 +78,17 @@ def render_osm_group_record():
                 data=supplemental_data,
                 osm_filter_data=osm_filter_data)
 
-# function to retrieve osm group records
-def record_osm_group():
+# overloading
+@singledispatch
+def record_osm_group(dummy):
+    page = session['current_record_page']
+    records_per_page = session['records_per_page']
+    offset = (page - 1) * records_per_page
+    paginated_data, supplemental_data, dataCount, osm_filter_data = record_osm_group(page, records_per_page, offset)
+    return paginated_data, supplemental_data, dataCount, osm_filter_data
+
+@record_osm_group.register
+def _(page: int, records_per_page: int, offset: int):
     # Construct filter query and supplemental data
     filter_query, supplemental_data = construct_osm_filter_sql()
 
@@ -89,9 +99,9 @@ def record_osm_group():
         supplemental_data['filterSender'] = filter_sender
 
     # Pagination setup
-    page = session['current_record_page']
-    records_per_page = session['records_per_page']
-    offset = (page - 1) * records_per_page
+    # page = session['current_record_page']
+    # records_per_page = session['records_per_page']
+    # offset = (page - 1) * records_per_page
 
     db, cursor = get_db()
     
@@ -141,7 +151,7 @@ def record_osm_group():
     sql_group_member = '(' + ' OR '.join(group_member_conditions) + ')'
 
     # Combine SQL parts
-    sql_where = f' AND {filter_query}' if filter_query else ''
+    sql_where = f'AND {filter_query} AND channel = "OSM"' if filter_query else 'AND channel = "OSM"'
     sql_count_query = sql_count + sql_from + sql_group_member + sql_where
     sql_select_query = sql_select + sql_from + sql_group_member + sql_where + sql_limit
 
