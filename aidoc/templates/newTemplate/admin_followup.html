@@ -46,23 +46,25 @@
                         <div class="d-flex gap-2">
                             <select class="form-select form-select-sm" id="feedback" name="feedback" required>
                                 <option selected disabled hidden>Feedback</option>
-                                <option value="OPMD">OPMD</option>
-                                <option value="OSCC">OSCC</option>
-                                <option value="Benign">Benign</option>
-                                <option value="Others">Others</option>
-                                <option value="Normal">Normal</option>
-                                <option value="BAD_IMG">ภาพไม่ได้มาตรฐาน</option>
+                                <option value="OPMD" {% if item.followup_feedback == 'OPMD' %}selected{% endif %}>OPMD</option>
+                                <option value="OSCC" {% if item.followup_feedback == 'OSCC' %}selected{% endif %}>OSCC</option>
+                                <option value="Benign" {% if item.followup_feedback == 'Benign' %}selected{% endif %}>Benign</option>
+                                <option value="Others" {% if item.followup_feedback == 'Others' %}selected{% endif %}>Others</option>
+                                <option value="Normal" {% if item.followup_feedback == 'Normal' %}selected{% endif %}>Normal</option>
+                                <option value="BAD_IMG" {% if item.followup_feedback == 'BAD_IMG' %}selected{% endif %}>ภาพไม่ได้มาตรฐาน</option>
                             </select>
                             <select class="form-select form-select-sm" id ="note" name="note" required>
                                 <option selected disabled hidden>Note</option>
-                                <option value="พบแพทย์ด่วน">พบแพทย์ด่วน</option>
-                                <option value="ตรวจเพิ่มเติม">ตรวจเพิ่มเติม</option>
-                                <option value="รอดูอาการ">รอดูอาการ</option>
-                                <option value="ปกติ">ปกติ</option>
-                                <option value="ภาพเบลอ">ภาพเบลอ</option>
-                                <option value="ถ่ายใหม่">ถ่ายใหม่</option>
+                                <option value="พบแพทย์ด่วน" {% if item.followup_note == 'พบแพทย์ด่วน' %}selected{% endif %} >พบแพทย์ด่วน</option>
+                                <option value="ตรวจเพิ่มเติม" {% if item.followup_note == 'ตรวจเพิ่มเติม' %}selected{% endif %} >ตรวจเพิ่มเติม</option>
+                                <option value="รอดูอาการ" {% if item.followup_note == 'รอดูอาการ' %}selected{% endif %}> รอดูอาการ </option>
+                                <option value="ปกติ" {% if item.followup_note == 'ปกติ' %}selected{% endif %} >ปกติ</option>
+                                <option value="ภาพเบลอ" {% if item.followup_note == 'ภาพเบลอ' %}selected{% endif %} >ภาพเบลอ</option>
+                                <option value="ถ่ายใหม่" {% if item.followup_note == 'ถ่ายใหม่' %}selected{% endif %} >ถ่ายใหม่</option>
                             </select>
-                            <button class="btn btn-success" type="submit"> Confirm</button>
+                        </div>
+                        <div class="text-center mt-3">
+                            <button class="btn btn-success" type="submit">Confirm</button>
                         </div>
                     </form>
                 </div>
@@ -92,40 +94,44 @@
 
 {% block script %}
 <script>
-    // const filterStatus = document.getElementById("filterStatus");
-    // const filterPriority = document.getElementById("filterPriority");
-    // const filterProvince = document.getElementById("filterProvince")
-    // const filterSpecialist = document.getElementById("filterSpecialist")
-    // const filterFollowup = document.getElementById("filterFollowup")
-    // const filterRetrain = document.getElementById("filterRetrain")
-    
-    // Get the filters element and set its value from Flask
-    // const filterStatusValue     = "{{ data['filterStatus'] }}";
-    // const filterPriorityValue   = "{{ data['filterPriority'] }}";
-    // const filterProvinceValue   = "{{ data['filterProvince'] }}";
-    // const filterSpecialistValue  = "{{ data['filterSpecialist'] }}";
-    // const filterFollowupValue   = "{{ data['filterFollowup'] }}";
-    // const filterRetrainValue    = "{{ data['filterRetrain'] }}";
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll("form").forEach(form => {
+            form.addEventListener("submit", function (event) {
+                event.preventDefault();  // Prevent default form submission
 
-    // Set the selected filters value if it exists
-    // if (filterStatusValue) {
-    //     filterStatus.value = filterStatusValue;
-    // }
-    // if (filterPriorityValue) {
-    //     filterPriority.value = filterPriorityValue;
-    // }
-    // if (filterProvinceValue) {
-    //     filterProvince.value = filterProvinceValue;
-    // }
-    // if (filterSpecialistValue) {
-    //     filterSpecialist.value = filterSpecialistValue
-    // }
-    // if (filterFollowupValue) {
-    //     filterFollowup.value = filterFollowupValue
-    // }
-    // if (filterRetrainValue) {
-    //     filterRetrain.value = filterRetrainValue
-    // }
-        
+                let formData = new FormData(this);
+
+                fetch(this.action, {
+                    method: "POST",
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        let card = this.closest(".col-lg-3"); 
+                        let parentContainer = card.parentElement;
+                        parentContainer.appendChild(card); // Move card to bottom
+
+                        Toastify({
+                            text: data.message,
+                            duration: 3000,
+                            gravity: "top",
+                            position: "right",
+                            backgroundColor: "green",
+                        }).showToast();
+                    } else {
+                        Toastify({
+                            text: data.message,
+                            duration: 3000,
+                            gravity: "top",
+                            position: "right",
+                            backgroundColor: "red",
+                        }).showToast();
+                    }
+                })
+                .catch(error => console.error("Error:", error));
+            });
+        });
+    });
 </script>
 {% endblock %}
