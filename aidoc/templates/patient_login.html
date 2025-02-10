@@ -16,86 +16,96 @@
   }
 </style>
 {% if g.user %}
-  <div class="row d-flex align-items-center justify-content-center pt-4">
-    <div class="card d-flex justify-content-center" style="width: 30%; height: auto">
-      <div class="card-body">
-        <div>
-          <h5 class="card-title">คุณกำลังเข้าสู่ระบบอยู่</h5>
-        </div>
-        <div class="d-flex justify-content-around mt-5">
-          <a class="btn btn-outline-primary" type="submit" href="/upload_image/patient">กลับสู่หน้าอัพโหลดรูปภาพ</a>
-          <a class="btn btn-outline-primary" type="submit" href="/logout">ออกจากระบบ</a>
-        </div>
+<div class="row d-flex align-items-center justify-content-center pt-4">
+  <div class="card d-flex justify-content-center" style="width: 30%; height: auto">
+    <div class="card-body">
+      <div>
+        <h5 class="card-title">คุณกำลังเข้าสู่ระบบอยู่</h5>
+      </div>
+      <div class="d-flex justify-content-around mt-5">
+        <a class="btn btn-outline-primary" type="submit" href="/upload_image/patient">กลับสู่หน้าอัพโหลดรูปภาพ</a>
+        <a class="btn btn-outline-primary" type="submit" href="/logout">ออกจากระบบ</a>
       </div>
     </div>
   </div>
+</div>
 {% else %}
-  
-  <div class="row d-flex justify-content-center py-2">
-    <div class="card" style="width: auto; color:red ">
-      <div class="card-body">
-        <b>ระบบกำลังอยู่ระหว่างการพัฒนาและทดสอบอย่างต่อเนื่อง ยังไม่รองรับการใช้งานจริง ข้อมูลของท่านอาจถูกลบได้ทุกเมื่อ</b> <br>
-      </div>
+
+<div class="d-flex justify-content-center align-items-center">
+  <div class="alert alert-info d-flex align-items-center" role="alert">
+    <p class="text-center">
+      ระบบนี้ไม่ใช่เครื่องมือทางการแพทย์และยังไม่ได้รับการรับรองมาตรฐาน ผลลัพธ์อาจมีความผิดพลาดได้เสมอ
+      หากท่านพบรอยโรคในช่องปาก ท่านต้องรีบพบแพทย์หรือทันตแพทย์โดยด่วน ...
+      การที่ท่านใช้งานระบบนี้ หมายความว่า
+      ท่านอนุญาตให้เราเก็บรักษาข้อมูลส่วนบุคคลของท่านไว้ได้และท่านยินดีที่จะเข้าร่วมโครงการวิจัยกับเรา ...
+      หากท่านต้องการทราบรายละเอียดโครงการวิจัยหรือมีข้อสงสัยต่อการใช้งานของระบบ กรุณาติดต่อ
+      ศูนย์ทันตสาธารณสุขระหว่างประเทศ กรมอนามัย โทรศัพท์ 0-5314-0141-2 หรือ Line: @riskoca
+    </p>
+  </div>
+</div>
+
+<div class="container-sm py-4">
+  <nav class="m-auto loginContainer p-0">
+    <div class="nav nav-tabs" id="nav-tab" role="tablist">
+      <span class="nav-item nav-link active" id="login-patient-tab" data-toggle="tab" role="button"
+        aria-controls="nav-patient" onclick="toggleLoginMode('patient')">
+        ประชาชน
+      </span>
+
+      <span class="nav-item nav-link" id="login-osm-tab" data-toggle="tab" role="button" aria-controls="nav-osm"
+        onclick="toggleLoginMode('osm')">
+        ผู้ตรวจคัดกรอง
+      </span>
+    </div>
+  </nav>
+
+  <div class="m-auto loginContainer border border-top-0 p-4 rounded-bottom-3">
+    <div class="card-body">
+      <form id="form-patient" action="/login/patient" method="post" enctype="multipart/form-data"
+        style="display: block;">
+        <h5 class="card-title fw-bold">การตรวจคัดกรองรอยโรคมะเร็งในช่องปากด้วยตนเอง</h5>
+        <div class="my-4">
+          <div class="form-group">
+            <label class="mr-sm-2 mb-2">เลขประจำตัวประชาชน: </label>
+            <input type="text" class="form-control" placeholder="เลขประจำตัว ปชช. 13 หลัก ..." name="national_id"
+              maxlength="13" required>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-12 d-flex justify-content-center">
+            <input class="btn btn-outline-success" style="width: 50%;" type="submit" value="ตกลง">
+          </div>
+        </div>
+      </form>
+
+      <form id="form-osm" action="/login/osm" method="post" enctype="multipart/form-data" style="display: none;">
+        <h5 class="card-title fw-bold">ระบบการนำส่งภาพถ่ายช่องปากโดยผู้ตรวจคัดกรอง</h5>
+        <div class="my-4">
+          <div class="form-group">
+            <label class="mr-sm-2 mb-2">เลขประจำตัวประชาชน: </label>
+            <input type="text" class="form-control" placeholder="เลขประจำตัว ปชช. 13 หลัก ..." name="osm_national_id"
+              maxlength="13" required>
+          </div>
+          <div class="form-group mt-3">
+            <label class="mr-sm-2 mb-2">เบอร์โทรศัพท์:</label>
+            <div class="d-flex">
+              <input type="text" class="form-control" placeholder="เบอร์โทรศัพท์..." name="osm_phone" maxlength="10"
+                required>
+            </div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-6 d-flex justify-content-center">
+            <input class="btn btn-outline-success" style="width: 100%;" type="submit" value="ตกลง">
+          </div>
+          <div class="col-6 d-flex justify-content-center">
+            <a class="btn btn-outline-primary" style="width: 100%;" type="submit" href="/register/osm">ลงทะเบียน</a>
+          </div>
+        </div>
+      </form>
     </div>
   </div>
-
-  <div class="container-sm py-4">
-    <nav class="m-auto loginContainer p-0">
-      <div class="nav nav-tabs" id="nav-tab" role="tablist">
-        <span class="nav-item nav-link active" id="login-patient-tab" data-toggle="tab" role="button" aria-controls="nav-patient" onclick="toggleLoginMode('patient')">
-          ประชาชน
-        </span>
-
-        <span class="nav-item nav-link" id="login-osm-tab" data-toggle="tab" role="button" aria-controls="nav-osm" onclick="toggleLoginMode('osm')">
-          ผู้ตรวจคัดกรอง
-        </span>
-      </div>
-    </nav>
-
-    <div class="m-auto loginContainer border border-top-0 p-4 rounded-bottom-3">
-      <div class="card-body">
-        <form id="form-patient" action="/login/patient" method="post" enctype="multipart/form-data" style="display: block;">
-          <h5 class="card-title fw-bold">การตรวจคัดกรองรอยโรคมะเร็งในช่องปากด้วยตนเอง</h5>
-          <div class="my-4">
-            <div class="form-group">
-              <label class="mr-sm-2 mb-2">เลขประจำตัวประชาชน: </label>
-              <input type="text" class="form-control" placeholder="เลขประจำตัว ปชช. 13 หลัก ..." name="national_id" maxlength="13" required>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-12 d-flex justify-content-center">
-              <input class="btn btn-outline-success" style="width: 50%;" type="submit" value="ตกลง">
-            </div>
-          </div>
-        </form>
-    
-        <form id="form-osm" action="/login/osm" method="post" enctype="multipart/form-data" style="display: none;">
-          <h5 class="card-title fw-bold">ระบบการนำส่งภาพถ่ายช่องปากโดยผู้ตรวจคัดกรอง</h5>
-          <div class="my-4">
-            <div class="form-group">
-              <label class="mr-sm-2 mb-2">เลขประจำตัวประชาชน: </label>
-              <input type="text" class="form-control" placeholder="เลขประจำตัว ปชช. 13 หลัก ..." name="osm_national_id" maxlength="13" required>
-            </div>
-            <div class="form-group mt-3">
-              <label class="mr-sm-2 mb-2">เบอร์โทรศัพท์:</label>
-              <div class="d-flex">
-                <input type="text" class="form-control" placeholder="เบอร์โทรศัพท์..." name="osm_phone" maxlength="10" required>
-              </div>
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-6 d-flex justify-content-center">
-              <input class="btn btn-outline-success" style="width: 100%;" type="submit" value="ตกลง">
-            </div>
-            <div class="col-6 d-flex justify-content-center">
-              <a class="btn btn-outline-primary" style="width: 100%;" type="submit" href="/register/osm">ลงทะเบียน</a>
-            </div>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
-  <br>
+</div>
 {% endif %}
 {% include 'terms_footer.html' %}
 {% endblock %}

@@ -29,13 +29,11 @@ def general_index():
         if 'login_mode' in session and session['login_mode']=='general':
             return redirect('/general/upload')
     else:
-        session['login_mode'] = 'general'
         return render_template("general_login.html")
 
 # region login
 @bp.route('/general/login', methods=('Post',))
 def general_login():
-    session['login_mode'] = 'general'
     email = request.form['email']
     error_msg = None
     db, cursor = get_db()
@@ -44,6 +42,7 @@ def general_login():
     if user is None:
         error_msg = "Please register the new user for the first time"
     if error_msg is None: # Logged in sucessfully
+        session['login_mode'] = 'general'
         session['user_id'] = user['id']
         return redirect('/general/upload')
     
@@ -93,7 +92,6 @@ def general_register():
 @login_required
 def general_upload():
     data = {}
-    session['login_mode'] = 'general'
     submission = request.args.get('submission', default='false', type=str)
     if request.method == 'POST':
         if request.form.get('rotation_submitted'):

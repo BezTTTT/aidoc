@@ -1,17 +1,28 @@
-<div class="card my-4" style="width: 100%;">
-    <div class="card-body d-flex justify-content-evenly">
-        <div class="row d-flex justify-content-center">
-            <div class="col-md-3 d-flex justify-content-evenly">
-                <img src="{{ url_for('static', filename='logos/doh.png') }}" class="card d-flex justify-content-center"
-                    style="width: 50%;height: auto;border:0;" >
+<div class="card my-4 w-100">
+    <div class="card-body">
+        <div class="row">
+                <div class="col-md-4 text-center">
+                    <a href="/about">
+                        <img src="{{ url_for('static', filename='logos/doh.png') }}" class="img-fluid d-block mx-auto"
+                            style="width: 30%; border: 0;" alt="Department of Health">
+                    </a>
+                    <p class="mt-2">ศูนย์ทันตสาธารณสุขระหว่างประเทศ</p>
+                </div>
+            </a>
+            <div class="col-md-4 text-center">
+                <a href="/about">
+                    <img src="{{ url_for('static', filename='logos/cmu.png') }}" class="img-fluid d-block mx-auto"
+                        style="width: 30%; border: 0;" alt="Chiang Mai University">
+                </a>
+                <p class="mt-2">ภาควิชาวิศวกรรมคอมพิวเตอร์ คณะวิศวกรรมศาสตร์ <br>
+                    ภาควิชาชีววิทยาช่องปากและวิทยาการวินิจฉัยโรคช่องปาก คณะทันตแพทยศาสตร์</p>
             </div>
-            <div class="col-md-3 d-flex justify-content-around">
-                <img src="{{ url_for('static', filename='logos/cmu.png') }}" class="card d-flex justify-content-center"
-                    style="width: 50%;height: auto;border:0;">
-            </div>
-            <div class="col-md-3 d-flex justify-content-around">
-                <img src="{{ url_for('static', filename='logos/thammasat.png') }}" class="card d-flex justify-content-center"
-                    style="width: 50%;height: auto;border:0;">
+            <div class="col-md-4 text-center">
+                <a href="/about">
+                    <img src="{{ url_for('static', filename='logos/thammasat.png') }}" class="img-fluid d-block mx-auto"
+                        style="width: 30%; border: 0;" alt="Thammasat University">
+                </a>
+                <p class="mt-2">คณะทันตแพทยศาสตร์</p>
             </div>
         </div>
     </div>
