@@ -18,9 +18,6 @@ def get_table(province):
             "dentist_diagnose": {"agree": 0, "disagree": 0},
             "total_pic": 0
         }
-
-    finally:
-        db.close_db()
         
     return output
 

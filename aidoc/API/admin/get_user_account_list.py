@@ -13,10 +13,6 @@ def users_list():
             output = user_list
     except Exception as e:
         return json.dumps({"error": f"An error occurred while fetching user accounts: {e}"}),500
-    
-    finally:
-        db.close_db()
-    
     return output
 
 def fetch_user_list(cursor):

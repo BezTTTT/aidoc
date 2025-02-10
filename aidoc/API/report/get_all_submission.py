@@ -26,9 +26,6 @@ def get_all_submission(province):
                 "normal": 0, "opmd": 0, "oscc": 0},
             "total_pic": 0
         }
-    
-    finally:
-        db.close_db()
         
     return output
 
