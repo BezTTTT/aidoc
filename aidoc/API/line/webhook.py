@@ -40,7 +40,7 @@ def webhook_handler():
                     if cursor.rowcount > 0:
                         send_message(line_id, "ลงทะเบียนสำเร็จ! เบอร์โทรศัพท์ของคุณได้รับการเชื่อมต่อแล้ว")
                     else:
-                        send_message(line_id, "ไม่พบข้อมูลในระบบ กรุณาสมัครสมาชิกที่ https://icohold.anamai.moph.go.th:82/patient")
+                        send_message(line_id, "ไม่พบข้อมูลในระบบ กรุณาสมัครสมาชิกที่ https://icohold.anamai.moph.go.th:85")
 
             else:
                 send_message(line_id, "กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง (10 หลัก)")

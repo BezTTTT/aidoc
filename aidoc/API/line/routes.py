@@ -1,7 +1,6 @@
 import logging
 from flask import Blueprint, request, jsonify, render_template
 from .webhook import webhook_handler
-from .get_line_id import get_line_id_handler
 from .line_utils import send_line_message_handler, get_default_message
 from .line_utils import send_message
 from aidoc.db import get_db
@@ -11,10 +10,6 @@ line_blueprint = Blueprint("line", __name__)
 @line_blueprint.route("/webhook", methods=["POST"])
 def handle_webhook():
     return webhook_handler()
-
-@line_blueprint.route("/send-line-message/<int:case_id>", methods=["POST"])
-def send_line_message(case_id):
-    return send_line_message_handler(case_id)
 
 @line_blueprint.route("/get-default-message", methods=["GET"])
 def get_default_message_route():
