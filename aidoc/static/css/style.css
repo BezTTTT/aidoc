@@ -139,7 +139,7 @@ table.dataTable tbody tr:nth-child(even) {
       "BL BM BR";   /*Bottom-Left     Bottom-Middle   Bottom-Right*/
   }
   .grid-item-image-panel { grid-area: TL; }
-  .grid-item-dentist-history-panel { grid-area: TM; }
+  .grid-item-dentist-history-panel { grid-area: BL; }
   .grid-item-patient-profile-panel { grid-area: TR; }
   .grid-item-dentist-feedback-panel { grid-area: TM; }
   .grid-item-case-report-panel { grid-area: BM; }

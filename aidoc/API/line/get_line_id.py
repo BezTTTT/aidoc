@@ -4,13 +4,13 @@ from ... import db
 def get_line_id_handler():
     try:
         data = request.get_json()
-        print("Request data:", data)
+        # print("Request data:", data)
         
         userid = data.get("userid")
         if not userid:
             return jsonify({"error": "userid is required"}), 400
 
-        print(f"Looking up LINE ID for userid: {userid}")
+        # print(f"Looking up LINE ID for userid: {userid}")
 
         cursor = db.cursor(dictionary=True)
         
@@ -26,7 +26,7 @@ def get_line_id_handler():
         """
         cursor.execute(query, (userid,))
         result = cursor.fetchone()
-        print("Query result:", result)
+        # print("Query result:", result)
 
         while cursor.nextset():
             pass
@@ -37,7 +37,7 @@ def get_line_id_handler():
             return jsonify({"error": "No LINE ID found for this user"}), 404
             
     except Exception as e:
-        print(f"Error in get_line_id: {e}")
+        # print(f"Error in get_line_id: {e}")
         return jsonify({"error": str(e)}), 500
     finally:
         db.commit()
