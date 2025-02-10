@@ -61,8 +61,6 @@ def create_app(test_config=None):
     app.register_blueprint(report.routes.report_bp)
     from .API import admin
     app.register_blueprint(admin.routes.admin_bp)
-    from .API import database_migration
-    app.register_blueprint(database_migration.routes.migration_bp)
     from .API import line
     app.register_blueprint(line.routes.line_blueprint)
     
