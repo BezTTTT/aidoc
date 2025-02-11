@@ -828,6 +828,16 @@ def record_specialist(admin=False):
                 WHERE ''' + filter_query +'''
                 ORDER BY submission_record.created_at DESC
                 LIMIT %s OFFSET %s'''
+            sql_count ='''
+                SELECT
+                    COUNT(submission_record.id) as full_count
+                FROM submission_record
+                LEFT JOIN patient_case_id ON submission_record.id = patient_case_id.id
+                LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
+                LEFT JOIN user AS sender ON submission_record.sender_id = sender.id
+                LEFT JOIN followup_request ON submission_record.id = followup_request.submission_id
+                LEFT JOIN retrain_request ON submission_record.id = retrain_request.submission_id
+                WHERE ''' + filter_query
         else:
             sql_data ='''
                 SELECT
@@ -850,6 +860,11 @@ def record_specialist(admin=False):
                 LEFT JOIN followup_request ON submission_record.id = followup_request.submission_id
                 LEFT JOIN retrain_request ON submission_record.id = retrain_request.submission_id
                 '''
+            sql_count ='''
+                SELECT
+                    COUNT(submission_record.id) as full_count
+                FROM submission_record
+                '''
     else: # Specialist
         if filter_query!='':
             sql_data ='''
@@ -868,6 +883,15 @@ def record_specialist(admin=False):
                 ORDER BY submission_record.created_at DESC
                 LIMIT %s OFFSET %s
                 '''
+            sql_count ='''
+                SELECT
+                    COUNT(submission_record.id) as full_count
+                FROM submission_record
+                INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
+                LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
+                LEFT JOIN followup_request ON submission_record.id = followup_request.submission_id
+                LEFT JOIN retrain_request ON submission_record.id = retrain_request.submission_id
+                WHERE ''' + filter_query 
         else:
             sql_data ='''
                 SELECT
@@ -888,11 +912,19 @@ def record_specialist(admin=False):
                 LEFT JOIN followup_request ON submission_record.id = followup_request.submission_id
                 LEFT JOIN retrain_request ON submission_record.id = retrain_request.submission_id
                 '''
+            sql_count ='''
+                SELECT
+                    COUNT(submission_record.id) as full_count
+                FROM submission_record
+                INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
+                '''
 
     val = (records_per_page, offset)
     cursor.execute(sql_data,val)
     paginated_data = cursor.fetchall()
-    dataCount = {'full_count': len(paginated_data)}
+
+    cursor.execute(sql_count)
+    dataCount = cursor.fetchone()
 
     # Process each item in paginated_data
     for item in paginated_data:
@@ -995,6 +1027,13 @@ def record_dentist():
                 (channel = 'DENTIST' AND sender_id = %s) AND ''' + filter_query +'''
             ORDER BY submission_record.created_at DESC
             LIMIT %s OFFSET %s'''
+        sql_count ='''
+            SELECT 
+                COUNT(submission_record.id) as full_count
+            FROM 
+                submission_record
+            WHERE
+                (channel = 'DENTIST' AND sender_id = %s) AND ''' + filter_query
     else:
         sql_data ='''
             SELECT 
@@ -1007,11 +1046,22 @@ def record_dentist():
                 (channel = 'DENTIST' AND sender_id = %s)
             ORDER BY submission_record.created_at DESC
             LIMIT %s OFFSET %s'''
+        sql_count ='''
+            SELECT 
+                COUNT(submission_record.id) as full_count
+            FROM 
+                submission_record
+            WHERE
+                (channel = 'DENTIST' AND sender_id = %s)
+            '''
 
     val = (session['user_id'], records_per_page, offset)
     cursor.execute(sql_data,val)
     paginated_data = cursor.fetchall()
-    dataCount = {'full_count': len(paginated_data)}
+    
+    val = (session['user_id'], )
+    cursor.execute(sql_count,val)
+    dataCount = cursor.fetchone()
 
     return paginated_data, supplemental_data, dataCount
 
@@ -1102,6 +1152,21 @@ def record_osm():
             ORDER BY submission_record.created_at DESC
             LIMIT %s OFFSET %s
             '''
+        sql_count ='''
+            SELECT 
+                COUNT(submission_record.id) as full_count
+            FROM (
+                SELECT id
+                FROM submission_record
+                WHERE
+                    (channel = 'OSM' AND sender_id = %s) OR
+                    (channel = 'PATIENT' AND submission_record.sender_phone = %s)
+                ) submission_record_limited
+            INNER JOIN submission_record ON submission_record.id = submission_record_limited.id
+            LEFT JOIN patient_case_id ON submission_record.id = patient_case_id.id
+            LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
+            LEFT JOIN user AS sender_user ON submission_record.sender_phone = sender_user.phone
+            WHERE ''' + filter_query
     else:
         sql_data ='''
             SELECT 
@@ -1125,11 +1190,26 @@ def record_osm():
             LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
             LEFT JOIN user AS sender_user ON submission_record.sender_phone = sender_user.phone
             '''
+        sql_count ='''
+            SELECT 
+                COUNT(submission_record.id) as full_count
+            FROM (
+                SELECT id
+                FROM submission_record
+                WHERE
+                    (channel = 'OSM' AND sender_id = %s) OR
+                    (channel = 'PATIENT' AND submission_record.sender_phone = %s)
+            ) submission_record_limited
+            INNER JOIN submission_record ON submission_record.id = submission_record_limited.id
+            '''
 
     val = (session['user_id'],g.user['phone'],records_per_page, offset)
     cursor.execute(sql_data,val)
     paginated_data = cursor.fetchall()
-    dataCount = {'full_count': len(paginated_data)}
+    
+    val = (session['user_id'], g.user['phone'])
+    cursor.execute(sql_count,val)
+    dataCount = cursor.fetchone()
 
     # Process each item in paginated_data
     for item in paginated_data:
