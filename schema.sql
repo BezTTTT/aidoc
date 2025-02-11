@@ -141,7 +141,7 @@ CREATE TABLE `followup_request` (
   `followup_request_status` varchar(255) NOT NULL,
   `contact_person` varchar(255),
   `followup_note` varchar(255),
-  `followup_feedback` varchar(255),
+  `followup_feedback` varchar(255) DEFAULT NULL,
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE INDEX idx_followup_submission_id ON followup_request(submission_id);

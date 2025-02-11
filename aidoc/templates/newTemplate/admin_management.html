@@ -10,7 +10,7 @@
   <thead>
     <tr class="text-dark" >
       <th>ชื่อ - นามสกุล</th>
-      <th>ตำแหน่ง</th>
+      <th>สิทธิ์การเข้าถึงระบบ</th>
       <th>วิชาชีพ</th>
       <th>จังหวัด</th>
       <th>จำนวนอัพโหลด (รูป)</th>
@@ -66,6 +66,8 @@
             return "⚕️";
           case "patient":
             return "👨‍🦽";
+          case "dentist":
+            return "👨‍⚕️";
         }
       }).join(" ") // Join icons if multiple roles exist
     : "❓"; // Default icon when no roles are assigned
