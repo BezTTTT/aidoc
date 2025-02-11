@@ -6,11 +6,11 @@
 <div id="loadingIndicator" style="display: none; text-align: center; font-weight: bold; font-size: 60px; color: red; ">
   กำลังโหลดข้อมูล...
 </div>
-<div id = "mainContainer">
-  <div>
-    <h3>ข้อมูลผู้ใช้</h3>
-</div>
 <div class="container-md">
+  <div id = "mainContainer">
+    <div>
+      <h3>แก้ไขข้อมูลผู้ใช้</h3>
+  </div>
     <form id="editUserForm" action="/edit_page" method="POST">
         <input type="hidden" name="_method" value="PUT">
         <div id="formContent" class="row g-3 my-4">
@@ -51,8 +51,9 @@
         </fieldset>
 
         <!-- submit button -->
-        <div class="col-12 d-flex justify-content-end">
-            <button type="submit" class="btn btn-primary" id="editUserForm">Submit</button>
+        <div class="col-12 d-flex justify-content-end gap-2">
+          <a href="/admin_page" class="btn btn-danger">กลับ</a>
+          <button type="submit" class="btn btn-primary" id="editUserForm">ยืนยัน</button>
         </div>
 
     </form>
