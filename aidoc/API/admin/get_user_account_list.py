@@ -22,6 +22,7 @@ def fetch_user_list(cursor):
             u.name,
             u.surname,
             u.job_position,
+            u.username,
             u.is_patient,
             u.is_osm,
             u.is_specialist,
