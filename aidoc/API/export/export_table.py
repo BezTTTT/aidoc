@@ -11,13 +11,14 @@ from aidoc.osm_group import record_osm_group
 export_bp = Blueprint('export_bp', __name__)
 
 @export_bp.route('/<string:table_name>/', methods=['GET'])
+@login_required
 def export_table(table_name):
     if not g.user.get('group_info') or (g.user['group_info']['is_supervisor'] == 0 or g.user['group_info']['group_id'] == -1):
         return jsonify({"error": "You don't have permission to export this table"}), 403
     
     format = request.args.get("format", "csv")  # Default to CSV
     columns = request.args.get("columns", "").split(",")
-    print("asdasdsada", columns)
+
     # Fetch data
     df = db_query(table_name, "osm_group", columns)
 
