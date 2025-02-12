@@ -49,8 +49,10 @@ def fetch_image_manage_list(cursor, limit, offset, data):
             u1.name AS user_name, u1.surname AS user_surname,
             sr.special_request, sr.location_province, 
             sr.dentist_id, sr.dentist_feedback_comment,
+            sr.dentist_feedback_code,
             u1.national_id, u2.name AS dentist_name, 
-            u2.surname AS dentist_surname, u1.job_position, sr.sender_id
+            u2.surname AS dentist_surname, u1.job_position, sr.sender_id,
+            u3.birthdate
         FROM submission_record sr
         LEFT JOIN user u1 ON sr.sender_id = u1.id
         LEFT JOIN user u2 ON sr.dentist_id = u2.id

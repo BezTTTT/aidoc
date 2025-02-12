@@ -1,5 +1,6 @@
 from ..common import common_mapper as cm
 from ..common import date_util as du
+from ...utils import calculate_age as ca
 
 def map_user_list_data(data):
     user_list = []
@@ -48,6 +49,8 @@ def map_image_manage_list_data(data):
             "dentist_name": row['dentist_name'],
             "dentist_surname": row['dentist_surname'],
             "dentist_comment": row['dentist_feedback_comment'],
+            "dentist_feedback": row['dentist_feedback_code'],
+            "age": ca(row['birthdate']),
             "national_id": row['national_id'],
             "sender_job": cm.map_job_position_to_th(row['job_position']),
             "sender_id": row['sender_id']
