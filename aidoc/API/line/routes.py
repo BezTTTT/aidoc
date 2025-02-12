@@ -4,8 +4,13 @@ from .webhook import webhook_handler
 from .line_utils import send_line_message_handler, get_default_message
 from .line_utils import send_message
 from aidoc.db import get_db
+from linebot import LineBotApi, WebhookHandler
+from instance.config import LINE_CHANNEL_ACCESS_TOKEN, LINE_CHANNEL_SECRET  
 
 line_blueprint = Blueprint("line", __name__)
+
+line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
+handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
 @line_blueprint.route("/webhook", methods=["POST"])
 def handle_webhook():
