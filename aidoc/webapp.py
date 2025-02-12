@@ -1,5 +1,5 @@
 from flask import (
-    Blueprint, redirect, render_template, request, session, url_for, g, flash, current_app, send_from_directory,
+    Blueprint, redirect, render_template, request, session, url_for, g, flash, current_app, send_from_directory,jsonify
 )
 
 import json, os
@@ -174,11 +174,12 @@ def diagnosis(role, img_id):
                     location_district, location_amphoe, location_province, location_zipcode,
                     ai_prediction, ai_scores, lesion_ai_version, quality_ai_prediction, quality_ai_version, ai_updated_at, submission_record.created_at
                 FROM submission_record
-                LEFT JOIN patient_case_id ON submission_record.id = patient_case_id.id
+                INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
                 LEFT JOIN user AS sender ON submission_record.sender_id = sender.id
                 LEFT JOIN user AS patient ON submission_record.patient_id = patient.id
                 LEFT JOIN user AS dentist ON submission_record.dentist_id = dentist.id
-                WHERE submission_record.id=%s'''
+                WHERE submission_record.id=%s
+                LIMIT 1'''
     elif role=='osm':
         sql = '''SELECT submission_record.id AS img_id, case_id, channel, fname, special_request, sender_id, patient_id, sender_phone, sender.phone AS osm_phone, 
                     patient.name AS patient_name, patient.surname AS patient_surname, patient_national_id as saved_patient_national_id, patient.national_id AS db_patient_national_id, patient.birthdate,
@@ -189,13 +190,15 @@ def diagnosis(role, img_id):
                 INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id
                 LEFT JOIN user AS sender ON submission_record.sender_phone = sender.phone
                 LEFT JOIN user AS patient ON submission_record.patient_id = patient.id
-                WHERE submission_record.id=%s'''
+                WHERE submission_record.id=%s
+                LIMIT 1'''
     elif role=='dentist' or (role=='admin' and request.args.get('channel')=='DENTIST'):
         sql = '''SELECT submission_record.id AS img_id, fname, sender_id,
                     dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location,
                     ai_prediction, ai_scores, lesion_ai_version, quality_ai_prediction, quality_ai_version, ai_updated_at
                 FROM submission_record
-                WHERE id=%s'''
+                WHERE id=%s
+                LIMIT 1'''
     else: # Patient system
         if dentistFeedbackRequest and dentistFeedbackRequest=='true':
             sql = '''SELECT submission_record.id AS img_id, case_id, channel, fname, special_request, sender_id, patient_id, sender_phone, 
@@ -203,13 +206,15 @@ def diagnosis(role, img_id):
                     ai_prediction, ai_scores, lesion_ai_version, quality_ai_prediction, quality_ai_version, ai_updated_at, submission_record.created_at
                 FROM submission_record
                 INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id
-                WHERE submission_record.id=%s'''
+                WHERE submission_record.id=%s
+                LIMIT 1'''
         else: # Patient system without dentist feedback (dentist feedback is pending)
             sql = '''SELECT submission_record.id AS img_id, case_id, channel, fname, special_request, sender_id, patient_id, sender_phone, 
                     ai_prediction, ai_scores, lesion_ai_version, quality_ai_prediction, quality_ai_version, ai_updated_at, submission_record.created_at
                 FROM submission_record
                 INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id
-                WHERE submission_record.id=%s'''
+                WHERE submission_record.id=%s
+                LIMIT 1'''
         
     val = (img_id, )
     cursor.execute(sql, val)
@@ -367,6 +372,9 @@ def record(role):
         session['record_filter']['filterSpecialist'] = filterSpecialist
         session['record_filter']['filterFollowup'] = filterFollowup
         session['record_filter']['filterRetrain'] = filterRetrain
+
+        # If there is a form submission, reset the current page to 1
+        session['current_record_role'] = 1
     else:
         # Load values from session or use an empty string
         search_query = session['record_filter'].get('search_query', "")
@@ -415,6 +423,7 @@ def record(role):
                 total_pages=total_pages,
                 data=supplemental_data)
 
+# region /edit/<role>
 @bp.route('/edit/<role>', methods=('GET', 'POST'))
 @login_required
 @role_validation
@@ -612,7 +621,6 @@ def editByRole(role):
             if data["osm_job"] == '':
                 data["osm_job"] = None
 
-            print(data['license'])
             inval = []
             valid_func_list = [ validate_province_name,
                                 validate_phone,
@@ -659,6 +667,58 @@ def report():
 @admin_only
 def userManagement():
     return render_template("/newTemplate/admin_management.html")
+
+#followup for dentist page
+@bp.route('/followup/admin', methods=['GET'])
+@login_required
+@admin_only
+def followupManage():
+    page = request.args.get("page", session.get('current_record_page', 1), type=int)
+    session['current_record_page'] = page
+    session['records_per_page'] = 12
+    paginated_data, dataCount = record_followup() 
+
+    if dataCount is not None:
+        dataCount = dataCount['total_records']
+    else:
+        dataCount = 0
+    total_pages = (dataCount - 1) // session['records_per_page'] + 1
+
+    # print(paginated_data)
+    return render_template("/newTemplate/admin_followup.html",dataCount=dataCount,
+                current_page=page,
+                total_pages=total_pages,
+                data=paginated_data
+                )
+
+@bp.route('/followup/confirm/<int:submission_id>', methods=['POST'])
+@login_required
+@admin_only
+def confirmFeedback(submission_id):
+    feedback = request.form.get('feedback')
+    note = request.form.get('note')
+
+    if feedback and note:
+        db, cursor = get_db()
+        sql = '''
+            UPDATE followup_request 
+            SET followup_request_status = %s,
+                followup_note = %s,
+                followup_feedback = %s
+            WHERE submission_id = %s;
+        '''
+        values = ("On contact", note, feedback, submission_id)
+        cursor.execute(sql, values)
+        
+        # Fetch updated data for frontend update
+        updated_item = {
+            "id": submission_id,
+            "feedback": feedback,
+            "note": note
+        }
+        return jsonify({"status": "success", "message": "✅ ยืนยัน Feedback สำเร็จ", "item": updated_item})
+    
+    return jsonify({"status": "error", "message": "⚠️ กรุณาใส่ Feedback และ Note "})
 
 # region edit
 @bp.route('/edit/', methods=('GET','POST'))
@@ -724,7 +784,7 @@ def construct_specialist_filter_sql():
         if len(filter_query_list)>0:
             filter_query = f'({filter_query}) AND ({search_query_combined})'
         else:
-            filter_query = f'({search_query_combined})'
+            filter_query = f'{search_query_combined}'
     
     supplemental_data = {}
     supplemental_data['search_query'] = search_query
@@ -734,7 +794,7 @@ def construct_specialist_filter_sql():
     supplemental_data['filterSpecialist'] = filterSpecialist
     supplemental_data['filterFollowup'] = filterFollowup
     supplemental_data['filterRetrain'] = filterRetrain
-
+    
     return filter_query, supplemental_data
 
 # region record_specialist (and admin)
@@ -750,57 +810,122 @@ def record_specialist(admin=False):
 
     db, cursor = get_db()
     if admin: # Admin
-        sql_select_part ='''SELECT submission_record.id, case_id, channel, fname, patient_user.name, patient_user.surname, patient_user.birthdate,
+        if filter_query!='':
+            sql_data ='''
+                SELECT
+                    submission_record.id, case_id, channel, fname, patient_user.name, patient_user.surname, patient_user.birthdate,
                     sender.name as sender_name, sender.surname as sender_surname, sender.hospital as sender_hospital,
                     sender_id, patient_id, dentist_id, sender_phone, special_request,
                     location_province, location_amphoe, location_district, location_zipcode, 
                     dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, case_report,
-                    ai_prediction, submission_record.created_at, retrain_request_status, followup_request_status'''
-        sql_join_part = '''
+                    ai_prediction, submission_record.created_at, retrain_request_status, followup_request_status
                 FROM submission_record
                 LEFT JOIN patient_case_id ON submission_record.id = patient_case_id.id
                 LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
                 LEFT JOIN user AS sender ON submission_record.sender_id = sender.id
                 LEFT JOIN followup_request ON submission_record.id = followup_request.submission_id
                 LEFT JOIN retrain_request ON submission_record.id = retrain_request.submission_id
+                WHERE ''' + filter_query +'''
+                ORDER BY submission_record.created_at DESC
+                LIMIT %s OFFSET %s'''
+            sql_count ='''
+                SELECT
+                    COUNT(submission_record.id) as full_count
+                FROM submission_record
+                LEFT JOIN patient_case_id ON submission_record.id = patient_case_id.id
+                LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
+                LEFT JOIN user AS sender ON submission_record.sender_id = sender.id
+                LEFT JOIN followup_request ON submission_record.id = followup_request.submission_id
+                LEFT JOIN retrain_request ON submission_record.id = retrain_request.submission_id
+                WHERE ''' + filter_query
+        else:
+            sql_data ='''
+                SELECT
+                    submission_record.id, case_id, channel, fname, patient_user.name, patient_user.surname, patient_user.birthdate,
+                    sender.name as sender_name, sender.surname as sender_surname, sender.hospital as sender_hospital,
+                    sender_id, patient_id, dentist_id, sender_phone, special_request,
+                    location_province, location_amphoe, location_district, location_zipcode, 
+                    dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, case_report,
+                    ai_prediction, submission_record.created_at, retrain_request_status, followup_request_status
+                FROM (
+                    SELECT submission_record.id
+                    FROM submission_record
+                    ORDER BY submission_record.created_at DESC
+                    LIMIT %s OFFSET %s
+                ) submission_record_limited
+                LEFT JOIN submission_record ON submission_record.id = submission_record_limited.id
+                LEFT JOIN patient_case_id ON submission_record.id = patient_case_id.id
+                LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
+                LEFT JOIN user AS sender ON submission_record.sender_id = sender.id
+                LEFT JOIN followup_request ON submission_record.id = followup_request.submission_id
+                LEFT JOIN retrain_request ON submission_record.id = retrain_request.submission_id
+                '''
+            sql_count ='''
+                SELECT
+                    COUNT(submission_record.id) as full_count
+                FROM submission_record
                 '''
     else: # Specialist
-        sql_select_part ='''
-            SELECT
-                submission_record.id, case_id, channel, fname, patient_user.name, patient_user.surname, patient_user.birthdate,
-                sender_id, patient_id, dentist_id, sender_phone, special_request,
-                location_province, location_amphoe, location_district, location_zipcode, 
-                dentist_feedback_comment,dentist_feedback_code,case_report,
-                ai_prediction, submission_record.created_at, retrain_request_status, followup_request_status'''
-        sql_join_part = '''
-            FROM submission_record
-            INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
-            LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
-            LEFT JOIN followup_request ON submission_record.id = followup_request.submission_id
-            LEFT JOIN retrain_request ON submission_record.id = retrain_request.submission_id
-            '''
-        
-    sql_count = "SELECT count(submission_record.id) AS full_count"
-    sql_limit_part = '''
-                ORDER BY submission_record.id DESC
-                LIMIT %s
-                OFFSET %s'''
-    
-    if filter_query!='':
-        sql_where = 'WHERE ' + filter_query
-        sql1 = sql_count + sql_join_part + sql_where
-        sql2 = sql_select_part + sql_join_part + sql_where + sql_limit_part
-        
-    else:
-        sql1 = sql_count + sql_join_part
-        sql2 = sql_select_part + sql_join_part + sql_limit_part
-    cursor.execute(sql1)
-    dataCount = cursor.fetchone()
+        if filter_query!='':
+            sql_data ='''
+                SELECT
+                    submission_record.id, case_id, channel, fname, patient_user.name, patient_user.surname, patient_user.birthdate,
+                    sender_id, patient_id, dentist_id, sender_phone, special_request,
+                    location_province, location_amphoe, location_district, location_zipcode, 
+                    dentist_feedback_comment,dentist_feedback_code,case_report,
+                    ai_prediction, submission_record.created_at, retrain_request_status, followup_request_status
+                FROM submission_record
+                INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
+                LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
+                LEFT JOIN followup_request ON submission_record.id = followup_request.submission_id
+                LEFT JOIN retrain_request ON submission_record.id = retrain_request.submission_id
+                WHERE ''' + filter_query +'''
+                ORDER BY submission_record.created_at DESC
+                LIMIT %s OFFSET %s
+                '''
+            sql_count ='''
+                SELECT
+                    COUNT(submission_record.id) as full_count
+                FROM submission_record
+                INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
+                LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
+                LEFT JOIN followup_request ON submission_record.id = followup_request.submission_id
+                LEFT JOIN retrain_request ON submission_record.id = retrain_request.submission_id
+                WHERE ''' + filter_query 
+        else:
+            sql_data ='''
+                SELECT
+                    submission_record.id, case_id, channel, fname, patient_user.name, patient_user.surname, patient_user.birthdate,
+                    sender_id, patient_id, dentist_id, sender_phone, special_request,
+                    location_province, location_amphoe, location_district, location_zipcode, 
+                    dentist_feedback_comment,dentist_feedback_code,case_report,
+                    ai_prediction, submission_record.created_at, retrain_request_status, followup_request_status
+                FROM (
+                    SELECT submission_record.id, case_id
+                    FROM submission_record
+                    INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
+                    ORDER BY submission_record.created_at DESC
+                    LIMIT %s OFFSET %s
+                ) submission_record_limited
+                LEFT JOIN submission_record ON submission_record_limited.id = submission_record.id
+                LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
+                LEFT JOIN followup_request ON submission_record.id = followup_request.submission_id
+                LEFT JOIN retrain_request ON submission_record.id = retrain_request.submission_id
+                '''
+            sql_count ='''
+                SELECT
+                    COUNT(submission_record.id) as full_count
+                FROM submission_record
+                INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
+                '''
 
     val = (records_per_page, offset)
-    cursor.execute(sql2,val)
+    cursor.execute(sql_data,val)
     paginated_data = cursor.fetchall()
-    
+
+    cursor.execute(sql_count)
+    dataCount = cursor.fetchone()
+
     # Process each item in paginated_data
     for item in paginated_data:
         if item['channel']=='PATIENT':
@@ -854,7 +979,6 @@ def construct_dentist_filter_sql():
 
     if search_query!="":
         search_query_list.append(f"(INSTR(LOWER(fname), '{search_query}'))")
-        search_query_list.append(f"(name IS NOT NULL AND (INSTR('{search_query}', name) OR INSTR('{search_query}', surname)))")
         search_query_list.append(f"(dentist_feedback_comment IS NOT NULL AND (INSTR(dentist_feedback_comment, '{search_query}')))")
         search_query_list.append(f"(dentist_feedback_code IS NOT NULL AND (LOWER(dentist_feedback_code) = '{search_query.lower()}'))")
         search_query_list.append(f"(location_district IS NOT NULL AND (INSTR(location_district, '{search_query}')))")
@@ -891,37 +1015,54 @@ def record_dentist():
     offset = (page-1)*records_per_page
 
     db, cursor = get_db()
-    sql_select_part ='''
-        SELECT submission_record.id, channel, fname, name, surname, birthdate,
-                    sender_id, patient_id, dentist_id, special_request, province,
-                    dentist_feedback_comment,dentist_feedback_code,
-                    ai_prediction, submission_record.created_at
-        '''
-    sql_count = "SELECT count(*) AS full_count"
-    sql_join_part = '''
-        FROM submission_record
-        LEFT JOIN user ON submission_record.patient_id = user.id
-        WHERE (channel = 'DENTIST' AND sender_id = %s)'''
-    sql_limit_part = '''
-        ORDER BY id DESC
-        LIMIT %s
-        OFFSET %s'''
-    
     if filter_query!='':
-        sql_where = 'AND ' + filter_query
-        sql1 = sql_count + sql_join_part + sql_where
-        sql2 = sql_select_part + sql_join_part + sql_where + sql_limit_part
+        sql_data ='''
+            SELECT 
+                submission_record.id, channel, fname, sender_id,
+                dentist_feedback_code, dentist_feedback_comment, ai_prediction,
+                location_district, location_amphoe, location_province, location_zipcode, submission_record.created_at
+            FROM 
+                submission_record
+            WHERE
+                (channel = 'DENTIST' AND sender_id = %s) AND ''' + filter_query +'''
+            ORDER BY submission_record.created_at DESC
+            LIMIT %s OFFSET %s'''
+        sql_count ='''
+            SELECT 
+                COUNT(submission_record.id) as full_count
+            FROM 
+                submission_record
+            WHERE
+                (channel = 'DENTIST' AND sender_id = %s) AND ''' + filter_query
     else:
-        sql1 = sql_count + sql_join_part
-        sql2 = sql_select_part + sql_join_part + sql_limit_part
-
-    val = (session['user_id'],)
-    cursor.execute(sql1,val)
-    dataCount = cursor.fetchone()
+        sql_data ='''
+            SELECT 
+                submission_record.id, channel, fname, sender_id,
+                dentist_feedback_code, dentist_feedback_comment, ai_prediction,
+                location_district, location_amphoe, location_province, location_zipcode, submission_record.created_at
+            FROM 
+                submission_record
+            WHERE
+                (channel = 'DENTIST' AND sender_id = %s)
+            ORDER BY submission_record.created_at DESC
+            LIMIT %s OFFSET %s'''
+        sql_count ='''
+            SELECT 
+                COUNT(submission_record.id) as full_count
+            FROM 
+                submission_record
+            WHERE
+                (channel = 'DENTIST' AND sender_id = %s)
+            '''
 
     val = (session['user_id'], records_per_page, offset)
-    cursor.execute(sql2,val)
+    cursor.execute(sql_data,val)
     paginated_data = cursor.fetchall()
+    
+    val = (session['user_id'], )
+    cursor.execute(sql_count,val)
+    dataCount = cursor.fetchone()
+
     return paginated_data, supplemental_data, dataCount
 
 # region construct_osm_filter_sql
@@ -987,42 +1128,88 @@ def record_osm():
     offset = (page-1)*records_per_page
 
     db, cursor = get_db()
-    sql_select_part = '''SELECT submission_record.id, channel, fname,
-            patient_user.name, patient_user.surname, patient_user.birthdate, patient_user.province,
-            case_id, sender_id, patient_id, dentist_id, special_request, sender_phone, 
-            location_province, location_zipcode, 
-            dentist_feedback_comment,dentist_feedback_code,
-            ai_prediction, submission_record.created_at'''
-    sql_count = 'SELECT count(*) AS full_count'
-    sql_join_part = '''
-        FROM submission_record
-        INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
-        LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
-        LEFT JOIN user AS sender_user ON submission_record.sender_phone = sender_user.phone
-        WHERE
-            (channel = 'OSM' AND sender_id = %s) OR
-            (channel = 'PATIENT' AND submission_record.sender_phone = %s)
-            '''
-    sql_limit_part = '''
-        ORDER BY submission_record.id DESC
-        LIMIT %s
-        OFFSET %s'''
-    
     if filter_query!='':
-        sql_where = ' AND ' + filter_query
-        sql1 = sql_count + sql_join_part + sql_where
-        sql2 = sql_select_part + sql_join_part + sql_where + sql_limit_part
+        sql_data ='''
+            SELECT 
+                submission_record.id, channel, fname,
+                patient_user.name as patient_name, patient_user.surname as patient_surname, patient_user.birthdate, patient_user.province,
+                case_id, sender_id, patient_id, dentist_id, special_request, sender_phone, 
+                location_province, location_zipcode, 
+                dentist_feedback_comment,dentist_feedback_code,
+                ai_prediction, submission_record.created_at
+            FROM (
+                SELECT id
+                FROM submission_record
+                WHERE
+                    (channel = 'OSM' AND sender_id = %s) OR
+                    (channel = 'PATIENT' AND submission_record.sender_phone = %s)
+                ) submission_record_limited
+            INNER JOIN submission_record ON submission_record.id = submission_record_limited.id
+            LEFT JOIN patient_case_id ON submission_record.id = patient_case_id.id
+            LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
+            LEFT JOIN user AS sender_user ON submission_record.sender_phone = sender_user.phone
+            WHERE ''' + filter_query +'''
+            ORDER BY submission_record.created_at DESC
+            LIMIT %s OFFSET %s
+            '''
+        sql_count ='''
+            SELECT 
+                COUNT(submission_record.id) as full_count
+            FROM (
+                SELECT id
+                FROM submission_record
+                WHERE
+                    (channel = 'OSM' AND sender_id = %s) OR
+                    (channel = 'PATIENT' AND submission_record.sender_phone = %s)
+                ) submission_record_limited
+            INNER JOIN submission_record ON submission_record.id = submission_record_limited.id
+            LEFT JOIN patient_case_id ON submission_record.id = patient_case_id.id
+            LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
+            LEFT JOIN user AS sender_user ON submission_record.sender_phone = sender_user.phone
+            WHERE ''' + filter_query
     else:
-        sql1 = sql_count + sql_join_part
-        sql2 = sql_select_part + sql_join_part + sql_limit_part
-    
-    val = (session['user_id'],g.user['phone'])
-    cursor.execute(sql1, val)
-    dataCount = cursor.fetchone()
+        sql_data ='''
+            SELECT 
+                submission_record.id, channel, fname,
+                patient_user.name as patient_name, patient_user.surname as patient_surname, patient_user.birthdate, patient_user.province,
+                case_id, sender_id, patient_id, dentist_id, special_request, sender_phone, 
+                location_province, location_zipcode, 
+                dentist_feedback_comment,dentist_feedback_code,
+                ai_prediction, submission_record.created_at
+            FROM (
+                SELECT id
+                FROM submission_record
+                WHERE
+                    (channel = 'OSM' AND sender_id = %s) OR
+                    (channel = 'PATIENT' AND submission_record.sender_phone = %s)
+                ORDER BY submission_record.created_at DESC
+                LIMIT %s OFFSET %s
+            ) submission_record_limited
+            INNER JOIN submission_record ON submission_record.id = submission_record_limited.id
+            LEFT JOIN patient_case_id ON submission_record.id = patient_case_id.id
+            LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
+            LEFT JOIN user AS sender_user ON submission_record.sender_phone = sender_user.phone
+            '''
+        sql_count ='''
+            SELECT 
+                COUNT(submission_record.id) as full_count
+            FROM (
+                SELECT id
+                FROM submission_record
+                WHERE
+                    (channel = 'OSM' AND sender_id = %s) OR
+                    (channel = 'PATIENT' AND submission_record.sender_phone = %s)
+            ) submission_record_limited
+            INNER JOIN submission_record ON submission_record.id = submission_record_limited.id
+            '''
 
-    val = (session['user_id'],g.user['phone'], records_per_page, offset)
-    cursor.execute(sql2,val)
+    val = (session['user_id'],g.user['phone'],records_per_page, offset)
+    cursor.execute(sql_data,val)
     paginated_data = cursor.fetchall()
+    
+    val = (session['user_id'], g.user['phone'])
+    cursor.execute(sql_count,val)
+    dataCount = cursor.fetchone()
 
     # Process each item in paginated_data
     for item in paginated_data:
@@ -1224,6 +1411,60 @@ def update_submission_record(ai_predictions, ai_scores):
             sql = "INSERT INTO patient_case_id (id) VALUES (%s)"
             val = (row['LAST_INSERT_ID()'],)
             cursor.execute(sql, val)
+
+def record_followup():
+    
+    page = session['current_record_page']
+    records_per_page = session['records_per_page']
+    offset = (page-1)*records_per_page
+    db, cursor = get_db()
+    sql_select_part = '''
+                SELECT 
+                sr.id, 
+                sr.ai_prediction,
+                sr.channel,
+                sr.sender_id,
+                sr.patient_id,
+                sr.fname,
+                pcid.case_id,
+                fr.followup_request_status,
+                fr.followup_note,
+                fr.followup_feedback
+            '''
+    sql_join_part = '''
+                FROM submission_record as sr 
+                INNER JOIN followup_request as fr ON sr.id = fr.submission_id
+                LEFT JOIN patient_case_id as pcid ON pcid.id=fr.submission_id
+                '''
+    sql_limit_part = '''
+                ORDER BY 
+                    CASE
+                        WHEN fr.followup_request_status = 'initiated' THEN 0
+                        ELSE 1
+                    END,
+                    sr.id DESC
+                LIMIT %s
+                OFFSET %s
+            '''
+    sql_count = 'SELECT Count(*) AS total_records'
+                
+    sql1 = sql_count + sql_join_part
+    sql2 = sql_select_part + sql_join_part + sql_limit_part
+
+    val = (records_per_page,offset)
+    cursor.execute(sql1)
+    dataCount = cursor.fetchone()
+
+    cursor.execute(sql2,val)
+    paginated_data = cursor.fetchall()
+
+    for item in paginated_data:
+        if item['channel']=='PATIENT':
+            item['owner_id'] = item['patient_id']
+        else:
+            item['owner_id'] = item['sender_id']
+    return paginated_data,dataCount
+
 
 @bp.route('/about')
 def about():

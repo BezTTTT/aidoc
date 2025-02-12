@@ -34,6 +34,8 @@ CREATE TABLE `user` (
   `default_location` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;
 
+CREATE INDEX idx_user_id ON user(id);
+
 /*
   channel: 'PATIENT', 'OSM', 'DENTIST' (general submission is in a separate table)
 
@@ -81,10 +83,14 @@ CREATE TABLE `submission_record` (
   `updated_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;
 
+CREATE INDEX idx_submission_record_id ON submission_record(id DESC);
+
 CREATE TABLE `patient_case_id` (
   `case_id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `id` int DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=UTF8MB4;
+
+CREATE INDEX idx_patient_case_id ON patient_case_id(id);
 
 CREATE TABLE `general_user` (
   `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -120,6 +126,8 @@ CREATE TABLE `retrain_request` (
   `retrain_request_status` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+CREATE INDEX idx_retrain_submission_id ON retrain_request(submission_id);
+
 /*
   followup_request_status: 'Initiated', 'On Specialist', 'On Contact', 'On Treatment', 'Closed'
   contact_person: name, hospital, role, telephone or line contact
@@ -132,8 +140,11 @@ CREATE TABLE `followup_request` (
   `followup_request_date` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `followup_request_status` varchar(255) NOT NULL,
   `contact_person` varchar(255),
-  `followup_note` varchar(255)
+  `followup_note` varchar(255),
+  `followup_feedback` varchar(255) DEFAULT NULL,
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE INDEX idx_followup_submission_id ON followup_request(submission_id);
 
 CREATE TABLE `user_compliance` (
   `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,

@@ -17,18 +17,6 @@ p {
   display: none;
 }
 
-.banner {
-  width: 100%;
-  height: auto;
-  background: rgb(84, 149, 247);
-  font-size: 0;
-}
-
-.textAI {
-  font-size: 16;
-  text-align: center;
-}
-
 .banner img {
   height: auto;
   width: 100%;
@@ -68,12 +56,6 @@ table.dataTable tbody tr:nth-child(even) {
 
 .dataTable {
   padding-top: 2rem;
-}
-
-#amount {
-  margin-left: 10px;
-  font-size: 60px;
-  /* color: #0d6efd; */
 }
 
 #text {
@@ -139,7 +121,7 @@ table.dataTable tbody tr:nth-child(even) {
       "BL BM BR";   /*Bottom-Left     Bottom-Middle   Bottom-Right*/
   }
   .grid-item-image-panel { grid-area: TL; }
-  .grid-item-dentist-history-panel { grid-area: TM; }
+  .grid-item-dentist-history-panel { grid-area: BL; }
   .grid-item-patient-profile-panel { grid-area: TR; }
   .grid-item-dentist-feedback-panel { grid-area: TM; }
   .grid-item-case-report-panel { grid-area: BM; }
