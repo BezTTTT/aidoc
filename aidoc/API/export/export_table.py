@@ -1,8 +1,7 @@
 import os
 import tempfile
-from flask import Blueprint, after_this_request, app, g, request, jsonify, send_file, session
-from aidoc.auth import login_required, role_validation
-from aidoc.db import get_db
+from flask import Blueprint, after_this_request, g, request, jsonify, send_file
+from aidoc.auth import login_required
 import pandas as pd
 import sys
 
@@ -53,20 +52,22 @@ def export_table(table_name):
 
 
 def db_query(table_name,ref, columns):
-    data = []
-    if ref == "osm_group":
-        if table_name == "osm_group_record":
-            result = record_osm_group(1, sys.maxsize, 0)
-            if isinstance(result, tuple) and len(result) >= 1:
-                data = result[0]
-            else:
-                data = result 
-    elif True: pass # for future use
+    if columns != "":
+        data = []
+        if ref == "osm_group":
+            if table_name == "osm_group_record":
+                result = record_osm_group(1, sys.maxsize, 0)
+                if isinstance(result, tuple) and len(result) >= 1:
+                    data = result[0]
+                else:
+                    data = result 
+        elif True: pass # for future use
 
-    df = pd.DataFrame(data)
+        df = pd.DataFrame(data)
 
-    if columns:
         valid_columns = [col for col in columns if col in df.columns]
         df = df[valid_columns]
+    else: # return empty if no columns specified
+        df = pd.DataFrame()
 
     return df
