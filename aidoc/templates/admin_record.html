@@ -122,8 +122,8 @@
                             [มีคำขอตรวจพิเศษ]
                         {% endif %}
                     </h6>
-                    {% if item['name'] is not none %}
-                        <h6 class="image-name">ชื่อผู้ป่วย : {{ item['name'] }} {{ item['surname'] }} ( {{ item["age"] }} ปี )</h6>
+                    {% if item['patient_name'] is not none %}
+                        <h6 class="image-name">ชื่อผู้ป่วย : {{ item['patient_name'] }} {{ item['patient_surname'] }} ( {{ item["age"] }} ปี )</h6>
                     {% else %}
                         <h6 class="image-name">ชื่อผู้ป่วย : <i>ไม่มีข้อมูล</i> </h6>
                     {% endif%}

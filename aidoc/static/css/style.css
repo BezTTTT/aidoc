@@ -132,7 +132,7 @@ table.dataTable tbody tr:nth-child(even) {
   .grid-item-patient-request-spacialist-panel { grid-area: TL; }
   .grid-item-patient-question-info-panel { grid-area: TM; }
   .grid-item-osm-image-info-panel { grid-area: TL; }
-  .grid-item-osm-request-spacialist-panel { grid-area: TM; }
-  .grid-item-osm-question-info-panel { grid-area: BM; }
+  .grid-item-osm-question-info-panel { grid-area: TM; }
+  .grid-item-osm-request-spacialist-panel { grid-area: BM; }
   .grid-item-osm-patient-profile-panel { grid-area: TR; }
 }
