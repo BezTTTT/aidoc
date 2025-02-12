@@ -93,11 +93,11 @@
                 </div>
                 <div class="form-group py-2">
                     <label class="mr-sm-2" for="hospital">โรงพยาบาลที่สังกัด <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="โรงพยาบาลที่สังกัด..." name="hospital" id="hospital" value="{{data.hospital}}" required />
+                    <input type="text" class="form-control" placeholder="เช่น โรงพยาบาลนครพิงค์ หรือ รพ.สต.บ้านเจ็ดยอด ..." name="hospital" id="hospital" value="{{data.hospital}}" required />
                 </div>
                 <div class="form-group py-2">
                     <label class="mr-sm-2" for="province">จังหวัด (ที่ท่านสังกัดเป็นผู้ตรวจคัดกรอง) <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="จังหวัด..." name="province" id="province" value="{{data.province}}" required
+                    <input type="text" class="form-control" placeholder="พิมพ์ชื่อเต็ม เช่น กรุงเทพมหานคร ..." name="province" id="province" value="{{data.province}}" required
                         {% if data.valid_province_name is defined and not data.valid_province_name %}
                             style="border-color: rgba(244, 92, 92, 1);"
                         {% endif %}>

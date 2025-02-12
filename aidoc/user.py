@@ -203,6 +203,7 @@ def register(role):
                 sql = "UPDATE user SET name=%s, surname=%s, national_id=%s, email=%s, phone=%s, sex=%s, birthdate=%s,  province=%s, address=%s, is_patient=%s WHERE id=%s"
                 val = (data["name"], data["surname"], data["national_id"], data["email"], data["phone"], data["sex"], dob_obj, data["province"], data['address'], True, session['user_id'])
                 cursor.execute(sql, val)
+                session.pop('duplicate_flag', None)
 
             # session['national_id'] is used to carry out id from login to register
             # After the registration is complete, this (sensitive) variable should be deleted
@@ -210,6 +211,7 @@ def register(role):
                 session.pop('national_id',None)  
             
             if 'register_later' not in session:
+                reload_user_profile(session['user_id'])
                 log_last_user_login(session['user_id'])
                 session['login_mode'] = 'patient'
                 return redirect(url_for('image.upload_image', role='patient'))
@@ -226,7 +228,8 @@ def register(role):
         if request.method == 'POST':
             
             session['saved_user_id'] = session.get('user_id', None)
-            session.pop('user_id', None) # User id will later be used to check duplicate users
+            if 'duplicate_flag' not in session:
+                session.pop('user_id', None) # user_id will later be used to check duplicate users
 
             # This section extract the submitted form to 
             data["name"] = remove_prefix(request.form["name"])
@@ -285,6 +288,7 @@ def register(role):
                 sql = "UPDATE user SET name=%s, surname=%s, national_id=%s, phone=%s, osm_job=%s, hospital=%s, province=%s, license=%s, is_osm=%s WHERE id=%s"
                 val = (data["name"], data["surname"], data["national_id"], data["phone"], data["osm_job"], data["hospital"], data["province"], data["license"], True, session['user_id'])
                 cursor.execute(sql, val)
+                session.pop('duplicate_flag', None)
 
                 if 'register_later' in session:
                     sql = "UPDATE submission_record SET sender_id=%s WHERE id=%s"
@@ -292,6 +296,7 @@ def register(role):
                     cursor.execute(sql, val)
 
             if 'register_later' not in session:
+                reload_user_profile(session['user_id'])
                 log_last_user_login(session['user_id'])
                 session['login_mode'] = 'osm'
                 return redirect('/')
@@ -354,13 +359,14 @@ def register(role):
                 cursor.execute('SELECT id FROM user WHERE username=%s', (data["username"],))
                 new_user = cursor.fetchone()
                 session['user_id'] = new_user['id']
-                reload_user_profile(new_user['id'])  
                 
-            else:
+            else: # Merge account
                 sql = "UPDATE user SET name=%s, surname=%s, email=%s, phone=%s, username=%s, password=%s, job_position=%s, osm_job=%s, hospital=%s, province=%s, license=%s WHERE id=%s"
                 val = (data["name"], data["surname"], data["email"], data["phone"], data["username"],generate_password_hash(data["password"]), data["job_position"], data["osm_job"], data["hospital"],data["province"], data["license"], session['user_id'])
                 cursor.execute(sql, val)
-                
+                session.pop('duplicate_flag', None)
+
+            reload_user_profile(session['user_id'])
             log_last_user_login(session['user_id'])
             session['login_mode'] = 'dentist'
 
