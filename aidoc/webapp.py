@@ -896,12 +896,15 @@ def record_specialist(admin=False):
             sql_data ='''
                 SELECT
                     sr.id,
-                    submission_record_limited.case_id,
+                    patient_case_id.case_id,
                     sr.channel,
                     sr.fname,
                     patient_user.name    AS patient_name,
                     patient_user.surname AS patient_surname,
                     patient_user.birthdate,
+                    sender.name AS sender_name,
+                    sender.surname AS sender_surname,
+                    sender.hospital AS sender_hospital,
                     sr.sender_id,
                     sr.patient_id,
                     sr.dentist_id,
@@ -918,27 +921,19 @@ def record_specialist(admin=False):
                     sr.created_at,
                     retrain_request.retrain_request_status,
                     followup_request.followup_request_status,
-                    (SELECT COUNT(*) 
-                    FROM submission_record
-                    INNER JOIN patient_case_id 
-                        ON submission_record.id = patient_case_id.id
-                    ) AS full_count
+                    (SELECT COUNT(*) FROM submission_record) AS full_count
                 FROM (
-                    SELECT submission_record.id, case_id
+                    SELECT submission_record.id
                     FROM submission_record
-                    INNER JOIN patient_case_id 
-                    ON submission_record.id = patient_case_id.id
                     ORDER BY submission_record.created_at DESC
                     LIMIT %s OFFSET %s
                 ) submission_record_limited
-                LEFT JOIN submission_record sr 
-                    ON submission_record_limited.id = sr.id
-                LEFT JOIN user AS patient_user 
-                    ON sr.patient_id = patient_user.id
-                LEFT JOIN followup_request 
-                    ON sr.id = followup_request.submission_id
-                LEFT JOIN retrain_request 
-                    ON sr.id = retrain_request.submission_id;
+                LEFT JOIN submission_record sr ON submission_record_limited.id = sr.id
+                LEFT JOIN patient_case_id ON sr.id = patient_case_id.id
+                LEFT JOIN user AS patient_user ON sr.patient_id = patient_user.id
+                LEFT JOIN user AS sender ON sr.sender_id = sender.id
+                LEFT JOIN followup_request ON sr.id = followup_request.submission_id
+                LEFT JOIN retrain_request ON sr.id = retrain_request.submission_id;
                 '''
             val = (records_per_page, offset)
     else: # Specialist
