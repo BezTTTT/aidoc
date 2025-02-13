@@ -85,9 +85,8 @@ def dentist_index():
     if g.user is None:
         session.clear() # logged out from everything
 
-    if g.user: # already logged in
-        if 'login_mode' in session and session['login_mode']=='dentist':
-            return redirect(url_for("webapp.record", role='dentist'))
+    if g.user and ('login_mode' in session) and (session['login_mode']=='dentist'): # already logged in
+        return redirect(url_for("webapp.record", role='dentist'))
     else:
         return render_template("dentist_login.html")
 
