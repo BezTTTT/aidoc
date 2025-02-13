@@ -22,9 +22,6 @@ def user_info(id):
 
     except Exception as e:
         return  json.dumps({"error": f"An error occurred while fetching user data: {e}"}), 500
-    
-    finally:
-        db.close_db()
 
     return output
 

@@ -4,15 +4,26 @@
 
 {% block content %}
 
+<style>
+    input[type="radio"] {
+      border: 1px solid rgb(0, 0, 0);
+    }
+</style>
+
 <h2 class="text-center"> ระบบปัญญาประดิษฐ์ที่ช่วยในการค้นหาและวิเคราะห์รอยโรคก่อนมะเร็งและมะเร็งช่องปาก</h2>
 <h4 class="text-center"> (Artificial Intelligent System for Detecting and Analyzing PMDs and Oral Cancer)</h4>
+
 <div class="row d-flex justify-content-center text-center">
-    <div class="col-md-4 mt-2">
+    <div class="col-sm-6 col-md-4 mt-2">
         <div class="card">
-            <div class="mx-2 mt-2" style="display: inline-flex; align-items: center; justify-content: center; ">
+            <div class="mx-2 mt-2" style="
+            display: inline-flex; /* Use inline-flex to center horizontally */
+            align-items: center; /* Center vertically */
+            justify-content: center; /* Center horizontally */
+            overflow: hidden;"> 
                 <a href="{{ url_for('image.load_image', folder='upload', user_id=session['user_id'], imagename=data['fname']) }}" target="_blank">
-                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=session['user_id'], imagename=data['fname']) }}"
-                        class="card-img-top" alt="" style="max-height: 512px" />
+                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=session['user_id'], imagename=data['fname']) }}" alt=""
+                        style="height: 100%; max-width: 100%; width: auto" />
                 </a>
             </div>
             <div class="card-body">
@@ -20,12 +31,16 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4 mt-2">
+    <div class="col-sm-6 col-md-4 mt-2">
         <div class="card">
-            <div class="mx-2 mt-2" style="display: inline-flex; align-items: center; justify-content: center; ">
+            <div class="mx-2 mt-2" style="
+            display: inline-flex; /* Use inline-flex to center horizontally */
+            align-items: center; /* Center vertically */
+            justify-content: center; /* Center horizontally */
+            overflow: hidden;">
                 <a href="{{ url_for('image.load_image', folder='outlined', user_id=session['user_id'], imagename=data['fname']) }}" target="_blank">
-                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=session['user_id'], imagename=data['fname']) }}"
-                        class="card-img-top"  alt="" style="max-height: 512px" />
+                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=session['user_id'], imagename=data['fname']) }}" alt="" 
+                        style="height: 100%; max-width: 100%; width: auto" />
                 </a>
             </div>
             <div class="card-body">
@@ -34,8 +49,9 @@
         </div>
     </div>
 </div>
+
 <div class="row d-flex justify-content-center text-center mt-2" style="width: auto">
-    <div class="col-md-8">
+    <div class="col">
         <div class="card">
             <div class="card-body">
                 <p class="card-text">[คำแนะนำ] [1. กดที่รูป เพื่อดูภาพความละเอียดสูง] [2. หากศรีษะของคนไข้ไม่อยู่ในทิศทางตั้งขึ้น เพื่อให้ AI ทำงานได้แม่นยำที่สุด กรุณากดหมุนรูป แล้วกด Recompute เพื่อให้ AI ประมวลผลอีกครั้ง] [3. เนื่องจาก AI อาจมีการปรับปรุงตัวเป็นรุ่นใหม่ ผู้ใช้อาจกด Recompute เพื่อขอให้ AI รุ่นล่าสุดพิจารณาภาพนี้อีกครั้ง]</p>
@@ -44,167 +60,140 @@
     </div>
 </div>
 
-<div class="d-flex justify-content-center container-md">
-    <div class="row justify-content-center my-4" style="width: 90%;">
-        <div class="col-md-3 text-center mt-2 px-1">
-            <a class="btn btn-outline-success btn-block nowrap" style="width: 100%; margin: 0;"
-                href="/upload_image/dentist">วิเคราะห์รูปภาพอื่นเพิ่มเติม</a>
-        </div>
-        <div class="col-md-2 text-center mt-2 px-1">
-            <form action="/record/dentist" method="post" enctype="multipart/form-data">
-                <a class="btn btn-outline-success btn-block nowrap" style="width: 100%; margin: 0;"
-                    onclick='this.parentNode.submit(); return false;'>ย้อนกลับหน้าประวัติ</a>
-            </form>
-        </div>
-        <div class="col-md-2 text-center mt-2 px-1">
-            <a class="btn btn-outline-success btn-block" style="width: 100%; margin: 0;"
-                href="/download_image/{{data['sender_id']}}/{{data['fname']}}" download>Download</a>
-        </div>
-        <div class="col-md-2 text-center mt-2 px-1">
-            <form action="{{url_for('image.rotate_image', return_page='diagnosis', role='dentist', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
-                <input name="user_id" type="hidden" value="{{data['sender_id']}}">
-                <input name="imagename" type="hidden" value="{{data['fname']}}">
-                <a class="btn btn-outline-success btn-block nowrap" style="width: 100%; margin: 0;"
-                    onclick='this.parentNode.submit(); return false;'>หมุนรูปไปทางขวา</a>
-            </form>
-        </div>
-        <div class="col-md-2 text-center mt-2 px-1">
-            <form action="{{url_for('image.recompute_image', return_page='diagnosis', role='dentist', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
-                <input name="user_id" type="hidden" value="{{data['sender_id']}}">
-                <input name="imagename" type="hidden" value="{{data['fname']}}">
-                <a class="btn btn-outline-success btn-block nowrap" style="width: 100%; margin: 0;"
-                    onclick='this.parentNode.submit(); return false;'>Recompute</a>
-            </form>
-        </div>
-        <div class="col-md-2 text-center mt-2 px-1">
-            <form action="{{url_for('image.mask_editor', role='dentist', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
-                <input name="user_id" type="hidden" value="{{data['owner_id']}}">
-                <input name="imagename" type="hidden" value="{{data['fname']}}">
-                <a class="btn btn-outline-success btn-block nowrap" style="width: 100%; margin: 0;"
-                    onclick='this.parentNode.submit(); return false;'>แก้ไขผลลัพธ์</a>
-            </form>
-        </div>
+{% block menu %}
+<div class="row d-flex justify-content-center my-2">
+    <div class="col text-center">
+        <form action="/record/dentist" method="post" enctype="multipart/form-data">
+            <a class="btn btn-outline-success btn-lg my-1 mx-2" onclick='this.parentNode.submit(); return false;'>ย้อนกลับ</a>
+        </form>
+
+        <a class="btn btn-outline-success btn-lg my-1 mx-2" href="/upload_image/dentist">วิเคราะห์รูปภาพอื่นเพิ่มเติม</a>
+
+        <a class="btn btn-outline-success btn-lg my-1 mx-2" href="/download_image/{{data['sender_id']}}/{{data['fname']}}" download>Download</a>
+
+        <form action="{{url_for('image.rotate_image', return_page='diagnosis', role='dentist', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
+            <input name="user_id" type="hidden" value="{{data['sender_id']}}">
+            <input name="imagename" type="hidden" value="{{data['fname']}}">
+            <a class="btn btn-outline-success btn-lg my-1 mx-2" onclick='this.parentNode.submit(); return false;'>หมุนรูปไปทางขวา</a>
+        </form>
+
+        <form action="{{url_for('image.recompute_image', return_page='diagnosis', role='dentist', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
+            <input name="user_id" type="hidden" value="{{data['sender_id']}}">
+            <input name="imagename" type="hidden" value="{{data['fname']}}">
+            <a class="btn btn-outline-success btn-lg my-1 mx-2" onclick='this.parentNode.submit(); return false;'>Recompute</a>
+        </form>
+
+        <form action="{{url_for('image.mask_editor', role='dentist', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
+            <input name="user_id" type="hidden" value="{{data['owner_id']}}">
+            <input name="imagename" type="hidden" value="{{data['fname']}}">
+            <a class="btn btn-outline-success btn-lg my-1 mx-2" onclick='this.parentNode.submit(); return false;'>แก้ไขผลลัพธ์</a>
+        </form>
     </div>
 </div>
+{% endblock %}
 
-<div class="row d-flex justify-content-center text-align-left my-4" style="width: auto">
-    <div class="card">
-        <div class="card-body">
-            <h5 class="card-title">ผลการพยากรณ์ของ AI</h5>
-            {% if data['ai_prediction'] == 0 %}
-                <h6 class="card-subtitle card shadow-lg bg-success my-3 py-3 ms-4 fs-3 text-white text-center">
-                    ภาพช่องปากไม่น่าจะมีรอยโรค
-                </h6>
-            {% elif data['ai_prediction'] == 1 %}
-                <h6 class="card-subtitle card shadow-lg bg-warning my-3 py-3 fs-3 text-dark text-center">
-                    ภาพถ่ายช่องปากอาจมีรอยโรคที่มีลักษณะคล้ายกันกับ OPMD (Oral Potentially Malignant Disorders)
-                </h6>
-            {% else %}
-                <h6 class="card-subtitle card shadow-lg bg-danger my-3 py-3 ms-4 fs-3 text-white text-center">
-                    ภาพถ่ายช่องปากอาจมีรอยโรคที่มีลักษณะคล้ายกันกับ OSCC (Oral Squamous Cell Carcinoma)
-                </h6>
-            {% endif %}
+<div class="row d-flex justify-content-center text-align-left my-3">
+    <div class="col">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">ผลการพยากรณ์ของ AI</h5>
+                {% if data['ai_prediction'] == 0 %}
+                    <h6 class="card-subtitle card shadow-lg bg-success my-3 py-3 ms-4 fs-4 text-white text-center">
+                        ภาพช่องปากไม่น่าจะมีรอยโรค
+                    </h6>
+                {% elif data['ai_prediction'] == 1 %}
+                    <h6 class="card-subtitle card shadow-lg bg-warning my-3 py-3 fs-4 text-dark text-center">
+                        ภาพถ่ายช่องปากอาจมีรอยโรคที่มีลักษณะคล้ายกันกับ OPMD (Oral Potentially Malignant Disorders)
+                    </h6>
+                {% else %}
+                    <h6 class="card-subtitle card shadow-lg bg-danger my-3 py-3 ms-4 fs-4 text-white text-center">
+                        ภาพถ่ายช่องปากอาจมีรอยโรคที่มีลักษณะคล้ายกันกับ OSCC (Oral Squamous Cell Carcinoma)
+                    </h6>
+                {% endif %}
+            
+                <button id="seeMoreButton" class="btn btn-light"
+                    style="padding: 5px 10px; font-size: 13px;background-color:rgb(196, 196, 196);">
+                    <span class="bi bi-plus">คลิกเพื่อดูข้อมูลการพยากรณ์ของ AI เพิ่มเติม</span>
+                </button>
         
-            <button id="seeMoreButton" class="btn btn-light"
-                style="padding: 5px 10px; font-size: 13px;background-color:rgb(196, 196, 196);">
-                <span class="bi bi-plus">คลิกเพื่อดูข้อมูลการพยากรณ์ของ AI เพิ่มเติม</span>
-            </button>
-    
-            <div id="hiddenContent" class="m-2">
-                <div class="row d-flex justify-content-center">
-                    <div id="normal-check-box-col1" class="col-1 d-flex justify-content-end" style="width: 33%">
-                        <input class="form-check-input" type="radio" name="ai_prediction" disabled
-                            {% if data['ai_prediction'] == 0 %} checked {% endif %}
-                        >
+                <div id="hiddenContent">
+                    <div class="row">
+                        <div class="col-9 col-lg-6">
+                            <p class="card-text text-end">{% if data['ai_prediction'] == 0 %} ✅ &ensp; {% endif %} ความน่าจะเป็นที่จะไม่มีรอยโรค</p>
+                        </div>
+                        <div class="col-3 col-lg-6">
+                            <p class="card-text">
+                                {{'%0.2f'| format(data['ai_scores'][0]*100 | float)}} %
+                            </p>
+                        </div>
+                    </div>              
+                    <div class="row">
+                        <div class="col-9 col-lg-6">
+                            <p class="card-text text-end">{% if data['ai_prediction'] == 1 %} ✅ &ensp; {% endif %} ความน่าจะเป็นของการมีรอยโรค OPMD</p>
+                        </div>
+                        <div class="col-3 col-lg-6">
+                            <p class="card-text">
+                                {{'%0.2f'| format(data['ai_scores'][1]*100 | float)}} %
+                            </p>
+                        </div>
                     </div>
-                    <div id="normal-check-box-col2" class="col-2" style="width: 33%">
-                        <p class="card-text">ความน่าจะเป็นที่จะไม่มีรอยโรค</p>
+                    <div class="row">
+                        <div class="col-9 col-lg-6">
+                            <p class="card-text text-end">{% if data['ai_prediction'] == 2 %} ✅ &ensp; {% endif %} ความน่าจะเป็นของการมีรอยโรค OSCC</p>
+                        </div>
+                        <div class="col-3 col-lg-6">
+                            <p class="card-text">
+                                {{'%0.2f'| format(data['ai_scores'][2]*100 | float)}} %
+                            </p>
+                        </div>
                     </div>
-                    <div id="normal-check-box-col3" class="col-3" style="width: 33%">
-                        <p class="card-text">
-                            {{'%0.2f'| format(data['ai_scores'][0]*100 | float)}} %
-                        </p>
-                    </div>
-                </div>
-            
-                <div class="row justify-content-center" style="width: auto">
-                    <div id="opmd-check-box-col1" class="col-1 d-flex justify-content-end" style="width: 33%">
-                        <input class="form-check-input" type="radio" name="ai_prediction" disabled
-                            {% if data['ai_prediction'] == 1 %} checked {% endif %}
-                        >
-                    </div>
-                    <div id="opmd-check-box-col2" class="col-2" style="width: 33%">
-                        <p class="card-text">ความน่าจะเป็นของการมีรอยโรค OPMD</p>
-                    </div>
-                    <div id="opmd-check-box-col3" class="col-3" style="width: 33%">
-                        <p class="card-text">
-                            {{'%0.2f'| format(data['ai_scores'][1]*100 | float)}} %
-                        </p>
-                    </div>
-                </div>
-            
-                <div class="row justify-content-center" style="width: auto">
-                    <div id="oscc-check-box-col1" class="col-1 d-flex justify-content-end" style="width: 33%">
-                        <input class="form-check-input" type="radio" name="ai_prediction" disabled
-                            {% if data['ai_prediction'] == 2 %} checked {% endif %}
-                        >
-                    </div>
-                    <div id="oscc-check-box-col2" class="col-2" style="width: 33%">
-                        <p class="card-text">ความน่าจะเป็นของการมีรอยโรค OSCC</p>
-                    </div>
-                    <div id="oscc-check-box-col3" class="col-3" style="width: 33%">
-                        <p class="card-text">
-                            {{'%0.2f'| format(data['ai_scores'][2]*100 | float)}} %
-                        </p>
-                    </div>
-                </div>
-
-                <div class="row" style="width: auto">
-                    <div class="col">
-                        {% if data['quality_ai_prediction'] is not none %}
-                            {% if data['quality_ai_prediction']==0 %}
-                                ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ศรีษะคนไข้ไม่ตั้งตรง)</b></span>
-                            {% elif data['quality_ai_prediction']==1 %}
-                                ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ผลลัพธ์อาจผิดพลาด)</b></span>
-                            {% elif data['quality_ai_prediction']==2 %}
-                                ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่พบช่องปาก (ภาพอาจไม่เกี่ยวข้อง)</b></span>
-                            {% elif data['quality_ai_prediction']==3 %}
-                                ตรวจคุณภาพรูป: <span style="color: green;"><b>ผ่านมาตรฐาน</b></span>
-                            {% endif %}
-                        {% else %}
-                            ตรวจคุณภาพรูป: ไม่มีผลลัพธ์ (กด Recompute ใหม่)
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="row" style="width: auto">
-                    <div class="col">
-                        {% if data['lesion_ai_version'] is not none %}
-                            {% if data['lesion_ai_version_check'] %}
-                                Oral Lesion AI Version : {{data['lesion_ai_version']}} (current)
+                    <div class="row mt-2" style="width: auto">
+                        <div class="col">
+                            {% if data['quality_ai_prediction'] is not none %}
+                                {% if data['quality_ai_prediction']==0 %}
+                                    ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ศีรษะคนไข้ไม่ตั้งตรง)</b></span>
+                                {% elif data['quality_ai_prediction']==1 %}
+                                    ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ผลลัพธ์อาจผิดพลาด)</b></span>
+                                {% elif data['quality_ai_prediction']==2 %}
+                                    ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่พบช่องปาก (ภาพอาจไม่เกี่ยวข้อง)</b></span>
+                                {% elif data['quality_ai_prediction']==3 %}
+                                    ตรวจคุณภาพรูป: <span style="color: green;"><b>ผ่านมาตรฐาน</b></span>
+                                {% endif %}
                             {% else %}
-                                Oral Lesion AI Version : {{data['lesion_ai_version']}} <span style="color: magenta;"><b> (old version, try Recompute)</b></span>
+                                ตรวจคุณภาพรูป: ไม่มีผลลัพธ์ (กด Recompute ใหม่)
                             {% endif %}
-                        {% else %}
-                            Oral Lesion AI Version : ไม่มีผลลัพธ์ (กด Recompute ใหม่)
-                        {% endif %}
+                        </div>
                     </div>
-                </div>
-                <div class="row" style="width: auto">
-                    <div class="col">
-                        {% if data['quality_ai_version'] is not none %}
-                            {% if data['quality_ai_version_check'] %}
-                                Image Quality Checker Version : {{data['quality_ai_version']}} (current)
+                    <div class="row" style="width: auto">
+                        <div class="col">
+                            {% if data['lesion_ai_version'] is not none %}
+                                {% if data['lesion_ai_version_check'] %}
+                                    Oral Lesion AI Version : {{data['lesion_ai_version']}} (current)
+                                {% else %}
+                                    Oral Lesion AI Version : {{data['lesion_ai_version']}} <span style="color: magenta;"><b> (old version, try Recompute)</b></span>
+                                {% endif %}
                             {% else %}
-                                Image Quality Checker Version : {{data['quality_ai_version']}} <span style="color: magenta;"><b> (old version, try Recompute)</b></span>
+                                Oral Lesion AI Version : ไม่มีผลลัพธ์ (กด Recompute ใหม่)
                             {% endif %}
-                        {% else %}
-                            Image Quality Checker Version : ไม่มีผลลัพธ์ (กด Recompute ใหม่)
-                        {% endif %}
+                        </div>
                     </div>
-                </div>
-                <div class="row" style="width: auto">
-                    <div class="col">
-                        วันที่ประมวลผลล่าสุด : {{data['ai_updated_at_thai_datetime']}}
+                    <div class="row" style="width: auto">
+                        <div class="col">
+                            {% if data['quality_ai_version'] is not none %}
+                                {% if data['quality_ai_version_check'] %}
+                                    Image Quality Checker Version : {{data['quality_ai_version']}} (current)
+                                {% else %}
+                                    Image Quality Checker Version : {{data['quality_ai_version']}} <span style="color: magenta;"><b> (old version, try Recompute)</b></span>
+                                {% endif %}
+                            {% else %}
+                                Image Quality Checker Version : ไม่มีผลลัพธ์ (กด Recompute ใหม่)
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row" style="width: auto">
+                        <div class="col">
+                            วันที่ประมวลผลล่าสุด : {{data['ai_updated_at_thai_datetime']}}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -212,14 +201,13 @@
     </div>
 </div>
 
-<form action="{{ url_for('webapp.diagnosis', role='dentist', img_id=data['img_id']) }}" method="post" enctype="multipart/form-data">
-    <div class="row d-flex justify-content-center text-align-left my-4">
-        <div class="card mb-5" style="width: 100%">
-            <div id="outer-container" class="card-body">
-                <h5 class="card-title">
-                    ท่านเห็นด้วยกับผลการวิเคราะทาง AI ดังที่ปรากฏหรือไม่?
-                </h5>
-
+{% block dianosis_cards %}
+<div class="d-grid diagnosis-grid">
+    <div class="card grid-item-dentist-ai-agreement-panel">
+        <div class="card-body px-4">
+            <h5 class="card-title text-start mb-3">ท่านเห็นด้วยกับผลการวิเคราะทาง AI ดังที่ปรากฏหรือไม่?</h5>
+            <form action="{{ url_for('webapp.diagnosis', role='dentist', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="dentist_action" value="ai_agreement">
                 <div class="form-check">
                     <input class="form-check-input" type="radio" name="agree_option" id="agree_option1" value="AGREE"
                         {% if data['dentist_feedback_code']=='AGREE' %} checked {% endif %}/>
@@ -230,13 +218,17 @@
                         {% if data['dentist_feedback_code']=='DISAGREE' %} checked {% endif %} />
                     <label class="form-check-label" for="agree_option2"> ไม่เห็นด้วย </label>
                 </div>
-
-                <h5 class="card-title mt-4">
-                    คำวินิจฉัยเพิ่มเติม
-                </h5>
+                <input class="btn btn-outline-primary mt-3" type="submit" value="บันทึกความคิดเห็น">
+            </form>
+        </div>
+    </div>
+    <div class="card grid-item-dentist-additional-feedback-panel">
+        <div class="card-body px-4">
+            <h5 class="card-title text-start mb-3">คำวินิจฉัยเพิ่มเติม</h5>
+            <form action="{{ url_for('webapp.diagnosis', role='dentist', img_id=data['img_id']) }}" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="dentist_action" value="additional_feedback">
                 <div id="inner-container" class="d-flex justify-content-lg-start my-3">
                     <div id="lesion-location-container">
-                        <!-- {{ data}} -->
                         <label class="mb-1">ตำแหน่งที่ตรวจพบรอยโรค</label>
                         {% for key, value in maps['lesion_location_map'].items() %}
                             <div class="form-check">
@@ -258,50 +250,28 @@
                         {% endfor %}
                     </div>
                 </div>
-
-                <div id="dentist-comment-container" class="my-3">
-                    <label for="dentist_comment" class="form-label">ความคิดเห็น</label>
-                    <textarea class="form-control" rows="3" name="dentist_comment">{{data['dentist_feedback_comment']}}</textarea>
-                    <input name="feedback_submit" class="btn btn-outline-success my-2" type="submit" value="บันทึกความคิดเห็น" />
-                </div>
-            </div>
+                <input class="btn btn-outline-primary mt-3" type="submit" value="บันทึกคำวินิจฉัย">
+            </form>
         </div>
     </div>
-</form>
-
+    <div class="card grid-item-dentist-comment-panel">
+        <div class="card-body px-4">
+            <h5 class="card-title text-start mb-3">ความคิดเห็น</h5>
+            <p><i>ข้อความในช่องความคิดเห็นนี้ จะสามารถค้นหาได้ในกล่องค้นหาคำสำคัญ</i></p>
+            <form action="{{ url_for('webapp.diagnosis', role='dentist', img_id=data['img_id']) }}" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="dentist_action" value="comment">
+                <div id="dentist-comment-container" class="my-3">
+                    <textarea class="form-control" rows="3" name="dentist_comment">{{data['dentist_feedback_comment']}}</textarea> 
+                </div>
+                <input class="btn btn-outline-success my-2" type="submit" value="บันทึกความคิดเห็น">
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
 {% endblock %}
 
 {% block script %}
-
-<script>
-    const windowWidth = window.innerWidth;
-  
-    if (windowWidth < 920) {
-        
-        const outerContainer = document.getElementById("outer-container");
-        
-        const innerContainer = document.getElementById("inner-container");
-        const lesionTypeContainer = document.getElementById("lesion-type-container");
-        const dentistCommentContainer = document.getElementById("dentist-comment-container");
-
-        innerContainer.removeChild(lesionTypeContainer);
-        outerContainer.removeChild(dentistCommentContainer);
-
-        outerContainer.appendChild(lesionTypeContainer);
-        outerContainer.appendChild(dentistCommentContainer);
-
-        document.getElementById("normal-check-box-col1").style.width = "10%"
-        document.getElementById("normal-check-box-col2").style.width = "65%"
-        document.getElementById("normal-check-box-col3").style.width = "25%"
-        document.getElementById("opmd-check-box-col1").style.width = "10%"
-        document.getElementById("opmd-check-box-col2").style.width = "65%"
-        document.getElementById("opmd-check-box-col3").style.width = "25%"
-        document.getElementById("oscc-check-box-col1").style.width = "10%"
-        document.getElementById("oscc-check-box-col2").style.width = "65%"
-        document.getElementById("oscc-check-box-col3").style.width = "25%"
-    }
-</script>
-
 <script>
   $(document).ready(function () {
     $("#seeMoreButton").click(function () {

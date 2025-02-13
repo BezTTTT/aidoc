@@ -16,10 +16,13 @@ def generate_province_list():
 
 def fetch_informed_province(cursor):
     query = """
-        SELECT DISTINCT 
-        location_province
-        FROM submission_record sr 
-        WHERE sr.dentist_id IS NOT NULL
+        SELECT location_province 
+        FROM (
+            SELECT location_province, COUNT(*) AS record_count
+            FROM submission_record sr
+            GROUP BY location_province
+        ) AS province_counts  -- Alias added for the subquery
+        ORDER BY record_count DESC
     """
     cursor.execute(query)
     return cursor.fetchall()

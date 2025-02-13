@@ -145,7 +145,8 @@
 
   if (data.patient_and_osm) {
     // Extract osm, patient, and total data
-    const { patient, osm, total } = data.patient_and_osm;
+    const { osm, patient, total } = data.patient_and_osm;
+
     const createRow = (label, entry) => {
       const row = document.createElement('tr');
       row.innerHTML = `
@@ -302,22 +303,37 @@
   }
  }
 
- function populateProvince(data){
+ function populateProvince(data) {
   const provinceDropdown = document.getElementById('filterProvince');
-  if (!isProvincePopulated && provinceDropdown.options.length <= 1){
+
+  if (!isProvincePopulated && provinceDropdown.options.length <= 1) {
     const defaultOption = document.createElement('option');
     defaultOption.value = "ทั้งประเทศ";
     defaultOption.textContent = "ทั้งประเทศ";
     provinceDropdown.appendChild(defaultOption);
 
+    let count = 1;
     data.total_province.forEach(province => {
-        const option = document.createElement('option');
-        option.value = province;
+      const option = document.createElement('option');
+      option.value = province;
+
+      // Add medal emoji for the first three provinces
+      if (count === 1) {
+        option.textContent = "🥇 " + province;
+      } else if (count === 2) {
+        option.textContent = "🥈 " + province;
+      } else if (count === 3) {
+        option.textContent = "🥉 " + province;
+      } else {
         option.textContent = province;
-        provinceDropdown.appendChild(option);
+      }
+
+      provinceDropdown.appendChild(option);
+      count++;
     });
+
     isProvincePopulated = true;
-    }
   }
+}
 </script>
 {% endblock %}

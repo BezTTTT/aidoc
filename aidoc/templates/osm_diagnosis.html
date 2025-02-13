@@ -6,13 +6,18 @@
 
 <h2 class="text-center"> ระบบปัญญาประดิษฐ์ที่ช่วยในการค้นหาและวิเคราะห์รอยโรคก่อนมะเร็งและมะเร็งช่องปาก</h2>
 <h4 class="text-center"> (Artificial Intelligent System for Detecting and Analyzing PMDs and Oral Cancer)</h4>
+
 <div class="row d-flex justify-content-center text-center">
-    <div class="col-md-4 mt-2">
+    <div class="col-sm-6 col-md-4 mt-2">
         <div class="card"
             {% if data['special_request']==1 %}
                 style="border-color: red; border-width: 3px;"
             {% endif %}>
-            <div class="mx-2 mt-2" style="display: inline-flex; align-items: center; justify-content: center; ">
+            <div class="mx-2 mt-2" style="
+            display: inline-flex; /* Use inline-flex to center horizontally */
+            align-items: center; /* Center vertically */
+            justify-content: center; /* Center horizontally */
+            overflow: hidden;">
                 <a href="{{ url_for('image.load_image', folder='upload', user_id=data['owner_id'], imagename=data['fname']) }}" target="_blank">
                     <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=data['owner_id'], imagename=data['fname']) }}"
                         class="card-img-top" alt="" style="max-height: 512px" />
@@ -23,12 +28,16 @@
             </div>
         </div>
     </div>
-    <div class="col-md-4 mt-2">
+    <div class="col-sm-6 col-md-4 mt-2">
         <div class="card"
             {% if data['special_request']==1 %}
                 style="border-color: red; border-width: 3px;"
             {% endif %}>
-            <div class="mx-2 mt-2" style="display: inline-flex; align-items: center; justify-content: center; ">
+            <div class="mx-2 mt-2" style="
+            display: inline-flex; /* Use inline-flex to center horizontally */
+            align-items: center; /* Center vertically */
+            justify-content: center; /* Center horizontally */
+            overflow: hidden;">
                 <a href="{{ url_for('image.load_image', folder='outlined', user_id=data['owner_id'], imagename=data['fname']) }}" target="_blank">
                     <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=data['owner_id'], imagename=data['fname']) }}"
                         class="card-img-top"  alt="" style="max-height: 512px" />
@@ -40,8 +49,9 @@
         </div>
     </div>
 </div>
+
 <div class="row d-flex justify-content-center text-center mt-2" style="width: auto">
-    <div class="col-md-8">
+    <div class="col">
         <div class="card">
             <div class="card-body">
                 <p class="card-text">[คำแนะนำ] [1. กดที่รูป เพื่อดูภาพความละเอียดสูง] [2. หากศรีษะของคนไข้ไม่อยู่ในทิศทางตั้งขึ้น เพื่อให้ AI ทำงานได้แม่นยำที่สุด กรุณากดหมุนรูป แล้วกด Recompute เพื่อให้ AI ประมวลผลอีกครั้ง] [3. เนื่องจาก AI อาจมีการปรับปรุงตัวเป็นรุ่นใหม่ ผู้ใช้อาจกด Recompute เพื่อขอให้ AI รุ่นล่าสุดพิจารณาภาพนี้อีกครั้ง]</p>
@@ -50,145 +60,131 @@
     </div>
 </div>
 
-<div class="d-flex justify-content-center">
-    <div class="row justify-content-center my-4" style="width: 90%;">
-        <div class="col-md-2 text-center mt-2 px-1">
-            <form action="/record/osm" method="post" enctype="multipart/form-data">
-                <a class="btn btn-outline-success btn-block nowrap" style="width: 100%; margin: 0;"
-                    onclick='this.parentNode.submit(); return false;'>ย้อนกลับหน้าประวัติ</a>
-            </form>
-        </div>
-        <div class="col-md-3 text-center mt-2 px-1">
-            <a class="btn btn-outline-success btn-block nowrap" style="width: 100%; margin: 0;"
-                href="/upload_image/osm">นำส่งภาพถ่ายช่องปากเพิ่มเติม</a>
-        </div>
-        <div class="col-md-2 text-center mt-2 px-1">
-            <form action="{{url_for('image.rotate_image', return_page='diagnosis', role='osm', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
-                <input name="user_id" type="hidden" value="{{data['owner_id']}}">
-                <input name="imagename" type="hidden" value="{{data['fname']}}">
-                <a class="btn btn-outline-success btn-block nowrap" style="width: 100%; margin: 0;"
-                    onclick='this.parentNode.submit(); return false;'>หมุนรูปไปทางขวา</a>
-            </form>
-        </div>
-        <div class="col-md-2 text-center mt-2 px-1">
-            <form action="{{url_for('image.recompute_image', return_page='diagnosis', role='osm', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
-                <input name="user_id" type="hidden" value="{{data['owner_id']}}">
-                <input name="imagename" type="hidden" value="{{data['fname']}}">
-                <a class="btn btn-outline-success btn-block nowrap" style="width: 100%; margin: 0;"
-                    onclick='this.parentNode.submit(); return false;'>Recompute</a>
-            </form>
-        </div>
+<div class="row d-flex justify-content-center my-2">
+    <div class="col text-center">
+        <form action="/record/osm" method="post" enctype="multipart/form-data">
+            <a class="btn btn-outline-success btn-lg my-1 mx-2" onclick='this.parentNode.submit(); return false;'>ย้อนกลับหน้าประวัติ</a>
+        </form>
+
+        <form action="{{url_for('image.rotate_image', return_page='diagnosis', role='osm', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
+            <input name="user_id" type="hidden" value="{{data['owner_id']}}">
+            <input name="imagename" type="hidden" value="{{data['fname']}}">
+            <a class="btn btn-outline-success btn-lg my-1 mx-2" onclick='this.parentNode.submit(); return false;'>หมุนรูปไปทางขวา</a>
+        </form>
+
+        <form action="{{url_for('image.recompute_image', return_page='diagnosis', role='osm', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
+            <input name="user_id" type="hidden" value="{{data['owner_id']}}">
+            <input name="imagename" type="hidden" value="{{data['fname']}}">
+            <a class="btn btn-outline-success btn-lg my-1 mx-2" onclick='this.parentNode.submit(); return false;'>Recompute</a>
+        </form>
     </div>
 </div>
 
-<div class="row d-flex justify-content-center text-align-left" style="width: auto">
-    <div class="card">
-        <div class="card-body">
-            <h5 class="card-title">ผลการพยากรณ์ของ AI</h5>
-            {% if data['ai_prediction'] == 0 %}
-                <div class="card-subtitle card shadow-lg bg-success my-3 py-3 mx-3 text-white text-center">
-                    <h6 class="fs-2"> ภาพถ่ายช่องปาก ไม่พบรอยโรค <br></h6>
-                    <h6 class="fs-6"> กรุณาส่งภาพถ่ายช่องปากมุมมองอื่น ๆ มาให้ตรวจสอบด้วย หรือถ่ายซ้ำด้วยกล้องคุณภาพที่ดีขึ้น </h6>
-                </div>
-            {% elif data['ai_prediction'] == 1 %}
-                <div class="card-subtitle card shadow-lg bg-warning my-3 py-3 mx-3 text-dark text-center">
-                    <h6 class="fs-2"> ภาพถ่ายช่องปาก อาจจะมีรอยโรค <br></h6>
-                    <h6 class="fs-6"> กรุณาส่งภาพถ่ายช่องปากมุมมองอื่น ๆ มาให้ตรวจสอบเพิ่มเติม หรือถ่ายซ้ำด้วยกล้องคุณภาพที่ดีขึ้น </h6>
-                </div>
-            {% else %}
-                <div class="card-subtitle card shadow-lg bg-danger my-3 py-3 mx-3 text-white text-center">
-                    <h6 class="fs-2"> ภาพถ่ายช่องปาก อาจจะมีรอยโรค <br></h6>
-                    <h6 class="fs-6"> กรุณาส่งภาพถ่ายช่องปากมุมมองอื่น ๆ มาให้ตรวจสอบเพิ่มเติม หรือถ่ายซ้ำด้วยกล้องคุณภาพที่ดีขึ้น </h6>
-                </div>
-            {% endif %}
-        </div>
-    </div>
-</div>
-
-<div id="outer-container" class="row d-flex justify-content-start my-4 pb-3">
-    <div id="inner-left-container" class="p-0" style="width: 49.5%; margin-right: 0.5%">
-        <div id="image-info-container" class="card mb-3" style="width: 100%">
-            <div class="card-body px-4">
-                <h5 class="card-title text-start mb-3">ข้อมูลภาพ</h5>
-                <p>Case ID: {{data['case_id']}} </p>
-                <p>ชื่อไฟล์: {{data['fname']}}</p>
-                <p>
-                {% if data['quality_ai_prediction'] is not none %}
-                    {% if data['quality_ai_prediction']==0 %}
-                        ตรวจคุณภาพรูป: <span style="color: red;">ไม่ผ่านมาตรฐาน (ศรีษะคนไข้ไม่ตั้งตรง)</span>
-                    {% elif data['quality_ai_prediction']==1 %}
-                        ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ผลลัพธ์อาจผิดพลาด)</b></span>
-                    {% elif data['quality_ai_prediction']==2 %}
-                        ตรวจคุณภาพรูป: <span style="color: red;">ไม่พบช่องปาก (ภาพอาจไม่เกี่ยวข้อง)</span>
-                    {% elif data['quality_ai_prediction']==3 %}
-                        ตรวจคุณภาพรูป: <span style="color: green;">ผ่านมาตรฐาน</span>
-                    {% endif %}
-                {% else %}
-                    ตรวจคุณภาพรูป: ไม่มีผลลัพธ์ (กด Recompute ใหม่)
-                {% endif %}
-                </p>
-                <p>วันที่นำส่ง: {{data['thai_datetime']}}</p>
-                <p>สถานที่คัดกรอง: {{data['location_text']}}</p>
-                <p>ช่องทางการนำส่งรูป:
-                    {% if data['sender_phone'] is none %}
-                        ระบบผู้ตรวจคัดกรอง
-                    {% else %}
-                        ระบบประชาชน
-                    {% endif %}
-                </p>
-                <p>ผู้นำส่งรูป: {{data['sender_description']}}</p>
-                <p>โรงพยาบาลที่สังกัด: {{data['sender_hospital']}} จ.{{data['sender_province']}}</p>
-            </div>
-        </div>
-        <div id="special-request-container" class="card" style="width: 100%; height: fit-content">
-            {% if data['special_request']==0 %}
-                <div class="card-body">
-                    <p class="card-title">
-                        หากท่านต้องการให้ผู้เชี่ยวชาญตรวจสอบภาพนี้เป็นกรณีพิเศษ กรุณากดใช่
-                        (คำขอตรวจสอบภาพกรณีพิเศษใช้กับกรณีที่ท่านตรวจพบรอยโรคในภาพแล้วเท่านั้น)
-                    </p>
-                    <div class="row mt-2 justify-content-center">
-                        <div class="col-2">
-                            <button type="button" class="btn btn-outline-primary mx-1" style="width: 100%"
-                                data-bs-toggle="modal" data-bs-target="#specialRequestModal">
-                                ใช่
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <!-- Modal -->
-                <div class="modal fade" id="specialRequestModal" tabindex="-1" aria-labelledby="specialRequestModalLabel" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h1 class="modal-title fs-5" id="specialRequestModalLabel">ส่งคำขอตรวจสอบภาพเป็นพิเศษ</h1>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body text-start"> คำขอตรวจสอบภาพกรณีพิเศษใช้กับกรณีที่ท่านตรวจพบรอยโรคในภาพแล้วเท่านั้น </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-                                <form action="{{ url_for('webapp.diagnosis', role='osm', img_id=data['img_id'], special_request='true') }}" method="POST" >
-                                    <input class="btn btn-primary " id="specialRequestSubmit" type="submit" value="ตกลง" style="width: 100%"/>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            {% else %}
-                <div class="card-body">
-                    <h5 class="card-title text-center"> ข้อมูลภาพนี้ได้รับการส่งคำขอตรวจเป็นกรณีพิเศษเรียบร้อยแล้ว </h5>
-                </div>
-            {% endif %}
-        </div>
-        <div id="contact-us-container" class="card mt-3" style="width: 100%; height: fit-content">
+<div class="row d-flex justify-content-center text-align-left my-3">
+    <div class="col">
+        <div class="card">
             <div class="card-body">
-                <h6>หากท่านมีข้อสงสัยต่อการพยากรณ์นี้หรือต้องการขอคำแนะนำทางการแพทย์ กรุณาติดต่อผู้ประสานงานโครงการได้ที่ </h6>
-                <h6>ช่องแชทของไลน์ “ตรวจมะเร็งช่องปาก” โดยการแอดเพิ่มเพื่อนได้ที่ Line ID @riskoca และแจ้งหมายเลข Case ID: {{ data['case_id'] }} เพื่อใช้ในการตรวจสอบข้อมูล</h6>
+                <h5 class="card-title">ผลการพยากรณ์ของ AI</h5>
+                {% if data['ai_prediction'] == 0 %}
+                    <div class="card-subtitle card shadow-lg bg-success my-3 py-3 mx-3 text-white text-center">
+                        <h6 class="fs-2"> ภาพถ่ายช่องปาก ไม่พบรอยโรค <br></h6>
+                        <h6 class="fs-6"> กรุณาส่งภาพถ่ายช่องปากมุมมองอื่น ๆ มาให้ตรวจสอบด้วย หรือถ่ายซ้ำด้วยกล้องคุณภาพที่ดีขึ้น </h6>
+                    </div>
+                {% elif data['ai_prediction'] == 1 %}
+                    <div class="card-subtitle card shadow-lg bg-warning my-3 py-3 mx-3 text-dark text-center">
+                        <h6 class="fs-2"> ภาพถ่ายช่องปาก อาจจะมีรอยโรค <br></h6>
+                        <h6 class="fs-6"> กรุณาส่งภาพถ่ายช่องปากมุมมองอื่น ๆ มาให้ตรวจสอบเพิ่มเติม หรือถ่ายซ้ำด้วยกล้องคุณภาพที่ดีขึ้น </h6>
+                    </div>
+                {% else %}
+                    <div class="card-subtitle card shadow-lg bg-danger my-3 py-3 mx-3 text-white text-center">
+                        <h6 class="fs-2"> ภาพถ่ายช่องปาก อาจจะมีรอยโรค <br></h6>
+                        <h6 class="fs-6"> กรุณาส่งภาพถ่ายช่องปากมุมมองอื่น ๆ มาให้ตรวจสอบเพิ่มเติม หรือถ่ายซ้ำด้วยกล้องคุณภาพที่ดีขึ้น </h6>
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>
+</div>
 
-    <div id="patient-container" class="card" style="width: 49.5%; margin-left: 0.5%">
+<div class="d-grid diagnosis-grid">
+    <div class="card grid-item-osm-image-info-panel">
+        <div class="card-body">
+            <h5 class="card-title text-start mb-3">ข้อมูลภาพ</h5>
+            <p>Case ID: {{data['case_id']}} </p>
+            <p>ชื่อไฟล์: {{data['fname']}}</p>
+            <p>
+            {% if data['quality_ai_prediction'] is not none %}
+                {% if data['quality_ai_prediction']==0 %}
+                    ตรวจคุณภาพรูป: <span style="color: red;">ไม่ผ่านมาตรฐาน (ศีรษะคนไข้ไม่ตั้งตรง)</span>
+                {% elif data['quality_ai_prediction']==1 %}
+                    ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ผลลัพธ์อาจผิดพลาด)</b></span>
+                {% elif data['quality_ai_prediction']==2 %}
+                    ตรวจคุณภาพรูป: <span style="color: red;">ไม่พบช่องปาก (ภาพอาจไม่เกี่ยวข้อง)</span>
+                {% elif data['quality_ai_prediction']==3 %}
+                    ตรวจคุณภาพรูป: <span style="color: green;">ผ่านมาตรฐาน</span>
+                {% endif %}
+            {% else %}
+                ตรวจคุณภาพรูป: ไม่มีผลลัพธ์ (กด Recompute ใหม่)
+            {% endif %}
+            </p>
+            <p>วันที่นำส่ง: {{data['thai_datetime']}}</p>
+            <p>สถานที่คัดกรอง: {{data['location_text']}}</p>
+            <p>ช่องทางการนำส่งรูป:
+                {% if data['sender_phone'] is none %}
+                    ระบบผู้ตรวจคัดกรอง
+                {% else %}
+                    ระบบประชาชน
+                {% endif %}
+            </p>
+            <p>ผู้นำส่งรูป: {{data['sender_description']}}</p>
+            <p>โรงพยาบาลที่สังกัด: {{data['sender_hospital']}} จ.{{data['sender_province']}}</p>
+        </div> 
+    </div> 
+
+    <div class="card grid-item-osm-request-spacialist-panel">
+        {% if data['special_request']==0 %}
+        <div class="card-body">
+            <h5 class="card-title text-start mb-3">หากท่านต้องการให้ผู้เชี่ยวชาญตรวจสอบภาพนี้เป็นกรณีพิเศษ</h5>
+            <button type="button" class="btn btn-outline-primary mb-2"
+                data-bs-toggle="modal" data-bs-target="#specialRequestModal">
+                <div class="px-4">ใช่</div>
+            </button>
+            <div class="mt-2"><i>(คำขอตรวจสอบภาพกรณีพิเศษใช้กับกรณีที่ท่านตรวจพบรอยโรคในภาพแล้วเท่านั้น)</i></div>
+        </div>
+        <!-- Modal -->
+        <div class="modal fade" id="specialRequestModal" tabindex="-1" aria-labelledby="specialRequestModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="specialRequestModalLabel">ส่งคำขอตรวจสอบภาพเป็นพิเศษ</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body text-start"> คำขอตรวจสอบภาพกรณีพิเศษใช้กับกรณีที่ท่านตรวจพบรอยโรคในภาพแล้วเท่านั้น </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                        <form action="{{ url_for('webapp.diagnosis', role='osm', img_id=data['img_id'], special_request='true') }}" method="POST" >
+                            <input class="btn btn-primary " id="specialRequestSubmit" type="submit" value="ตกลง" style="width: 100%"/>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card-body">
+            <h5 class="card-title text-start mb-3">หากท่านต้องการให้ผู้เชี่ยวชาญตรวจสอบภาพนี้เป็นกรณีพิเศษ</h5>
+            <div class="mt-2"><i>ข้อมูลภาพนี้ได้รับการส่งคำขอตรวจเป็นกรณีพิเศษเรียบร้อยแล้ว</i></div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="card grid-item-osm-question-info-panel">
+        <div class="card-body">
+            <h5>หากท่านมีข้อสงสัยต่อการพยากรณ์นี้หรือต้องการขอคำแนะนำทางการแพทย์ </h5>
+            <div class="mt-2"><i>กรุณาติดต่อผู้ประสานงานโครงการได้ที่ ช่องแชทของไลน์ “ตรวจมะเร็งช่องปาก” โดยการแอดเพิ่มเพื่อนได้ที่ Line ID @riskoca และแจ้งหมายเลข Case ID: {{ data['case_id'] }} เพื่อใช้ในการตรวจสอบข้อมูล</i></div>
+        </div>
+    </div>
+
+    <div class="card grid-item-osm-patient-profile-panel">
         <div class="card-body">
             <h5 class="card-title text-start mb-4">เวชระเบียนผู้ป่วย</h5>
             {%if data['patient_id'] is none %}
@@ -201,7 +197,7 @@
                         <input name="login_mode" type="hidden" value="osm">
                         <input name="img_id" type="hidden" value="{{data['img_id']}}">
                         <input name="saved_patient_national_id" type="hidden" value="{{data['saved_patient_national_id']}}">
-                        <button id="submitbtn" class="btn btn-success mb-2" type="submit">คลิกเพื่อลงทะเบียนข้อมูลคนไข้</button>
+                        <button id="submitbtn" class="btn btn-outline-success mb-2" type="submit">คลิกเพื่อลงทะเบียนข้อมูลคนไข้</button>
                     </form>
                 {% else %}
                     <p>ไม่มีข้อมูลผู้ป่วย</p>
@@ -210,7 +206,7 @@
                         <input name="return_page" type="hidden" value="diagnosis">
                         <input name="login_mode" type="hidden" value="osm">
                         <input name="img_id" type="hidden" value="{{data['img_id']}}">
-                        <input id="patientIDInput" class="form-control" placeholder="เลขประจำตัว ปชช. ผู้ป่วย 13 หลัก (ถ้าทราบ) " maxlength="13" type="text" name="patient_national_id">
+                        <input id="patientIDInput" class="form-control" placeholder="เลขประจำตัว ปชช. ผู้ป่วย 13 หลัก (ถ้าทราบ) " maxlength="13" type="text" name="patient_national_id"> 
                         <button id="submitbtn" class="btn btn-outline-success my-2" type="submit">เชื่อมโยงข้อมูลคนไข้</button>
                         <input id="patient_id" name="patient_id" type="hidden">
                         <div id="patientInfoContainer" class="mt-3 d-flex"></div>
@@ -242,47 +238,6 @@
         </div>
     </div>
 </div>
-<br />
-
-
-<script>
-    const windowWidth = window.innerWidth;
-  
-    if (windowWidth < 920) {
-        const outerContainer = document.getElementById("outer-container");
-        
-        const innerLeftContainer = document.getElementById("inner-left-container");
-        const specialRequestContainer = document.getElementById("special-request-container");
-        const contactUsContainer = document.getElementById("contact-us-container");
-
-        const patientContainer = document.getElementById("patient-container");
-
-        // Move the containers outside the inner-left-container to outer-container (which placed after the patient-container)
-        innerLeftContainer.removeChild(specialRequestContainer);
-        innerLeftContainer.removeChild(contactUsContainer);
-        outerContainer.appendChild(specialRequestContainer);
-        outerContainer.appendChild(contactUsContainer);
-
-        specialRequestContainer.style.padding = 0; 
-
-        innerLeftContainer.style.width = "100%"; // Push patient-container down
-        innerLeftContainer.style.margin = 0;
-        
-        patientContainer.style.width = "100%"; // Restore the width of patient-container to 100%
-        patientContainer.style.margin = 0;  // Set left margin to 0 (instead of 0.5% left margin)
-        patientContainer.style.marginBottom = "16px"; // Create down margin for the patient-container (dentist-feedback-history-container is next)
-        
-    }
-</script>
-
-<style>
-    #image-info-container p {
-      margin-bottom: 0.25rem; /* Apply margin bottom equivalent to mb-1 */
-    }
-    #patient-container p {
-        margin-bottom: 0.25rem; /* Apply margin bottom equivalent to mb-1 */
-    }
-</style>
 
 <script>
     const patientIDInput = document.getElementById('patientIDInput')

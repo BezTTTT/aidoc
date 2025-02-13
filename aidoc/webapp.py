@@ -95,15 +95,25 @@ def diagnosis(role, img_id):
             val = (1, img_id)
             cursor.execute(sql, val)
 
-        if (role=='dentist' or (role=='admin' and request.args.get('channel')=='DENTIST')) and 'feedback_submit' in request.form:
-            dentist_feedback_code = request.form.get('agree_option')
-            dentist_feedback_location = request.form.get('lesion_location')
-            dentist_feedback_lesion = request.form.get('lesion_type')
-            dentist_feedback_comment = request.form.get('dentist_comment')
-            sql = "UPDATE submission_record SET dentist_id=%s, dentist_feedback_code=%s, dentist_feedback_comment=%s, dentist_feedback_lesion=%s, dentist_feedback_location=%s, dentist_feedback_date=%s WHERE id=%s"
-            val = (session["user_id"], dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location, datetime.now(), img_id)
-            cursor.execute(sql, val)
-        
+        if (role=='dentist' or (role=='admin' and request.args.get('channel')=='DENTIST')) and request.form.get('dentist_action'):
+            dentist_action_code = request.form.get('dentist_action')
+            if(dentist_action_code == 'ai_agreement'):
+                dentist_feedback_code = request.form.get('agree_option')
+                sql = "UPDATE submission_record SET dentist_id=%s, dentist_feedback_code=%s, dentist_feedback_date=%s WHERE id=%s"
+                val = (session["user_id"], dentist_feedback_code, datetime.now(), img_id)
+                cursor.execute(sql, val)
+            if(dentist_action_code == 'additional_feedback'):
+                dentist_feedback_location = request.form.get('lesion_location')
+                dentist_feedback_lesion = request.form.get('lesion_type')
+                sql = "UPDATE submission_record SET dentist_id=%s, dentist_feedback_lesion=%s, dentist_feedback_location=%s, dentist_feedback_date=%s WHERE id=%s"
+                val = (session["user_id"], dentist_feedback_lesion, dentist_feedback_location, datetime.now(), img_id)
+                cursor.execute(sql, val)
+            if(dentist_action_code == 'comment'):
+                dentist_feedback_comment = request.form.get('dentist_comment')
+                sql = "UPDATE submission_record SET dentist_id=%s, dentist_feedback_comment=%s, dentist_feedback_date=%s WHERE id=%s"
+                val = (session["user_id"], dentist_feedback_comment, datetime.now(), img_id)
+                cursor.execute(sql, val)
+    
         if (role=='specialist' or (role=='admin' and request.args.get('channel')!='DENTIST')) and request.args.get('specialist_feedback')=='true':
             dentist_feedback_code = request.form.get('dt_comment_option')
             dentist_feedback_lesion = None
@@ -368,9 +378,15 @@ def record(role):
         filterFollowup = session['record_filter'].get("filterFollowup", "")
         filterRetrain = session['record_filter'].get("filterRetrain", "")
 
-    page = request.args.get("page", session.get('current_record_page', 1), type=int)
-    session['current_record_page'] = page
-    session['records_per_page'] = 12
+    if 'current_record_role' in session and session['current_record_role'] == role:
+        page = request.args.get("page", session['current_record_page'], type=int)
+        session['current_record_page'] = page
+    else: # There is a switch of role (e.g. dentist -> admin)
+        page = 1 
+        session['current_record_page'] = 1  # Reset currrent page to 1
+        session['current_record_role'] = role # Reassign role
+
+    session['records_per_page'] = 12 # Subject to change in the future
 
     if role=='specialist':
         paginated_data, supplemental_data, dataCount = record_specialist()
@@ -739,11 +755,11 @@ def construct_specialist_filter_sql():
 
     if search_query!="":
         search_query_list.append(f"(INSTR(LOWER(fname), '{search_query}'))")
-        search_query_list.append(f"(patient_user.name IS NOT NULL AND (INSTR('{search_query}', patient_user.name) OR INSTR('{search_query}', patient_user.surname)))")
+        # search_query_list.append(f"(sub.patient_name IS NOT NULL AND (INSTR('{search_query}', sub.patient_name) OR INSTR('{search_query}', sub.patient_surname)))")
         search_query_list.append(f"(case_report IS NOT NULL AND (INSTR(case_report, '{search_query}')))")
         search_query_list.append(f"(dentist_feedback_code IS NOT NULL AND (LOWER(dentist_feedback_code) = '{search_query.lower()}'))")
-        if search_query.isdigit():
-            search_query_list.append(f"(case_id = {int(search_query)})")
+        # if search_query.isdigit():
+        #     search_query_list.append(f"(case_id = {int(search_query)})")
         search_query_list.append(f"(location_district IS NOT NULL AND (INSTR(location_district, '{search_query}')))")
         search_query_list.append(f"(location_amphoe IS NOT NULL AND (INSTR(location_amphoe, '{search_query}')))")
         search_query_list.append(f"(location_province IS NOT NULL AND (INSTR(location_province, '{search_query}')))")
@@ -760,7 +776,7 @@ def construct_specialist_filter_sql():
         if len(filter_query_list)>0:
             filter_query = f'({filter_query}) AND ({search_query_combined})'
         else:
-            filter_query = f'({search_query_combined})'
+            filter_query = f'{search_query_combined}'
     
     supplemental_data = {}
     supplemental_data['search_query'] = search_query
@@ -770,7 +786,7 @@ def construct_specialist_filter_sql():
     supplemental_data['filterSpecialist'] = filterSpecialist
     supplemental_data['filterFollowup'] = filterFollowup
     supplemental_data['filterRetrain'] = filterRetrain
-
+    
     return filter_query, supplemental_data
 
 # region record_specialist (and admin)
@@ -786,7 +802,7 @@ def record_specialist(admin=False):
 
     db, cursor = get_db()
     if admin: # Admin
-        sql_select_part ='''SELECT submission_record.id, case_id, channel, fname, patient_user.name, patient_user.surname, patient_user.birthdate,
+        sql_select_part ='''SELECT submission_record.id, channel, fname, patient_user.name AS patient_name, patient_user.surname AS patient_surname, patient_user.birthdate,
                     sender.name as sender_name, sender.surname as sender_surname, sender.hospital as sender_hospital,
                     sender_id, patient_id, dentist_id, sender_phone, special_request,
                     location_province, location_amphoe, location_district, location_zipcode, 
@@ -794,7 +810,6 @@ def record_specialist(admin=False):
                     ai_prediction, submission_record.created_at, retrain_request_status, followup_request_status'''
         sql_join_part = '''
                 FROM submission_record
-                LEFT JOIN patient_case_id ON submission_record.id = patient_case_id.id
                 LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
                 LEFT JOIN user AS sender ON submission_record.sender_id = sender.id
                 LEFT JOIN followup_request ON submission_record.id = followup_request.submission_id
@@ -803,7 +818,7 @@ def record_specialist(admin=False):
     else: # Specialist
         sql_select_part ='''
             SELECT
-                submission_record.id, case_id, channel, fname, patient_user.name, patient_user.surname, patient_user.birthdate,
+                submission_record.id, case_id, channel, fname, patient_user.name AS patient_name, patient_user.surname AS patient_surname, patient_user.birthdate,
                 sender_id, patient_id, dentist_id, sender_phone, special_request,
                 location_province, location_amphoe, location_district, location_zipcode, 
                 dentist_feedback_comment,dentist_feedback_code,case_report,
@@ -818,7 +833,7 @@ def record_specialist(admin=False):
         
     sql_count = "SELECT count(submission_record.id) AS full_count"
     sql_limit_part = '''
-                ORDER BY submission_record.id DESC
+                ORDER BY submission_record.created_at DESC
                 LIMIT %s
                 OFFSET %s'''
     
@@ -826,17 +841,25 @@ def record_specialist(admin=False):
         sql_where = 'WHERE ' + filter_query
         sql1 = sql_count + sql_join_part + sql_where
         sql2 = sql_select_part + sql_join_part + sql_where + sql_limit_part
+        if admin:
+            sql_select_with_case_id = 'select sub.*,case_id FROM('
+            sql_case_id = ') as sub LEFT JOIN patient_case_id ON sub.id = patient_case_id.id '
+            sql2 = sql_select_with_case_id + sql_select_part + sql_join_part  + sql_limit_part + sql_case_id + sql_where
         
     else:
         sql1 = sql_count + sql_join_part
         sql2 = sql_select_part + sql_join_part + sql_limit_part
+        if admin:
+            sql_select_with_case_id = 'select sub.*,case_id FROM('
+            sql_case_id = ') as sub LEFT JOIN patient_case_id ON sub.id = patient_case_id.id'
+            sql2 = sql_select_with_case_id + sql2 + sql_case_id
     cursor.execute(sql1)
     dataCount = cursor.fetchone()
 
     val = (records_per_page, offset)
     cursor.execute(sql2,val)
     paginated_data = cursor.fetchall()
-    
+    print(paginated_data)
     # Process each item in paginated_data
     for item in paginated_data:
         if item['channel']=='PATIENT':
@@ -958,7 +981,6 @@ def record_dentist():
     val = (session['user_id'], records_per_page, offset)
     cursor.execute(sql2,val)
     paginated_data = cursor.fetchall()
-    
     return paginated_data, supplemental_data, dataCount
 
 # region construct_osm_filter_sql

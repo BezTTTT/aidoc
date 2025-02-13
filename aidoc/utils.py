@@ -50,7 +50,7 @@ def validate_national_id(args):
 # Phone number validation: Number number must follow the 9-10 digits rule (should be disabled if international)
 def validate_phone(args):
     data = args['data']
-    if "phone" in data:
+    if "phone" in data and data['phone']:
         phone_pattern = r'^\d{9,10}$'
         phone_validation_flag = re.match(phone_pattern, data["phone"]) is not None
         if not phone_validation_flag:
@@ -64,7 +64,7 @@ def validate_phone(args):
 # License validation: License must be only numbers
 def validate_license(args):
     data = args['data']
-    if "license" in data:
+    if "license" in data and data["license"]:
         license_pattern = r'^[0-9]*$'
         license_validation_flag = re.match(license_pattern, data["license"]) is not None
         if not license_validation_flag:
@@ -135,7 +135,7 @@ def validate_duplicate_phone(args):
     data = args['data']
     form = args['form']
     duplicate_users = args['duplicate_users']
-    if "phone" in data and (len(duplicate_users)==0 or form.get('create_new_account')): 
+    if "phone" in data and data["phone"] and (len(duplicate_users)==0 or form.get('create_new_account')): 
         db, cursor = get_db()
         cursor.execute('SELECT id FROM user WHERE phone=%s AND national_id!=%s',
                         (data["phone"], data["national_id"]))
@@ -155,7 +155,7 @@ def validate_duplicate_national_id(args):
     data = args['data']
     duplicate_users = args['duplicate_users']
     form = args['form']
-    if "national_id" in data and (len(duplicate_users)==0 or form.get('create_new_account')):
+    if "national_id" in data and data["national_id"] and (len(duplicate_users)==0 or form.get('create_new_account')):
         db, cursor = get_db()
         cursor.execute('SELECT id FROM user WHERE national_id=%s', (data["national_id"], ))
         row = cursor.fetchall() # Result in list of dicts

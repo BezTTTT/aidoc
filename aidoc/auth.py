@@ -33,14 +33,17 @@ def reload_user_profile(user_id):
         if 'login_mode' in session and session['login_mode']=='general':
             session['general_user'] = True
         else:
-            if user['is_patient']:
-                user['job_position_th'] = user['job_position']
-            if user['is_osm']: # is_osm is true
-                job_position_dict = {"OSM":"อสม.", "Dental Nurse":"ทันตาภิบาล/เจ้าพนักงานทันตสาธารณสุข", "Dentist":"ทันตแพทย์",
+
+            job_position_dict = {"OSM":"อสม.", "Dental Nurse":"ทันตาภิบาล/เจ้าพนักงานทันตสาธารณสุข", "Dentist":"ทันตแพทย์",
                                     "Oral Pathologist": "ทันตแพทย์เฉพาะทาง วิทยาการวินิจฉัยโรคช่องปาก", "Oral and Maxillofacial Surgeon":"ทันตแพทย์เฉพาะทาง ศัลยศาสตร์ช่องปากและแม็กซิลโลเฟเชียล",
                                     "Physician":"แพทย์", "Public Health Technical Officer":"นักวิชาการสาธารณสุข", "Computer Technical Officer":"นักวิชาการคอมพิวเตอร์/นักวิจัย/ผู้พัฒนาระบบ",
                                     "Other Public Health Officer":"ข้าราชการ/เจ้าพนักงานกระทรวงสาธารณสุข", "Other Government Officer":"เจ้าหน้าที่รัฐอื่น", "General Public":"บุคคลทั่วไป"}
+            if user['job_position'] in job_position_dict:
                 user['job_position_th'] = job_position_dict[user['job_position']]
+            else:
+                user['job_position_th'] = user['job_position']
+
+            if user['is_osm']: # check if the osm user is a osm_group member/supervisor
                 
                 # check and get osm group info for showing the osm group option on navbar
                 db, cursor = get_db()

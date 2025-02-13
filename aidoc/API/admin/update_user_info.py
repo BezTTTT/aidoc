@@ -16,10 +16,6 @@ def update_user_info(data):
             }
     except Exception as e:
         return json.dumps({"error": f"An error occurred while fetching user data: {e}"}), 500
-    
-    finally:
-        db.close_db()
-
     return output
 
 def update_table_user(cursor,data):
