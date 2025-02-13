@@ -716,7 +716,7 @@ def confirmFeedback(submission_id):
     return jsonify({"status": "error", "message": "⚠️ กรุณาใส่ Feedback และ Note "})
 
 # region edit
-@bp.route('/edit/', methods=('GET','POST'))
+@bp.route('/edit/', methods=('GET','PUT','POST'))
 @login_required
 @admin_only
 def edit():
