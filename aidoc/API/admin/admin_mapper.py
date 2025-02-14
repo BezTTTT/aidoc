@@ -23,11 +23,12 @@ def map_user_list_data(data):
             user["role"].append("patient")
         if row["is_osm"] == 1:
             user["role"].append("osm")
+        if row["username"] is not None:
+            user["role"].append("dentist")
         if row["is_specialist"] == 1:
             user["role"].append("specialist")
         if row["is_admin"] == 1:
             user["role"].append("admin")
-
         user_list.append(user)
 
     return user_list

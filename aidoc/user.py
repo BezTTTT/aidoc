@@ -182,7 +182,7 @@ def register(role):
                 if 'register_later' not in session:
                     session['user_id'] = new_user['id']
                     reload_user_profile(new_user['id'])
-                elif session['noNationalID']: # For 'register_later' mode check if the record has no national_id of the patient, add it here
+                elif 'noNationalID' in session and session['noNationalID']: # For 'register_later' mode check if the record has no national_id of the patient, add it here
                     sql = "UPDATE submission_record SET patient_id=%s, patient_national_id=%s WHERE id=%s"
                     val = (new_user['id'], data["national_id"], session['register_later']['img_id'])
                     cursor.execute(sql, val)
@@ -203,6 +203,7 @@ def register(role):
                 sql = "UPDATE user SET name=%s, surname=%s, national_id=%s, email=%s, phone=%s, sex=%s, birthdate=%s,  province=%s, address=%s, is_patient=%s WHERE id=%s"
                 val = (data["name"], data["surname"], data["national_id"], data["email"], data["phone"], data["sex"], dob_obj, data["province"], data['address'], True, session['user_id'])
                 cursor.execute(sql, val)
+                session.pop('duplicate_flag', None)
 
             # session['national_id'] is used to carry out id from login to register
             # After the registration is complete, this (sensitive) variable should be deleted
@@ -210,6 +211,7 @@ def register(role):
                 session.pop('national_id',None)  
             
             if 'register_later' not in session:
+                reload_user_profile(session['user_id'])
                 log_last_user_login(session['user_id'])
                 session['login_mode'] = 'patient'
                 return redirect(url_for('image.upload_image', role='patient'))
@@ -226,7 +228,8 @@ def register(role):
         if request.method == 'POST':
             
             session['saved_user_id'] = session.get('user_id', None)
-            session.pop('user_id', None) # User id will later be used to check duplicate users
+            if 'duplicate_flag' not in session:
+                session.pop('user_id', None) # user_id will later be used to check duplicate users
 
             # This section extract the submitted form to 
             data["name"] = remove_prefix(request.form["name"])
@@ -285,6 +288,7 @@ def register(role):
                 sql = "UPDATE user SET name=%s, surname=%s, national_id=%s, phone=%s, osm_job=%s, hospital=%s, province=%s, license=%s, is_osm=%s WHERE id=%s"
                 val = (data["name"], data["surname"], data["national_id"], data["phone"], data["osm_job"], data["hospital"], data["province"], data["license"], True, session['user_id'])
                 cursor.execute(sql, val)
+                session.pop('duplicate_flag', None)
 
                 if 'register_later' in session:
                     sql = "UPDATE submission_record SET sender_id=%s WHERE id=%s"
@@ -292,6 +296,7 @@ def register(role):
                     cursor.execute(sql, val)
 
             if 'register_later' not in session:
+                reload_user_profile(session['user_id'])
                 log_last_user_login(session['user_id'])
                 session['login_mode'] = 'osm'
                 return redirect('/')
@@ -354,13 +359,14 @@ def register(role):
                 cursor.execute('SELECT id FROM user WHERE username=%s', (data["username"],))
                 new_user = cursor.fetchone()
                 session['user_id'] = new_user['id']
-                reload_user_profile(new_user['id'])  
                 
-            else:
+            else: # Merge account
                 sql = "UPDATE user SET name=%s, surname=%s, email=%s, phone=%s, username=%s, password=%s, job_position=%s, osm_job=%s, hospital=%s, province=%s, license=%s WHERE id=%s"
                 val = (data["name"], data["surname"], data["email"], data["phone"], data["username"],generate_password_hash(data["password"]), data["job_position"], data["osm_job"], data["hospital"],data["province"], data["license"], session['user_id'])
                 cursor.execute(sql, val)
-                
+                session.pop('duplicate_flag', None)
+
+            reload_user_profile(session['user_id'])
             log_last_user_login(session['user_id'])
             session['login_mode'] = 'dentist'
 
@@ -498,8 +504,10 @@ def submit_compliance(user_id):
         consentVer = current_app.config['CURRENT_CONSENT_VER']
         draft1 = os.path.join(legalDir, str(user_id), "draft_agreement_v" + agreementVer + ".pdf")
         draft2 = os.path.join(legalDir, str(user_id), "draft_consent_v" + consentVer + ".pdf")
-        os.remove(draft1)
-        os.remove(draft2)
+        if os.path.isfile(draft1):
+            os.remove(draft1)
+        if os.path.isfile(draft2):
+            os.remove(draft2)
         return redirect('/logout')
 
 # region get_user_compliance
@@ -537,8 +545,10 @@ def set_user_compliance(user_id):
     final1 = os.path.join(legalDir, str(user_id), "agreement_v" + agreementVer + ".pdf")
     draft2 = os.path.join(legalDir, str(user_id), "draft_consent_v" + consentVer + ".pdf")
     final2 = os.path.join(legalDir, str(user_id), "consent_v" + consentVer + ".pdf")
-    os.rename(draft1, final1)
-    os.rename(draft2, final2)
+    if os.path.isfile(draft1):
+        os.rename(draft1, final1)
+    if os.path.isfile(draft2):
+        os.rename(draft2, final2)
 
 # region generate_legal_drafts
 # Generate user_agreement and informed_consent pdfs

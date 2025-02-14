@@ -133,7 +133,7 @@ CREATE TABLE `followup_request` (
   `followup_request_status` varchar(255) NOT NULL,
   `contact_person` varchar(255),
   `followup_note` varchar(255),
-  `followup_feedback` varchar(255),
+  `followup_feedback` varchar(255) DEFAULT NULL,
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 CREATE TABLE `user_compliance` (
@@ -156,6 +156,26 @@ CREATE TABLE osm_group (
     osm_supervisor_id INT NOT NULL,
     group_name  varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
+/*
+  Query Optimization
+  CREATE Indexes here
+*/
+
+CREATE INDEX idx_user_id ON user(id);
+
+CREATE INDEX idx_submission_record_id ON submission_record(id DESC);
+CREATE INDEX idx_submission_patient_id ON submission_record(patient_id);
+CREATE INDEX idx_submission_sender_id ON submission_record(sender_id);
+CREATE INDEX idx_submission_created ON submission_record(created_at DESC);
+
+CREATE INDEX idx_patient_case_id ON patient_case_id(id);
+
+CREATE INDEX idx_retrain_submission_id ON retrain_request(submission_id);
+
+CREATE INDEX idx_followup_submission_id ON followup_request(submission_id);
+
 
 /*
  Source Server         : rockpi

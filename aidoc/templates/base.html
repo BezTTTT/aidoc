@@ -54,7 +54,7 @@
 
     {% if not session['login_mode'] %}
     <div class="banner">
-        <img src="{{ url_for('static', filename='logos/ai_banner.jpg') }}" alt="Banner Image">
+        <img src="{{ url_for('static', filename='logos/ai_banner_large.jpg') }}" alt="Banner Image">
     </div>
     {% endif %}
 
@@ -84,22 +84,28 @@
                                 data-bs-toggle="dropdown"
                                 aria-expanded="false"
                                 >
-                                วิเคราะห์ผลด้วย AI
+                                เมนูทันตแพทย์
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="otherDropdown">
                                 <li>
                                     <a class="dropdown-item" href="/upload_image/dentist">นำส่งข้อมูลเพิ่มเติม</a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item" href="/record/dentist">ประวัติการนำส่งข้อมูล</a>
+                                    <a class="dropdown-item" href="/edit/dentist">แก้ไขข้อมูลส่วนตัว</a>
                                 </li>
                             </ul>
                         </li>
-                            <!-- Specialist is a subset of dentist -->
+                        <li class="nav-item">
+                            <a class="nav-link active" aria-current="page" href="/record/dentist">ประวัติการนำส่งข้อมูล</a>
+                        </li>
+                            <!-- Specialist section, which is a subset of dentist section -->
                             {% if g.user['is_specialist']==1 %}
-                                <li class="nav-item">
-                                    <a class="nav-link active" aria-current="page" href="/record/specialist">ระบบผู้คัดกรองการนำส่ง</a>
-                                </li>
+                            <li class="nav-item">
+                                <a class="nav-link active" aria-current="page" href="/record/specialist">ระบบผู้คัดกรองการนำส่ง</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link active" aria-current="page" href="/followup/admin">ระบบผู้เชี่ยวชาญ</a>
+                            </li>
                             {% endif %}
                             {% if g.user['is_admin']==1%}
                             <li class="nav-item dropdown">
@@ -188,9 +194,6 @@
                                     </li>
                                 </ul>
                             </li>
-                            <!-- <li class="nav-item">
-                                <a class="nav-link active" aria-current="page" href="/followup/admin">ตรวจสอบด่วน</a>
-                            </li> -->
                         {% endif %}
                     {% endif %}
                 </ul>
@@ -225,11 +228,6 @@
                         )
                     </div>
                     <div class="d-flex align-items-center">
-                        {% if session['login_mode']=='dentist' %} 
-                        <a href="/edit/dentist" class="btn btn-secondary me-1">
-                            <i class="bi bi-person"></i>
-                        </a>
-                        {% endif %}
                         <form action="{{ url_for('auth.logout') }}" method="get" enctype="multipart/form-data">
                             <button class="btn btn-danger" type="submit" id="Logoutbtn">
                                 ออกจากระบบ

@@ -85,9 +85,8 @@ def dentist_index():
     if g.user is None:
         session.clear() # logged out from everything
 
-    if g.user: # already logged in
-        if 'login_mode' in session and session['login_mode']=='dentist':
-            return redirect(url_for("webapp.record", role='dentist'))
+    if g.user and ('login_mode' in session) and (session['login_mode']=='dentist'): # already logged in
+        return redirect(url_for("webapp.record", role='dentist'))
     else:
         return render_template("dentist_login.html")
 
@@ -134,9 +133,16 @@ def login(role):
     
         db, cursor = get_db()
         cursor.execute(
-            'SELECT * FROM user WHERE national_id = %s', (national_id,)
+            'SELECT * FROM user WHERE national_id = %s ORDER BY created_at DESC', (national_id,)
         )
-        user = cursor.fetchone()
+        user = cursor.fetchall()
+        # If match several accounts, the last created account will be selected.
+        # The previous duplicated accounts are inactive and will later be merged and deleted by admin
+        if len(user)>0:
+            user = user[-1]
+        else:
+            user = None
+
         if user is None:
             error_msg = "กรุณาลงทะเบียน เลขประจำตัวประชาชนนี้ยังไม่ถูกลงทะเบียนในระบบ"
             session['national_id'] = national_id
@@ -171,9 +177,16 @@ def login(role):
 
         db, cursor = get_db()
         cursor.execute(
-            'SELECT * FROM user WHERE national_id = %s OR phone = %s', (national_id, phone)
+            'SELECT * FROM user WHERE national_id = %s OR phone = %s ORDER BY created_at DESC', (national_id, phone)
         )
-        user = cursor.fetchone()
+        user = cursor.fetchall()
+        # If match several accounts, the last created account will be selected.
+        # The previous duplicated accounts are inactive and will later be merged and deleted by admin
+        if len(user)>0:
+            user = user[-1]
+        else:
+            user = None
+
         if user is None:
             error_msg = "ไม่พบข้อมูลของผู้ตรวจคัดกรองในระบบ หากยังไม่ได้ลงทะเบียน กรุณาลงทะเบียนก่อนการใช้งาน"
             session['national_id'] = national_id
@@ -216,9 +229,16 @@ def login(role):
         error_msg = None
         db, cursor = get_db()
         cursor.execute(
-            'SELECT * FROM user WHERE username = %s', (username,)
+            'SELECT * FROM user WHERE username = %s ORDER BY created_at DESC', (username,)
         )
-        user = cursor.fetchone()
+        user = cursor.fetchall()
+        # If match several accounts, the last created account will be selected.
+        # The previous duplicated accounts are inactive and will later be merged and deleted by admin
+        if len(user)>0:
+            user = user[-1]
+        else:
+            user = None
+
         if user is None:
             error_msg = "ไม่พบรหัสผู้ใช้ โปรดลองอีกครั้งหนึ่งหรือสมัครบัญชีใหม่ ... หากลืมกรุณาติดต่อศูนย์ทันตสาธารณสุขระหว่างประเทศ"
         elif not check_password_hash(user['password'], password):
