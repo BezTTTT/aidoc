@@ -55,8 +55,7 @@
             </select>
     </div>
 </form>
-<div class="mt-2">
-    จำนวนรายการทั้งหมด  รายการ
+<div class="mt-2" id = totalCount>
 </div>
     <div class="row mt-4" id="card-container">
 </div>
@@ -76,6 +75,7 @@ function fetchImageManageList() {
     .then(response => response.json()) // Parse the JSON from response
     .then(data => {
         populateCard(data.data)
+        totalCount(data.pagination)
     })
     .catch(error => {
         console.error("Error fetching data:", error);
@@ -87,7 +87,6 @@ function populateCard(data){
     container.innerHTML = "";
     const paginationContainer = document.getElementById("pagination-container");
     paginationContainer.innerHTML="";
-
     data.forEach(item => {
         const card = document.createElement("div");
         card.classList.add("col-lg-3", "col-md-4", "col-sm-6", "col-xs-12", "mb-3");
@@ -97,8 +96,8 @@ function populateCard(data){
         card.innerHTML = `
             <div class="card h-100 position-relative" style="${borderColor}">
                 <div style="display: flex; align-items: center; justify-content: center;">
-                    <a href="/image/${item.owner_id}/upload/${item.file_name}" target="_blank">
-                        <img src="/image/${item.owner_id}/outlined_thumbnail/${item.fname}" 
+                    <a href="/load_image/upload/${item.sender_id}/${item.file_name}" target="_blank">
+                        <img src="/load_image/outlined_thumbnail/${item.sender_id}/${item.file_name}" 
                             class="card-img-top mt-2" alt="" style="max-height: 256px"/>
                     </a>
                 </div>
@@ -138,6 +137,14 @@ function populateCard(data){
         `;
         paginationContainer.appendChild(pagination);
 }
+
+function totalCount(data){
+    const container = document.getElementById('totalCount')
+    container.innerHTML =`
+        จำนวนรายการทั้งหมด ${data.total_count} รายการ
+    `
+}
+
 
 document.addEventListener("DOMContentLoaded", fetchImageManageList);
 
