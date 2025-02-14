@@ -256,6 +256,7 @@ def login(role):
             data["username"] = user["username"] if user["username"] is not None else ""
             data["password"] = user["password"] if user["password"] is not None else ""
             data["phone"] = user["phone"] if user["phone"] is not None else ""
+            data["old_username"] = user["username"] if user["username"] is not None else ""
 
             data["valid_password"] = True
             data["valid_username"] = True

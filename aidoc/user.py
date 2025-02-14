@@ -397,6 +397,7 @@ def update_old_user(old_username):
         data["valid_username"] = True
         data["valid_province_name"] = True
         data["national_id"] = None
+        data["old_username"] = old_username
 
         # Validate input data
         duplicate_users = []
