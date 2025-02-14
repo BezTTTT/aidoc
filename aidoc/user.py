@@ -377,21 +377,23 @@ def register(role):
         return redirect('/')
 
 @bp.route('/update_old_user', methods=('GET', 'POST'))
-def update_old_user():
+def update_old_user(old_username):
     target_template = "/newTemplate/old_user_update.html"
     
     if request.method == 'POST':
         db, cursor = get_db()
-
+        
+        o_username = old_username
+        query = """SELECT * FROM user WHERE username=%s"""
+        cursor.execute(query, (o_username,))
+        user = cursor.fetchone()
+        
         data = {key: request.form.get(key, '') for key in [
             "name", "surname", "job_position", "osm_job", "license", 
             "hospital", "province", "email", "username", "password", "phone"
         ]}
-        query = """SELECT * FROM user WHERE username=%s"""
-        cursor.execute(query, (data['username'],))
-        user = cursor.fetchone()
-        print(user)
         data["id"]=user["id"]
+        print(user)
         data["valid_password"] = True
         data["valid_username"] = True
         data["valid_province_name"] = True
@@ -434,6 +436,7 @@ def update_old_user():
         
         reload_user_profile(data["id"])
         log_last_user_login(data["id"])
+        session['user_id'] = data['id']
         session['login_mode'] = 'dentist'
 
         return redirect(url_for('webapp.record', role='dentist'))

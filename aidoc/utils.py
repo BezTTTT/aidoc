@@ -198,7 +198,7 @@ def validate_username(args):
 def validate_old_username(args):
     data = args['data']
     db, cursor = get_db()
-    cursor.execute('SELECT id FROM user WHERE username=%s ', (data["username"] ))
+    cursor.execute('SELECT id FROM user WHERE username=%s AND id !=%s', (data["username"],data["id"]))
     duplicate_usersname = cursor.fetchall() # Result in list of dicts
     if len(duplicate_usersname)>0:
         error_msg = "รหัสผู้ใช้ (Username) นี้ มีผู้อื่นใช้ไปแล้ว กรุณาเลือกรหัสผู้ใช้ใหม่"
