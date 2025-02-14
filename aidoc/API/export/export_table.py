@@ -56,7 +56,7 @@ def db_query(table_name,ref, columns):
         data = []
         if ref == "osm_group":
             if table_name == "osm_group_record":
-                result = record_osm_group(1, sys.maxsize, 0)
+                result = record_osm_group(1, sys.maxsize) # get all group records
                 if isinstance(result, tuple) and len(result) >= 1:
                     data = result[0]
                 else:

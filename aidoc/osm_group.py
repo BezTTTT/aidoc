@@ -58,7 +58,7 @@ def render_osm_group_record():
     session['current_record_page'] = page
     session['records_per_page'] = 12
 
-    paginated_data, supplemental_data, dataCount, osm_filter_data = record_osm_group("dummy")
+    paginated_data, supplemental_data, dataCount, osm_filter_data = record_osm_group(None)
 
     # Further process each item in paginated_data
     for item in paginated_data:
@@ -80,15 +80,14 @@ def render_osm_group_record():
 
 # overloading
 @singledispatch
-def record_osm_group(dummy):
+def record_osm_group(_):
     page = session['current_record_page']
     records_per_page = session['records_per_page']
-    offset = (page - 1) * records_per_page
-    paginated_data, supplemental_data, dataCount, osm_filter_data = record_osm_group(page, records_per_page, offset)
-    return paginated_data, supplemental_data, dataCount, osm_filter_data
+
+    return record_osm_group(page, records_per_page)
 
 @record_osm_group.register
-def _(page: int, records_per_page: int, offset: int):
+def _(page: int, records_per_page: int):
     # Construct filter query and supplemental data
     filter_query, supplemental_data = construct_osm_filter_sql()
 
@@ -101,7 +100,7 @@ def _(page: int, records_per_page: int, offset: int):
     # Pagination setup
     # page = session['current_record_page']
     # records_per_page = session['records_per_page']
-    # offset = (page - 1) * records_per_page
+    offset = (page - 1) * records_per_page
 
     db, cursor = get_db()
     
