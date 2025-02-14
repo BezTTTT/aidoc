@@ -2,11 +2,11 @@ import json
 from ... import db
 from ..common import common_mapper
 
-def generate_total_account():
+def generate_total_account(province):
     connection, cursor = db.get_db()
     try:
         with cursor:
-            account_list = fetch_total_accoun(cursor)
+            account_list = fetch_total_accoun(cursor,province)
             output = [{**entry, "job_category": common_mapper.map_job_position_to_th_presist_job(entry["job_category"])}for entry in account_list]
     except Exception as e:
         print(f"Error occurred: {e}")
@@ -14,7 +14,7 @@ def generate_total_account():
         
     return output
 
-def fetch_total_accoun(cursor):
+def fetch_total_accoun(cursor,province):
     query = """
         SELECT 
             all_users.job_category, 
@@ -40,6 +40,7 @@ def fetch_total_accoun(cursor):
                 END AS job_category, 
                 COUNT(*) AS user_count
             FROM user
+            WHERE (%s IS NULL OR province = %s)
             GROUP BY job_category) AS all_users
         LEFT JOIN 
             (SELECT 
@@ -61,8 +62,9 @@ def fetch_total_accoun(cursor):
                 COUNT(DISTINCT u.id) AS user_count
             FROM user u
             INNER JOIN submission_record sr ON sr.sender_id = u.id
+            WHERE (%s IS NULL OR u.province = %s)
             GROUP BY job_category) AS submission_users
         ON all_users.job_category = submission_users.job_category;
     """
-    cursor.execute(query)
+    cursor.execute(query,(province, province, province, province,))
     return cursor.fetchall()

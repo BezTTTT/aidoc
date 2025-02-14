@@ -14,7 +14,7 @@ def generate_report(province):
     dentist_data = get_table_specialist.get_table(province)
     total_pic = get_all_submission.get_all_submission(province)
     total_province = get_province_list. generate_province_list()
-    total_account = get_total_account.generate_total_account()
+    total_account = get_total_account.generate_total_account(province)
     
     output = build_initial_output(province, patient_data, osm_data, dentist_data, total_pic,total_province,total_account)
     output = calculate_totals(patient_data, osm_data, dentist_data, output)
