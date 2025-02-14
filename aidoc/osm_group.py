@@ -313,23 +313,30 @@ def get_osm_for_search():
     db, cursor = get_db()
 
     # Get the current user's province
-    cursor.execute("SELECT province FROM user WHERE id = %s", (user_id,))
-    province = cursor.fetchone()["province"]
-
-    # Search for OSM users in the same province
-    cursor.execute("""
+    cursor.execute("SELECT provinces FROM osm_group WHERE osm_supervisor_id = %s", (user_id,))
+    provinces = cursor.fetchone()["provinces"]
+    if not provinces:
+        return jsonify({'osm_list': []})
+    
+    sql = """
         SELECT id, name, surname, phone as phone_number, province, hospital
         FROM user
         WHERE is_osm = 1
         AND id NOT IN (SELECT osm_id FROM osm_group_member)
-        AND province = %s
-    """, (province,))
+        """
+    where_provinces = ""
+    
+    for province in provinces.split(','):
+        where_provinces += f"province = '{province}' OR "
+    sql += "AND (" + where_provinces[:-3] + ")"
 
+    cursor.execute(sql)
+    # Search for OSM users in the same province
+    
     osm_users = cursor.fetchall()
 
     return jsonify({
-        'osm_list': osm_users,
-        "province": province
+        'osm_list': osm_users
     })
 
 
