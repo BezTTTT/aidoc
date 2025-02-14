@@ -154,7 +154,9 @@
                         <input name="login_mode" type="hidden" value="osm">
                         <input name="img_id" type="hidden" value="{{data['img_id']}}">
                         <input name="saved_patient_national_id" type="hidden" value="{{data['saved_patient_national_id']}}">
-                        <button id="submitbtn" class="btn btn-outline-success mb-2" type="submit">คลิกเพื่อลงทะเบียนข้อมูลคนไข้</button>
+                        <span class="d-inline-block" tabindex="0" data-bs-toggle="tooltip" title="สำหรับหัวหน้าผู้ตรวจคัดกรองเท่านั้น">
+                            <button id="submitbtn" class="btn btn-outline-success mb-2" type="submit" {%if not g.user['group_info']['is_supervisor'] %}disabled{%endif%}>คลิกเพื่อลงทะเบียนข้อมูลคนไข้</button>
+                        </span>
                     </form>
                 {% else %}
                     <p>ไม่มีข้อมูลผู้ป่วย</p>
@@ -164,7 +166,9 @@
                         <input name="login_mode" type="hidden" value="osm">
                         <input name="img_id" type="hidden" value="{{data['img_id']}}">
                         <input id="patientIDInput" class="form-control" placeholder="เลขประจำตัว ปชช. ผู้ป่วย 13 หลัก (ถ้าทราบ) " maxlength="13" type="text" name="patient_national_id"> 
-                        <button id="submitbtn" class="btn btn-outline-success my-2" type="submit">เชื่อมโยงข้อมูลคนไข้</button>
+                        <span class="d-inline-block" tabindex="0" data-bs-toggle="tooltip" title="สำหรับหัวหน้าผู้ตรวจคัดกรองเท่านั้น"></span>
+                            <button id="submitbtn" class="btn btn-outline-success my-2" type="submit" {%if not g.user['group_info']['is_supervisor'] %}disabled{%endif%}>เชื่อมโยงข้อมูลคนไข้</button>
+                        </span>
                         <input id="patient_id" name="patient_id" type="hidden">
                         <div id="patientInfoContainer" class="mt-3 d-flex"></div>
                     </form>
@@ -189,7 +193,9 @@
                     <input name="login_mode" type="hidden" value="osm">
                     <input name="img_id" type="hidden" value="{{data['img_id']}}">
                     <input name="patient_national_id" type="hidden" value="{{data['db_patient_national_id']}}">
-                    <button id="submitbtn" class="btn btn-outline-success mb-2" type="submit">คลิกเพื่อแก้ไขข้อมูลคนไข้</button>
+                    <span class="d-inline-block" id="tooltips" tabindex="0" data-bs-toggle="tooltip" title="สำหรับหัวหน้าผู้ตรวจคัดกรองเท่านั้น">
+                        <button id="submitbtn" class="btn btn-outline-success mb-2" type="submit" {%if not g.user['group_info']['is_supervisor'] %}disabled{%endif%}>คลิกเพื่อแก้ไขข้อมูลคนไข้</button>
+                    </span>
                 </form>
             {% endif %}
         </div>
