@@ -260,10 +260,11 @@ def login(role):
 
             data["valid_password"] = True
             data["valid_username"] = True
+            data["valid_phone"] = True
+            data["valid_name_surname"] = True
             data["valid_province_name"] = True
 
             data["national_id"] = None
-            print(data)
             return render_template('/newTemplate/old_user_update.html', data=data)
         elif not check_current_password(password, user['password']):
             error_msg = "รหัสผ่านไม่ถูกต้อง โปรดลองอีกครั้งหนึ่ง ... หากลืมรหัสผ่าน กรุณากดเลือก ลืมรหัสผ่าน"

@@ -395,10 +395,12 @@ def update_old_user(old_username):
         data["id"]=user["id"]
         data["valid_password"] = True
         data["valid_username"] = True
+        data["valid_phone"] = True
+        data["valid_name_surname"] = True
         data["valid_province_name"] = True
         data["national_id"] = None
-        data["old_username"] = old_username
-
+        data["old_username"] = o_username
+        
         # Validate input data
         duplicate_users = []
         valid_func_list = [
@@ -407,7 +409,7 @@ def update_old_user(old_username):
             validate_license,
             validate_province_name,
             validate_duplicate_users_except_yourself,
-            validate_duplicate_phone
+            validate_duplicate_phone_except_yourself
         ]
         
         for valid_func in valid_func_list:
