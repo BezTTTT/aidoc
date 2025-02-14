@@ -47,10 +47,9 @@
     </div>
     <div class="card mb-4" style="width: max-content;">
         <div class="card-body">
-            <h5 class="card-title">ลงทะเบียนผู้ใช้งานระบบ</h5><br>
-            <label class="mr-sm-2"> <i> ระบบนี้ เปิดให้ลงทะเบียนใช้งาน ได้เฉพาะกับ ทันตบุคลากร ที่ผ่านการอบรมกับ <br> ศูนย์ทันตสาธารณสุขระหว่างประเทศ กรมอนามัย เท่านั้น </i><br>
-                <span style="color: red;"> <b>บุคคลภายนอก ไม่อนุญาติให้ใช้งาน</b></span></label><br><br>
-            <form class="my-4" action="{{ url_for('user.update_old_user', old_username=data['username']) }}" method="post" enctype="multipart/form-data">
+            <h5 class="card-title">ระบบกู้ข้อมูลผู้ใช้งาน</h5><br>
+            <label class="mr-sm-2"> <i> ระบบนี้ช่วยให้ผู้ใช้งานสามารถเรียกคืนข้อมูลที่เคยมีอยู่แล้วในระบบเดิม พร้อมทั้งขอข้อมูลเพิ่มเติมที่อาจยังไม่ถูกจัดเก็บ <br> หรือมีการอัปเดตใหม่ ระบบถูกออกแบบมาเพื่อให้กระบวนการกู้คืนข้อมูลเป็นไปอย่างปลอดภัยและสะดวก รวดเร็ว </i><br>
+            <form class="my-4" action="{{ url_for('webapp.example') }}" method="post" enctype="multipart/form-data">
                 <div class="form-group py-2">
                     <label class="mr-sm-2" for="name">ชื่อ (ไม่ต้องใส่คำนำหน้าชื่อ) <span style="color: red;">*</span></label>
                     <input type="text" class="form-control" placeholder="ชื่อ..." name="name" id="name" value="{{data.name}}"required>

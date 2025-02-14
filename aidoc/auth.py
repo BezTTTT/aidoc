@@ -245,17 +245,17 @@ def login(role):
             error_msg = "ไม่พบรหัสผู้ใช้ โปรดลองอีกครั้งหนึ่งหรือสมัครบัญชีใหม่ ... หากลืมกรุณาติดต่อศูนย์ทันตสาธารณสุขระหว่างประเทศ"
         elif check_old_password(password, user['password']):
             data = {}
-            data["name"] = user["name"] if user["name"] is not None else None
-            data["surname"] = user["surname"]
-            data["job_position"] = user["job_position"]
-            data["osm_job"] = user["osm_job"]
-            data["license"] = user["license"]
+            data["name"] = user["name"] if user["name"] is not None else ""
+            data["surname"] = user["surname"] if user["surname"] is not None else ""
+            data["job_position"] = user["job_position"] if user["job_position"] is not None else ""
+            data["osm_job"] = user["osm_job"] if user["osm_job"] is not None else ""
+            data["license"] = user["license"] if user["license"] is not None else ""
             data["hospital"] = user["hospital"] if user["hospital"] is not None else ""
-            data["province"] = user["province"]
-            data["email"] = user["email"]
-            data["username"] = user["username"]
-            data["password"] = user["password"]
-            data["phone"] = user["phone"]
+            data["province"] = user["province"] if user["province"] is not None else ""
+            data["email"] = user["email"] if user["email"] is not None else ""
+            data["username"] = user["username"] if user["username"] is not None else ""
+            data["password"] = user["password"] if user["password"] is not None else ""
+            data["phone"] = user["phone"] if user["phone"] is not None else ""
 
             data["valid_password"] = True
             data["valid_username"] = True
