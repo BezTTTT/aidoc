@@ -61,7 +61,6 @@
 </div>
 
 <script>
-
     let is_supervisor = false;
 
     function fetchUserData() {
@@ -135,26 +134,29 @@
   
     async function submitFormData(event) {
       event.preventDefault();  // Prevent the default form submission
-  
       const urlParams = new URLSearchParams(window.location.search);
       const userId = urlParams.get('id'); // Get the user ID
-  
-      const formData = {
+
+      
+      const rawFormData = {
         id: userId,
         name: document.getElementById('firstname').value,
         surname: document.getElementById('lastname').value,
         job_position: document.getElementById('job_position').value,
-        license : document.getElementById('license')? document.getElementById('license').value: '',
-        hospital: document.getElementById('hospital')? document.getElementById('hospital').value:'',
+        license : document.getElementById('license').value,
+        hospital: document.getElementById('hospital').value,
         province: document.getElementById('province').value,
         email: document.getElementById('email').value,
-        national_id : document.getElementById('nationalId')? document.getElementById('nationalId').value : '',
         phone : document.getElementById('phone').value,
         is_admin: document.getElementById('admin').checked ? 1 : 0,
         is_specialist: document.getElementById('specialist').checked ? 1 : 0,
         is_osm: document.getElementById('osm').checked ? 1 : 0,
         is_patient: document.getElementById('patient').checked ? 1 : 0,
       };
+
+      const formData = Object.fromEntries(
+      Object.entries(rawFormData).map(([key, value]) => [key, value === "" ? null : value])
+      );
 
       // create/remove group for osm supervisor
       const set_supervisor = document.getElementById('promoteSupervisor').checked ? 1 : 0
@@ -193,7 +195,24 @@
       } catch (error){
         console.error("Error updating osm supervisor:", error);
       }
-  
+      try{
+        const response = await fetch("/check_phone_api/",{
+          method: "POST",
+          headers: {
+                "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ phone: phone.value ,id:userId})
+        });
+        const data = await response.json();
+        if(data && data.id != userId){
+          alert("หมายเลขโทรศัพท์ซ้ำกับหมายเลขที่มีในระบบ กรุณาเปลี่ยน")
+          return
+        }
+      }catch(e){
+        console.error("Error checking phone number:",e)
+        return
+      }
+
       try {
         const response = await fetch("/submit_info_api/", {
           method: "PUT",  // Use PUT method for updating
@@ -205,7 +224,7 @@
         
         if (response.ok) {
           alert("User information updated successfully!");
-          window.location.href = '/admin_page/'
+          window.location.reload()
         } else {
           alert("Failed to update user information.");
         }
@@ -237,29 +256,28 @@
     const commonFields = `
         <div class="col-md-6">
             <label for="firstname" class="form-label">Firstname</label>
-            <input class="form-control" type="text" name="name" id="firstname" value="${data.name || ''}">
+            <input class="form-control" type="text" name="name" id="firstname" value="${data.name !== null? data.name: ''}">
         </div>
         <div class="col-md-6">
             <label for="lastname" class="form-label">Lastname</label>
-            <input class="form-control" type="text" name="surname" id="lastname" value="${data.surname || ''}">
+            <input class="form-control" type="text" name="surname" id="lastname" value="${data.surname !== null? data.surname: ''}">
         </div>
         <div class="col-md-6">
                 <label for="province" class="form-label">Province</label>
-                <input class="form-control" type="text" name="province" id="province" value="${data.province || ''}" readonly>
+                <input class="form-control" type="text" name="province" id="province" value="${data.province !== null? data.province : ''}" >
         </div>
         <div class="col-md-6">
             <label for="email" class="form-label">E-mail</label>
-            <input class="form-control" type="email" name="email" id="email" value="${data.email || ""}" readonly>
+            <input class="form-control" type="email" name="email" id="email" value="${data.email !== null ? data.email : ''}" >
         </div>
         <div class="col-md-6">
             <label for="phone" class="form-label">Phone</label>
-            <input class="form-control" type="text" name="phone" id="phone" maxlength="10" value="${data.phone || ''}" readonly>
+            <input class="form-control" type="text" name="phone" id="phone" maxlength="10" value="${data.phone !== null ? data.phone : ''}">
         </div>
     `;
 
     formContent.innerHTML += commonFields;
-
-    if (data.username) {
+    if (data.username || data.is_specialist === 1) {
         formContent.innerHTML += `
           <div class="col-md-6">
             <label for="job_position" class="form-label">Work</label>
@@ -281,11 +299,14 @@
 
             <div class="col-md-6">
                 <label for="license" class="form-label">License</label>
-                <input class="form-control" type="text" name="license" id="license" value="${data.license}" readonly>
+                <input class="form-control" type="text" name="license" id="license" value="${data.license !== null ? data.license : ''}">
             </div>
             <div class="col-md-6">
                 <label for="hospital" class="form-label">Hospital</label>
-                <input class="form-control" type="text" name="hospital" id="hospital" value="${data.hospital}">
+                <input class="form-control" type="text" name="hospital" id="hospital" value="${data.hospital !== null ? data.hospital : ''}">
+            </div>
+            <div class="col-md-6">
+                <input class="form-control" type="hidden" name="nationalId" id="nationalId" value="${data.national_id}" maxlength="13" readonly >
             </div>
         `;
     } else if (data.is_osm === 1) {
@@ -309,24 +330,34 @@
             </div>
             <div class="col-md-6">
                 <label for="hospital" class="form-label">Hospital</label>
-                <input class="form-control" type="text" name="hospital" id="hospital" value="${data.hospital}">
+                <input class="form-control" type="text" name="hospital" id="hospital" value="${data.hospital !== null ? data.hospital:''}">
             </div>
             <div class="col-md-6">
                 <label for="nationalId" class="form-label">National ID</label>
-                <input class="form-control" type="text" name="nationalId" id="nationalId" value="${data.national_id}" maxlength="13" readonly>
+                <input class="form-control" type="text" name="nationalId" id="nationalId" value="${data.national_id}" maxlength="13" readonly >
+            </div>
+            <div class="col-md-6">
+                <input class="form-control" type="hidden" name="license" id="license" value="${data.license !== null ? data.license : ''}">
             </div>
         `;
     } else {
         formContent.innerHTML += `
             <div class="col-md-6">
                 <label for="job_position" class="form-label">Work</label>
-                <input class="form-control" type="text" name="job_position" id="job_position" value="${data.job_position || ''}"> 
+                <input class="form-control" type="text" name="job_position" id="job_position" value="${data.job_position !== null? data.job_position:''}"> 
+            </div>
+            <div class="col-md-6">
+                <input class="form-control" type="hidden" name="license" id="license" value="${data.license !== null ? data.license : ''}">
+            </div>
+            <div class="col-md-6">
+                <input class="form-control" type="hidden" name="hospital" id="hospital" value="${data.hospital !== null ? data.hospital:''}">
             </div>
         `;
     }
   }
-  document.getElementById('editUserForm').addEventListener('submit',submitFormData);
-  fetchUserData(); // Call the function when the page loads
+  document.addEventListener("DOMContentLoaded", function () {
+    fetchUserData();
+  });
   </script>
 
 {% endblock %}
