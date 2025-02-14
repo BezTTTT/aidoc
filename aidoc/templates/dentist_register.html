@@ -95,21 +95,21 @@
                 </div>
                 <div class="form-group py-2">
                     <label class="mr-sm-2" for="hospital">โรงพยาบาลหรือหน่วยงานที่สังกัด <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="โรงพยาบาลหรือหน่วยงานที่สังกัด..." name="hospital" id="hospital" value="{{data.hospital}}" required>
+                    <input type="text" class="form-control" placeholder="พิมพ์ชื่อเต็ม เช่น โรงพยาบาลนครพิงค์ ..." name="hospital" id="hospital" value="{{data.hospital}}" required>
                 </div>
                 <div class="form-group py-2">
                     <label class="mr-sm-2" for="province">จังหวัด <span style="color: red;">*</span></label>
-                    <input type="text" class="form-control" placeholder="จังหวัด..." name="province" id="province" value="{{data.province}}" required
+                    <input type="text" class="form-control" placeholder="พิมพ์ชื่อเต็ม เช่น กรุงเทพมหานคร ..." name="province" id="province" value="{{data.province}}" required
                         {% if data.valid_province_name is defined and not data.valid_province_name %}
                             style="border-color: rgba(244, 92, 92, 1);"
                         {% endif %}>
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2" for="phone">เบอร์โทรศัพท์ <span style="color: red;">*</span></label>
+                    <label class="mr-sm-2" for="phone">เบอร์โทรศัพท์ (หากต้องการให้เราติดต่อประสานงานกับท่านได้)</label>
                     <input type="text" class="form-control" placeholder="เบอร์โทรศัพท์..." name="phone" id="phone" value="{{ data.phone}}" maxlength="10">
                 </div>
                 <div class="form-group py-2">
-                    <label class="mr-sm-2" for="email">อีเมล <span style="color: red;">*</span></label>
+                    <label class="mr-sm-2" for="email">อีเมล (หากต้องการให้เราติดต่อประสานงานกับท่านได้)</label>
                     <input type="text" class="form-control" placeholder="อีเมล..." name="email" id="email" value="{{ data.email}}" >
                 </div>
                 <div class="row">
