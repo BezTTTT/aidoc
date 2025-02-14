@@ -8,7 +8,7 @@ def update_user_info(data):
         with cursor:
             update_table_user(cursor,data)
 
-            update_table_submission_record_national_id(cursor,data)
+            # update_table_submission_record_national_id(cursor,data)
             
             output = {
                 "message": "User information updated successfully.",
@@ -18,41 +18,30 @@ def update_user_info(data):
         return json.dumps({"error": f"An error occurred while fetching user data: {e}"}), 500
     return output
 
-def update_table_user(cursor,data):
-            sql = """
-            UPDATE user
-            SET 
-                name = %s,
-                surname = %s,
-                job_position = %s,
-                is_patient = %s,
-                is_osm = %s,
-                is_specialist = %s,
-                is_admin = %s,
-                email = %s,
-                province = %s,
-                national_id = %s,
-                hospital = %s,
-                phone = %s,
-                license = %s
-                WHERE id = %s;
-            """
-            cursor.execute(sql, (
-                data['name'], 
-                data['surname'], 
-                data['job_position'], 
-                data['is_patient'], 
-                data['is_osm'], 
-                data['is_specialist'], 
-                data['is_admin'], 
-                data['email'], 
-                data['province'], 
-                data['national_id'], 
-                data['hospital'], 
-                data['phone'],
-                data['license'], 
-                data['id'],
-            ))
+def update_table_user(cursor, data):
+    query_set = []
+    param_set = []
+
+    if isinstance(data, dict):  # Ensure data is a dictionary
+        for key, value in data.items():
+            if key != "id":
+                select_line = f"{key} = %s"
+                query_set.append(select_line)
+                param_set.append(value)
+    print(query_set)
+    print(param_set)
+    if "id" not in data:
+        raise ValueError("Missing 'id' field in data")
+
+    param_set.append(data["id"])
+
+    set_sql = "UPDATE user SET "
+    where_sql = " WHERE id = %s;"
+    
+    sql = set_sql + ", ".join(query_set) + where_sql  # Convert list to SQL string
+    
+    cursor.execute(sql, tuple(param_set))  # Ensure params are passed as a tuple
+
 
 def update_table_submission_record_national_id(cursor,data):
             sql = """
