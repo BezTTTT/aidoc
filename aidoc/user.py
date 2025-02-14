@@ -404,7 +404,8 @@ def update_old_user(old_username):
             validate_cf_password,
             validate_old_username,
             validate_license,
-            validate_province_name, 
+            validate_province_name,
+            validate_duplicate_users_except_yourself,
             validate_duplicate_phone
         ]
         

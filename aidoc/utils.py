@@ -128,7 +128,33 @@ def validate_duplicate_users(args):
                 return False, data, duplicate_users
         return True, data, duplicate_users
     return True, data, duplicate_users
-    
+
+def validate_duplicate_users_except_yourself(args):
+    data = args['data']
+    form = args['form']
+    db, cursor = get_db()
+    cursor.execute('SELECT * FROM user WHERE name=%s AND surname=%s AND id!=%s ORDER BY created_at DESC', (data["name"], data["surname"],data["id"]))
+    duplicate_users = cursor.fetchall() # Result in list of dicts
+    if "create_new_account" not in form and "merge_account" not in form:
+        if len(duplicate_users)>0:
+            duplicate_users = duplicate_users[-1] # Only the last matched user will be selected, the previous duplicated accounts will become inactive and will be merged or deleted by admin
+            session['user_id'] = duplicate_users['id'] # Accounts of the same name, surname and phone will be automatically merged
+            if duplicate_users['phone']!=data["phone"]: # If same name but different phone (or the only one is null), will ask the user 
+                if duplicate_users['is_patient']:
+                    error_msg = "ตรวจพบข้อมูลผู้ใช้ที่ชื่อตรงกันกับท่านใน [ระบบประชาชน] ... ท่านต้องการรวมบัญชีหรือไม่? กดปุ่มสีเขียวเพื่อรวมบัญชี กดปุ่มสีเหลืองเพื่อสร้างบัญชีใหม่แยก (บัญชีเก่า เจ้าหน้าที่จะพิจารณาลบหรือรวมข้อมูลให้ทีหลัง)"
+                    error_msg += f" [ ข้อมูลซ้ำ: คุณ {duplicate_users['name']} {duplicate_users['surname']} ]"
+                elif duplicate_users['is_osm']:
+                    error_msg = "ตรวจพบข้อมูลผู้ใช้ที่ชื่อตรงกันกับท่านใน [ระบบผู้นำส่งข้อมูล] ... ท่านต้องการรวมบัญชีหรือไม่? กดปุ่มสีเขียวเพื่อรวมบัญชี กดปุ่มสีเหลืองเพื่อสร้างบัญชีใหม่แยก (บัญชีเก่า เจ้าหน้าที่จะพิจารณาลบหรือรวมข้อมูลให้ทีหลัง)"
+                    error_msg += f" [ ข้อมูลซ้ำ: คุณ {duplicate_users['name']} {duplicate_users['surname']} สังกัด {duplicate_users['hospital']}]"
+                else:            
+                    error_msg = "ตรวจพบข้อมูลผู้ใช้ที่ชื่อตรงกันกับท่านใน [ระบบทันตแพทย์] ... ท่านต้องการรวมบัญชีหรือไม่? กดปุ่มสีเขียวเพื่อรวมบัญชี กดปุ่มสีเหลืองเพื่อสร้างบัญชีใหม่แยก (บัญชีเก่า เจ้าหน้าที่จะพิจารณาลบหรือรวมข้อมูลให้ทีหลัง)"
+                    error_msg += f" [ ข้อมูลซ้ำ: คุณ {duplicate_users['name']} {duplicate_users['surname']} สังกัด {duplicate_users['hospital']}]"
+                flash(error_msg)
+                data["duplicate_flag"] = True
+                session['duplicate_flag'] = True
+                return False, data, duplicate_users
+        return True, data, duplicate_users
+    return True, data, duplicate_users
 # region validate_duplicate_phone
 # Generally, duplicate phone number is not allowed.
 # Except in the process of merging duplicated accounts, the validation will be bypassed.
