@@ -21,8 +21,8 @@
             align-items: center; /* Center vertically */
             justify-content: center; /* Center horizontally */
             overflow: hidden;"> 
-                <a href="{{ url_for('image.load_image', folder='upload', user_id=session['user_id'], imagename=data['fname']) }}" target="_blank">
-                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=session['user_id'], imagename=data['fname']) }}" alt=""
+                <a href="{{ url_for('image.load_image', folder='upload', user_id=data['owner_id'], imagename=data['fname']) }}" target="_blank">
+                    <img id="showImg" src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=data['owner_id'], imagename=data['fname']) }}" alt=""
                         style="height: 100%; max-width: 100%; width: auto" />
                 </a>
             </div>
@@ -38,8 +38,8 @@
             align-items: center; /* Center vertically */
             justify-content: center; /* Center horizontally */
             overflow: hidden;">
-                <a href="{{ url_for('image.load_image', folder='outlined', user_id=session['user_id'], imagename=data['fname']) }}" target="_blank">
-                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=session['user_id'], imagename=data['fname']) }}" alt="" 
+                <a href="{{ url_for('image.load_image', folder='outlined', user_id=data['owner_id'], imagename=data['fname']) }}" target="_blank">
+                    <img src="{{ url_for('image.load_image', folder='outlined_thumbnail', user_id=data['owner_id'], imagename=data['fname']) }}" alt="" 
                         style="height: 100%; max-width: 100%; width: auto" />
                 </a>
             </div>
