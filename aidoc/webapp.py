@@ -660,6 +660,10 @@ def report():
 def userManagement():
     return render_template("/newTemplate/admin_management.html")
 
+@bp.route('/admin_record2/')
+def adminRecord2():
+    return render_template("/newTemplate/admin_diagnosis.html")
+
 #followup for dentist page
 @bp.route('/followup/admin', methods=['GET'])
 @login_required
@@ -676,7 +680,6 @@ def followupManage():
         dataCount = 0
     total_pages = (dataCount - 1) // session['records_per_page'] + 1
 
-    print(paginated_data)
     return render_template("/newTemplate/admin_followup.html",dataCount=dataCount,
                 current_page=page,
                 total_pages=total_pages,
@@ -713,7 +716,7 @@ def confirmFeedback(submission_id):
     return jsonify({"status": "error", "message": "⚠️ กรุณาใส่ Feedback และ Note "})
 
 # region edit
-@bp.route('/edit/', methods=('GET','POST'))
+@bp.route('/edit/', methods=('GET','PUT','POST'))
 @login_required
 @admin_only
 def edit():
@@ -859,7 +862,6 @@ def record_specialist(admin=False):
     val = (records_per_page, offset)
     cursor.execute(sql2,val)
     paginated_data = cursor.fetchall()
-    print(paginated_data)
     # Process each item in paginated_data
     for item in paginated_data:
         if item['channel']=='PATIENT':
