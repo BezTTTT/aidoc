@@ -53,15 +53,6 @@ def generate_summaries_by_day(year=None,start_date=None,end_date=None, province=
             ai_predict_query = cursor.fetchall()
             ai_predict_query = filter_by_date_range(ai_predict_query, start_date, end_date)
             ai_predict_query = filter_by_year(ai_predict_query, year)
-            # Extract column names from the first object in ai_predict_query
-            columns = list(ai_predict_query[0].keys()) if ai_predict_query else []
-            # Create DataFrame from query result
-            df = pd.DataFrame(ai_predict_query, columns=columns)
-            print(sql)
-            filename = 'output.xlsx'  
-            testDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'test')
-            filePath = os.path.join(testDir, filename)
-            df.to_excel(filePath, index=False)
             
             if province:
                 output_data = [{**entry, "province": province} for entry in ai_predict_query]
