@@ -15,11 +15,13 @@ def check_duplicate_phone(data):
 def is_duplicate_phone(cursor,data):
     sql= """
     SELECT 
-        phone 
+        phone,
+        id
     FROM 
         user 
         WHERE phone = %s
+        AND id != %s
 """
-    cursor.execute(sql, (data['phone'],))
-    result = cursor.fetchall()
+    cursor.execute(sql, (data['phone'],data['id']))
+    result = cursor.fetchone()
     return result

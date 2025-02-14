@@ -201,11 +201,11 @@
           headers: {
                 "Content-Type": "application/json",
           },
-          body: JSON.stringify({ phone: phone.value })
+          body: JSON.stringify({ phone: phone.value ,id:userId})
         });
         const data = await response.json();
-        if(Array.isArray(data) && data.length >= 1){
-          alert('หมายเลขโทรศัพท์ซ้ำกับในระบบ')
+        if(data && data.id != userId){
+          alert("หมายเลขโทรศัพท์ซ้ำกับหมายเลขที่มีในระบบ กรุณาเปลี่ยน")
           return
         }
       }catch(e){
@@ -355,11 +355,6 @@
         `;
     }
   }
-
-  function check_phone(data){
-
-  }
-
   document.addEventListener("DOMContentLoaded", function () {
     fetchUserData();
   });
