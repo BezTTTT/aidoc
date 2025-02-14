@@ -40,7 +40,7 @@ def generate_summaries_by_day(year=None,start_date=None,end_date=None, province=
                 sql += " AND " + " AND ".join(where_clauses)
             if group_by:
                 sql += " GROUP BY " + ", ".join(group_by)
-
+            sql += " ORDER BY date DESC"    
             # Format the SELECT clause based on grouping
             select_fields = ", ".join(select_by) if select_by else "'All'"
             sql = sql.format(select_fields)
