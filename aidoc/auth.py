@@ -3,6 +3,7 @@ from flask import (
 )
 from werkzeug.security import check_password_hash
 
+import bcrypt
 import functools
 import datetime
 
@@ -239,9 +240,31 @@ def login(role):
         else:
             user = None
 
+
         if user is None:
             error_msg = "ไม่พบรหัสผู้ใช้ โปรดลองอีกครั้งหนึ่งหรือสมัครบัญชีใหม่ ... หากลืมกรุณาติดต่อศูนย์ทันตสาธารณสุขระหว่างประเทศ"
-        elif not check_password_hash(user['password'], password):
+        elif check_old_password(password, user['password']):
+            data = {}
+            data["name"] = user["name"] if user["name"] is not None else None
+            data["surname"] = user["surname"]
+            data["job_position"] = user["job_position"]
+            data["osm_job"] = user["osm_job"]
+            data["license"] = user["license"]
+            data["hospital"] = user["hospital"] if user["hospital"] is not None else ""
+            data["province"] = user["province"]
+            data["email"] = user["email"]
+            data["username"] = user["username"]
+            data["password"] = user["password"]
+            data["phone"] = user["phone"]
+
+            data["valid_password"] = True
+            data["valid_username"] = True
+            data["valid_province_name"] = True
+
+            data["national_id"] = None
+            print(data)
+            return render_template('/newTemplate/old_user_update.html', data=data)
+        elif not check_current_password(password, user['password']):
             error_msg = "รหัสผ่านไม่ถูกต้อง โปรดลองอีกครั้งหนึ่ง ... หากลืมรหัสผ่าน กรุณากดเลือก ลืมรหัสผ่าน"
         if error_msg is None: # Logged in sucessfully
             session['user_id'] = user['id']
@@ -251,6 +274,18 @@ def login(role):
         flash(error_msg)
         return render_template("dentist_login.html")
 
+def check_old_password(password, user_password):
+    try:
+        password_bytes = bytes(password, "ascii")
+        stored_password_bytes = bytes(user_password, "ascii")
+        return bcrypt.checkpw(password_bytes, stored_password_bytes)
+    except Exception as e:
+        return False
+def check_current_password(password, user_password):
+    try:
+        return check_password_hash(user_password, password)
+    except Exception as e:
+        return False
 def log_last_user_login(user_id):
     # Log last_login to the user
     db, cursor = get_db()

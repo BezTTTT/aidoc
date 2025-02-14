@@ -376,6 +376,70 @@ def register(role):
     else:
         return redirect('/')
 
+@bp.route('/update_old_user', methods=('GET', 'POST'))
+def update_old_user():
+    target_template = "/newTemplate/old_user_update.html"
+    
+    if request.method == 'POST':
+        db, cursor = get_db()
+
+        data = {key: request.form.get(key, '') for key in [
+            "name", "surname", "job_position", "osm_job", "license", 
+            "hospital", "province", "email", "username", "password", "phone"
+        ]}
+        query = """SELECT * FROM user WHERE username=%s"""
+        cursor.execute(query, (data['username'],))
+        user = cursor.fetchone()
+        print(user)
+        data["id"]=user["id"]
+        data["valid_password"] = True
+        data["valid_username"] = True
+        data["valid_province_name"] = True
+        data["national_id"] = None
+
+        # Validate input data
+        duplicate_users = []
+        valid_func_list = [
+            validate_cf_password,
+            validate_old_username,
+            validate_license,
+            validate_province_name, 
+            validate_duplicate_phone
+        ]
+        
+        for valid_func in valid_func_list:
+            args = {'data': data, 'form': request.form, 'duplicate_users': duplicate_users}
+            valid_check, data, duplicate_users = valid_func(args)
+            if not valid_check:
+                return render_template(target_template, data=data)
+
+        # Convert empty fields to None
+        for key in ["osm_job", "license"]:
+            if data[key] == '':
+                data[key] = None
+
+        # Update user data in the database
+        sql = """
+            UPDATE user SET name=%s, surname=%s, email=%s, phone=%s, username=%s, 
+            password=%s, job_position=%s, osm_job=%s, hospital=%s, province=%s, license=%s 
+            WHERE id=%s
+        """
+        val = (
+            data["name"], data["surname"], data["email"], data["phone"], data["username"],
+            generate_password_hash(data["password"]), data["job_position"], data["osm_job"],
+            data["hospital"], data["province"], data["license"], data["id"]
+        )
+        cursor.execute(sql, val)
+        db.commit()
+        
+        reload_user_profile(data["id"])
+        log_last_user_login(data["id"])
+        session['login_mode'] = 'dentist'
+
+        return redirect(url_for('webapp.record', role='dentist'))
+    else:
+        return redirect('/')
+    
 #region forgot_password system
 @bp.route('/forgot', methods=('GET', 'POST'))
 def forgot():

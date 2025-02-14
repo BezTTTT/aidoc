@@ -1,0 +1,206 @@
+{% extends "./base.html"%}
+
+{% block title %} AIDOC | Doctor Register {% endblock %}
+
+{% block content %}
+<div class="row d-flex align-items-center justify-content-center pt-4">
+    <div class="card mb-4" style="width: max-content;">
+        <div class="card-body">
+            <h5 class="card-title">
+                <p><b><u>ข้อตกลงและเงื่อนไขการใช้งาน</u></b></p>
+            </h5>
+            <p class="card-text">
+                ระบบนี้ชื่อว่า "ระบบปัญญาประดิษฐ์สำหรับการค้นหาและวิเคราะห์รอยโรคในช่องปาก"
+                พัฒนาขึ้นเพื่อสนับสนุนโครงการการเฝ้าระวังด้านทันตสาธารณสุขของกรมอนามัย ผู้รับผิดชอบโครงการ คือ
+                ศูนย์ทันตสาธารณสุขระหว่างประเทศ กรมอนามัย กระทรวงสาธารณสุข
+                <b>ระบบนี้ไม่สามารถใช้เป็นเครื่องมือทางการแพทย์หรือใช้แทนการวินิจฉัยโดยแพทย์หรือทันตแพทย์ได้
+                    ระบบยังอยู่ในขั้นตอนการวิจัยและพัฒนา ซึ่งผลลัพธ์อาจมีข้อผิดพลาดหรือความคลาดเคลื่อนได้
+                    ทางทีมพัฒนาและหน่วยงานที่เกี่ยวข้องไม่ขอรับผิดชอบต่อความเสียหายใด ๆ ที่อาจเกิดขึ้นจากการใช้งานระบบ
+                    ผู้ใช้ควรปรึกษาแพทย์หรือทันตแพทย์หากพบความผิดปกติในช่องปาก
+                    และไม่ควรใช้ผลลัพธ์จากระบบนี้ในการตัดสินใจทางการแพทย์ใด ๆ</b>
+                หากผู้ใช้งานมีอายุต่ำกว่า 18 ปี จะต้องได้รับความยินยอมจากผู้ปกครองก่อนการใช้งาน
+                ระบบอาจมีการอัปเดตหรือปรับปรุงฟังก์ชันการทำงานเป็นระยะ
+                ทำให้รูปแบบและผลลัพธ์ของระบบอาจมีการเปลี่ยนแปลงได้ตลอดเวลา
+            </p>
+        </div>
+    </div>
+    <div class="card mb-4" style="width: max-content;">
+        <div class="card-body">
+            <h5 class="card-title">
+                <p><b><u>การยินยอมเข้าร่วมการวิจัยและอนุญาตให้เก็บรักษาข้อมูลไว้สำหรับการวิจัยในอนาคต</u></b></p>
+            </h5>
+            <p class="card-text">
+                ข้าพเจ้า (ในฐานะผู้ใช้งานและกำลังลงทะเบียนข้อมูลส่วนตัวตามแบบฟอร์มด้านล่าง)
+                ได้ตัดสินใจเข้าร่วมการวิจัยเรื่อง
+                "การพัฒนาระบบปัญญาประดิษฐ์ที่ช่วยในการค้นหาและวิเคราะห์รอยโรคก่อนมะเร็งและมะเร็งช่องปาก"
+                <b>ซึ่งจะมีการเก็บรักษา “ข้อมูลส่วนบุคคลและข้อมูลภาพถ่ายช่องปาก” ของข้าพเจ้าไว้สำหรับการวิจัยในอนาคต</b>
+                ข้าพเจ้ายินยอมให้ ผู้รับผิดชอบโครงการวิจัย (ศูนย์ทันตสาธารณสุขระหว่างประเทศ และ คณะทำงาน) ทำการเก็บรักษา
+                วิเคราะห์และประมวลผลซึ่งข้อมูลของข้าพเจ้า ข้าพเจ้าทราบดีว่า
+                โครงการวิจัยนี้อาจมีการตีพิมพ์เผยแพร่หรือนำเสนอข้อมูลดังกล่าวต่อวงการวิชาการ
+                โดยจะแสดงข้อมูลภาพช่องปากและข้อมูลสุขภาพของข้าพเจ้า
+                ข้อมูลดังกล่าวจะได้รับการเผยแพร่โดยไม่ปรากฎชื่อของข้าพเจ้าหรือสิ่งบ่งชี้ตัวข้าพเจ้าโดยตรง
+                ข้าพเจ้ารับทราบว่า
+                <b>ข้าพเจ้าสามารถปฏิเสธการให้มีการเก็บรักษา “ข้อมูลส่วนบุคคลและข้อมูลภาพถ่ายช่องปาก”
+                    โดยอิสระ </b> อีกทั้ง ข้าพเจ้ายังสามารถเปลี่ยนการตัดสินใจได้ในภายหลัง
+            </p>
+        </div>
+    </div>
+    <div class="card mb-4" style="width: max-content;">
+        <div class="card-body">
+            <h5 class="card-title">ลงทะเบียนผู้ใช้งานระบบ</h5><br>
+            <label class="mr-sm-2"> <i> ระบบนี้ เปิดให้ลงทะเบียนใช้งาน ได้เฉพาะกับ ทันตบุคลากร ที่ผ่านการอบรมกับ <br> ศูนย์ทันตสาธารณสุขระหว่างประเทศ กรมอนามัย เท่านั้น </i><br>
+                <span style="color: red;"> <b>บุคคลภายนอก ไม่อนุญาติให้ใช้งาน</b></span></label><br><br>
+            <form class="my-4" action="{{ url_for('user.update_old_user') }}" method="post" enctype="multipart/form-data">
+                <div class="form-group py-2">
+                    <label class="mr-sm-2" for="name">ชื่อ (ไม่ต้องใส่คำนำหน้าชื่อ) <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="ชื่อ..." name="name" id="name" value="{{data.name}}"required>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2" for="surname">นามสกุล <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="นามสกุล..." name="surname" id="surname" value="{{data.surname}}" required>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2" for="job_position">ตำแหน่งในทางสาธารณสุข <span style="color: red;">*</span></label>
+                    <select id="job_position" name="job_position" class="form-control" value="{{data.job_position}}" required>
+                        <option value="" {% if data.job_position is none %}selected{% endif %} hidden>เลือก...</option>
+                        <option value="OSM" {% if data.job_position=='OSM' %}selected{% endif %}>อสม.</option> 
+                        <option value="Dental Nurse" {% if data.job_position=='Dental Nurse' %}selected{% endif %}>ทันตาภิบาล/เจ้าพนักงานทันตสาธารณสุข</option>
+                        <option value="Dentist" {% if data.job_position=='Dentist' %}selected{% endif %}>ทันตแพทย์</option>
+                        <option value="Oral Pathologist" {% if data.job_position=='Oral Pathologist' %}selected{% endif %}>ทันตแพทย์เฉพาะทาง วิทยาการวินิจฉัยโรคช่องปาก</option>
+                        <option value="Oral and Maxillofacial Surgeon" {% if data.job_position=='Oral and Maxillofacial Surgeon' %}selected{% endif %}>ทันตแพทย์เฉพาะทาง ศัลยศาสตร์ช่องปากและแม็กซิลโลเฟเชียล</option>
+                        <option value="Physician" {% if data.job_position=='Physician' %}selected{% endif %}>แพทย์</option>
+                        <option value="Public Health Technical Officer" {% if data.job_position=='Public Health Technical Officer' %}selected{% endif %}>นักวิชาการสาธารณสุข</option>
+                        <option value="Computer Technical Officer" {% if data.job_position=='Computer Technical Officer' %}selected{% endif %}>นักวิชาการคอมพิวเตอร์/นักวิจัย/ผู้พัฒนาระบบ</option>
+                        <option value="Other Public Health Officer" {% if data.job_position=='Other Public Health Officer' %}selected{% endif %}>ข้าราชการ/เจ้าพนักงานกระทรวงสาธารณสุข</option>
+                        <option value="Other Government Officer" {% if data.job_position=='Other Government Officer' %}selected{% endif %}>เจ้าหน้าที่รัฐอื่น</option>
+                        <option value="General Public" {% if data.job_position=='General Public' %}selected{% endif %}>บุคคลทั่วไป</option>
+                    </select>
+                </div>
+                <div class="form-group py-2" id="osm_job_div" style="display: none;">
+                    <label class="mr-sm-2" for="osm_job">กรณีที่ท่านระบุตำแหน่งเป็น อสม. หรือ บุคคลทั่วไป กรุณาระบุอาชีพ <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="กรุณาระบุอาชีพ..." name="osm_job" id="osm_job" value="{{data.osm_job}}">
+                </div>
+                <div class="form-group py-2" id="license_div" 
+                    {% if data.valid_license is defined and not data.valid_license %}
+                        style="display: block;"
+                    {% else %}
+                        style="display: none;"
+                    {% endif %}>
+                    <label class="mr-sm-2" for="license">กรณีที่ท่านระบุตำแหน่งเป็น ทันตแพทย์ หรือ แพทย์ กรุณาระบุเลขที่ใบอนุญาตฯ (เฉพาะตัวเลข)<span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="ระบุเฉพาะตัวเลขเท่านั้น ไม่ต้องใส่ ท. หรือ พ." name="license" id="license" value="{{data.license}}"
+                        {% if data.valid_license is defined and not data.valid_license %}
+                                style="border-color: rgba(244, 92, 92, 1);"
+                        {% endif %}>
+                    
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2" for="hospital">โรงพยาบาลหรือหน่วยงานที่สังกัด <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="โรงพยาบาลหรือหน่วยงานที่สังกัด..." name="hospital" id="hospital" value="{{data.hospital}}" required>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2" for="province">จังหวัด <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="จังหวัด..." name="province" id="province" value="{{data.province}}" required
+                        {% if data.valid_province_name is defined and not data.valid_province_name %}
+                            style="border-color: rgba(244, 92, 92, 1);"
+                        {% endif %}>
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2" for="phone">เบอร์โทรศัพท์ <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="เบอร์โทรศัพท์..." name="phone" id="phone" value="{{ data.phone}}" maxlength="10">
+                </div>
+                <div class="form-group py-2">
+                    <label class="mr-sm-2" for="email">อีเมล <span style="color: red;">*</span></label>
+                    <input type="text" class="form-control" placeholder="อีเมล..." name="email" id="email" value="{{ data.email}}" >
+                </div>
+                <div class="row">
+                    <div class="col-md-12 form-group py-2">
+                        <label class="mr-sm-2 mb-2" for="username">ชื่อผู้ใช้งาน (Username ควรใช้ภาษาอังกฤษ) <span style="color: red;">*</span></label>
+                        <input type="text" class="form-control" placeholder="ชื่่อผู้ใช้งาน..." name="username" id="username"
+                            value="{{data.username}}" required
+                            {% if data.valid_username is defined and not data.valid_username %} 
+                                style="border-color: rgba(244, 92, 92, 1);"
+                            {% endif %}
+                        >
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 form-group py-2">
+                        <label class="mr-sm-2 mb-2" for="password">รหัสผ่าน <span style="color: red;">*</span></label>
+                        <input type="password" class="form-control" placeholder="รหัสผ่าน..."
+                            name="password" id="password" required
+                            {% if data.valid_password is defined and not data.valid_password %} 
+                                style="border-color: rgba(244, 92, 92, 1);"
+                            {% endif %}
+                        >
+                    </div>
+                    <div class="col-md-6 form-group py-2">
+                        <label class="mr-sm-2 mb-2" for="cfpassword">ยืนยันรหัสผ่าน <span style="color: red;">*</span></label>
+                        <input type="password" class="form-control" placeholder="รหัสผ่าน..."
+                            name="cfpassword" id="cfpassword" required
+                            {% if data.valid_password is defined and not data.valid_password %} 
+                                style="border-color: rgba(244, 92, 92, 1);"
+                            {% endif %}
+                        >
+                    </div>
+
+                </div>
+                {% if data.duplicate_flag is undefined %}
+                    <div class="row d-flex justify-content-center">
+                        <div class="col d-flex justify-content-center">
+                            <a class="btn btn-outline-primary" style="width: 100%;" type="submit" href="/logout">ยกเลิก</a>
+                        </div>
+                        <div class="col d-flex justify-content-center">
+                            <input class="btn btn-success" style="width: 100%;" type="submit" value="ลงทะเบียน">
+                        </div>
+                    </div>
+                {% else %}
+                    <br><br>
+                    <div class="row d-flex justify-content-center">
+                        <div class="col d-flex justify-content-center">
+                            <input name="create_new_account" class="btn btn-warning" style="width: 100%;" type="submit" value="สร้างบัญชีใหม่แยก">
+                        </div>
+                        <div class="col d-flex justify-content-center">
+                            <input name="merge_account" class="btn btn-success" style="width: 100%;" type="submit" value="รวมข้อมูลกับบัญชีเดิม">
+                        </div>
+                    </div>
+                    <div class="col d-flex justify-content-center">
+                        <a class="btn btn-outline-primary my-2" style="width: 50%;" type="submit" href="/logout">ยกเลิก</a>
+                    </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+    var job_position_select = document.getElementById("job_position");
+    var osm_job_div = document.getElementById("osm_job_div");
+    var license_div = document.getElementById("license_div");
+    var osm_job_input = document.getElementById("osm_job");
+    var license_input = document.getElementById("license");
+    job_position_select.addEventListener("change", (event) => {
+        if (event.target.value === "OSM" || event.target.value === "General Public") {
+            osm_job_div.style.display = "block";
+            osm_job_input.required = true;
+            license_div.style.display = "none";
+            license_input.required = false;
+        }else if (event.target.value === "Dentist" || 
+                    event.target.value === "Oral Pathologist" ||
+                    event.target.value === "Oral and Maxillofacial Surgeon" ||
+                    event.target.value === "Physician") {
+            license_div.style.display = "block";
+            license_input.required = true;
+            osm_job_div.style.display = "none";
+            osm_job_input.required = false;
+        }else{
+            license_div.style.display = "none";
+            license_input.required = false;
+            osm_job_div.style.display = "none";
+            osm_job_input.required = false;
+        }
+    });
+</script>
+{% endblock %}
