@@ -376,7 +376,7 @@ def register(role):
     else:
         return redirect('/')
 
-@bp.route('/update_old_user', methods=('GET', 'POST'))
+@bp.route('/update_old_user/<old_username>', methods=('GET', 'POST'))
 def update_old_user(old_username):
     target_template = "/newTemplate/old_user_update.html"
     
@@ -393,7 +393,6 @@ def update_old_user(old_username):
             "hospital", "province", "email", "username", "password", "phone"
         ]}
         data["id"]=user["id"]
-        print(user)
         data["valid_password"] = True
         data["valid_username"] = True
         data["valid_province_name"] = True
