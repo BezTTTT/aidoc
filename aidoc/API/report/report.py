@@ -1,5 +1,8 @@
 import json
 from decimal import Decimal
+
+from . import get_total_account
+from . import get_summaries_by_day
 from flask import jsonify
 from . import get_table_patient_and_osm, get_table_specialist
 from . import get_all_submission , get_province_list
@@ -11,14 +14,15 @@ def generate_report(province):
     dentist_data = get_table_specialist.get_table(province)
     total_pic = get_all_submission.get_all_submission(province)
     total_province = get_province_list. generate_province_list()
-
-    output = build_initial_output(province, patient_data, osm_data, dentist_data, total_pic,total_province)
+    total_account = get_total_account.generate_total_account(province)
+    
+    output = build_initial_output(province, patient_data, osm_data, dentist_data, total_pic,total_province,total_account)
     output = calculate_totals(patient_data, osm_data, dentist_data, output)
 
     return output
 
 
-def build_initial_output(province, patient_data, osm_data, dentist_data, total_pic ,total_province):
+def build_initial_output(province, patient_data, osm_data, dentist_data, total_pic ,total_province,total_account):
     return {
         'patient_and_osm': {
             'patient': patient_data,
@@ -33,7 +37,8 @@ def build_initial_output(province, patient_data, osm_data, dentist_data, total_p
         'province': province,
         'specialist': dentist_data,
         'total_pic': total_pic,
-        'total_province': total_province
+        'total_province': total_province,
+        'total_account': total_account
     }
 
 
@@ -91,3 +96,7 @@ def sum_dicts(dict1, dict2):
         else:
             result[key] = dict1[key] + dict2.get(key, 0)
     return result
+
+def summaries_by_day(year,start_date,end_date,province):
+    output = get_summaries_by_day.generate_summaries_by_day(year,start_date,end_date,province)
+    return output

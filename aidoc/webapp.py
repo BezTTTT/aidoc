@@ -657,7 +657,7 @@ def editByRole(role):
 # region report
 @bp.route('/admin/report/')
 @login_required
-@specialist_only
+@admin_only
 def report():
     return render_template("/newTemplate/submission_report.html")
 
