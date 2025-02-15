@@ -45,5 +45,7 @@ pip install python-dateutil
 pip install PyPDF2
 pip install reportlab
 pip install line-bot-sdk
+pip install bcrypt
+pip install pandas
 
-Updated: Feb 11, 2025
+Updated: Feb 16, 2025
