@@ -4,10 +4,15 @@ from flask import Blueprint, after_this_request, g, request, jsonify, send_file
 from aidoc.auth import login_required
 import pandas as pd
 import sys
+import threading
+import time
 
 from aidoc.osm_group import record_osm_group
 
 export_bp = Blueprint('export_bp', __name__)
+
+TEMP_DIR = os.path.join(os.getcwd(), "aidoc/API/export/tmp")
+os.makedirs(TEMP_DIR, exist_ok=True)
 
 @export_bp.route('/<string:table_name>/', methods=['GET'])
 @login_required
@@ -22,31 +27,34 @@ def export_table(table_name):
     df = db_query(table_name, "osm_group", columns)
 
     # Create a temporary file
-    tmp_file = tempfile.NamedTemporaryFile(delete=False, suffix=f".{format}")
-
+    fd, tmp_file_path = tempfile.mkstemp(suffix=f".{format}", dir=TEMP_DIR)
+    os.close(fd)
 
     if format == 'xlsx':
-        with pd.ExcelWriter(tmp_file.name, engine='openpyxl') as writer:
+        with pd.ExcelWriter(tmp_file_path, engine='openpyxl') as writer:
             df.to_excel(writer, index=False)
     elif format == 'csv':
-        df.to_csv(tmp_file.name, index=False)
+        df.to_csv(tmp_file_path, index=False)
     else:
         return jsonify({"error": "Invalid format"}), 400
+    
+    def async_cleanup(file_path):
+        time.sleep(5)  # Delay to ensure file is sent
+        try:
+            os.remove(file_path)
+        except Exception as e:
+            print(f"Error removing temporary file: {e}")
 
-    # delete the file **AFTER** the response is sent
     @after_this_request
     def cleanup(response):
-        try:
-            os.unlink(tmp_file.name)  # delete temp file after sending
-        except Exception as e:
-            print(f"Error deleting temp file: {e}")
+        threading.Thread(target=async_cleanup, args=(tmp_file_path,), daemon=True).start()
         return response
 
     return send_file(
-        tmp_file.name,
+        tmp_file_path,
         as_attachment=True,
         download_name=f"exported_data.{format}",
-        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" if format == 'excel' else "text/csv",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" if format == 'xlsx' else "text/csv",
         conditional=True
     )
 
@@ -61,9 +69,16 @@ def db_query(table_name,ref, columns):
                     data = result[0]
                 else:
                     data = result 
+
+                if data:
+                    for i, d in enumerate(data): # add image url to data
+                        img_url = f"{request.host_url}load_image/upload/{d['sender_id']}/{d['fname']}"
+                        data[i]["fname"] = f'=HYPERLINK("{img_url}","{data[i]["fname"]}")' # construct image url for excel
+                        print(data[i]["fname"])
+                
         elif True: pass # for future use
 
-        df = pd.DataFrame(data)
+        df = pd.DataFrame(data) 
 
         valid_columns = [col for col in columns if col in df.columns]
         df = df[valid_columns]
