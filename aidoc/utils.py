@@ -128,7 +128,19 @@ def validate_duplicate_users(args):
                 return False, data, duplicate_users
         return True, data, duplicate_users
     return True, data, duplicate_users
+
+def validate_duplicate_users_except_yourself(args):
+    data = args['data']
     
+    db, cursor = get_db()
+    cursor.execute('SELECT * FROM user WHERE name=%s AND surname=%s AND id!=%s ORDER BY created_at DESC', (data["name"], data["surname"],data["id"]))
+    duplicate_users = cursor.fetchall() # Result in list of dicts
+    if len(duplicate_users)>0:
+        error_msg = "ตรวจพบข้อมูลผู้ใช้ที่ชื่อตรงกันกับท่าน"
+        data["valid_name_surname"] = False
+        flash(error_msg)
+        return False, data, duplicate_users
+    return True, data, duplicate_users
 # region validate_duplicate_phone
 # Generally, duplicate phone number is not allowed.
 # Except in the process of merging duplicated accounts, the validation will be bypassed.
@@ -149,6 +161,20 @@ def validate_duplicate_phone(args):
             return False, data, duplicate_users
     return True, data, duplicate_users
 
+def validate_duplicate_phone_except_yourself(args): 
+    data = args['data']
+    duplicate_users = args['duplicate_users']
+    if "phone" in data and data["phone"]: 
+        db, cursor = get_db()
+        cursor.execute('SELECT id FROM user WHERE phone=%s AND id!=%s',
+                        (data["phone"], data["id"]))
+        row = cursor.fetchall() # Result in list of dicts
+        if len(row) > 0:
+            error_msg = "เบอร์โทรศัพท์นี้ถูกใช้ในการลงทะเบียนบัญชีอื่นแล้ว กรุณาใช้เบอร์โทรศัพท์อื่น"
+            data["valid_phone"] = False
+            flash(error_msg)
+            return False, data, duplicate_users
+    return True, data, duplicate_users
 # region validate_duplicate_national_id
 # Generally, duplicate national_id number is not allowed.
 # Except in the process of merging duplicated accounts, the validation will be bypassed.
@@ -187,6 +213,18 @@ def validate_username(args):
     data = args['data']
     db, cursor = get_db()
     cursor.execute('SELECT id FROM user WHERE username=%s', (data["username"], ))
+    duplicate_usersname = cursor.fetchall() # Result in list of dicts
+    if len(duplicate_usersname)>0:
+        error_msg = "รหัสผู้ใช้ (Username) นี้ มีผู้อื่นใช้ไปแล้ว กรุณาเลือกรหัสผู้ใช้ใหม่"
+        data["valid_username"] = False
+        flash(error_msg)
+        return False, data, []
+    return True, data, []
+
+def validate_old_username(args):
+    data = args['data']
+    db, cursor = get_db()
+    cursor.execute('SELECT id FROM user WHERE username=%s AND id !=%s', (data["username"],data["id"]))
     duplicate_usersname = cursor.fetchall() # Result in list of dicts
     if len(duplicate_usersname)>0:
         error_msg = "รหัสผู้ใช้ (Username) นี้ มีผู้อื่นใช้ไปแล้ว กรุณาเลือกรหัสผู้ใช้ใหม่"
