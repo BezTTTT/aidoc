@@ -8,6 +8,7 @@ def generate_total_account(province):
         with cursor:
             account_list = fetch_total_accoun(cursor,province)
             output = [{**entry, "job_category": common_mapper.map_job_position_to_th_presist_job(entry["job_category"])}for entry in account_list]
+            output = output + [{"job_category": "รวม", "total_users": sum([entry["total_users"] for entry in account_list]), "submitted_users": sum([entry["submitted_users"] for entry in account_list]), "not_submitted_users": sum([entry["not_submitted_users"] for entry in account_list])}]
     except Exception as e:
         print(f"Error occurred: {e}")
         return json.dumps({"error": f"An error occurred while generate province list: {e}"}), 500
@@ -33,7 +34,6 @@ def fetch_total_accoun(cursor,province):
                         'Other Government Officer', 
                         'Other Public Health Officer', 
                         'Physician', 
-                        'Programmer', 
                         'Public Health Technical Officer'
                     ) THEN job_position  
                     ELSE 'ประชาชนทั่วไป'  
@@ -54,7 +54,6 @@ def fetch_total_accoun(cursor,province):
                         'Other Government Officer', 
                         'Other Public Health Officer', 
                         'Physician', 
-                        'Programmer', 
                         'Public Health Technical Officer'
                     ) THEN u.job_position  
                     ELSE 'ประชาชนทั่วไป'  
