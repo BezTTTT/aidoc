@@ -81,3 +81,11 @@ def get_image_manage():
     return output
 
 
+@auth.login_required
+@auth.admin_only
+@admin_bp.route('/check_phone_api/', methods=['POST'])
+def get_duplicate_phone_info():
+    data = request.get_json()
+    output = admin.get_duplicate_phone(data)
+    return jsonify(output)
+
