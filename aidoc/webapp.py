@@ -126,6 +126,8 @@ def diagnosis(role, img_id):
                 dentist_feedback_location = request.form.get('LesionLocationSelection')
             elif dentist_feedback_code=='OTHER':
                 dentist_feedback_comment = request.form.get('OtherCommentTextarea', '')
+            elif dentist_feedback_code=='BENIGN':
+                dentist_feedback_comment = request.form.get('BenignCommentSelectOptions')
             sql = '''UPDATE submission_record SET
                         dentist_id=%s,
                         dentist_feedback_code=%s,
@@ -307,6 +309,7 @@ def diagnosis(role, img_id):
         data['dentistFeedbackRequest'] = 'false'
 
     dentist_diagnosis_map = {'NORMAL': 'ยืนยันว่าไม่พบรอยโรค (Normal)',
+                                'BENIGN': 'น่าจะไม่มีรอยโรค (Benign)',
                                 'OPMD': 'น่าจะมีรอยโรคที่คล้ายกันกับ OPMD',
                                 'OSCC': 'น่าจะมีรอยโรคที่คล้ายกันกับ OSCC',
                                 'BAD_IMG': 'ภาพถ่ายที่ส่งมายังไม่ได้มาตรฐาน ทำให้วินิจฉัยไม่ได้',
@@ -333,10 +336,17 @@ def diagnosis(role, img_id):
                        4: 'รอยแผลถลอก',
                        5: 'ลักษณะเป็นก้อน'
                        }
+    
+    benign_option = {'NORMAL': 'ปกติ ไม่ใช่รอยโรค',
+                    'RECHECK': 'ควรตรวจเพิ่มเติม',  
+                    'OBSERVE': 'ติดตามอาการเพิ่มเติม'}
+
+
     maps = {'dentist_diagnosis_map': dentist_diagnosis_map,
             'bad_image_map': bad_image_map,
             'lesion_location_map': lesion_location_map,
-            'lesion_type_map': lesion_type_map}
+            'lesion_type_map': lesion_type_map,
+            'benign_option': benign_option}
     return render_template(role+'_diagnosis.html', data=data, maps=maps)
 
 # region record
