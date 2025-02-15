@@ -7,102 +7,111 @@
   กำลังโหลดข้อมูล...
 </div>
 <div id="mainContainer">
-  <h2>รายงานสรุปการนำส่งรูปรายจังหวัด</h2>
-  <select name="selectedProvince" id="filterProvince" onchange="handleProvinceChange()"></select>
-    <svg onclick="fetchSummariesByDay()" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-text" viewBox="0 0 16 16" style="cursor: pointer;">
-      <path d="M9 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V5a2 2 0 0 0-.6-1.4L10.5.6a2 2 0 0 0-1.4-.6zm.5 1.5L13 5H9V1.5zM4 1h5v4H4V1zM3 3v10h10V4H3z"/>
+  <div class="m-3">
+    <h2>รายงานสรุปการนำส่งรูปรายจังหวัด</h2>
+    <select name="selectedProvince" id="filterProvince" onchange="handleProvinceChange()"></select>
+    <svg onclick="fetchSummariesByDay()" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+      class="bi bi-file-earmark-text" viewBox="0 0 16 16" style="cursor: pointer;">
+      <path
+        d="M9 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V5a2 2 0 0 0-.6-1.4L10.5.6a2 2 0 0 0-1.4-.6zm.5 1.5L13 5H9V1.5zM4 1h5v4H4V1zM3 3v10h10V4H3z" />
     </svg>
-  <div id="summaryPopup" class="popup-container" style="display: none; position: fixed; top: 10%; left: 10%; width: 80%; height: 80%; background: white; border: 1px solid #ccc; padding: 20px; overflow-y: auto; z-index: 1000;">
-    <button onclick="closePopup()" class="btn btn-danger" style="position: absolute; top: 10px; right: 10px;">ปิด</button>
-    <h3>สรุปการนำส่งรายวัน</h3>
-  <div>
-    <label for="startDate">วันที่เริ่มต้น:</label>
-    <input type="date" id="startDate">
-    <label for="endDate">วันที่สิ้นสุด:</label>
-    <input type="date" id="endDate">
-    <svg onclick="fetchSummariesByDay()" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16" style="cursor: pointer;">
-      <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85zm-5.344.656a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
-    </svg>
-    <button onclick="resetDates()" style="background: none; border: none; color: inherit; cursor: pointer;">Clear</button>
-  </div>
-  <br>
-    <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
-      <table class="table table-bordered">
-        <thead>
-          <tr>
-            <th>วันที่</th>
-            <th>จังหวัด</th>
-            <th>จำนวนภาพ</th>
-          </tr>
-        </thead>
-        <tbody id="summaryTableBody"></tbody>
-      </table>
+    <div id="summaryPopup" class="popup-container"
+      style="display: none; position: fixed; top: 10%; left: 10%; width: 80%; height: 80%; background: white; border: 1px solid #ccc; padding: 20px; overflow-y: auto; z-index: 1000;">
+      <button onclick="closePopup()" class="btn btn-danger"
+        style="position: absolute; top: 10px; right: 10px;">ปิด</button>
+      <h3>สรุปการนำส่งรายวัน</h3>
+      <div>
+        <label for="startDate">วันที่เริ่มต้น:</label>
+        <input type="date" id="startDate">
+        <label for="endDate">วันที่สิ้นสุด:</label>
+        <input type="date" id="endDate">
+        <svg onclick="fetchSummariesByDay()" xmlns="http://www.w3.org/2000/svg" width="16" height="16"
+          fill="currentColor" class="bi bi-search" viewBox="0 0 16 16" style="cursor: pointer;">
+          <path
+            d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85zm-5.344.656a5 5 0 1 1 0-10 5 5 0 0 1 0 10z" />
+        </svg>
+        <button onclick="resetDates()"
+          style="background: none; border: none; color: inherit; cursor: pointer;">Clear</button>
+      </div>
+      <br>
+      <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>วันที่</th>
+              <th>จังหวัด</th>
+              <th>จำนวนภาพ</th>
+            </tr>
+          </thead>
+          <tbody id="summaryTableBody"></tbody>
+        </table>
+      </div>
     </div>
-  </div>
 
-  <div class="card p-3 m-3" id="xxxcard">
-    <h5 class="card-title">ตารางสรุปการนำส่งของประชาชนทั่วไป</h5>
-    <br>
-    <div class="table-responsive">
-      <table id="patientHistTable" class="table table-bordered" >
-        <thead>
-          <tr class="text-dark" style="width: 100%;">
-            <th rowspan="2" class="align-middle" style="width: 10%;">ผู้นำส่ง</th>
-            <th rowspan="2" class="align-middle text-center" style="width: 10%;">จำนวนภาพ</th>
-            <th colspan="3" class="text-center" style="width: 20%;">ผลคำวินิจฉัยโดย AI</th>
-            <th colspan="7" class="text-center" style="width: 60%;">ความคิดเห็นของทันตแพทย์ที่เข้าร่วมโครงการ</th>
-          </tr>
-          <tr>
-            <th class="text-center align-middle">OPMD</th>
-            <th class="text-center align-middle">OSCC</th>
-            <th class="text-center align-middle">NORMAL</th>
-
-            <th class="text-center align-middle" style="width: 8.5%;">OPMD</th>
-            <th class="text-center align-middle" style="width: 8.5%;">OSCC</th>
-            <th class="text-center align-middle" style="width: 8.5%;">NORMAL</th>
-            <th class="text-center align-middle" style="width: 8.5%;">ภาพไม่ได้มาตรฐาน</th>
-            <th class="text-center align-middle" style="width: 8.5%;">อื่น ๆ</th>
-            <th class="text-center align-middle" style="width: 8.5%;">ความแม่นยำ (%)</th>
-            <th class="text-center align-middle" style="width: 9%;">ภาพที่ยังไม่ได้ตรวจ</th>
-          </tr>
-        </thead>
-        <tbody id = FirstTable> 
-        </tbody>
-      </table>
-    </div>
-    <br>
-  </div>
-  <div class="card p-3 m-3" id="card">
-    <h5 class="card-title">ตารางสรุปการนำส่งของบุคลากรทางการแพทย์</h5>
-    <br>
-    <div class="table-responsive">
-      <table id="patientHistTable" class="table table-bordered" >
-        <thead>
-          <tr class="text-dark" style="width: 100%;">
-            <th rowspan="2" class="align-middle" style="width: 10%;">ผู้นำส่ง</th>
-            <th rowspan="2" class="align-middle text-center" style="width: 10%;">จำนวนภาพ</th>
-            <th colspan="3" class="text-center" style="width: 30%;">ผลคำวินิจฉัยโดย AI</th>
-            <th colspan="7" class="text-center" style="width: 50%;">ความคิดเห็นต่อผลการวินิจฉัยของ AI</th>
-          </tr>
-          <tr>
-            <th class="text-center align-middle">OPMD</th>
-            <th class="text-center align-middle">OSCC</th>
-            <th class="text-center align-middle">NORMAL</th>
-            <th class="text-center align-middle" style="width: 30%;">Agree</th>
-            <th class="text-center align-middle" style="width: 30%;">Dissagree</th>
-          </tr>
-        </thead>
-        <tbody id="specialistTable">
-        </tbody>
-      </table>
-    </div>
-  </div>
-    <div class="card p-3 m-3" id="card">
+    <div class="card p-3 mt-3" id="xxxcard">
+      <h5 class="card-title">ตารางสรุปการนำส่งของประชาชนทั่วไป</h5>
+      <br>
       <div class="table-responsive">
-        <table id="summaryTable" class="table table-bordered" >
+        <table id="patientHistTable" class="table table-bordered">
           <thead>
             <tr class="text-dark" style="width: 100%;">
-              <th rowspan="2" style="width: 40%;" class="align-middle">สรุปจำนวนรูปทั้งหมด ที่นำส่งโดยประชาชนทั่วไปและทันตบุคลากร</th>
+              <th rowspan="2" class="align-middle" style="width: 10%;">ผู้นำส่ง</th>
+              <th rowspan="2" class="align-middle text-center" style="width: 10%;">จำนวนภาพ</th>
+              <th colspan="3" class="text-center" style="width: 20%;">ผลคำวินิจฉัยโดย AI</th>
+              <th colspan="7" class="text-center" style="width: 60%;">ความคิดเห็นของทันตแพทย์ที่เข้าร่วมโครงการ</th>
+            </tr>
+            <tr>
+              <th class="text-center align-middle">OPMD</th>
+              <th class="text-center align-middle">OSCC</th>
+              <th class="text-center align-middle">NORMAL</th>
+
+              <th class="text-center align-middle" style="width: 8.5%;">OPMD</th>
+              <th class="text-center align-middle" style="width: 8.5%;">OSCC</th>
+              <th class="text-center align-middle" style="width: 8.5%;">NORMAL</th>
+              <th class="text-center align-middle" style="width: 8.5%;">ภาพไม่ได้มาตรฐาน</th>
+              <th class="text-center align-middle" style="width: 8.5%;">อื่น ๆ</th>
+              <th class="text-center align-middle" style="width: 8.5%;">ความแม่นยำ (%)</th>
+              <th class="text-center align-middle" style="width: 9%;">ภาพที่ยังไม่ได้ตรวจ</th>
+            </tr>
+          </thead>
+          <tbody id=FirstTable>
+          </tbody>
+        </table>
+      </div>
+      <br>
+    </div>
+    <div class="card p-3 mt-3" id="card">
+      <h5 class="card-title">ตารางสรุปการนำส่งของบุคลากรทางการแพทย์</h5>
+      <br>
+      <div class="table-responsive">
+        <table id="patientHistTable" class="table table-bordered">
+          <thead>
+            <tr class="text-dark" style="width: 100%;">
+              <th rowspan="2" class="align-middle" style="width: 10%;">ผู้นำส่ง</th>
+              <th rowspan="2" class="align-middle text-center" style="width: 10%;">จำนวนภาพ</th>
+              <th colspan="3" class="text-center" style="width: 30%;">ผลคำวินิจฉัยโดย AI</th>
+              <th colspan="7" class="text-center" style="width: 50%;">ความคิดเห็นต่อผลการวินิจฉัยของ AI</th>
+            </tr>
+            <tr>
+              <th class="text-center align-middle">OPMD</th>
+              <th class="text-center align-middle">OSCC</th>
+              <th class="text-center align-middle">NORMAL</th>
+              <th class="text-center align-middle" style="width: 30%;">Agree</th>
+              <th class="text-center align-middle" style="width: 30%;">Dissagree</th>
+            </tr>
+          </thead>
+          <tbody id="specialistTable">
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card p-3 mt-3" id="card">
+      <div class="table-responsive">
+        <table id="summaryTable" class="table table-bordered">
+          <thead>
+            <tr class="text-dark" style="width: 100%;">
+              <th rowspan="2" style="width: 40%;" class="align-middle">สรุปจำนวนรูปทั้งหมด
+                ที่นำส่งโดยประชาชนทั่วไปและทันตบุคลากร</th>
               <th rowspan="2" style="width: 20%;" class="align-middle text-center">จำนวนภาพ</th>
               <th colspan="3" style="width: 40%;" class="text-center">ผลคำวินิจฉัยโดย AI</th>
             </tr>
@@ -112,13 +121,34 @@
               <th class="text-center">NORMAL</th>
             </tr>
           </thead>
-          <tbody id="pictureCountTable"> 
+          <tbody id="pictureCountTable">
           </tbody>
         </table>
       </div>
     </div>
-</div>
-</div>
+    <div class="card p-3 mt-3" id="card">
+      <h5 class="card-title">ตารางสรุปจำนวนผู้ใช้งานระบบ</h5>
+      <br>
+      <div class="table-responsive">
+        <table id="countAcc" class="table table-bordered">
+          <thead>
+            <tr class="text-dark" style="width: 100%;">
+              <th rowspan="2" class="align-middle" style="width: 40%;">
+                จำนวนบัญชีผู้ใช้งานทั้งหมด</th>
+              <th rowspan="2" class="align-middle text-center" style="width: 20%;">จำนวนบัญชี</th>
+              <th colspan="2" class="text-center" style="width: 40%;">สถานะการใช้งาน</th>
+            </tr>
+            <tr>
+              <th class="text-center align-middle">บัญชีผู้ใช้ที่เคยส่งรูป</th>
+              <th class="text-center align-middle">บัญชีผู้ใช้ที่ยังไม่เคยส่งรูป</th>
+            </tr>
+          </thead>
+          <tbody id="countAccTable">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </div>
 <script>
   let isProvincePopulated = false;
@@ -131,57 +161,58 @@
     mainContent.style.display = 'none';
     loadingIndicator.style.display = 'block';
     let fetchReport = ""
-    if(province == "ทั้งประเทศ"){
+    if (province == "ทั้งประเทศ") {
       fetchReport = fetch(`/report_api/`, {
-      method: 'GET',
-      headers: {
-        'x-role': role, // Custom header with role
-        'Content-Type': 'application/json', // Optional content type
-      },
-    })
-    }else{
+        method: 'GET',
+        headers: {
+          'x-role': role, // Custom header with role
+          'Content-Type': 'application/json', // Optional content type
+        },
+      })
+    } else {
       fetchReport = fetch(`/report_api/?province=${province}`, {
-      method: 'GET',
-      headers: {
-        'x-role': role, // Custom header with role
-        'Content-Type': 'application/json', // Optional content type
-      },
-    })
-  }
-      fetchReport.then((response) => response.json()) // Assuming the response is JSON
+        method: 'GET',
+        headers: {
+          'x-role': role, // Custom header with role
+          'Content-Type': 'application/json', // Optional content type
+        },
+      })
+    }
+    fetchReport.then((response) => response.json()) // Assuming the response is JSON
       .then((data) => {
         populateProvince(data)
         populateFirstTable(data)
         populateSpecialistTable(data)
-        populatePictureCountTable(data) 
-    })
+        populatePictureCountTable(data)
+        populateCountAcc(data)
+      })
       .catch((error) => {
         console.error('Error:', error);
         alert('เกิดข้อผิดพลาดขณะโหลดข้อมูล');
       })
       .finally(() => {
-        mainContent.style.display= 'block';
+        mainContent.style.display = 'block';
         loadingIndicator.style.display = 'none';
       });
   }
-  
+
   function handleProvinceChange() {
-  const province = document.getElementById('filterProvince').value;
-  getReport(province);
-}
+    const province = document.getElementById('filterProvince').value;
+    getReport(province);
+  }
 
 
-  function populateFirstTable(data){
+  function populateFirstTable(data) {
     const firstTable = document.getElementById('FirstTable');
-  firstTable.innerHTML = ''; // Clear existing rows if any
+    firstTable.innerHTML = ''; // Clear existing rows if any
 
-  if (data.patient_and_osm) {
-    // Extract osm, patient, and total data
-    const { osm, patient, total } = data.patient_and_osm;
+    if (data.patient_and_osm) {
+      // Extract osm, patient, and total data
+      const { osm, patient, total } = data.patient_and_osm;
 
-    const createRow = (label, entry) => {
-      const row = document.createElement('tr');
-      row.innerHTML = `
+      const createRow = (label, entry) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
         <td>${label}</td>
         <td class="text-center">
         {% set default_data = {'search': ''} %}
@@ -284,136 +315,156 @@
         </td>
 
       `;
-      firstTable.appendChild(row);
-    };
+        firstTable.appendChild(row);
+      };
 
-    // Add rows for osm, patient, and total
-    createRow('ประชาชน', patient);
-    createRow('อสม.', osm);
-    createRow('รวมทั้งหมด', total);
+      // Add rows for osm, patient, and total
+      createRow('ประชาชน', patient);
+      createRow('อสม.', osm);
+      createRow('รวมทั้งหมด', total);
     }
   }
   function populateSpecialistTable(data) {
-  const specialistTable = document.getElementById('specialistTable');
-  specialistTable.innerHTML = ''; // Clear existing rows if any
+    const specialistTable = document.getElementById('specialistTable');
+    specialistTable.innerHTML = ''; // Clear existing rows if any
 
-  if (data.specialist && Array.isArray(data.specialist)) {
-    data.specialist.forEach((specialist, index) => {
-      const isLastSpecialist = index === data.specialist.length - 1
-      const row = document.createElement('tr');
+    if (data.specialist && Array.isArray(data.specialist)) {
+      data.specialist.forEach((specialist, index) => {
+        const isLastSpecialist = index === data.specialist.length - 1
+        const row = document.createElement('tr');
 
-      // Populate cells for the current specialist
-      row.innerHTML = `
-        <td>${isLastSpecialist ? 'รวมทั้งหมด' : specialist.job }</td>
-        <td class="text-center">${specialist.total_pic }</td>
-        <td class="text-center">${specialist.ai_predict.opmd }</td>
-        <td class="text-center">${specialist.ai_predict.oscc }</td>
-        <td class="text-center">${specialist.ai_predict.normal }</td>
-        <td class="text-center" >${specialist.dentist_diagnose.agree }</td>
+        // Populate cells for the current specialist
+        row.innerHTML = `
+        <td>${isLastSpecialist ? 'รวมทั้งหมด' : specialist.job}</td>
+        <td class="text-center">${specialist.total_pic}</td>
+        <td class="text-center">${specialist.ai_predict.opmd}</td>
+        <td class="text-center">${specialist.ai_predict.oscc}</td>
+        <td class="text-center">${specialist.ai_predict.normal}</td>
+        <td class="text-center" >${specialist.dentist_diagnose.agree}</td>
         <td class="text-center">${specialist.dentist_diagnose.disagree}</td>
       `;
 
-      specialistTable.appendChild(row);
-    });
+        specialistTable.appendChild(row);
+      });
+    }
   }
-}
 
- function populatePictureCountTable(data){
-  const pictureCountTable = document.getElementById('pictureCountTable')
-  pictureCountTable.innerHTML = ''
-  if(data.total_pic){
-    const row = document.createElement('tr')
-    row.innerHTML = `
+  function populatePictureCountTable(data) {
+    const pictureCountTable = document.getElementById('pictureCountTable')
+    pictureCountTable.innerHTML = ''
+    if (data.total_pic) {
+      const row = document.createElement('tr')
+      row.innerHTML = `
     <td>รวม</td>
     <td class="text-center">${data.total_pic.total_pic}</td>
-    <td class="text-center">${data.total_pic.ai_predict.opmd }</td>
-    <td class="text-center">${data.total_pic.ai_predict.oscc }</td>
-    <td class="text-center">${data.total_pic.ai_predict.normal }</td>
+    <td class="text-center">${data.total_pic.ai_predict.opmd}</td>
+    <td class="text-center">${data.total_pic.ai_predict.oscc}</td>
+    <td class="text-center">${data.total_pic.ai_predict.normal}</td>
     `
 
-    pictureCountTable.appendChild(row);
-  }
- }
-
- function populateProvince(data) {
-  const provinceDropdown = document.getElementById('filterProvince');
-
-  if (!isProvincePopulated && provinceDropdown.options.length <= 1) {
-    const defaultOption = document.createElement('option');
-    defaultOption.value = "ทั้งประเทศ";
-    defaultOption.textContent = "ทั้งประเทศ";
-    provinceDropdown.appendChild(defaultOption);
-
-    let count = 1;
-    data.total_province.forEach(province => {
-      const option = document.createElement('option');
-      option.value = province;
-
-      // Add medal emoji for the first three provinces
-      if (count === 1) {
-        option.textContent = "🥇 " + province;
-      } else if (count === 2) {
-        option.textContent = "🥈 " + province;
-      } else if (count === 3) {
-        option.textContent = "🥉 " + province;
-      } else {
-        option.textContent = province;
-      }
-
-      provinceDropdown.appendChild(option);
-      count++;
-    });
-
-    isProvincePopulated = true;
-  }
-}
-function fetchSummariesByDay() {
-  const province = document.getElementById('filterProvince').value;
-  const startDate = document.getElementById('startDate').value;
-  const endDate = document.getElementById('endDate').value;
-  let url = '/summaries_by_day/';
-  let params = [];
-  
-  if (province !== 'ทั้งประเทศ') {
-    params.push(`province=${province}`);
-  }
-  if (startDate) {
-    params.push(`start_date=${startDate}`);
-  }
-  if (endDate) {
-    params.push(`end_date=${endDate}`);
-  }
-  
-  if (params.length) {
-    url += '?' + params.join('&');
+      pictureCountTable.appendChild(row);
+    }
   }
 
-  fetch(url)
-    .then(response => response.json())
-    .then(data => {
-      const tableBody = document.getElementById('summaryTableBody');
-      tableBody.innerHTML = '';
-      data.forEach(entry => {
-        const row = document.createElement('tr');
-        row.innerHTML = `<td>${new Date(entry.date).toLocaleDateString()}</td>
+  function populateProvince(data) {
+    const provinceDropdown = document.getElementById('filterProvince');
+
+    if (!isProvincePopulated && provinceDropdown.options.length <= 1) {
+      const defaultOption = document.createElement('option');
+      defaultOption.value = "ทั้งประเทศ";
+      defaultOption.textContent = "ทั้งประเทศ";
+      provinceDropdown.appendChild(defaultOption);
+
+      let count = 1;
+      data.total_province.forEach(province => {
+        const option = document.createElement('option');
+        option.value = province;
+
+        // Add medal emoji for the first three provinces
+        if (count === 1) {
+          option.textContent = "🥇 " + province;
+        } else if (count === 2) {
+          option.textContent = "🥈 " + province;
+        } else if (count === 3) {
+          option.textContent = "🥉 " + province;
+        } else {
+          option.textContent = province;
+        }
+
+        provinceDropdown.appendChild(option);
+        count++;
+      });
+
+      isProvincePopulated = true;
+    }
+  }
+
+  function populateCountAcc(data) {
+    const countAcc = document.getElementById('countAccTable')
+    countAcc.innerHTML = ''
+    if (data.total_account) {
+      data.total_account.forEach((category, idx) => {
+        const isLastCategory = idx === data.total_account.length - 1
+        const row = document.createElement('tr')
+        row.innerHTML = `
+        <td>${category.job_category}</td>
+        <td class="text-center">${category.total_users}</td>
+        <td class="text-center">${category.submitted_users}</td>
+        <td class="text-center">${category.not_submitted_users}</td>
+      `;
+        countAcc.appendChild(row)
+      })
+    }
+  }
+
+
+  function fetchSummariesByDay() {
+    const province = document.getElementById('filterProvince').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    let url = '/summaries_by_day/';
+    let params = [];
+
+    if (province !== 'ทั้งประเทศ') {
+      params.push(`province=${province}`);
+    }
+    if (startDate) {
+      params.push(`start_date=${startDate}`);
+    }
+    if (endDate) {
+      params.push(`end_date=${endDate}`);
+    }
+
+    if (params.length) {
+      url += '?' + params.join('&');
+    }
+
+    fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        const tableBody = document.getElementById('summaryTableBody');
+        tableBody.innerHTML = '';
+        data.forEach(entry => {
+          const row = document.createElement('tr');
+          row.innerHTML = `<td>${new Date(entry.date).toLocaleDateString()}</td>
                          <td>${entry.province}</td>
                          <td>${entry.count}</td>`;
-        tableBody.appendChild(row);
+          tableBody.appendChild(row);
+        });
+        document.getElementById('summaryPopup').style.display = 'block';
+      })
+      .catch(error => {
+        console.error('Error fetching summaries:', error);
+        alert('เกิดข้อผิดพลาดขณะโหลดข้อมูล');
       });
-      document.getElementById('summaryPopup').style.display = 'block';
-    })
-    .catch(error => {
-      console.error('Error fetching summaries:', error);
-      alert('เกิดข้อผิดพลาดขณะโหลดข้อมูล');
-    });
-}
+  }
 
-function closePopup() {
-  document.getElementById('summaryPopup').style.display = 'none';
-}
-function resetDates() {
-  document.getElementById('startDate').value = '';
-  document.getElementById('endDate').value = '';
-}
+  function closePopup() {
+    document.getElementById('summaryPopup').style.display = 'none';
+  }
+  function resetDates() {
+    document.getElementById('startDate').value = '';
+    document.getElementById('endDate').value = '';
+  }
 </script>
 {% endblock %}
