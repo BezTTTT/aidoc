@@ -673,7 +673,7 @@ def adminRecord2():
     return render_template("/newTemplate/admin_diagnosis.html")
 
 #followup for dentist page
-@bp.route('/followup/admin', methods=['GET'])
+@bp.route('/followup/admin', methods=['GET','POST'])
 @login_required
 @admin_only
 def followupManage():
