@@ -98,11 +98,12 @@ def record_osm_group():
     # SQL query parts
     sql_select = '''
         SELECT submission_record.id, channel, fname,
-            patient_user.name, patient_user.surname, patient_user.birthdate, patient_user.province,
-            case_id, sender_id, patient_id, dentist_id, special_request, sender_phone, 
-            location_province, location_zipcode, 
+            patient_user.name AS patient_name, patient_user.surname AS patient_surname, patient_user.birthdate, patient_user.province,
+            case_id, sender_id, patient_id, dentist_id, special_request, sender_phone,
+            location_district, location_amphoe, location_province, location_zipcode, 
             dentist_feedback_comment, dentist_feedback_code,
-            ai_prediction, submission_record.created_at, osm_user.name as sender_name, osm_user.surname as sender_surname
+            ai_prediction, submission_record.created_at,
+            osm_user.name as sender_name, osm_user.surname as sender_surname, osm_user.phone as osm_phone
     '''
     sql_count = 'SELECT count(*) AS full_count'
     sql_from = '''
