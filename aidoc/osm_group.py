@@ -1,6 +1,6 @@
 import json
 from flask import Blueprint, jsonify, render_template, request, session, g
-from aidoc.auth import login_required
+from aidoc.auth import login_required, reload_user_profile
 from aidoc.db import get_db
 
 from aidoc.webapp import calculate_age, construct_osm_filter_sql, format_thai_datetime
@@ -13,6 +13,7 @@ bp = Blueprint('osm_group', __name__)
 @login_required
 def render_osm_group_record():
     
+    reload_user_profile(session['user_id'])
     # Prevent not supervisor accesses
     if(g.user['group_info']['is_supervisor'] == 0 or g.user['group_info']['group_id'] == -1 ):
         return render_template('newTemplate/osm_group_record.html', dataCount=0, paginated_data=[], current_page=1, total_pages=1, data={}, osm_filter_data={})
@@ -167,6 +168,12 @@ def record_osm_group():
 @bp.route('/member-manage/', methods=['GET'])
 @login_required
 def render_osm_group_manage():
+
+    reload_user_profile(session['user_id'])
+     # Prevent not supervisor accesses
+    if(g.user['group_info']['is_supervisor'] == 0 or g.user['group_info']['group_id'] == -1 ):
+        return render_template('newTemplate/osm_group_manage.html', group_id=-1, is_user_supervisor=0, group_name="ไม่มีข้อมูล")
+    
     user_id = session['user_id']
     db, cursor = get_db()
 
