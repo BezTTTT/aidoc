@@ -183,17 +183,16 @@
                         <h6 class="image-name">ชื่อผู้ป่วย : <i>ไม่มีข้อมูล</i> </h6>
                     {% endif%}
                     {% if item['location_zipcode'] is not none %}
-                        <h6 class="image-name">สถานที่คัดกรอง : จ.{{ item['location_province'] }} ({{ item['location_zipcode'] }})</h6>
+                        {% if item['location_district'] is not none %}
+                            <h6 class="image-name">สถานที่คัดกรอง : ต.{{ item['location_district'] }} อ.{{ item['location_amphoe'] }}</h6>
+                            <h6 class="image-name">จังหวัด : {{ item['location_province'] }} ({{ item['location_zipcode'] }})</h6>
+                        {% else %}
+                            <h6 class="image-name">สถานที่คัดกรอง : จ.{{ item['location_province'] }} ({{ item['location_zipcode'] }})</h6>
+                        {% endif %}
+                        
                     {% else %}
                         <h6 class="image-name">สถานที่คัดกรอง : จ.{{ item['location_province'] }} </h6>
                     {% endif %}
-                    <h6 class="image-name" >ช่องทาง :
-                        {% if item['sender_phone'] is none %}
-                            ระบบผู้ตรวจคัดกรอง
-                        {% else %}
-                            ระบบประชาชน
-                        {% endif %}
-                    </h6>
                     <h6>ชื่อผู้นำส่ง : {{ item['sender_name'] }} {{ item['sender_surname'] }}</h6>
                     <h6 class="">นำส่งวันที่ : {{ item['formatted_created_at'] }} น.</h6>
                     <h6 class="fs-6 card-subtitle text-muted mb-2">
@@ -205,6 +204,14 @@
                             {% else %}
                                 OSCC
                             {% endif %}
+                    </h6>
+                    <h6 class="fs-6 card-subtitle text-muted mb-2">
+                        ผลการวินิจฉัยของทันตแพทย์: 
+                        {% if item['dentist_feedback_code'] is none %}
+                            [ยังไม่ได้ตรวจ]
+                        {% else %}
+                            {{item['dentist_feedback_code']}}
+                        {% endif %}
                     </h6>
                     <div class="d-grid gap-2 d-md-flex justify-content-md-center">
                         <form action="{{ url_for('webapp.diagnosis', role='osm', img_id=item['id']) }}" id="form_id{{item['id']}}" method="post"> </form>

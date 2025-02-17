@@ -93,6 +93,10 @@ def create_app(test_config=None):
     app.logger.handlers.clear()
     app.logger.addHandler(file_handler)
     app.logger.addHandler(console_handler)
+    werkzeug_logger = logging.getLogger('werkzeug')
+    werkzeug_logger.setLevel(logging.DEBUG)
+    werkzeug_logger.addHandler(file_handler)
+    werkzeug_logger.addHandler(console_handler)
 
     print('\033[1m' + '\033[93m' + ' AIDOC Application Ready ... ' + '\033[0m')
 

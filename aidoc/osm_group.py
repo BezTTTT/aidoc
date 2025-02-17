@@ -1,7 +1,7 @@
 from functools import singledispatch
 import json
 from flask import Blueprint, jsonify, render_template, request, session, g
-from aidoc.auth import login_required
+from aidoc.auth import login_required, reload_user_profile
 from aidoc.db import get_db
 
 from aidoc.webapp import calculate_age, construct_osm_filter_sql, format_thai_datetime
@@ -14,6 +14,7 @@ bp = Blueprint('osm_group', __name__)
 @login_required
 def render_osm_group_record():
     
+    reload_user_profile(session['user_id'])
     # Prevent not supervisor accesses
     if(g.user['group_info']['is_supervisor'] == 0 or g.user['group_info']['group_id'] == -1 ):
         return render_template('newTemplate/osm_group_record.html', dataCount=0, paginated_data=[], current_page=1, total_pages=1, data={}, osm_filter_data={})
@@ -107,11 +108,12 @@ def _(page: int, records_per_page: int):
     # SQL query parts
     sql_select = '''
         SELECT submission_record.id, channel, fname,
-            patient_user.name, patient_user.surname, patient_user.birthdate, patient_user.province,
-            case_id, sender_id, patient_id, dentist_id, special_request, sender_phone, 
-            location_province, location_zipcode, 
+            patient_user.name AS patient_name, patient_user.surname AS patient_surname, patient_user.birthdate, patient_user.province,
+            case_id, sender_id, patient_id, dentist_id, special_request, sender_phone,
+            location_district, location_amphoe, location_province, location_zipcode, 
             dentist_feedback_comment, dentist_feedback_code,
-            ai_prediction, submission_record.created_at, osm_user.name as sender_name, osm_user.surname as sender_surname
+            ai_prediction, submission_record.created_at,
+            osm_user.name as sender_name, osm_user.surname as sender_surname, osm_user.phone as osm_phone
     '''
     sql_count = 'SELECT count(*) AS full_count'
     sql_from = '''
@@ -175,6 +177,12 @@ def _(page: int, records_per_page: int):
 @bp.route('/member-manage/', methods=['GET'])
 @login_required
 def render_osm_group_manage():
+
+    reload_user_profile(session['user_id'])
+     # Prevent not supervisor accesses
+    if(g.user['group_info']['is_supervisor'] == 0 or g.user['group_info']['group_id'] == -1 ):
+        return render_template('newTemplate/osm_group_manage.html', group_id=-1, is_user_supervisor=0, group_name="ไม่มีข้อมูล")
+    
     user_id = session['user_id']
     db, cursor = get_db()
 

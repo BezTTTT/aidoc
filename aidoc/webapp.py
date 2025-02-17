@@ -413,6 +413,7 @@ def record(role):
     elif role=='dentist':
         paginated_data, supplemental_data, dataCount = record_dentist()
     elif role=='osm':
+        reload_user_profile(session['user_id']) # Reload user profile to get the latest data 
         paginated_data, supplemental_data, dataCount = record_osm()
     
     # Further process each item in paginated_data
@@ -667,7 +668,7 @@ def editByRole(role):
 # region report
 @bp.route('/admin/report/')
 @login_required
-@specialist_only
+@admin_only
 def report():
     return render_template("/newTemplate/submission_report.html")
 
@@ -902,7 +903,8 @@ def record_specialist(admin=False):
                 LEFT JOIN followup_request ON submission_record.id = followup_request.submission_id
                 LEFT JOIN retrain_request ON submission_record.id = retrain_request.submission_id
                 WHERE ''' + filter_query + '''
-            ) AS c;
+            ) AS c
+            ORDER BY sr.created_at DESC;
             '''
             val = (records_per_page, offset)
         else:
@@ -946,7 +948,8 @@ def record_specialist(admin=False):
                 LEFT JOIN user AS patient_user ON sr.patient_id = patient_user.id
                 LEFT JOIN user AS sender ON sr.sender_id = sender.id
                 LEFT JOIN followup_request ON sr.id = followup_request.submission_id
-                LEFT JOIN retrain_request ON sr.id = retrain_request.submission_id;
+                LEFT JOIN retrain_request ON sr.id = retrain_request.submission_id
+                ORDER BY sr.created_at DESC;
                 '''
             val = (records_per_page, offset)
     else: # Specialist
@@ -1028,7 +1031,8 @@ def record_specialist(admin=False):
                     LEFT JOIN retrain_request 
                         ON submission_record.id = retrain_request.submission_id
                     WHERE ''' + filter_query + '''
-                ) AS c;
+                ) AS c
+                ORDER BY sr.created_at DESC;
                 '''
             val = (records_per_page, offset)
         else:
@@ -1082,7 +1086,8 @@ def record_specialist(admin=False):
                     FROM submission_record
                     INNER JOIN patient_case_id 
                         ON submission_record.id = patient_case_id.id
-                ) AS c;
+                ) AS c
+                ORDER BY sr.created_at DESC;
                 '''
             val = (records_per_page, offset)
     
@@ -1268,6 +1273,7 @@ def record_dentist():
                 FROM submission_record
                 WHERE (channel = 'DENTIST' AND sender_id = %s)
             ) AS c;
+            ORDER BY sr.created_at DESC
             '''
         val = (session['user_id'], records_per_page, offset, session['user_id'])
 
@@ -1427,7 +1433,8 @@ def record_osm():
                 LEFT JOIN user AS sender_user
                     ON submission_record.sender_phone = sender_user.phone
                 WHERE ''' + filter_query + '''
-            ) AS c;
+            ) AS c
+            ORDER BY sr.created_at DESC;
             '''
         val = (session['user_id'],g.user['phone'],records_per_page, offset,session['user_id'],g.user['phone'])
     else:
@@ -1506,7 +1513,8 @@ def record_osm():
                 ) AS submission_record_limited
                 INNER JOIN submission_record
                     ON submission_record.id = submission_record_limited.id
-            ) AS c;
+            ) AS c
+            ORDER BY sr.created_at DESC;
             '''
         val = (session['user_id'], g.user['phone'], records_per_page, offset, session['user_id'], g.user['phone'])
     
