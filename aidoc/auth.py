@@ -301,12 +301,15 @@ def log_last_user_login(user_id):
 def logout():
     if 'login_mode' in session and session['login_mode']=='general':
         session.clear()
+        g.pop('user', None)
         return redirect('/general')
     elif 'login_mode' in session and session['login_mode']=='dentist':
         session.clear()
+        g.pop('user', None)
         return redirect(url_for('auth.dentist_index'))
     else:
         session.clear()
+        g.pop('user', None)
         return redirect('/')
 
 def login_required(view):

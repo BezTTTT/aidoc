@@ -178,8 +178,7 @@ def _(page: int, records_per_page: int):
 @login_required
 def render_osm_group_manage():
 
-    reload_user_profile(session['user_id'])
-     # Prevent not supervisor accesses
+    # Prevent not supervisor accesses
     if(g.user['group_info']['is_supervisor'] == 0 or g.user['group_info']['group_id'] == -1 ):
         return render_template('newTemplate/osm_group_manage.html', group_id=-1, is_user_supervisor=0, group_name="ไม่มีข้อมูล")
     
@@ -290,6 +289,7 @@ def add_user_to_group():
         "INSERT INTO osm_group_member (group_id, osm_id) VALUES (%s, %s)",
         (group_id, user_id)
     )
+    reload_user_profile(session['user_id'])
     return json.dumps({'message': 'User added to group'}), 200
     
 
@@ -311,6 +311,7 @@ def remove_from_group():
         "DELETE FROM osm_group_member WHERE osm_id = %s AND group_id = %s",
         (user_id, group_id)
     )
+    reload_user_profile(session['user_id'])
     return json.dumps({"message": "User removed from group."}), 200
 
 
@@ -428,6 +429,7 @@ def promote_supervisor():
             (group_provinces, group_id["group_id"],)
         )
 
+    reload_user_profile(session['user_id'])
     return jsonify({'message': 'Supervisor removed successfully'}), 200
 
 
@@ -466,7 +468,7 @@ def update_group_name():
         "UPDATE osm_group SET group_name = %s WHERE group_id = %s",
         (group_name, group_id)
     )
-
+    reload_user_profile(session['user_id'])
     return jsonify({'message': 'Name updated successfully'}), 200
 
 

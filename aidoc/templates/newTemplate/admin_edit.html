@@ -141,7 +141,9 @@
             groupSelectedProvinceList = data.group_provinces;
             console.log(data.group_provinces)
             groupSelectedProvinceList.forEach(province => {
-              document.getElementById(`province_${province}`).checked = true;
+              if(province != ''){
+                document.getElementById(`province_${province}`).checked = true;
+              }
             });
           }
           console.log(is_supervisor)

@@ -7,6 +7,9 @@
   กำลังโหลดข้อมูล...
 </div>
 <div id="mainContainer">
+  <div id="backgroundFreeze"
+    style="position:fixed; top:0; left:0; width:100vw; height:100vh; background-Color: rgba(0, 0, 0, 0.5); z-index:9998; display:none">
+  </div>
   <div class="m-3">
     <h2>รายงานสรุปการนำส่งรูปรายจังหวัด</h2>
     <select name="selectedProvince" id="filterProvince" onchange="handleProvinceChange()"></select>
@@ -439,18 +442,9 @@
       url += '?' + params.join('&');
     }
 
-    // Freeze the background
     document.body.style.overflow = 'hidden';  // Prevent scrolling
-    const backgroundFreeze = document.createElement('div');
-    backgroundFreeze.id = 'backgroundFreeze';
-    backgroundFreeze.style.position = 'fixed';
-    backgroundFreeze.style.top = '0';
-    backgroundFreeze.style.left = '0';
-    backgroundFreeze.style.width = '100%';
-    backgroundFreeze.style.height = '100%';
-    backgroundFreeze.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-    backgroundFreeze.style.zIndex = '9998';  // Make sure it's under the popup
-    document.body.appendChild(backgroundFreeze);
+    const backgroundFreeze = document.getElementById('backgroundFreeze');
+    backgroundFreeze.style.display = 'block';
 
     // Show the popup
     const summaryPopup = document.getElementById('summaryPopup');
@@ -465,8 +459,8 @@
         data.forEach(entry => {
           const row = document.createElement('tr');
           row.innerHTML = `<td>${new Date(entry.date).toLocaleDateString()}</td>
-                         <td>${entry.province}</td>
-                         <td>${entry.count}</td>`;
+      <td>${entry.province}</td>
+      <td>${entry.count}</td>`;
           tableBody.appendChild(row);
         });
       })
@@ -474,28 +468,27 @@
         console.error('Error fetching summaries:', error);
         alert('เกิดข้อผิดพลาดขณะโหลดข้อมูล');
       });
-}
-
-function closePopup() {
-  // Hide the popup
-  document.getElementById('summaryPopup').style.display = 'none';
-  
-  // Restore background and scrolling
-  document.body.style.overflow = '';  // Allow scrolling again
-  document.body.removeChild(document.getElementById('backgroundFreeze'));  // Remove the background freeze
-}
-
-function resetDates() {
-  // Reset the date fields
-  document.getElementById('startDate').value = '';
-  document.getElementById('endDate').value = '';
-  
-  // Optionally, reset the background freeze in case it's still active
-  if (document.getElementById('backgroundFreeze')) {
-      document.body.style.overflow = '';  // Allow scrolling again
-      document.body.removeChild(document.getElementById('backgroundFreeze'));  // Remove the background freeze
   }
-}
+
+  function closePopup() {
+    // Hide the popup
+    document.getElementById('summaryPopup').style.display = 'none';
+
+    // Restore background and scrolling
+    document.body.style.overflow = '';  // Allow scrolling again
+    document.getElementById('backgroundFreeze').style.display = 'none';
+  }
+
+  function resetDates() {
+    // Reset the date fields
+    document.getElementById('startDate').value = '';
+    document.getElementById('endDate').value = '';
+
+    // Optionally, reset the background freeze in case it's still active
+    if (document.getElementById('backgroundFreeze')) {
+      document.body.style.overflow = '';  // Allow scrolling again
+    }
+  }
 
 </script>
 {% endblock %}
