@@ -28,8 +28,8 @@ def update_table_user(cursor, data):
                 select_line = f"{key} = %s"
                 query_set.append(select_line)
                 param_set.append(value)
-    print(query_set)
-    print(param_set)
+    #print(query_set)
+    #print(param_set)
     if "id" not in data:
         raise ValueError("Missing 'id' field in data")
 

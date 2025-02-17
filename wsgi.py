@@ -1,3 +1,6 @@
+from gevent import monkey
+monkey.patch_all()
+
 from gevent.pywsgi import WSGIServer
 from aidoc import create_app
 import logging
