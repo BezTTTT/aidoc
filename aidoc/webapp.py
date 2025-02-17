@@ -403,6 +403,7 @@ def record(role):
     elif role=='dentist':
         paginated_data, supplemental_data, dataCount = record_dentist()
     elif role=='osm':
+        reload_user_profile(session['user_id']) # Reload user profile to get the latest data 
         paginated_data, supplemental_data, dataCount = record_osm()
     
     # Further process each item in paginated_data
