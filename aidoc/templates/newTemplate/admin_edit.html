@@ -137,14 +137,18 @@
         .then(response => response.json())
         .then(data => {
           is_supervisor = data.is_supervisor;
-          if (is_supervisor && data.group_provinces.length > 0) {
+            if (is_supervisor && data.group_provinces.length > 0) {
             groupSelectedProvinceList = data.group_provinces;
             groupSelectedProvinceList.forEach(province => {
               if(province != ''){
-                document.getElementById(`province_${province}`).checked = true;
+              document.getElementById(`province_${province}`).checked = true;
+              // Move checked province to top
+              const provinceDiv = document.getElementById(`province_${province}`).parentElement;
+              const container = document.getElementById('osm_group_provinces');
+              container.insertBefore(provinceDiv, container.firstChild);
               }
             });
-          }
+            }
           document.getElementById('promoteSupervisor').checked = is_supervisor;
           document.getElementById('groupProvincesSelection').style.display = is_supervisor ? 'block' : 'none';
         })
