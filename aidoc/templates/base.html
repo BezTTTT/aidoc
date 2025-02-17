@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -22,20 +23,24 @@
 
     <!-- CDN link for jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    
+
     <!-- CDN link for DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
     <!-- CDN link for DataTables JS -->
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
 
     {% if data is defined and 'earthchieAPI' in data and data['earthchieAPI'] %}
-        <!-- earthchie/jquery.Thailand.js -->
-        <!-- <script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script> -->
-        <script type="text/javascript" src="https://earthchie.github.io/jquery.Thailand.js/jquery.Thailand.js/dependencies/JQL.min.js"></script>
-        <script type="text/javascript" src="https://earthchie.github.io/jquery.Thailand.js/jquery.Thailand.js/dependencies/typeahead.bundle.js"></script>
-        
-        <link rel="stylesheet" href="https://earthchie.github.io/jquery.Thailand.js/jquery.Thailand.js/dist/jquery.Thailand.min.css">
-        <script type="text/javascript" src="https://earthchie.github.io/jquery.Thailand.js/jquery.Thailand.js/dist/jquery.Thailand.min.js"></script>
+    <!-- earthchie/jquery.Thailand.js -->
+    <!-- <script type="text/javascript" src="https://code.jquery.com/jquery-3.2.1.min.js"></script> -->
+    <script type="text/javascript"
+        src="https://earthchie.github.io/jquery.Thailand.js/jquery.Thailand.js/dependencies/JQL.min.js"></script>
+    <script type="text/javascript"
+        src="https://earthchie.github.io/jquery.Thailand.js/jquery.Thailand.js/dependencies/typeahead.bundle.js"></script>
+
+    <link rel="stylesheet"
+        href="https://earthchie.github.io/jquery.Thailand.js/jquery.Thailand.js/dist/jquery.Thailand.min.css">
+    <script type="text/javascript"
+        src="https://earthchie.github.io/jquery.Thailand.js/jquery.Thailand.js/dist/jquery.Thailand.min.js"></script>
     {% endif %}
     <!-- ALEART -->
     <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
@@ -64,7 +69,8 @@
             <!-- Risk Oral Cancer Artificial intelligence -->
             <a class="navbar-brand">
                 AIDOC
-                <h6 style="font-size: 10px">(Web v.{{config['WEB_VER']}} | AI v.{{config['AI_LESION_VER']}}L + v.{{config['AI_QUALITY_VER']}}Q) </h6>
+                <h6 style="font-size: 10px">(Web v.{{config['WEB_VER']}} | AI v.{{config['AI_LESION_VER']}}L +
+                    v.{{config['AI_QUALITY_VER']}}Q) </h6>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                 data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false"
@@ -74,166 +80,153 @@
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     {% if g.user is not none %}
-                        <!--  Dentist navbar -->
-                        {% if session['login_mode']=='dentist' %} 
-                        <li class="nav-item dropdown">
-                            <a
-                                class="nav-link dropdown-toggle active"
-                                id="otherDropdown"
-                                role="button"
-                                data-bs-toggle="dropdown"
-                                aria-expanded="false"
-                                >
-                                เมนูทันตแพทย์
-                            </a>
-                            <ul class="dropdown-menu" aria-labelledby="otherDropdown">
-                                <li>
-                                    <a class="dropdown-item" href="/upload_image/dentist">นำส่งข้อมูลเพิ่มเติม</a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="/edit/dentist">แก้ไขข้อมูลส่วนตัว</a>
-                                </li>
-                            </ul>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link active" aria-current="page" href="/record/dentist">ประวัติการนำส่งข้อมูล</a>
-                        </li>
-                            <!-- Specialist section, which is a subset of dentist section -->
-                            {% if g.user['is_specialist']==1 %}
-                            <li class="nav-item">
-                                <a class="nav-link active" aria-current="page" href="/record/specialist">ระบบผู้คัดกรองการนำส่ง</a>
+                    <!--  Dentist navbar -->
+                    {% if session['login_mode']=='dentist' %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle active" id="otherDropdown" role="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            เมนูทันตแพทย์
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="otherDropdown">
+                            <li>
+                                <a class="dropdown-item" href="/upload_image/dentist">นำส่งข้อมูลเพิ่มเติม</a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link active" aria-current="page" href="/followup/admin">ระบบผู้เชี่ยวชาญ</a>
+                            <li>
+                                <a class="dropdown-item" href="/edit/dentist">แก้ไขข้อมูลส่วนตัว</a>
                             </li>
-                            {% endif %}
-                            {% if g.user['is_admin']==1%}
-                            <li class="nav-item dropdown">
-                                <a
-                                    class="nav-link dropdown-toggle active"
-                                    id="userManagementDropdown"
-                                    role="button"
-                                    data-bs-toggle="dropdown"
-                                    aria-expanded="false"
-                                    >
-                                    ระบบแอดมิน
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="userManagementDropdown">
-                                    <li>
-                                        <a class="dropdown-item" href="/admin_page">จัดการผู้ใช้งาน</a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="/record/admin">จัดการรูปภาพ</a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" aria-current="page" href="/admin/report/">รายงาน</a>
-                                    </li>
-                                </ul>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/record/dentist">ประวัติการนำส่งข้อมูล</a>
+                    </li>
+                    <!-- Specialist section, which is a subset of dentist section -->
+                    {% if g.user['is_specialist']==1 %}
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page"
+                            href="/record/specialist">ระบบผู้คัดกรองการนำส่ง</a>
+                    </li>
+                    {% endif %}
+                    {% if g.user['is_admin']==1%}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle active" id="userManagementDropdown" role="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            ระบบแอดมิน
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="userManagementDropdown">
+                            <li>
+                                <a class="dropdown-item" href="/admin_page">จัดการผู้ใช้งาน</a>
                             </li>
-                            {% endif %}
+                            <li>
+                                <a class="dropdown-item" href="/record/admin">จัดการรูปภาพ</a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" aria-current="page" href="/admin/report/">รายงาน</a>
+                            </li>
+                        </ul>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/followup/admin">ระบบผู้เชี่ยวชาญ</a>
+                    </li>
+                    </li>
+                    {% endif %}
 
-                        <!--  osm navbar -->
-                        {% elif session['login_mode']=='osm' %}
-                            <li class="nav-item">
-                                <a class="nav-link active" aria-current="page" href="/upload_image/osm">นำส่งข้อมูลเพิ่มเติม</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link active" aria-current="page" href="/record/osm">ประวัติการนำส่งข้อมูล</a>
-                            </li>
-                            
-                            <!-- only supervisor can see this -->
-                            {% if g.user['group_info'] and g.user['group_info']['is_supervisor'] %}
-                            <li class="nav-item">
-                                <a class="nav-link active" aria-current="page" href="/osm_group">กลุ่มผู้ตรวจคัดกรอง</a>
-                            </li>
-                            {% endif %}
+                    <!--  osm navbar -->
+                    {% elif session['login_mode']=='osm' %}
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/upload_image/osm">นำส่งข้อมูลเพิ่มเติม</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/record/osm">ประวัติการนำส่งข้อมูล</a>
+                    </li>
 
-                            <li class="nav-item">
-                                <a class="nav-link active" aria-current="page" href="/edit/osm">แก้ไขข้อมูลส่วนตัว</a>
-                            </li>
+                    <!-- only supervisor can see this -->
+                    {% if g.user['group_info'] and g.user['group_info']['is_supervisor'] %}
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/osm_group">กลุ่มผู้ตรวจคัดกรอง</a>
+                    </li>
+                    {% endif %}
 
-                        <!--  patient navbar -->
-                        {% elif session['login_mode']=='patient' %}
-                            <li class="nav-item">
-                                <a class="nav-link active" aria-current="page" href="/upload_image/patient">นำส่งข้อมูลเพิ่มเติม</a>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/edit/osm">แก้ไขข้อมูลส่วนตัว</a>
+                    </li>
+
+                    <!--  patient navbar -->
+                    {% elif session['login_mode']=='patient' %}
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page"
+                            href="/upload_image/patient">นำส่งข้อมูลเพิ่มเติม</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/record/patient">ประวัติการนำส่งข้อมูล</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/edit/patient">แก้ไขข้อมูลส่วนตัว</a>
+                    </li>
+                    {% endif %}
+
+                    {% if session['general_user'] %}
+                    <!-- English Examples and About -->
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/example">Prediction Examples</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/about">About</a>
+                    </li>
+                    {% else %}
+                    <!-- Thai Examples and About -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle active" id="otherDropdown" role="button"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            เพิ่มเติม
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="otherDropdown">
+                            <li>
+                                <a class="dropdown-item" href="/example">ตัวอย่างการทำนายรอยโรค</a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link active" aria-current="page" href="/record/patient">ประวัติการนำส่งข้อมูล</a>
+                            <li>
+                                <a class="dropdown-item" href="/about">เกี่ยวกับ</a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link active" aria-current="page" href="/edit/patient">แก้ไขข้อมูลส่วนตัว</a>
-                            </li>
-                        {% endif %}
-                        
-                        {% if session['general_user'] %}
-                            <!-- English Examples and About -->
-                            <li class="nav-item">
-                                <a class="nav-link active" aria-current="page" href="/example">Prediction Examples</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link active" aria-current="page" href="/about">About</a>
-                            </li>
-                        {% else %}
-                            <!-- Thai Examples and About -->
-                            <li class="nav-item dropdown">
-                                <a
-                                    class="nav-link dropdown-toggle active"
-                                    id="otherDropdown"
-                                    role="button"
-                                    data-bs-toggle="dropdown"
-                                    aria-expanded="false"
-                                    >
-                                    เพิ่มเติม
-                                </a>
-                                <ul class="dropdown-menu" aria-labelledby="otherDropdown">
-                                    <li>
-                                        <a class="dropdown-item" href="/example">ตัวอย่างการทำนายรอยโรค</a>
-                                    </li>
-                                    <li>
-                                        <a class="dropdown-item" href="/about">เกี่ยวกับ</a>
-                                    </li>
-                                </ul>
-                            </li>
-                        {% endif %}
+                        </ul>
+                    </li>
+                    {% endif %}
                     {% endif %}
                 </ul>
 
                 <!--  navbar footer -->
-                
+
                 {% if g.user is none %}
-                    {% if session['login_mode'] == 'general' %}
-                        <a class="btn btn-success" type="submit" href="/general">Login</a>
-                    {% else %}
-                        <a class="btn btn-success" type="submit" href="/">เข้าสู่ระบบ</a>
-                    {% endif %}
-                {% elif session['general_user'] %}
-                    <div class="me-2">
-                        User: {{g.user['name']}} {{g.user['surname']}}, {{g.user['job_position']}} ( 👨‍🔬 )
-                    </div>
-                    <div class="d-flex flex-column align-items-center">
-                        <form action="{{ url_for('auth.logout') }}" method="get" enctype="multipart/form-data">
-                            <button class="btn btn-danger" type="submit" id="Logoutbtn">
-                                Logout
-                            </button>
-                        </form>
-                    </div>
+                {% if session['login_mode'] == 'general' %}
+                <a class="btn btn-success" type="submit" href="/general">Login</a>
                 {% else %}
-                    <div class="me-2">
-                        ชื่อผู้ใช้งาน: {{g.user['name']}} {{g.user['surname']}} (
-                            {% if g.user['is_patient'] == 1 %}👨‍🦽{% endif %}
-                            {% if g.user['is_osm'] == 1 %}👨‍🚒{% endif %}
-                            {% if g.user['username'] is not none %}👨‍⚕️{% endif %}
-                            {% if g.user['is_specialist'] == 1 %}⚕️{% endif %}
-                            {% if g.user['is_admin'] == 1 %}🤴{% endif %}                            
-                        )
-                    </div>
-                    <div class="d-flex align-items-center">
-                        <form action="{{ url_for('auth.logout') }}" method="get" enctype="multipart/form-data">
-                            <button class="btn btn-danger" type="submit" id="Logoutbtn">
-                                ออกจากระบบ
-                            </button>
-                        </form>
-                    </div>                    
+                <a class="btn btn-success" type="submit" href="/">เข้าสู่ระบบ</a>
+                {% endif %}
+                {% elif session['general_user'] %}
+                <div class="me-2">
+                    User: {{g.user['name']}} {{g.user['surname']}}, {{g.user['job_position']}} ( 👨‍🔬 )
+                </div>
+                <div class="d-flex flex-column align-items-center">
+                    <form action="{{ url_for('auth.logout') }}" method="get" enctype="multipart/form-data">
+                        <button class="btn btn-danger" type="submit" id="Logoutbtn">
+                            Logout
+                        </button>
+                    </form>
+                </div>
+                {% else %}
+                <div class="me-2">
+                    ชื่อผู้ใช้งาน: {{g.user['name']}} {{g.user['surname']}} (
+                    {% if g.user['is_patient'] == 1 %}👨‍🦽{% endif %}
+                    {% if g.user['is_osm'] == 1 %}👨‍🚒{% endif %}
+                    {% if g.user['username'] is not none %}👨‍⚕️{% endif %}
+                    {% if g.user['is_specialist'] == 1 %}⚕️{% endif %}
+                    {% if g.user['is_admin'] == 1 %}🤴{% endif %}
+                    )
+                </div>
+                <div class="d-flex align-items-center">
+                    <form action="{{ url_for('auth.logout') }}" method="get" enctype="multipart/form-data">
+                        <button class="btn btn-danger" type="submit" id="Logoutbtn">
+                            ออกจากระบบ
+                        </button>
+                    </form>
+                </div>
                 {% endif %}
 
             </div>
@@ -251,6 +244,7 @@
     </div>
 
     {% block script %} {% endblock %}
-    
+
 </body>
+
 </html>
