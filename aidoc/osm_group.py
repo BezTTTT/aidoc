@@ -321,8 +321,9 @@ def get_osm_for_search():
     db, cursor = get_db()
 
     # Get the current user's province
-    cursor.execute("SELECT provinces FROM osm_group WHERE osm_supervisor_id = %s", (user_id,))
-    provinces = cursor.fetchone()["provinces"]
+    cursor.execute("SELECT group_provinces FROM osm_group WHERE osm_supervisor_id = %s", (user_id,))
+    provinces = cursor.fetchone()["group_provinces"]
+    print("asdasdjnsadhasdhusauhd",provinces)
     if not provinces:
         return jsonify({'osm_list': []})
     
@@ -333,8 +334,8 @@ def get_osm_for_search():
         AND id NOT IN (SELECT osm_id FROM osm_group_member)
         """
     where_provinces = ""
-    
-    for province in provinces.split(','):
+    provinces_list = provinces.split(",")
+    for province in provinces_list:
         where_provinces += f"province = '{province}' OR "
     sql += "AND (" + where_provinces[:-3] + ")"
 
@@ -348,8 +349,8 @@ def get_osm_for_search():
     })
 
 
-@bp.route('/promote_supervisor/', methods=['POST', 'DELETE'])
-@login_required
+@bp.route('/promote_supervisor/', methods=['POST', 'DELETE', 'PUT',])
+# @login_required
 def promote_supervisor():
     user_id = request.get_json()['user_id']
 
@@ -381,7 +382,7 @@ def promote_supervisor():
                 "DELETE FROM osm_group_member WHERE osm_id = %s",
                 (user_id,)
             )
-
+        # group_provinces = request.get_json()['group_provinces_string'] if request.get_json()['group_provinces_string'] else ''
         # Create a new group and add the user as a member
         cursor.execute(
             "INSERT INTO osm_group (osm_supervisor_id, group_name) VALUES (%s, NULL)",
@@ -413,6 +414,19 @@ def promote_supervisor():
             "DELETE FROM osm_group WHERE osm_supervisor_id = %s",
             (user_id,)
         )
+    elif request.method == 'PUT':
+        # Update provinces of the group
+        group_provinces = request.get_json()['group_provinces_string']
+        cursor.execute(
+            "SELECT group_id FROM osm_group WHERE osm_supervisor_id = %s",
+            (user_id,)
+        )
+        group_id = cursor.fetchone()
+
+        cursor.execute(
+            "UPDATE osm_group SET group_provinces = %s WHERE group_id = %s",
+            (group_provinces, group_id["group_id"],)
+        )
 
     return jsonify({'message': 'Supervisor removed successfully'}), 200
 
@@ -421,10 +435,11 @@ def promote_supervisor():
 @login_required
 def is_supervisor(user_id):
     is_supervisor = False
+    group_provinces_list = [] 
     db, cursor = get_db()
     cursor.execute(
         """
-            SELECT group_id FROM osm_group WHERE osm_supervisor_id = %s LIMIT 1;
+            SELECT group_id, group_provinces FROM osm_group WHERE osm_supervisor_id = %s LIMIT 1;
         """,
         (user_id,)
     )
@@ -432,8 +447,9 @@ def is_supervisor(user_id):
 
     if data:
         is_supervisor = True
+        group_provinces_list = data["group_provinces"].split(",") if data["group_provinces"] else []
 
-    return jsonify({"is_supervisor": is_supervisor}), 200
+    return jsonify({"is_supervisor": is_supervisor, "group_provinces": group_provinces_list}), 200
 
 
 @bp.route('/update_group_name/', methods=['POST'])
@@ -454,3 +470,14 @@ def update_group_name():
     return jsonify({'message': 'Name updated successfully'}), 200
 
 
+@bp.route('/get_all_provinces/', methods=['GET'])
+# @login_required
+def get_all_provinces():
+    db, cursor = get_db()
+    cursor.execute('SELECT name_th FROM thai_provinces')
+    provinces = cursor.fetchall()
+    if not provinces:
+        return jsonify({'provinces': []}) 
+
+    provinces_list = [province['name_th'] for province in provinces]
+    return jsonify({'provinces': provinces_list}), 200
