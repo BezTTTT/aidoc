@@ -48,18 +48,21 @@ def reload_user_profile(user_id):
                 
                 # check and get osm group info for showing the osm group option on navbar
                 db, cursor = get_db()
-                cursor.execute("""SELECT 
-                                    (CASE WHEN ogm.osm_supervisor_id = %s THEN 1 ELSE 0 END) AS is_supervisor, 
-                                    (CASE WHEN ogm_member.osm_id = %s THEN 1 ELSE 0 END) AS is_member, 
-                                    g.group_name, 
-                                    g.group_id,
-                                    u.name, u.surname
-                                FROM osm_group g
-                                LEFT JOIN osm_group_member ogm_member ON g.group_id = ogm_member.group_id AND ogm_member.osm_id = %s
-                                LEFT JOIN osm_group ogm ON g.group_id = ogm.group_id
-                                LEFT JOIN user u ON ogm.osm_supervisor_id = u.id
-                                LIMIT 1;
-                            """, (user_id, user_id, user_id))
+                query = """
+                    SELECT 
+                        EXISTS (SELECT 1 FROM osm_group WHERE osm_supervisor_id = %s) AS is_supervisor,
+                        EXISTS (SELECT 1 FROM osm_group_member WHERE osm_id = %s) AS is_member,
+                        g.group_id,
+                        g.group_name,
+                        u.name,
+                        u.surname
+                    FROM osm_group_member gm
+                    LEFT JOIN osm_group g ON gm.group_id = g.group_id
+                    LEFT JOIN user u ON g.osm_supervisor_id = u.id
+                    WHERE gm.osm_id = %s
+                    LIMIT 1;
+                """
+                cursor.execute(query, (user_id,) * 3)
                 group = cursor.fetchone()
                 if group:
                     user['group_info'] = {"is_supervisor": group['is_supervisor'], "is_member": group['is_member'], "group_name": group["group_name"] if group["group_name"] else "-", "group_supervisor": group["name"] + " " + group["surname"], "group_id": group["group_id"]}
