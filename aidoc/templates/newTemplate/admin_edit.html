@@ -139,18 +139,16 @@
           is_supervisor = data.is_supervisor;
           if (is_supervisor && data.group_provinces.length > 0) {
             groupSelectedProvinceList = data.group_provinces;
-            console.log(data.group_provinces)
             groupSelectedProvinceList.forEach(province => {
               if(province != ''){
                 document.getElementById(`province_${province}`).checked = true;
               }
             });
           }
-          console.log(is_supervisor)
           document.getElementById('promoteSupervisor').checked = is_supervisor;
           document.getElementById('groupProvincesSelection').style.display = is_supervisor ? 'block' : 'none';
         })
-        .catch(error => console.log(error));
+        .catch(error => console.error(error));
         
 
       // Fetch user info

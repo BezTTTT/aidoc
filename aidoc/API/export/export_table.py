@@ -76,7 +76,7 @@ def db_query(table_name,ref, columns):
                         data[i]["fname"] = f'=HYPERLINK("{img_url}","{data[i]["fname"]}")' # construct image url for excel
                         print(data[i]["fname"])
                 
-        elif True: pass # for future use
+        else: pass # for future use
 
         df = pd.DataFrame(data) 
 
