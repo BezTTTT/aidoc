@@ -564,7 +564,10 @@ def submit_compliance(user_id):
     answer = request.form.get('answer')
     if answer=='accept':
         set_user_compliance(user_id)
-        returning_page = session['returning_page']
+        if 'returning_page' in session:
+            returning_page = session['returning_page']
+        else:
+            returning_page = 'upload_image'
         session.pop('returning_page', None)
         if returning_page=='upload_image':
             return redirect(url_for('image.upload_image', role=session['login_mode']))
