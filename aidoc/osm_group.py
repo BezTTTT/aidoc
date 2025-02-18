@@ -99,37 +99,10 @@ def _(page: int, records_per_page: int):
         filter_query += f" AND (sender_id = {filter_sender})" if filter_query else f"(sender_id = {filter_sender})"
         supplemental_data['filterSender'] = filter_sender
 
-    # Pagination setup
-    # page = session['current_record_page']
-    # records_per_page = session['records_per_page']
-    offset = (page - 1) * records_per_page
+    # Pagination
+    offset = (page-1)*records_per_page
 
     db, cursor = get_db()
-    
-    # SQL query parts
-    sql_select = '''
-        SELECT submission_record.id, channel, fname,
-            patient_user.name AS patient_name, patient_user.surname AS patient_surname, patient_user.birthdate, patient_user.province,
-            case_id, sender_id, patient_id, dentist_id, special_request, sender_phone,
-            location_district, location_amphoe, location_province, location_zipcode, 
-            dentist_feedback_comment, dentist_feedback_code,
-            ai_prediction, submission_record.created_at,
-            osm_user.name as sender_name, osm_user.surname as sender_surname, osm_user.phone as osm_phone
-    '''
-    sql_count = 'SELECT count(*) AS full_count'
-    sql_from = '''
-        FROM submission_record
-        INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
-        LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
-        LEFT JOIN user AS sender_user ON submission_record.sender_phone = sender_user.phone
-        LEFT JOIN user AS osm_user ON submission_record.sender_id = osm_user.id
-        WHERE 
-    '''
-    sql_limit = '''
-        ORDER BY submission_record.id DESC
-        LIMIT %s
-        OFFSET %s
-    '''
 
     # Retrieve OSM group members
     cursor.execute('''
@@ -145,29 +118,206 @@ def _(page: int, records_per_page: int):
         'osm_name': f"{member['osm_name']} {member['osm_surname']}"
     } for member in member_list]
 
-    # Construct group member SQL condition
-    group_member_conditions = [
-        f"(sender_id = {member['sender_id']} OR (submission_record.sender_phone IS NOT NULL AND submission_record.sender_phone = {member['sender_phone']}))"
-        for member in member_list
-    ]
-    sql_group_member = '(' + ' OR '.join(group_member_conditions) + ')'
 
-    # Combine SQL parts
-    sql_where = f'AND {filter_query} AND channel = "OSM"' if filter_query else 'AND channel = "OSM"'
-    sql_count_query = sql_count + sql_from + sql_group_member + sql_where
-    sql_select_query = sql_select + sql_from + sql_group_member + sql_where + sql_limit
+    # Construct group member conditions
+    group_member_conditions = []
+    group_member_values = []
+    if filter_sender:
+        #filter by sender_id
+        filter_member = next((item for item in member_list if str(item["sender_id"]) == filter_sender), None)
+        group_member_conditions.append("(submission_record.sender_id = %s OR (submission_record.sender_phone IS NOT NULL AND submission_record.sender_phone = %s))")
+        group_member_values.extend([filter_member['sender_id'], filter_member['sender_phone']])
+    else:
+        for member in member_list:
+            group_member_conditions.append("(submission_record.sender_id = %s OR (submission_record.sender_phone IS NOT NULL AND submission_record.sender_phone = %s))")
+            group_member_values.extend([member['sender_id'], member['sender_phone']])
 
-    # Execute queries
-    cursor.execute(sql_count_query)
-    data_count = cursor.fetchone()
+    group_member_sql = '(' + ' OR '.join(group_member_conditions) + ')'
 
-    cursor.execute(sql_select_query, (records_per_page, offset))
+    if filter_query:
+        base_sql = '''
+            SELECT 
+                sr.id,
+                sr.channel,
+                sr.fname,
+                sr.patient_name,
+                sr.patient_surname,
+                sr.birthdate,
+                sr.province,
+                sr.case_id,
+                sr.sender_id,
+                sr.patient_id,
+                sr.dentist_id,
+                sr.special_request,
+                sr.sender_phone,
+                sr.location_province,
+                sr.location_zipcode,
+                sr.dentist_feedback_comment,
+                sr.dentist_feedback_code,
+                sr.ai_prediction,
+                sr.created_at,
+                sr.sender_name,
+                sr.sender_surname,
+                sr.osm_phone,
+                c.full_count
+            FROM (
+                SELECT 
+                    submission_record.id,
+                    submission_record.channel,
+                    submission_record.fname,
+                    patient_user.name AS patient_name,
+                    patient_user.surname AS patient_surname,
+                    patient_user.birthdate,
+                    patient_user.province,
+                    patient_case_id.case_id,
+                    submission_record.sender_id,
+                    submission_record.patient_id,
+                    submission_record.dentist_id,
+                    submission_record.special_request,
+                    submission_record.sender_phone,
+                    submission_record.location_province,
+                    submission_record.location_zipcode,
+                    submission_record.dentist_feedback_comment,
+                    submission_record.dentist_feedback_code,
+                    submission_record.ai_prediction,
+                    submission_record.created_at,
+                    osm_user.name as sender_name,
+                    osm_user.surname as sender_surname,
+                    osm_user.phone as osm_phone
+                FROM (
+                    SELECT id
+                    FROM submission_record
+                    WHERE ''' + group_member_sql + ''' AND channel = 'OSM'
+                ) AS submission_record_limited
+                INNER JOIN submission_record
+                    ON submission_record.id = submission_record_limited.id
+                LEFT JOIN patient_case_id
+                    ON submission_record.id = patient_case_id.id
+                LEFT JOIN user AS patient_user
+                    ON submission_record.patient_id = patient_user.id
+                LEFT JOIN user AS osm_user
+                    ON submission_record.sender_id = osm_user.id
+                WHERE ''' + filter_query + '''
+                ORDER BY submission_record.created_at DESC
+                LIMIT %s OFFSET %s
+            ) AS sr
+            CROSS JOIN (
+                SELECT 
+                    COUNT(submission_record.id) AS full_count
+                FROM (
+                    SELECT id
+                    FROM submission_record
+                    WHERE ''' + group_member_sql + ''' AND channel = 'OSM'
+                ) AS submission_record_limited
+                INNER JOIN submission_record
+                    ON submission_record.id = submission_record_limited.id
+                LEFT JOIN patient_case_id
+                    ON submission_record.id = patient_case_id.id
+                LEFT JOIN user AS patient_user
+                    ON submission_record.patient_id = patient_user.id
+                LEFT JOIN user AS osm_user
+                    ON submission_record.sender_id = osm_user.id
+                WHERE ''' + filter_query + '''
+            ) AS c
+            ORDER BY sr.created_at DESC;
+            '''
+        val = tuple(group_member_values + [records_per_page, offset] + group_member_values)
+    else:
+        base_sql = '''
+            SELECT 
+                sr.id,
+                sr.channel,
+                sr.fname,
+                sr.patient_name,
+                sr.patient_surname,
+                sr.birthdate,
+                sr.province,
+                sr.case_id,
+                sr.sender_id,
+                sr.patient_id,
+                sr.dentist_id,
+                sr.special_request,
+                sr.sender_phone,
+                sr.location_province,
+                sr.location_zipcode,
+                sr.dentist_feedback_comment,
+                sr.dentist_feedback_code,
+                sr.ai_prediction,
+                sr.created_at,
+                sr.sender_name,
+                sr.sender_surname,
+                sr.osm_phone,
+                c.full_count
+            FROM (
+                SELECT 
+                    submission_record.id,
+                    submission_record.channel,
+                    submission_record.fname,
+                    patient_user.name AS patient_name,
+                    patient_user.surname AS patient_surname,
+                    patient_user.birthdate,
+                    patient_user.province,
+                    patient_case_id.case_id,
+                    submission_record.sender_id,
+                    submission_record.patient_id,
+                    submission_record.dentist_id,
+                    submission_record.special_request,
+                    submission_record.sender_phone,
+                    submission_record.location_province,
+                    submission_record.location_zipcode,
+                    submission_record.dentist_feedback_comment,
+                    submission_record.dentist_feedback_code,
+                    submission_record.ai_prediction,
+                    submission_record.created_at,
+                    osm_user.name as sender_name,
+                    osm_user.surname as sender_surname,
+                    osm_user.phone as osm_phone
+                FROM (
+                    SELECT id
+                    FROM submission_record
+                    WHERE ''' + group_member_sql + ''' AND channel = 'OSM'
+                    ORDER BY submission_record.created_at DESC
+                    LIMIT %s OFFSET %s
+                ) AS submission_record_limited
+                INNER JOIN submission_record
+                    ON submission_record.id = submission_record_limited.id
+                LEFT JOIN patient_case_id
+                    ON submission_record.id = patient_case_id.id
+                LEFT JOIN user AS patient_user
+                    ON submission_record.patient_id = patient_user.id
+                LEFT JOIN user AS osm_user
+                    ON submission_record.sender_id = osm_user.id
+            ) AS sr
+            CROSS JOIN (
+                SELECT 
+                    COUNT(submission_record.id) AS full_count
+                FROM (
+                    SELECT id
+                    FROM submission_record
+                    WHERE ''' + group_member_sql + ''' AND channel = 'OSM'
+                ) AS submission_record_limited
+                INNER JOIN submission_record
+                    ON submission_record.id = submission_record_limited.id
+            ) AS c
+            ORDER BY sr.created_at DESC;
+            '''
+        val = tuple(group_member_values + [records_per_page, offset] + group_member_values)
+
+    cursor.execute(base_sql, val)
     paginated_data = cursor.fetchall()
+    
+    if len(paginated_data) > 0:
+        data_count = {'full_count': paginated_data[0]['full_count']}
+    else:
+        data_count = {'full_count': 0}
 
     # Process each record
     for item in paginated_data:
-        item['owner_id'] = item['patient_id'] if item['channel'] == 'PATIENT' else item['sender_id']
-        if 'birthdate' in item and item['birthdate']:
+        if item['channel'] == 'PATIENT':
+            item['owner_id'] = item['patient_id']
+        else:
+            item['owner_id'] = item['sender_id']
+        if item.get('birthdate'):
             item['age'] = calculate_age(item['birthdate'])
 
     return paginated_data, supplemental_data, data_count, osm_filter_data
