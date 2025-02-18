@@ -1,10 +1,10 @@
 from functools import singledispatch
 import json
 from flask import Blueprint, jsonify, render_template, request, session, g
-from aidoc.auth import login_required
+from aidoc.auth import login_required, load_osm_group_info_query
 from aidoc.db import get_db
-from aidoc.utils import format_thai_datetime, calculate_age, load_osm_group_info
-from aidoc.webapp import construct_osm_filter_sql
+from aidoc.utils import format_thai_datetime, calculate_age
+
 
 bp = Blueprint('osm_group', __name__)
 
@@ -90,6 +90,7 @@ def record_osm_group(_):
 @record_osm_group.register
 def _(page: int, records_per_page: int):
     # Construct filter query and supplemental data
+    from aidoc.webapp import construct_osm_filter_sql
     filter_query, supplemental_data = construct_osm_filter_sql()
 
     # Add sender filter if present
@@ -477,3 +478,14 @@ def get_all_provinces():
 
     provinces_list = [province['name_th'] for province in provinces]
     return jsonify({'provinces': provinces_list}), 200
+
+
+# region load osm group info
+# load_osm_group_info
+def load_osm_group_info():
+    user = g.get('user')
+    if not user:
+        return
+    group_info = load_osm_group_info_query(user['id'])
+    session['g_user']['group_info'] = group_info
+    g.user['group_info'] = group_info

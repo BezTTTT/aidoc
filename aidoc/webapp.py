@@ -11,6 +11,7 @@ from datetime import datetime
 from aidoc.utils import *
 from aidoc.db import get_db
 from aidoc.auth import login_required, admin_only, specialist_only, role_validation, reload_user_profile
+from aidoc.osm_group import load_osm_group_info
 
 # 'webapp' blueprint manages Diagnosis and Record systems, including report and admin managment system
 bp = Blueprint('webapp', __name__)
