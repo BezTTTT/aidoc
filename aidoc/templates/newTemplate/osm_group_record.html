@@ -74,7 +74,7 @@
         จำนวนรายการทั้งหมด {{dataCount}} รายการ
     </div>
     <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#downloadModal">
-        ดาวน์โหลดข้อมูล
+        <i class="bi bi-download"></i>
     </button>
 
     <!-- Modal -->
@@ -82,7 +82,7 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="downloadModalLabel">ดาวน์โหลดข้อมูล</h5>
+                    <h5 class="modal-title" id="downloadModalLabel"><i class="bi bi-download"></i> ดาวน์โหลดข้อมูล</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -224,8 +224,8 @@
 </div>
 
 <!-- Table View (Initially Hidden) -->
-<div id="table-view" style="display: none;">
-    <table class="dataTable">
+<div id="table-view"  style="display: none;">
+    <table class="dataTable table table-hover">
         <thead>
             <tr class="text-dark">
                 <th>Case ID</th>
@@ -251,7 +251,7 @@
                             [มีคำขอตรวจพิเศษ]
                         {% endif %}
                     </td>
-                    <td>{% if item['name'] is not none %} {{ item['name'] }} {{ item['surname'] }} ( {{ item["age"] }} ปี ) {% else %} ไม่มีข้อมูล {% endif %}</td>
+                    <td>{% if item['patient_name'] is not none %} {{ item['patient_name'] }} {{ item['patient_surname'] }} ( {{ item["age"] }} ปี ) {% else %} ไม่มีข้อมูล {% endif %}</td>
                     <td>จ.{{ item['location_province'] }} {%if item['location_zipcode'] is not none %} ({{ item['location_zipcode'] }}){% endif %}</td>
                     <td>
                         {% if item['sender_phone'] is none %}
