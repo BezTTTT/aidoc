@@ -1,20 +1,19 @@
 from functools import singledispatch
 import json
 from flask import Blueprint, jsonify, render_template, request, session, g
-from aidoc.auth import login_required, reload_user_profile
+from aidoc.auth import login_required
 from aidoc.db import get_db
-
-from aidoc.webapp import calculate_age, construct_osm_filter_sql, format_thai_datetime
+from aidoc.utils import format_thai_datetime, calculate_age, load_osm_group_info
+from aidoc.webapp import construct_osm_filter_sql
 
 bp = Blueprint('osm_group', __name__)
 
 # render osm hierarchy record page
-# region Group Record
+# region Group Record Render
 @bp.route('/', methods=('GET', 'POST'))
 @login_required
 def render_osm_group_record():
-    
-    reload_user_profile(session['user_id'])
+    load_osm_group_info() # Load group info to g.user['group_info']
     # Prevent not supervisor accesses
     if(g.user['group_info']['is_supervisor'] == 0 or g.user['group_info']['group_id'] == -1 ):
         return render_template('newTemplate/osm_group_record.html', dataCount=0, paginated_data=[], current_page=1, total_pages=1, data={}, osm_filter_data={})
@@ -79,6 +78,7 @@ def render_osm_group_record():
                 data=supplemental_data,
                 osm_filter_data=osm_filter_data)
 
+# region get record_osm_group
 # overloading
 @singledispatch
 def record_osm_group(_):
@@ -173,11 +173,11 @@ def _(page: int, records_per_page: int):
 
 
 # render osm group manage page
-# region Group Manage
+# region Group Manage Render
 @bp.route('/member-manage/', methods=['GET'])
 @login_required
 def render_osm_group_manage():
-
+    load_osm_group_info() # Load group info to g.user['group_info']
     # Prevent not supervisor accesses
     if(g.user['group_info']['is_supervisor'] == 0 or g.user['group_info']['group_id'] == -1 ):
         return render_template('newTemplate/osm_group_manage.html', group_id=-1, is_user_supervisor=0, group_name="ไม่มีข้อมูล")
@@ -218,7 +218,7 @@ def render_osm_group_manage():
     )
 
 
-#region APIs
+#region get_group_users
 @bp.route('/group/<int:group_id>', methods=['GET'])
 @login_required
 def get_group_users(group_id):
@@ -259,7 +259,7 @@ def get_group_users(group_id):
 
     return jsonify({'group_list': group_list})
 
-
+# region add_user_to_group
 @bp.route('/add', methods=['POST'])
 @login_required
 def add_user_to_group():
@@ -289,11 +289,10 @@ def add_user_to_group():
         "INSERT INTO osm_group_member (group_id, osm_id) VALUES (%s, %s)",
         (group_id, user_id)
     )
-    reload_user_profile(session['user_id'])
     return json.dumps({'message': 'User added to group'}), 200
     
 
-
+# region remove_from_group
 @bp.route('/remove', methods=['DELETE'])
 @login_required
 def remove_from_group():
@@ -311,10 +310,9 @@ def remove_from_group():
         "DELETE FROM osm_group_member WHERE osm_id = %s AND group_id = %s",
         (user_id, group_id)
     )
-    reload_user_profile(session['user_id'])
     return json.dumps({"message": "User removed from group."}), 200
 
-
+# region get_osm_for_search
 @bp.route('/get_osm_for_search', methods=['GET'])
 @login_required
 def get_osm_for_search():
@@ -349,7 +347,7 @@ def get_osm_for_search():
         'osm_list': osm_users
     })
 
-
+# region promote_supervisor
 @bp.route('/promote_supervisor/', methods=['POST', 'DELETE', 'PUT',])
 # @login_required
 def promote_supervisor():
@@ -428,11 +426,9 @@ def promote_supervisor():
             "UPDATE osm_group SET group_provinces = %s WHERE group_id = %s",
             (group_provinces, group_id["group_id"],)
         )
-
-    reload_user_profile(session['user_id'])
     return jsonify({'message': 'Supervisor removed successfully'}), 200
 
-
+# region is_supervisor
 @bp.route('/is_supervisor/<int:user_id>', methods=['GET'])
 @login_required
 def is_supervisor(user_id):
@@ -450,10 +446,9 @@ def is_supervisor(user_id):
     if data:
         is_supervisor = True
         group_provinces_list = data["group_provinces"].split(",") if data["group_provinces"] else []
-
     return jsonify({"is_supervisor": is_supervisor, "group_provinces": group_provinces_list}), 200
 
-
+# region update_group_name
 @bp.route('/update_group_name/', methods=['POST'])
 @login_required
 def update_group_name():
@@ -468,10 +463,9 @@ def update_group_name():
         "UPDATE osm_group SET group_name = %s WHERE group_id = %s",
         (group_name, group_id)
     )
-    reload_user_profile(session['user_id'])
     return jsonify({'message': 'Name updated successfully'}), 200
 
-
+# region get_all_provinces
 @bp.route('/get_all_provinces/', methods=['GET'])
 # @login_required
 def get_all_provinces():

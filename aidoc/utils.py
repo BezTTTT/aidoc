@@ -1,4 +1,4 @@
-from flask import flash , session
+from flask import flash , session, g
 from aidoc.db import get_db
 import re
 from dateutil.parser import parse
@@ -249,3 +249,35 @@ def format_thai_datetime(x):
         x.strftime('%M')
     )
     return output_thai_datetime_str
+
+# region load_osm_group_info
+def load_osm_group_info():
+    user = g.get('user', None)
+    if not user:
+        return 
+    
+    db, cursor = get_db()
+    query = """
+        SELECT 
+            EXISTS (SELECT 1 FROM osm_group WHERE osm_supervisor_id = %s) AS is_supervisor,
+            EXISTS (SELECT 1 FROM osm_group_member WHERE osm_id = %s) AS is_member,
+            g.group_id,
+            g.group_name,
+            u.name,
+            u.surname
+        FROM osm_group_member gm
+        LEFT JOIN osm_group g ON gm.group_id = g.group_id
+        LEFT JOIN user u ON g.osm_supervisor_id = u.id
+        WHERE gm.osm_id = %s
+        LIMIT 1;
+    """
+    cursor.execute(query, (user['id'], user['id']))
+    group = cursor.fetchone()
+    
+    if group:
+        user['group_info'] = {"is_supervisor": group['is_supervisor'], "is_member": group['is_member'], "group_name": group['group_name'], "group_id": group['group_id']}
+    else:
+        user['group_info'] = {"is_supervisor": 0, "is_member": 0, "group_name": "", "group_id": -1}
+        
+    session['g_user'] = user
+    g.user = user
