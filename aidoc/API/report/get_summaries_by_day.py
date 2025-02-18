@@ -1,146 +1,103 @@
 import json
-import os
-import pandas as pd
-from ... import db
-from datetime import datetime
+from decimal import Decimal
 
-from flask import current_app
-def generate_summaries_by_day(year=None,start_date=None,end_date=None, province=None):
-    connection, cursor = db.get_db()
+from . import get_total_account
+from . import get_summaries_by_day
+from flask import jsonify
+from . import get_table_patient_and_osm, get_table_specialist
+from . import get_all_submission , get_province_list
+
+
+def generate_report(province,start_date,end_date):
+    print("2",start_date,end_date)
+    patient_data = get_table_patient_and_osm.get_table("PATIENT", province)
+    osm_data = get_table_patient_and_osm.get_table("OSM", province)
+    dentist_data = get_table_specialist.get_table(province,start_date,end_date)
+    total_pic = get_all_submission.get_all_submission(province)
+    total_province = get_province_list. generate_province_list()
+    total_account = get_total_account.generate_total_account(province)
+    
+    output = build_initial_output(province, patient_data, osm_data, dentist_data, total_pic,total_province,total_account)
+    output = calculate_totals(patient_data, osm_data, dentist_data, output)
+
+    return output
+
+
+def build_initial_output(province, patient_data, osm_data, dentist_data, total_pic ,total_province,total_account):
+    return {
+        'patient_and_osm': {
+            'patient': patient_data,
+            'osm': osm_data,
+            'total': {
+                "accuracy": "-",
+                "ai_predict": {"normal": 0, "opmd": 0, "oscc": 0},
+                "dentist_diagnose": {"agree": 0, "disagree": 0},
+                "total_pic": 0
+            }
+        },
+        'province': province,
+        'specialist': dentist_data,
+        'total_pic': total_pic,
+        'total_province': total_province,
+        'total_account': total_account
+    }
+
+
+def calculate_totals(patient_data, osm_data, dentist_data, output):
     try:
-        with cursor:
-            # Base query
-            sql = """
-                SELECT
-                    COUNT(*) AS count,
-                    {}
-                FROM
-                    submission_record sr
-                WHERE
-                    1=1
-            """
-            # Initialize query parts
-            where_clauses = []
-            group_by = []
-            select_by = []          
+        output['patient_and_osm']['total']['ai_predict'] = sum_dicts(
+            osm_data.get('ai_predict', {}),
+            patient_data.get('ai_predict', {})
+        )
+        output['patient_and_osm']['total']['dentist_diagnose'] = sum_dicts(
+            osm_data.get('dentist_diagnose', {}),
+            patient_data.get('dentist_diagnose', {})
+        )
 
-            group_by.append("DATE(sr.created_at)")
-            select_by.append("DATE(sr.created_at) AS date")
-                
+        output['patient_and_osm']['total']['accuracy'] = calculate_accuracy(osm_data, patient_data)
 
-            # Add province condition
-            if province:
-                where_clauses.append("sr.location_province = %s")
-            else:
-                group_by.append("sr.location_province")
-                select_by.append("sr.location_province AS province")
-
-            # Finalize WHERE and GROUP BY clauses
-            if where_clauses:
-                sql += " AND " + " AND ".join(where_clauses)
-            if group_by:
-                sql += " GROUP BY " + ", ".join(group_by)
-            sql += " ORDER BY date DESC"    
-            # Format the SELECT clause based on grouping
-            select_fields = ", ".join(select_by) if select_by else "'All'"
-            sql = sql.format(select_fields)
-
-            # Execute query
-            params = []
-            if province:
-                params.append(province)
-            cursor.execute(sql, tuple(params))
-            ai_predict_query = cursor.fetchall()
-            ai_predict_query = filter_by_date_range(ai_predict_query, start_date, end_date)
-            ai_predict_query = filter_by_year(ai_predict_query, year)
-            
-            if province:
-                output_data = [{**entry, "province": province} for entry in ai_predict_query]
-            else:
-                output_data = ai_predict_query
+        output['patient_and_osm']['total']['total_pic'] = osm_data.get('total_pic', 0) + patient_data.get('total_pic', 0)
 
     except Exception as e:
-        print(f"Error occurred: {e}")
-        return {}, 500
+        print(f"Error occurred while calculating total: {e}")
+        reset_totals(output)
 
-    return output_data
+    return output
 
-from datetime import datetime
 
-def filter_by_date_range(data, start_date=None, end_date=None):
-    """
-    Filter objects based on date range.
-    
-    Args:
-        data (list): List of dictionaries containing 'date' and 'count'
-        start_date (str): Start date in format 'YYYY-MM-DD'
-        end_date (str): End date in format 'YYYY-MM-DD'
-    
-    Returns:
-        list: Filtered list of dictionaries
-    """
-    # If no dates provided, return original data
-    if not start_date and not end_date:
-        return data
-    
-    # Convert start_date and end_date strings to date objects
-    start_dt = datetime.strptime(start_date, '%Y-%m-%d').date() if start_date else None
-    end_dt = datetime.strptime(end_date, '%Y-%m-%d').date() if end_date else None
-    
-    # Filter the data
-    filtered_data = []
-    
-    for item in data:
-        try:
-            # First try parsing as GMT format
-            item_date = datetime.strptime(str(item['date']), '%a, %d %b %Y %H:%M:%S GMT').date()
-        except ValueError:
-            try:
-                # If that fails, try parsing as YYYY-MM-DD format
-                item_date = datetime.strptime(str(item['date']), '%Y-%m-%d').date()
-            except ValueError as e:
-                print(f"Could not parse date {item['date']}: {e}")
-                continue
-        
-        # Check if date is within range
-        is_after_start = True if not start_dt else item_date >= start_dt
-        is_before_end = True if not end_dt else item_date <= end_dt
-        
-        if is_after_start and is_before_end:
-            filtered_data.append(item)
-    
-    return filtered_data
+def calculate_accuracy(osm_data, patient_data):
+    accuracy_values = []
+    accuracy_divider = 0
 
-def filter_by_year(data, year=None):
-    """
-    Filter objects based on a specific year.
-    
-    Args:
-        data (list): List of dictionaries containing 'date' and 'count'.
-        year (int): Year to filter data.
-    
-    Returns:
-        list: Filtered list of dictionaries.
-    """
-    if not year:
-        return data  # If no year is specified, return unfiltered data.
+    for data in [osm_data, patient_data]:
+        accuracy = data.get("accuracy", "-")
+        if accuracy != "-":
+            accuracy_values.append(Decimal(accuracy))
+            accuracy_divider += 1
 
-    filtered_data = []
+    if accuracy_divider > 0:
+        total_accuracy = sum(accuracy_values) / accuracy_divider
+        return f"{total_accuracy:.2f}"
+    return "-"
 
-    for item in data:
-        try:
-            # First try parsing as GMT format
-            item_date = datetime.strptime(str(item['date']), '%a, %d %b %Y %H:%M:%S GMT').date()
-        except ValueError:
-            try:
-                # If that fails, try parsing as YYYY-MM-DD format
-                item_date = datetime.strptime(str(item['date']), '%Y-%m-%d').date()
-            except ValueError as e:
-                print(f"Could not parse date {item['date']}: {e}")
-                continue
 
-        # Check if the year matches
-        if str(item_date.year) == str(year):
-            filtered_data.append(item)
+def reset_totals(output):
+    output['patient_and_osm']['total'] = {
+        "ai_predict": {"normal": 0, "opmd": 0, "oscc": 0},
+        "dentist_diagnose": {"agree": 0, "disagree": 0},
+        "accuracy": "-",
+        "total_pic": 0
+    }
 
-    return filtered_data
+def sum_dicts(dict1, dict2):
+    result = {}
+    for key in dict1:
+        if isinstance(dict1[key], dict):
+            result[key] = sum_dicts(dict1[key], dict2.get(key, {}))
+        else:
+            result[key] = dict1[key] + dict2.get(key, 0)
+    return result
+
+def summaries_by_day(year,start_date,end_date,province):
+    output = get_summaries_by_day.generate_summaries_by_day(year,start_date,end_date,province)
+    return output
