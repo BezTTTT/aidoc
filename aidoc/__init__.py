@@ -67,6 +67,9 @@ def create_app(test_config=None):
     from . import osm_group
     app.register_blueprint(osm_group.bp, url_prefix='/osm_group')
 
+    from .API import export
+    app.register_blueprint(export.export_bp, url_prefix='/export')
+
     # Add special endpoints
     app.add_url_rule('/', endpoint='index')
 

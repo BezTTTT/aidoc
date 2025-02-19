@@ -10,6 +10,8 @@
     <button class="btn btn-primary" onclick="window.location.href='/osm_group/member-manage/'">จัดการสมาชิกกลุ่มผู้ตรวจคัดกรอง</button>
 </div>
 
+
+
 <form action="/osm_group/" method="post">
     <div class="row">
         <!-- Search Box -->
@@ -56,21 +58,99 @@
     </div>
 </form>
 
-<div class="col-12 mt-3">
+<div class="col-12 mt-3 d-flex justify-content-between">
     <p>ประวัติการนำส่งภาพถ่ายช่องปากของคนไข้</p>
+    <button class="btn btn-outline-secondary" onclick="toggleView()">
+        <i id="toggleViewIcon" class="bi bi-card-image"></i>
+    </button>
 </div>
 {% if paginated_data|length == 0 %}
     <div class="col-12 mt-2">
         <p class="text-center text-danger">ไม่พบข้อมูล</p>
     </div>
 {% else %}
+<div class="my-1 d-flex justify-content-between">
     <div class="mt-2">
         จำนวนรายการทั้งหมด {{dataCount}} รายการ
     </div>
+    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#downloadModal">
+        <i class="bi bi-download"></i>
+    </button>
+
+    <!-- Modal -->
+    <div class="modal fade" id="downloadModal" tabindex="-1" aria-labelledby="downloadModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="downloadModalLabel"><i class="bi bi-download"></i> ดาวน์โหลดข้อมูล</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">เลือกประเภทไฟล์และคอลัมน์ที่ต้องการดาวน์โหลด</p>
+    
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label">เลือกคอลัมน์ที่ต้องการ:</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="selectAllColumns">
+                                <label class="form-check-label" for="selectAllColumns">เลือกทั้งหมด</label>
+                            </div>
+                            <div id="columnCheckboxes">
+                                <div class="form-check">
+                                    <input class="form-check-input column-option" type="checkbox" value="case_id" id="col_id">
+                                    <label class="form-check-label" for="col_id">Case ID</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input column-option" type="checkbox" value="fname" id="col_img_name">
+                                    <label class="form-check-label" for="col_img_name">ชื่อภาพ</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input column-option" type="checkbox" value="sender_name,sender_surname" id="col_sender_name">
+                                    <label class="form-check-label" for="col_sender_name">ชื่อผู้นำส่ง</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input column-option" type="checkbox" value="created_at" id="col_created_at">
+                                    <label class="form-check-label" for="col_created_at">วันที่นำส่ง</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input column-option" type="checkbox" value="diagnosis_status" id="col_diagnosis_status">
+                                    <label class="form-check-label" for="col_diagnosis_status">สถานะการตรวจ</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input column-option" type="checkbox" value="diagnosis_result" id="col_diagnosis_result">
+                                    <label class="form-check-label" for="col_diagnosis_result">ผลการตรวจ</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input column-option" type="checkbox" value="ai_prediction" id="col_ai_prediction">
+                                    <label class="form-check-label" for="col_ai_prediction">ผลการพยากรณ์ของ AI</label>
+                                </div>
+                            </div>
+                        </div>
+    
+                        <div class="mb-3">
+                            <label for="downloadFormat" class="form-label">เลือกประเภทไฟล์:</label>
+                            <select name="downloadFormat" id="downloadFormat" class="form-select">
+                                <option value="xlsx">Excel (.xlsx)</option>
+                                <option value="csv">CSV (.csv)</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+    
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                    <button type="button" class="btn btn-primary" onclick="downloadSelectedData()">ดาวน์โหลด</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endif %}
 
 <!-- Loop through paginated data -->
-<div class="row mt-4">
+<!-- Card View (Default) -->
+<div id="card-view" class="row mt-4">
     {% for item in paginated_data %}
         <div class="col-lg-3 col-md-4 col-sm-6 col-xs-12 mb-3">
             <div class="card h-100"
@@ -118,9 +198,11 @@
                     <h6 class="fs-6 card-subtitle text-muted mb-2">
                         ผลการพยากรณ์ของ AI :
                             {% if item['ai_prediction']==0 %}
-                                ไม่พบรอยโรค
+                                Normal
+                            {% elif item['ai_prediction']==1 %}
+                                OPMD
                             {% else %}
-                                พบรอยโรค
+                                OSCC
                             {% endif %}
                     </h6>
                     <h6 class="fs-6 card-subtitle text-muted mb-2">
@@ -141,6 +223,67 @@
     {% endfor %}
 </div>
 
+<!-- Table View (Initially Hidden) -->
+<div id="table-view"  style="display: none;">
+    <table class="dataTable table table-hover">
+        <thead>
+            <tr class="text-dark">
+                <th>Case ID</th>
+                <th>ชื่อผู้ป่วย</th>
+                <th>สถานที่คัดกรอง</th>
+                <th>ช่องทาง</th>
+                <th>ชื่อผู้นำส่ง</th>
+                <th>นำส่งวันที่</th>
+                <th>ผลการพยากรณ์ของ AI</th>
+                <th>ดำเนินการ</th>
+            </tr>
+        </thead>
+            <tbody>
+                {% for item in paginated_data %}
+                <tr>
+                    <td>{{ item['case_id'] }}
+                        {% if item['dentist_id'] %}
+                            [ตรวจแล้ว]
+                        {% else %}
+                            [ยังไม่ได้ตรวจ]
+                        {% endif %}
+                        {% if item['special_request']==1 %}
+                            [มีคำขอตรวจพิเศษ]
+                        {% endif %}
+                    </td>
+                    <td>{% if item['patient_name'] is not none %} {{ item['patient_name'] }} {{ item['patient_surname'] }} ( {{ item["age"] }} ปี ) {% else %} ไม่มีข้อมูล {% endif %}</td>
+                    <td>จ.{{ item['location_province'] }} {%if item['location_zipcode'] is not none %} ({{ item['location_zipcode'] }}){% endif %}</td>
+                    <td>
+                        {% if item['sender_phone'] is none %}
+                            ระบบผู้ตรวจคัดกรอง
+                        {% else %}
+                            ระบบประชาชน
+                        {% endif %}
+                    </td>
+                    <td>{{ item['sender_name'] }} {{ item['sender_surname'] }}</td>
+                    <td>{{ item['formatted_created_at'] }} น.</td>
+                    <td>
+                        {% if item['ai_prediction']==0 %}
+                            Normal
+                        {% elif item['ai_prediction']==1 %}
+                            OPMD
+                        {% else %}
+                            OSCC
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                            <form action="{{ url_for('webapp.diagnosis', role='osm', img_id=item['id']) }}" id="form_id{{item['id']}}" method="post"> </form>
+                            <button class="btn btn-outline-success" type="submit" form="form_id{{item['id']}}">ดูผลการวิเคราะห์</button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </tbody>
+    </table>
+</div>
+
 <!-- Pagination links -->
 <div class="pagination d-flex justify-content-center align-items-center">
     {% if current_page > 1 %}
@@ -157,6 +300,7 @@
         <a href="?page={{ total_pages }}" class="btn page-link m-2 text-secondary">หลังสุด &raquo;</a>
     {% endif %}
 </div>
+
 {% else %}
 <div class="alert alert-danger" role="alert">
     ขออภัย ท่านไม่มีสิทธิ์ในการเข้าถึงข้อมูลนี้ หากท่านเชื่อว่านี่เป็นความผิดพลาด กรุณาติดต่อผู้ดูแลระบบ
@@ -188,6 +332,106 @@
     if (filterSenderValue) {
         finterSender.value = filterSenderValue;
     }
-        
+
+    function toggleView() {
+        const cardView = document.getElementById("card-view");
+        const tableView = document.getElementById("table-view");
+        const icon = document.getElementById("toggleViewIcon");
+
+        if(sessionStorage.getItem("tableView") == null){
+            sessionStorage.setItem("tableView", 1);
+        }
+
+        if (sessionStorage.getItem("tableView") == 0) {
+            cardView.style.display = "none";
+            tableView.style.display = "block";
+            sessionStorage.setItem("tableView", 1);
+            icon.className = "bi bi-card-image";
+        } else {
+            cardView.style.display = "flex";
+            cardView.style.flexWrap = "wrap";
+            tableView.style.display = "none"; 
+            sessionStorage.setItem("tableView", 0);
+            icon.className = "bi bi-list-columns-reverse";
+        }
+    }
+
+    function loadView() {
+        const cardView = document.getElementById("card-view");
+        const tableView = document.getElementById("table-view");
+        const icon = document.getElementById("toggleViewIcon");
+
+        if (sessionStorage.getItem("tableView") == 1) {
+            cardView.style.display = "none";
+            tableView.style.display = "block";
+            icon.className = "bi bi-card-image";
+        } else {
+            cardView.style.display = "flex";
+            cardView.style.flexWrap = "wrap";
+            tableView.style.display = "none";
+            icon.className = "bi bi-list-columns-reverse";
+        }
+    }
+    loadView()
+
+    document.getElementById('selectAllColumns').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.column-option');
+        checkboxes.forEach(checkbox => checkbox.checked = this.checked);
+    });
+
+    function downloadSelectedData() {
+        let selectedColumns = [];
+        document.querySelectorAll('.column-option:checked').forEach(checkbox => {
+            selectedColumns.push(checkbox.value);
+        });
+
+        let fileType = document.getElementById('downloadFormat').value;
+
+        if (selectedColumns.length === 0) {
+            alert("กรุณาเลือกคอลัมน์ที่ต้องการดาวน์โหลด");
+            return;
+        }
+
+        download_data(selectedColumns, fileType);
+    }
+
+
+    const download_data = async (columns, format) => {
+        try {
+            const queryParams = new URLSearchParams({
+                format: format, 
+                columns: columns.length ? columns.join(',') : ''
+            }).toString();
+
+            const response = await fetch(`/export/osm_group_record/?${queryParams}`, {
+                method: 'GET',
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to download file: ${response.status} ${response.statusText}`);
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const now = new Date();
+            const dateStr = `${now.getDate()}-${(now.getMonth()+1).toString().padStart(2, '0')}-${now.getFullYear().toString().slice(-2)}`;
+            const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            a.download = `osm_group_record_${dateStr}_${timeStr}.${format}`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            // Revoke the object URL to free memory
+            setTimeout(() => URL.revokeObjectURL(url), 100);
+        } catch (error) {
+            console.error("Download failed:", error);
+        }
+    };
+
+
 </script>
+
+
 {% endblock %}

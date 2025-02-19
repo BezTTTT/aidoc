@@ -1,17 +1,15 @@
 ----- On Development -----
 0. Install WSL LAMP (Linux, Apache, MySQL Server, and phpmyadmin)
 1. Git clone patiwet/aidoc/main to WSL home folder (aidoc folder will be automatically created)
-2. Copy the oralLesionNet files from 'OneDrive\aidoc\oralLesionNet' to 'aidoc\aidoc\oralLesionNet' folder
-3. Copy config.py file from 'OneDrive\aidoc\instance' to 'aidoc\aidoc\instance' folder
-4. Copy the imageQualityChecker files from 'OneDrive\aidoc\imageQualityChecker' to 'aidoc\aidoc\imageQualityChecker' folder
-5. Copy the legal files from 'OneDrive\aidoc\legal' to 'aidoc\aidoc\legal' folder
-6. Install the python environment and the related packages (see below)
-7. In the folder aidoc\, install the aidoc package on the pip list using:   pip install -e .
-8. Intialize the database using:            flask --app aidoc init-db
-9. Run the package on the terminal using:   flask --app aidoc run
-10. Keep the requirements.txt and this file updated.
-11. Try to minimize the dependencies (Or try to reduce the unneccessary ones)
-12. Update version numbers on config.py accordingly
+2. Copy all files from 'OneDrive\aidoc\New AIDOC dependency' to 'aidoc\aidoc\' folder
+    (Including, imageQualityChecker, instance\config.py, legal\templates\*, oralLesionNet)
+3. Install the python environment and the related packages (see below)
+4. In the folder aidoc\, install the aidoc package on the pip list using:   pip install -e .
+5. Intialize the database using:            flask --app aidoc init-db
+6. Run the package on the terminal using:   flask --app aidoc run
+7. Keep the requirements.txt and this file updated.
+8. Try to minimize the dependencies (Or try to reduce the unneccessary ones)
+9. Update version numbers on config.py accordingly
 
 ----- On production -----
 *** Installation Phase ***
@@ -47,5 +45,10 @@ pip install reportlab
 pip install line-bot-sdk
 pip install bcrypt
 pip install pandas
+pip install openpyxl
 
-Updated: Feb 16, 2025
+(you may upgrade the package using this line)
+pip install --upgrade Flask, mysql-connector-python tensorflow pillow opencv-python python-dateutil PyPDF2 reportlab line-bot-sdk bcrypt pandas openpyxl
+pip install --upgrade tensorflow (or tensorflow[and-cuda])
+
+Updated: Feb 18, 2025

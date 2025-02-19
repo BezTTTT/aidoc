@@ -250,6 +250,8 @@
                     <p>ตำแหน่งที่พบรอยโรค: {{maps['lesion_location_map'][data['dentist_feedback_location']]}}</p>
                 {% elif data['dentist_feedback_code']== 'BAD_IMG' %}
                     <p>ความคิดเห็นเพิ่มเติม: <b>{{maps['bad_image_map'][data['dentist_feedback_comment']]}} </b></p>
+                {% elif data['dentist_feedback_code']== 'BENIGN' %}
+                    <p>บันทึกของทันตแพทย์: {{maps['benign_option'][data['dentist_feedback_comment']]}}</p>
                 {% elif data['dentist_feedback_comment'] != '' %}
                     <p>ความคิดเห็นเพิ่มเติม: <b>{{data['dentist_feedback_comment']}} </b></p>
                 {% endif %}
@@ -316,54 +318,59 @@
         <form action="{{url_for('webapp.diagnosis', role='specialist', img_id=data['img_id'], specialist_feedback='true')}}" method="post" enctype="multipart/form-data">
             <div class="card-body">
                 <h5 class="card-title">สำหรับทันตแพทย์ที่เข้าร่วมโครงการ ท่านจะวินิจฉัยภาพนี้ให้เข้ากรณีใด</h5>
-                {% for key, value in maps['dentist_diagnosis_map'].items() %}
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="dt_comment_option" id="dt_comment_option{{loop.index}}" value="{{key}}" required>
-                        <label class="form-check-label" for="dt_comment_option{{loop.index}}">{{value}}</label>
-                    </div>
-                {% endfor %}
+                <select class="form-select mb-3" name="dt_comment_option" required>
+                    <option value="" disabled selected>กรุณาเลือกคำวินิจฉัย</option>
+                    {% for key, value in maps['dentist_diagnosis_map'].items() %}
+                        <option value="{{key}}">{{value}}</option>
+                    {% endfor %}
+                </select>
                 <div id="BadImgCommentSelection" style="display: none">
                     <h6>ตัวเลือก</h6>
-                    <div class="ms-4">
-                        {% for key, value in maps['bad_image_map'].items() %}
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="BadImgCommentSelectOptions" id="bad_img_option{{loop.index}}" value="{{key}}">
-                                <label class="form-check-label" for="bad_img_option{{loop.index}}">{{value}}</label>
-                            </div>
-                        {% endfor %}
+                    <div >
+                        <select class="form-select" name="BadImgCommentSelectOptions" required>
+                            <option value="" disabled selected>กรุณาเลือกตัวเลือก</option>
+                            {% for key, value in maps['bad_image_map'].items() %}
+                                <option value="{{key}}">{{value}}</option>
+                            {% endfor %}
+                        </select>
                     </div>
+                </div>
+                <div id="BenignSelection" style="display: none">
+                    <h6>ตัวเลือก</h6>
+                    <select class="form-select mb-3" name="BenignCommentSelectOptions" required>
+                        <option value="" disabled selected>กรุณาเลือกตำแหน่ง</option>
+                        {% for key, value in maps['benign_option'].items() %}
+                            <option value="{{key}}">{{value}}</option>
+                        {% endfor %}
+                    </select>
                 </div>
                 <div id="OSCCOPMDSelection" style="display: none">
                     <div>
                         <h6>ตำแหน่งที่ตรวจพบรอยโรค</h6>
-                        <div class="ms-4">
-                            {% for key, value in maps['lesion_location_map'].items() %}
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="LesionLocationSelection" id="lesion_location{{loop.index}}" value="{{key}}">
-                                    <label class="form-check-label" for="lesion_location{{loop.index}}">{{value}}</label>
-                                </div>
-                            {% endfor %}
+                        <div class="d-flex flex-column">
+                            <select class="form-select mb-3" name="LesionLocationSelection" required>
+                                <option value="" disabled selected>กรุณาเลือกตำแหน่ง</option>
+                                {% for key, value in maps['lesion_location_map'].items() %}
+                                    <option value="{{key}}">{{value}}</option>
+                                {% endfor %}
+                            </select>
                         </div>
                     </div>
                     <div>
-                        <div>
-                            <div>
-                                <h6>ชนิดรอยโรค</h6>
-                                <div class="ms-4">
-                                    {% for key, value in maps['lesion_type_map'].items() %}
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="LesionTypeSelection" id="lesion_type{{loop.index}}" value="{{key}}">
-                                            <label class="form-check-label" for="lesion_type{{loop.index}}">{{value}}</label>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
+                        <h6>ชนิดรอยโรค</h6>
+                        <div class="d-flex flex-column">
+                            <select class="form-select mb-3" name="LesionTypeSelection" required>
+                                <option value="" disabled selected>กรุณาเลือกชนิด</option>
+                                {% for key, value in maps['lesion_type_map'].items() %}
+                                    <option value="{{key}}">{{value}}</option>
+                                {% endfor %}
+                            </select>
                         </div>
                     </div>
                 </div>
                 <div id="OtherCommentBox" style="display: none">
                     <label for="OtherCommentTextarea" class="form-label" style="font-weight: bold">กรุณาพิมพ์ความคิดเห็นในช่องด้านล่าง (ไม่เกิน 255 ตัวอักษร)</label>
-                    <textarea class="form-control" id="OtherCommentTextarea" rows="3" maxlength="255" name="OtherCommentTextarea"></textarea>
+                    <textarea class="form-control" id="OtherCommentTextarea" rows="3" maxlength="255" name="OtherCommentTextarea" required></textarea>
                 </div>
 
                 <input class="btn btn-outline-primary mt-3" type="submit" value="บันทึกคำวินิจฉัย">
@@ -437,6 +444,8 @@
     var lesion_type_list = document.getElementsByName("LesionTypeSelection");
     var commentBox = document.getElementById("OtherCommentBox");
     var commentTextArea = document.getElementById("OtherCommentTextarea");
+    var benign_select = document.getElementById("BenignSelection");
+    var benign_option_list = document.getElementsByName("BenignCommentSelectOptions");
 
     const closeCommentBox = () => {
         commentBox.style.display = "none";
@@ -464,6 +473,14 @@
         lesion_select.style.display = "none";
     };
 
+    const closeBenignOption = () => {
+        benign_option_list.forEach((option) => {
+            option.required = false;
+            option.checked = false;
+        });
+        benign_select.style.display = "none";
+    }
+
     for (var i = 0; i < dt_comment_list.length; i++) {
         dt_comment_list[i].addEventListener("change", function () {
             if (this.value == "BAD_IMG") {
@@ -473,11 +490,13 @@
                 });
                 closeLesionOption();
                 closeCommentBox();
+                closeBenignOption();
             } else if (this.value == "OTHER") {
                 commentBox.style.display = "block";
                 commentTextArea.required = true;
                 closeLesionOption();
                 closeBadImgOption();
+                closeBenignOption();
             } else if (this.value == "OSCC" || this.value == "OPMD") {
                 lesion_select.style.display = "block";
                 lesion_pos_list.forEach((option) => {
@@ -488,10 +507,20 @@
                 });
                 closeBadImgOption();
                 closeCommentBox();
+                closeBenignOption();
+            }else if (this.value == "BENIGN"){
+                benign_select.style.display = "block";
+                benign_option_list.forEach((option) => {
+                    option.required = true;
+                });
+                closeBadImgOption();
+                closeCommentBox();
+                closeLesionOption();
             } else {
                 closeLesionOption();
                 closeBadImgOption();
                 closeCommentBox();
+                closeBenignOption();
             }
         });
     }

@@ -6,3 +6,4 @@ imageQualityChecker/*
 aidoc_logs/*
 aidoc/static/legal/*
 legal/*
+aidoc/API/export/tmp

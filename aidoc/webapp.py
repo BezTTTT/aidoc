@@ -1,12 +1,17 @@
 from flask import (
-    Blueprint, redirect, render_template, request, session, url_for, g, flash, current_app, send_from_directory,jsonify
+    Blueprint, redirect, render_template, request, session, url_for, g, flash, current_app, send_from_directory,jsonify,Flask,Response
 )
-
+import io
+import pandas as pd
 import json, os
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill
+from openpyxl.utils import get_column_letter
 from datetime import datetime
 from aidoc.utils import *
 from aidoc.db import get_db
 from aidoc.auth import login_required, admin_only, specialist_only, role_validation, reload_user_profile
+from aidoc.osm_group import load_osm_group_info
 
 # 'webapp' blueprint manages Diagnosis and Record systems, including report and admin managment system
 bp = Blueprint('webapp', __name__)
@@ -126,6 +131,8 @@ def diagnosis(role, img_id):
                 dentist_feedback_location = request.form.get('LesionLocationSelection')
             elif dentist_feedback_code=='OTHER':
                 dentist_feedback_comment = request.form.get('OtherCommentTextarea', '')
+            elif dentist_feedback_code=='BENIGN':
+                dentist_feedback_comment = request.form.get('BenignCommentSelectOptions')
             sql = '''UPDATE submission_record SET
                         dentist_id=%s,
                         dentist_feedback_code=%s,
@@ -307,6 +314,7 @@ def diagnosis(role, img_id):
         data['dentistFeedbackRequest'] = 'false'
 
     dentist_diagnosis_map = {'NORMAL': 'ยืนยันว่าไม่พบรอยโรค (Normal)',
+                                'BENIGN': 'น่าจะไม่มีรอยโรค (Benign)',
                                 'OPMD': 'น่าจะมีรอยโรคที่คล้ายกันกับ OPMD',
                                 'OSCC': 'น่าจะมีรอยโรคที่คล้ายกันกับ OSCC',
                                 'BAD_IMG': 'ภาพถ่ายที่ส่งมายังไม่ได้มาตรฐาน ทำให้วินิจฉัยไม่ได้',
@@ -333,10 +341,17 @@ def diagnosis(role, img_id):
                        4: 'รอยแผลถลอก',
                        5: 'ลักษณะเป็นก้อน'
                        }
+    
+    benign_option = {'NORMAL': 'ปกติ ไม่ใช่รอยโรค',
+                    'RECHECK': 'ควรตรวจเพิ่มเติม',  
+                    'OBSERVE': 'ติดตามอาการเพิ่มเติม'}
+
+
     maps = {'dentist_diagnosis_map': dentist_diagnosis_map,
             'bad_image_map': bad_image_map,
             'lesion_location_map': lesion_location_map,
-            'lesion_type_map': lesion_type_map}
+            'lesion_type_map': lesion_type_map,
+            'benign_option': benign_option}
     return render_template(role+'_diagnosis.html', data=data, maps=maps)
 
 # region record
@@ -414,6 +429,9 @@ def record(role):
     else:
         dataCount = 0
     total_pages = (dataCount - 1) // session['records_per_page'] + 1
+
+    if role == 'osm':
+        load_osm_group_info()
 
     return render_template(
                 role + "_record.html",
@@ -673,7 +691,7 @@ def adminRecord2():
     return render_template("/newTemplate/admin_diagnosis.html")
 
 #followup for dentist page
-@bp.route('/followup/admin', methods=['GET'])
+@bp.route('/followup/admin', methods=('GET','POST'))
 @login_required
 @admin_only
 def followupManage():
@@ -722,6 +740,85 @@ def confirmFeedback(submission_id):
         return jsonify({"status": "success", "message": "✅ ยืนยัน Feedback สำเร็จ", "item": updated_item})
     
     return jsonify({"status": "error", "message": "⚠️ กรุณาใส่ Feedback และ Note "})
+
+@bp.route('/followup/export', methods=['GET'])
+@login_required
+def export_followup_records():
+    db, cursor = get_db()
+    # Fetch raw data from database
+    sql_query = '''
+        SELECT 
+            sr.id,
+            sr.sender_id AS "senderId", 
+            pcid.case_id AS "Case ID",
+            sr.fname AS "imageName"
+        FROM submission_record AS sr 
+        INNER JOIN followup_request AS fr ON sr.id = fr.submission_id
+        LEFT JOIN patient_case_id AS pcid ON pcid.id = fr.submission_id
+        ORDER BY pcid.case_id ASC
+    '''
+    cursor.execute(sql_query)
+    records = cursor.fetchall()
+
+    if not records:
+        return "No data available", 204
+
+    # Convert to DataFrame for processing
+    df = pd.DataFrame(records)
+
+    # Add Image URL Column (If needed)
+    df["Image Link"] = "https://icohold.anamai.moph.go.th:85/load_image/upload/" + df["senderId"].astype(str) + "/" + df["imageName"].astype(str) 
+
+    df.insert(0, "No.", range(1, len(df) + 1))
+    df["Specialist Feedback"] = None  # or you can use an empty string `""`
+    df["Note"] = None  # or you can use an empty string `""`
+    df = df[["No.", "Case ID", "Image Link", "Specialist Feedback", "Note"]]
+
+    # Start creating Excel file
+    output = io.BytesIO()
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Followup Records"
+
+    # Define Headers
+    headers = df.columns.tolist()
+    ws.append(headers)
+
+    column_widths = {
+    "No.": 10,
+    "Case ID": 10,
+    "Image Link": 80,
+    "Specialist Feedback": 50,
+    "Note": 30
+    }
+
+    # Style Headers
+    header_fill = PatternFill(start_color="D9D9D9", end_color="D9D9D9", fill_type="solid")
+    bold_font = Font(bold=True)
+
+    for col_num, header in enumerate(headers, 1):
+        col_letter = get_column_letter(col_num)
+        ws[f"{col_letter}1"].fill = header_fill
+        ws[f"{col_letter}1"].font = bold_font
+        if header in column_widths:
+            ws.column_dimensions[col_letter].width = column_widths[header]
+        else:
+            ws.column_dimensions[col_letter].width = 25
+
+    # Add Data Rows
+    for row in df.itertuples(index=False):
+        ws.append(row)
+
+    # Save to buffer
+    output.seek(0)
+    wb.save(output)
+    output.seek(0)
+
+    return Response(
+        output,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=followup_records.xlsx"}
+    )
 
 # region edit
 @bp.route('/edit/', methods=('GET','PUT','POST'))
