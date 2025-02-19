@@ -266,7 +266,10 @@ def diagnosis(role, img_id):
                 else:
                     data['sender_description'] = f"ผู้นำส่งข้อมูล เบอร์โทรติดต่อ: {data['sender_phone']} (ยังไม่ได้ลงทะเบียน)"
             else:
-                data['sender_description'] = f"{data['sender_name']} {data['sender_surname']} (ผู้ป่วยนำส่งรูปด้วยตัวเอง)"
+                if 'sender_name' in data and data['sender_name'] is not None:
+                    data['sender_description'] = f"{data['sender_name']} {data['sender_surname']} (ผู้ป่วยนำส่งรูปด้วยตัวเอง)"
+                else:
+                    data['sender_description'] = f"บัญชีผู้นำส่งถูกลบ (ผู้ป่วยนำส่งรูปด้วยตัวเอง)"
         else: # osm
             data['sender_description'] = f"{g.user['name']} {g.user['surname']} (โทรศัพท์: {g.user['phone']})"
             data['sender_hospital'] = g.user['hospital']
