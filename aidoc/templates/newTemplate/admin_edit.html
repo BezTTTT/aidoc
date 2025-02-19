@@ -12,56 +12,112 @@
       <h3>แก้ไขข้อมูลผู้ใช้</h3>
   </div>
     <form id="editUserForm" action="/edit_page" method="POST">
-        <input type="hidden" name="_method" value="PUT">
-        <div id="formContent" class="row g-3 my-4">
-          <!--populateContect from script-->
-        </div>
-        <fieldset class="row my-3">
-            <legend class="col-form-label col-sm-2 pt-0">Permission</legend>
-
-            <div class="col-sm-10">
+      <input type="hidden" name="_method" value="PUT">
+      <div id="formContent" class="row g-3 my-4"></div>
+      <div class="row">
+        <!-- Permission Section -->
+        <div class="col-md-5">
+          <fieldset class="row mb-3">
+            <legend class="col-form-label">Permission</legend>
+            <div class="col-sm-10 px-5">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="role" id="admin" value="admin">
+                <label class="form-check-label" for="admin">Admin</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="role" id="specialist" value="specialist">
+                <label class="form-check-label" for="specialist">Specialist</label>
+              </div>
+              <div class="d-flex">
                 <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="role" id="admin" value="admin" >
-                    <label class="form-check-label" for="admin">Admin</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="role" id="specialist" value="specialist">
-                    <label class="form-check-label" for="dentist">Specialist</label>
-                </div>
-
-                <div class="d-flex">
-                  <div class="form-check">
                   <input class="form-check-input" type="checkbox" name="role" id="osm" value="osm">
                   <label class="form-check-label" for="osm">Osm</label>
-                  </div>
-                  <!-- osm supervisor check box appear when osm is checked-->
-                  <div id="promoteSupervisorContainer" style="display: none;">
-                    <div class="form-check mx-3">
-                        <input class="form-check-input" type="checkbox" name="promote_supervisor" id="promoteSupervisor" value="osmSupervisor">
-                        <label class="form-check-label" for="promoteSupervisor">Osm Supervisor</label>
-                    </div>
-                  </div>
                 </div>
-                
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="role" id="patient" value="patient">
-                    <label class="form-check-label" for="user">Patient</label>
-                </div>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="role" id="patient" value="patient">
+                <label class="form-check-label" for="patient">Patient</label>
+              </div>
             </div>
-        </fieldset>
-
-        <!-- submit button -->
-        <div class="col-12 d-flex justify-content-end gap-2">
-          <a href="/admin_page" class="btn btn-danger">กลับ</a>
-          <button type="submit" class="btn btn-primary" id="editUserForm">ยืนยัน</button>
+          </fieldset>
         </div>
-
+      
+        <!-- Supervisor Section -->
+        <div class="col-md-5">
+          <div id="promoteSupervisorSection" class="mb-3" style="display: none;">
+            <div class="form-check">
+              <label class="form-check-label" for="promoteSupervisor">Osm Supervisor</label>
+              <input class="form-check-input" type="checkbox" name="promote_supervisor" id="promoteSupervisor" value="osmSupervisor" onchange="toggleGroupProvincesSelection()">
+            </div>
+            <div id="groupProvincesSelection" class="mx-3">
+              <label class="form-label">Provinces (สามารถเลือกได้หลายจังหวัด)</label>
+              <div class="overflow-auto p-3 mb-3 bg-light rounded border" style="max-width: 260px; max-height: 200px;">
+                <input type="text" id="search_province" class="form-control" placeholder="ค้นหาจังหวัด" onkeyup="searchProvince()">
+                <div id="osm_group_provinces" class="mt-2 overflow-auto"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      
+        <!-- Button Section -->
+        <div class="col-md-2 d-flex justify-content-end align-items-end">
+          <div class="d-flex gap-2">
+            <a href="/admin_page" class="btn btn-danger">กลับ</a>
+            <button type="submit" class="btn btn-primary" id="editUserForm">ยืนยัน</button>
+          </div>
+        </div>
+      </div>
     </form>
   </div>
 </div>
 
 <script>
-    let is_supervisor = false;
+  let is_supervisor = false;
+  let groupSelectedProvinceList = [];
+
+    // Toggle supervisor group selection visibility
+  function toggleGroupProvincesSelection() {
+    const groupProvincesSelection = document.getElementById('groupProvincesSelection');
+    groupProvincesSelection.style.display = document.getElementById('promoteSupervisor').checked ? 'block' : 'none';
+  }
+
+  // Search provinces by input
+  function searchProvince() {
+    const input = document.getElementById("search_province").value.toLowerCase();
+    document.querySelectorAll("#osm_group_provinces .form-check").forEach(div => {
+      div.style.display = div.querySelector("label").innerText.toLowerCase().includes(input) ? "block" : "none";
+    });
+  }
+
+  // Fetch provinces for supervisor
+  function fetchProvinces() {
+    fetch('/osm_group/get_all_provinces/')
+      .then(response => response.json())
+      .then(data => {
+        const container = document.getElementById('osm_group_provinces');
+        data.provinces.forEach(province => {
+          const div = document.createElement('div');
+          div.classList.add('form-check');
+          div.innerHTML = `
+            <input class="form-check-input" type="checkbox" name="osm_provinces" value="${province}" id="province_${province}">
+            <label class="form-check-label" for="province_${province}">${province}</label>
+          `;
+          div.querySelector('input').addEventListener('change', () => updateGroupProvinces(province));
+          container.appendChild(div);
+        });
+      })
+      .catch(error => console.error('Error fetching provinces:', error));
+  }
+
+  // Update selected provinces
+  function updateGroupProvinces(province) {
+    const provinceCheckbox = document.getElementById(`province_${province}`);
+    if (provinceCheckbox.checked) {
+      groupSelectedProvinceList.push(province);
+    } else {
+      groupSelectedProvinceList = groupSelectedProvinceList.filter(p => p !== province);
+    }
+  }
 
     function fetchUserData() {
       const loadingIndicator = document.getElementById('loadingIndicator');
@@ -70,29 +126,36 @@
       loadingIndicator.style.display = 'block';
       const urlParams = new URLSearchParams(window.location.search);
       const userId = urlParams.get('id'); // Get the user ID from the URL query parameter
-  
+
       if (!userId) {
         console.warn("User ID is missing in the query parameter.");
         return;
       }
 
-      // get is osm supervisor data from db
-      fetch(`/osm_group/is_supervisor/${userId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }).then(response => response.json())
+      // Check if user is an osm supervisor
+      fetch(`/osm_group/is_supervisor/${userId}`)
+        .then(response => response.json())
         .then(data => {
           is_supervisor = data.is_supervisor;
-          const promoteSupervisorCheckbox = document.getElementById('promoteSupervisor');
-          promoteSupervisorCheckbox.checked = is_supervisor;
+            if (is_supervisor && data.group_provinces.length > 0) {
+            groupSelectedProvinceList = data.group_provinces;
+            groupSelectedProvinceList.forEach(province => {
+              if(province != ''){
+              document.getElementById(`province_${province}`).checked = true;
+              // Move checked province to top
+              const provinceDiv = document.getElementById(`province_${province}`).parentElement;
+              const container = document.getElementById('osm_group_provinces');
+              container.insertBefore(provinceDiv, container.firstChild);
+              }
+            });
+            }
+          document.getElementById('promoteSupervisor').checked = is_supervisor;
+          document.getElementById('groupProvincesSelection').style.display = is_supervisor ? 'block' : 'none';
         })
-        .catch(error => {
-          console.log(error)
-          is_supervisor = false
-        });
-  
+        .catch(error => console.error(error));
+        
+
+      // Fetch user info
       fetch(`/edit_user_info_api/?id=${userId}`, {
         method: 'GET',
         headers: {
@@ -112,14 +175,7 @@
           }
           
           // show or hide is osm supervisor checkbox
-          const promoteSupervisorContainer = document.getElementById('promoteSupervisorContainer');
-          const promoteSupervisorCheckbox = document.getElementById('promoteSupervisor');
-          if (data.is_osm === 1) {
-            promoteSupervisorContainer.style.display = 'block';
-          } else {
-            promoteSupervisorContainer.style.display = 'none';
-            promoteSupervisorCheckbox.checked = false
-          }
+          toggleSupervisorSection(data);
 
         })
         .catch((error) => {
@@ -131,6 +187,17 @@
         loadingIndicator.style.display = 'none';
       });
     }
+
+  // Show or hide the supervisor section
+  function toggleSupervisorSection(data) {
+    const promoteSupervisorSection = document.getElementById('promoteSupervisorSection');
+    if (data.is_osm === 1) {
+      promoteSupervisorSection.style.display = 'block';
+    } else {
+      promoteSupervisorSection.style.display = 'none';
+      document.getElementById('promoteSupervisor').checked = false;
+    }
+  }
   
     async function submitFormData(event) {
       event.preventDefault();  // Prevent the default form submission
@@ -159,42 +226,10 @@
       );
 
       // create/remove group for osm supervisor
-      const set_supervisor = document.getElementById('promoteSupervisor').checked ? 1 : 0
-      const is_osm = document.getElementById('osm').checked ? 1 : 0
-      let is_supervisor_updated = false
-      
-      try {
-        if(set_supervisor != (is_supervisor ? 1 : 0)){
-          if(is_osm == 1 && set_supervisor == 1){
-            const response = await fetch("/osm_group/promote_supervisor/", {
-              method: "POST",  // Use POST method for make osm to supervisor
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({user_id: userId}),
-              
-            });
-            if (!response.ok){
-              alert("Failed to update osm supervisor.")
-              return;
-            }
-          }else{
-            const response = await fetch("/osm_group/promote_supervisor/", {
-              method: "DELETE",  // Use DELETE method for remove osm to supervisor
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({user_id: userId}),
-            });
-            if (!response.ok){
-              alert("Failed to update osm supervisor.")
-              return;
-            }
-          }
-        }
-      } catch (error){
-        console.error("Error updating osm supervisor:", error);
+      if (await handleSupervisorUpdate(userId) == 1) {
+        return;
       }
+
       try{
         const response = await fetch("/check_phone_api/",{
           method: "POST",
@@ -233,17 +268,77 @@
       }
     }
 
+    async function handleSupervisorUpdate(userId){
+      const set_supervisor = document.getElementById('promoteSupervisor').checked ? 1 : 0
+      const is_osm = document.getElementById('osm').checked ? 1 : 0
+      let is_supervisor_updated = false
+
+      try {
+        if(set_supervisor != (is_supervisor ? 1 : 0)){
+          if(is_osm == 1 && set_supervisor == 1){
+            const response = await fetch("/osm_group/promote_supervisor/", {
+              method: "POST",  // Use POST method for make osm to supervisor
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({user_id: userId}),
+              
+            });
+            if (!response.ok){
+              alert("Failed to update osm supervisor.")
+              return 1;
+            }
+          }else{
+            const response = await fetch("/osm_group/promote_supervisor/", {
+              method: "DELETE",  // Use DELETE method for remove osm to supervisor
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({user_id: userId}),
+            });
+            if (!response.ok){
+              alert("Failed to update osm supervisor.")
+              return 1;
+            }
+          }
+        }
+
+        if ((is_osm == 1 && set_supervisor == 1)){
+          const group_provinces_string = (groupSelectedProvinceList.length > 0) ? groupSelectedProvinceList.join(",") : '';
+          const response = await fetch("/osm_group/promote_supervisor/", {
+            method: "PUT",  // Use PUT method for updating group provinces
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({user_id: userId, group_provinces_string: group_provinces_string}),
+          });
+          if (!response.ok){
+            alert("Failed to update osm supervisor.")
+            return 1;
+          }
+        }
+
+      } catch (error){
+        alert("Failed to update osm supervisor.")
+        console.error("Error updating osm supervisor:", error);
+        return 1;
+      }
+
+      return 0;
+    }
+
     // toggle show osm supervisor checkbox
     document.getElementById('osm').addEventListener('change', function () {
       promoteSupervisorCheckbox = document.getElementById('promoteSupervisor');
-      promoteSupervisorContainer = document.getElementById('promoteSupervisorContainer');
+      promoteSupervisorSection = document.getElementById('promoteSupervisorSection');
       
       if(this.checked){
         promoteSupervisorCheckbox.checked = is_supervisor;
-        promoteSupervisorContainer.style.display = 'block';
+        promoteSupervisorSection.style.display = 'block';
+
       } else {
         promoteSupervisorCheckbox.checked = false;
-        promoteSupervisorContainer.style.display = 'none';
+        promoteSupervisorSection.style.display = 'none';
       }
     });
   
@@ -356,6 +451,7 @@
     }
   }
   document.addEventListener("DOMContentLoaded", function () {
+    fetchProvinces()
     fetchUserData();
   });
   </script>

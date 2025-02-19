@@ -47,29 +47,49 @@ def reload_user_profile(user_id):
             if user['is_osm']: # check if the osm user is a osm_group member/supervisor
                 
                 # check and get osm group info for showing the osm group option on navbar
-                db, cursor = get_db()
-                query = """
-                    SELECT 
-                        EXISTS (SELECT 1 FROM osm_group WHERE osm_supervisor_id = %s) AS is_supervisor,
-                        EXISTS (SELECT 1 FROM osm_group_member WHERE osm_id = %s) AS is_member,
-                        g.group_id,
-                        g.group_name,
-                        u.name,
-                        u.surname
-                    FROM osm_group_member gm
-                    LEFT JOIN osm_group g ON gm.group_id = g.group_id
-                    LEFT JOIN user u ON g.osm_supervisor_id = u.id
-                    WHERE gm.osm_id = %s
-                    LIMIT 1;
-                """
-                cursor.execute(query, (user_id,) * 3)
-                group = cursor.fetchone()
-                if group:
-                    user['group_info'] = {"is_supervisor": group['is_supervisor'], "is_member": group['is_member'], "group_name": group["group_name"] if group["group_name"] else "-", "group_supervisor": group["name"] + " " + group["surname"], "group_id": group["group_id"]}
-                else:
-                    user['group_info'] = {"is_supervisor": 0, "is_member": 0, "group_name": "", "group_id": -1}
+                group_info = load_osm_group_info_query(user['id'])
+                user['group_info'] = group_info
+                
     session['g_user'] = user
     g.user = session['g_user']
+
+def load_osm_group_info_query(user_id):
+    db, cursor = get_db()
+    query = """
+        SELECT 
+            COALESCE(supervisor.is_supervisor, FALSE) AS is_supervisor,
+            COALESCE(member.is_member, FALSE) AS is_member,
+            ogm.group_id,
+            og.group_name,
+            CONCAT(su.name, ' ', su.surname) AS group_supervisor
+        FROM osm_group_member ogm
+        JOIN osm_group og ON og.group_id = ogm.group_id
+        LEFT JOIN user su ON su.id = og.osm_supervisor_id
+        LEFT JOIN (
+            SELECT TRUE AS is_supervisor
+            FROM osm_group 
+            WHERE osm_supervisor_id = %s
+            LIMIT 1
+        ) supervisor ON TRUE
+        LEFT JOIN (
+            SELECT TRUE AS is_member
+            FROM osm_group_member 
+            WHERE osm_id = %s
+            LIMIT 1
+        ) member ON TRUE
+        WHERE ogm.osm_id = %s;
+    """
+    cursor.execute(query, (user_id, user_id, user_id))
+    group = cursor.fetchone()
+    
+    group_info = {
+        "is_supervisor": group["is_supervisor"] if group else False,
+        "is_member": group["is_member"] if group else False,
+        "group_name": group["group_name"] if group else "",
+        "group_id": group["group_id"] if group else -1,
+        "group_supervisor": group["group_supervisor"] if group else ""
+    }
+    return group_info
 
 @bp.route('/')
 def index():

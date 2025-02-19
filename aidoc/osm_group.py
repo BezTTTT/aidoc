@@ -1,18 +1,19 @@
+from functools import singledispatch
 import json
 from flask import Blueprint, jsonify, render_template, request, session, g
-from aidoc.auth import login_required, reload_user_profile
+from aidoc.auth import login_required, load_osm_group_info_query
 from aidoc.db import get_db
+from aidoc.utils import format_thai_datetime, calculate_age
 
-from aidoc.webapp import calculate_age, construct_osm_filter_sql, format_thai_datetime
 
 bp = Blueprint('osm_group', __name__)
 
 # render osm hierarchy record page
-# region Group Record
+# region Group Record Render
 @bp.route('/', methods=('GET', 'POST'))
 @login_required
 def render_osm_group_record():
-    
+    load_osm_group_info() # Load group info to g.user['group_info']
     # Prevent not supervisor accesses
     if(g.user['group_info']['is_supervisor'] == 0 or g.user['group_info']['group_id'] == -1 ):
         return render_template('newTemplate/osm_group_record.html', dataCount=0, paginated_data=[], current_page=1, total_pages=1, data={}, osm_filter_data={})
@@ -57,7 +58,7 @@ def render_osm_group_record():
     session['current_record_page'] = page
     session['records_per_page'] = 12
 
-    paginated_data, supplemental_data, dataCount, osm_filter_data = record_osm_group()
+    paginated_data, supplemental_data, dataCount, osm_filter_data = record_osm_group(None)
 
     # Further process each item in paginated_data
     for item in paginated_data:
@@ -77,9 +78,19 @@ def render_osm_group_record():
                 data=supplemental_data,
                 osm_filter_data=osm_filter_data)
 
-# function to retrieve osm group records
-def record_osm_group():
+# region get record_osm_group
+# overloading
+@singledispatch
+def record_osm_group(_):
+    page = session['current_record_page']
+    records_per_page = session['records_per_page']
+
+    return record_osm_group(page, records_per_page)
+
+@record_osm_group.register
+def _(page: int, records_per_page: int):
     # Construct filter query and supplemental data
+    from aidoc.webapp import construct_osm_filter_sql
     filter_query, supplemental_data = construct_osm_filter_sql()
 
     # Add sender filter if present
@@ -88,37 +99,10 @@ def record_osm_group():
         filter_query += f" AND (sender_id = {filter_sender})" if filter_query else f"(sender_id = {filter_sender})"
         supplemental_data['filterSender'] = filter_sender
 
-    # Pagination setup
-    page = session['current_record_page']
-    records_per_page = session['records_per_page']
-    offset = (page - 1) * records_per_page
+    # Pagination
+    offset = (page-1)*records_per_page
 
     db, cursor = get_db()
-    
-    # SQL query parts
-    sql_select = '''
-        SELECT submission_record.id, channel, fname,
-            patient_user.name AS patient_name, patient_user.surname AS patient_surname, patient_user.birthdate, patient_user.province,
-            case_id, sender_id, patient_id, dentist_id, special_request, sender_phone,
-            location_district, location_amphoe, location_province, location_zipcode, 
-            dentist_feedback_comment, dentist_feedback_code,
-            ai_prediction, submission_record.created_at,
-            osm_user.name as sender_name, osm_user.surname as sender_surname, osm_user.phone as osm_phone
-    '''
-    sql_count = 'SELECT count(*) AS full_count'
-    sql_from = '''
-        FROM submission_record
-        INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
-        LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
-        LEFT JOIN user AS sender_user ON submission_record.sender_phone = sender_user.phone
-        LEFT JOIN user AS osm_user ON submission_record.sender_id = osm_user.id
-        WHERE 
-    '''
-    sql_limit = '''
-        ORDER BY submission_record.id DESC
-        LIMIT %s
-        OFFSET %s
-    '''
 
     # Retrieve OSM group members
     cursor.execute('''
@@ -134,40 +118,217 @@ def record_osm_group():
         'osm_name': f"{member['osm_name']} {member['osm_surname']}"
     } for member in member_list]
 
-    # Construct group member SQL condition
-    group_member_conditions = [
-        f"(sender_id = {member['sender_id']} OR (submission_record.sender_phone IS NOT NULL AND submission_record.sender_phone = {member['sender_phone']}))"
-        for member in member_list
-    ]
-    sql_group_member = '(' + ' OR '.join(group_member_conditions) + ')'
 
-    # Combine SQL parts
-    sql_where = f' AND {filter_query}' if filter_query else ''
-    sql_count_query = sql_count + sql_from + sql_group_member + sql_where
-    sql_select_query = sql_select + sql_from + sql_group_member + sql_where + sql_limit
+    # Construct group member conditions
+    group_member_conditions = []
+    group_member_values = []
+    if filter_sender:
+        #filter by sender_id
+        filter_member = next((item for item in member_list if str(item["sender_id"]) == filter_sender), None)
+        group_member_conditions.append("(submission_record.sender_id = %s OR (submission_record.sender_phone IS NOT NULL AND submission_record.sender_phone = %s))")
+        group_member_values.extend([filter_member['sender_id'], filter_member['sender_phone']])
+    else:
+        for member in member_list:
+            group_member_conditions.append("(submission_record.sender_id = %s OR (submission_record.sender_phone IS NOT NULL AND submission_record.sender_phone = %s))")
+            group_member_values.extend([member['sender_id'], member['sender_phone']])
 
-    # Execute queries
-    cursor.execute(sql_count_query)
-    data_count = cursor.fetchone()
+    group_member_sql = '(' + ' OR '.join(group_member_conditions) + ')'
 
-    cursor.execute(sql_select_query, (records_per_page, offset))
+    if filter_query:
+        base_sql = '''
+            SELECT 
+                sr.id,
+                sr.channel,
+                sr.fname,
+                sr.patient_name,
+                sr.patient_surname,
+                sr.birthdate,
+                sr.province,
+                sr.case_id,
+                sr.sender_id,
+                sr.patient_id,
+                sr.dentist_id,
+                sr.special_request,
+                sr.sender_phone,
+                sr.location_province,
+                sr.location_zipcode,
+                sr.dentist_feedback_comment,
+                sr.dentist_feedback_code,
+                sr.ai_prediction,
+                sr.created_at,
+                sr.sender_name,
+                sr.sender_surname,
+                sr.osm_phone,
+                c.full_count
+            FROM (
+                SELECT 
+                    submission_record.id,
+                    submission_record.channel,
+                    submission_record.fname,
+                    patient_user.name AS patient_name,
+                    patient_user.surname AS patient_surname,
+                    patient_user.birthdate,
+                    patient_user.province,
+                    patient_case_id.case_id,
+                    submission_record.sender_id,
+                    submission_record.patient_id,
+                    submission_record.dentist_id,
+                    submission_record.special_request,
+                    submission_record.sender_phone,
+                    submission_record.location_province,
+                    submission_record.location_zipcode,
+                    submission_record.dentist_feedback_comment,
+                    submission_record.dentist_feedback_code,
+                    submission_record.ai_prediction,
+                    submission_record.created_at,
+                    osm_user.name as sender_name,
+                    osm_user.surname as sender_surname,
+                    osm_user.phone as osm_phone
+                FROM (
+                    SELECT id
+                    FROM submission_record
+                    WHERE ''' + group_member_sql + ''' AND channel = 'OSM'
+                ) AS submission_record_limited
+                INNER JOIN submission_record
+                    ON submission_record.id = submission_record_limited.id
+                LEFT JOIN patient_case_id
+                    ON submission_record.id = patient_case_id.id
+                LEFT JOIN user AS patient_user
+                    ON submission_record.patient_id = patient_user.id
+                LEFT JOIN user AS osm_user
+                    ON submission_record.sender_id = osm_user.id
+                WHERE ''' + filter_query + '''
+                ORDER BY submission_record.created_at DESC
+                LIMIT %s OFFSET %s
+            ) AS sr
+            CROSS JOIN (
+                SELECT 
+                    COUNT(submission_record.id) AS full_count
+                FROM (
+                    SELECT id
+                    FROM submission_record
+                    WHERE ''' + group_member_sql + ''' AND channel = 'OSM'
+                ) AS submission_record_limited
+                INNER JOIN submission_record
+                    ON submission_record.id = submission_record_limited.id
+                LEFT JOIN patient_case_id
+                    ON submission_record.id = patient_case_id.id
+                LEFT JOIN user AS patient_user
+                    ON submission_record.patient_id = patient_user.id
+                LEFT JOIN user AS osm_user
+                    ON submission_record.sender_id = osm_user.id
+                WHERE ''' + filter_query + '''
+            ) AS c
+            ORDER BY sr.created_at DESC;
+            '''
+        val = tuple(group_member_values + [records_per_page, offset] + group_member_values)
+    else:
+        base_sql = '''
+            SELECT 
+                sr.id,
+                sr.channel,
+                sr.fname,
+                sr.patient_name,
+                sr.patient_surname,
+                sr.birthdate,
+                sr.province,
+                sr.case_id,
+                sr.sender_id,
+                sr.patient_id,
+                sr.dentist_id,
+                sr.special_request,
+                sr.sender_phone,
+                sr.location_province,
+                sr.location_zipcode,
+                sr.dentist_feedback_comment,
+                sr.dentist_feedback_code,
+                sr.ai_prediction,
+                sr.created_at,
+                sr.sender_name,
+                sr.sender_surname,
+                sr.osm_phone,
+                c.full_count
+            FROM (
+                SELECT 
+                    submission_record.id,
+                    submission_record.channel,
+                    submission_record.fname,
+                    patient_user.name AS patient_name,
+                    patient_user.surname AS patient_surname,
+                    patient_user.birthdate,
+                    patient_user.province,
+                    patient_case_id.case_id,
+                    submission_record.sender_id,
+                    submission_record.patient_id,
+                    submission_record.dentist_id,
+                    submission_record.special_request,
+                    submission_record.sender_phone,
+                    submission_record.location_province,
+                    submission_record.location_zipcode,
+                    submission_record.dentist_feedback_comment,
+                    submission_record.dentist_feedback_code,
+                    submission_record.ai_prediction,
+                    submission_record.created_at,
+                    osm_user.name as sender_name,
+                    osm_user.surname as sender_surname,
+                    osm_user.phone as osm_phone
+                FROM (
+                    SELECT id
+                    FROM submission_record
+                    WHERE ''' + group_member_sql + ''' AND channel = 'OSM'
+                    ORDER BY submission_record.created_at DESC
+                    LIMIT %s OFFSET %s
+                ) AS submission_record_limited
+                INNER JOIN submission_record
+                    ON submission_record.id = submission_record_limited.id
+                LEFT JOIN patient_case_id
+                    ON submission_record.id = patient_case_id.id
+                LEFT JOIN user AS patient_user
+                    ON submission_record.patient_id = patient_user.id
+                LEFT JOIN user AS osm_user
+                    ON submission_record.sender_id = osm_user.id
+            ) AS sr
+            CROSS JOIN (
+                SELECT 
+                    COUNT(submission_record.id) AS full_count
+                FROM (
+                    SELECT id
+                    FROM submission_record
+                    WHERE ''' + group_member_sql + ''' AND channel = 'OSM'
+                ) AS submission_record_limited
+                INNER JOIN submission_record
+                    ON submission_record.id = submission_record_limited.id
+            ) AS c
+            ORDER BY sr.created_at DESC;
+            '''
+        val = tuple(group_member_values + [records_per_page, offset] + group_member_values)
+
+    cursor.execute(base_sql, val)
     paginated_data = cursor.fetchall()
+    
+    if len(paginated_data) > 0:
+        data_count = {'full_count': paginated_data[0]['full_count']}
+    else:
+        data_count = {'full_count': 0}
 
     # Process each record
     for item in paginated_data:
-        item['owner_id'] = item['patient_id'] if item['channel'] == 'PATIENT' else item['sender_id']
-        if 'birthdate' in item and item['birthdate']:
+        if item['channel'] == 'PATIENT':
+            item['owner_id'] = item['patient_id']
+        else:
+            item['owner_id'] = item['sender_id']
+        if item.get('birthdate'):
             item['age'] = calculate_age(item['birthdate'])
 
     return paginated_data, supplemental_data, data_count, osm_filter_data
 
 
 # render osm group manage page
-# region Group Manage
+# region Group Manage Render
 @bp.route('/member-manage/', methods=['GET'])
 @login_required
 def render_osm_group_manage():
-
+    load_osm_group_info() # Load group info to g.user['group_info']
     # Prevent not supervisor accesses
     if(g.user['group_info']['is_supervisor'] == 0 or g.user['group_info']['group_id'] == -1 ):
         return render_template('newTemplate/osm_group_manage.html', group_id=-1, is_user_supervisor=0, group_name="ไม่มีข้อมูล")
@@ -208,7 +369,7 @@ def render_osm_group_manage():
     )
 
 
-#region APIs
+#region get_group_users
 @bp.route('/group/<int:group_id>', methods=['GET'])
 @login_required
 def get_group_users(group_id):
@@ -249,7 +410,7 @@ def get_group_users(group_id):
 
     return jsonify({'group_list': group_list})
 
-
+# region add_user_to_group
 @bp.route('/add', methods=['POST'])
 @login_required
 def add_user_to_group():
@@ -279,11 +440,10 @@ def add_user_to_group():
         "INSERT INTO osm_group_member (group_id, osm_id) VALUES (%s, %s)",
         (group_id, user_id)
     )
-    reload_user_profile(session['user_id'])
     return json.dumps({'message': 'User added to group'}), 200
     
 
-
+# region remove_from_group
 @bp.route('/remove', methods=['DELETE'])
 @login_required
 def remove_from_group():
@@ -301,10 +461,9 @@ def remove_from_group():
         "DELETE FROM osm_group_member WHERE osm_id = %s AND group_id = %s",
         (user_id, group_id)
     )
-    reload_user_profile(session['user_id'])
     return json.dumps({"message": "User removed from group."}), 200
 
-
+# region get_osm_for_search
 @bp.route('/get_osm_for_search', methods=['GET'])
 @login_required
 def get_osm_for_search():
@@ -312,28 +471,36 @@ def get_osm_for_search():
     db, cursor = get_db()
 
     # Get the current user's province
-    cursor.execute("SELECT province FROM user WHERE id = %s", (user_id,))
-    province = cursor.fetchone()["province"]
-
-    # Search for OSM users in the same province
-    cursor.execute("""
+    cursor.execute("SELECT group_provinces FROM osm_group WHERE osm_supervisor_id = %s", (user_id,))
+    provinces = cursor.fetchone()["group_provinces"]
+    print("asdasdjnsadhasdhusauhd",provinces)
+    if not provinces:
+        return jsonify({'osm_list': []})
+    
+    sql = """
         SELECT id, name, surname, phone as phone_number, province, hospital
         FROM user
         WHERE is_osm = 1
         AND id NOT IN (SELECT osm_id FROM osm_group_member)
-        AND province = %s
-    """, (province,))
+        """
+    where_provinces = ""
+    provinces_list = provinces.split(",")
+    for province in provinces_list:
+        where_provinces += f"province = '{province}' OR "
+    sql += "AND (" + where_provinces[:-3] + ")"
 
+    cursor.execute(sql)
+    # Search for OSM users in the same province
+    
     osm_users = cursor.fetchall()
 
     return jsonify({
-        'osm_list': osm_users,
-        "province": province
+        'osm_list': osm_users
     })
 
-
-@bp.route('/promote_supervisor/', methods=['POST', 'DELETE'])
-@login_required
+# region promote_supervisor
+@bp.route('/promote_supervisor/', methods=['POST', 'DELETE', 'PUT',])
+# @login_required
 def promote_supervisor():
     user_id = request.get_json()['user_id']
 
@@ -365,7 +532,7 @@ def promote_supervisor():
                 "DELETE FROM osm_group_member WHERE osm_id = %s",
                 (user_id,)
             )
-
+        # group_provinces = request.get_json()['group_provinces_string'] if request.get_json()['group_provinces_string'] else ''
         # Create a new group and add the user as a member
         cursor.execute(
             "INSERT INTO osm_group (osm_supervisor_id, group_name) VALUES (%s, NULL)",
@@ -397,18 +564,31 @@ def promote_supervisor():
             "DELETE FROM osm_group WHERE osm_supervisor_id = %s",
             (user_id,)
         )
-    reload_user_profile(session['user_id'])
+    elif request.method == 'PUT':
+        # Update provinces of the group
+        group_provinces = request.get_json()['group_provinces_string']
+        cursor.execute(
+            "SELECT group_id FROM osm_group WHERE osm_supervisor_id = %s",
+            (user_id,)
+        )
+        group_id = cursor.fetchone()
+
+        cursor.execute(
+            "UPDATE osm_group SET group_provinces = %s WHERE group_id = %s",
+            (group_provinces, group_id["group_id"],)
+        )
     return jsonify({'message': 'Supervisor removed successfully'}), 200
 
-
+# region is_supervisor
 @bp.route('/is_supervisor/<int:user_id>', methods=['GET'])
 @login_required
 def is_supervisor(user_id):
     is_supervisor = False
+    group_provinces_list = [] 
     db, cursor = get_db()
     cursor.execute(
         """
-            SELECT group_id FROM osm_group WHERE osm_supervisor_id = %s LIMIT 1;
+            SELECT group_id, group_provinces FROM osm_group WHERE osm_supervisor_id = %s LIMIT 1;
         """,
         (user_id,)
     )
@@ -416,10 +596,10 @@ def is_supervisor(user_id):
 
     if data:
         is_supervisor = True
+        group_provinces_list = data["group_provinces"].split(",") if data["group_provinces"] else []
+    return jsonify({"is_supervisor": is_supervisor, "group_provinces": group_provinces_list}), 200
 
-    return jsonify({"is_supervisor": is_supervisor}), 200
-
-
+# region update_group_name
 @bp.route('/update_group_name/', methods=['POST'])
 @login_required
 def update_group_name():
@@ -434,7 +614,28 @@ def update_group_name():
         "UPDATE osm_group SET group_name = %s WHERE group_id = %s",
         (group_name, group_id)
     )
-    reload_user_profile(session['user_id'])
     return jsonify({'message': 'Name updated successfully'}), 200
 
+# region get_all_provinces
+@bp.route('/get_all_provinces/', methods=['GET'])
+# @login_required
+def get_all_provinces():
+    db, cursor = get_db()
+    cursor.execute('SELECT name_th FROM thai_provinces')
+    provinces = cursor.fetchall()
+    if not provinces:
+        return jsonify({'provinces': []}) 
 
+    provinces_list = [province['name_th'] for province in provinces]
+    return jsonify({'provinces': provinces_list}), 200
+
+
+# region load osm group info
+# load_osm_group_info
+def load_osm_group_info():
+    user = g.get('user')
+    if not user:
+        return
+    group_info = load_osm_group_info_query(user['id'])
+    session['g_user']['group_info'] = group_info
+    g.user['group_info'] = group_info

@@ -144,7 +144,7 @@
     <div class="card grid-item-osm-patient-profile-panel">
         <div class="card-body">
             <h5 class="card-title text-start mb-4">เวชระเบียนผู้ป่วย</h5>
-            {%if data['patient_id'] is none %}
+            {% if data['patient_id'] is none or data['db_patient_national_id'] is none %}
                 {% if data['saved_patient_national_id'] is not none %}
                     <p>เลขประจำตัวประชาชน: {{data['saved_patient_national_id']}}</p>
                     <p>ผู้ป่วยยังไม่ถูกลงทะเบียนในระบบ</p>
