@@ -3,25 +3,6 @@ from flask import current_app, g
 import click
 import os
 
-# def get_db():
-#     if 'db' not in g:
-#         g.db = mysql.connector.connect(
-#             host=current_app.config['DB_HOST'],
-#             database=current_app.config['DB_DATABASE'],
-#             user=current_app.config['DB_USER'],
-#             password=current_app.config['DB_PASSWORD'],
-#             port=current_app.config['DB_PORT']
-#         )
-#         g.db.autocommit = True
-    
-#     return (g.db, g.db.cursor(dictionary=True,buffered=True))
-
-# def close_db(e=None):
-#     db = g.pop('db', None)
-
-#     if db is not None:
-#         db.close()
-        
 def get_db():
     if 'db' not in g:
         g.db = mysql.connector.connect(
@@ -29,6 +10,7 @@ def get_db():
             database=current_app.config['DB_DATABASE'],
             user=current_app.config['DB_USER'],
             password=current_app.config['DB_PASSWORD'],
+            port=current_app.config['DB_PORT']
         )
         g.db.autocommit = True
     
@@ -39,6 +21,24 @@ def close_db(e=None):
 
     if db is not None:
         db.close()
+        
+# def get_db():
+#     if 'db' not in g:
+#         g.db = mysql.connector.connect(
+#             host=current_app.config['DB_HOST'],
+#             database=current_app.config['DB_DATABASE'],
+#             user=current_app.config['DB_USER'],
+#             password=current_app.config['DB_PASSWORD'],
+#         )
+#         g.db.autocommit = True
+    
+#     return (g.db, g.db.cursor(dictionary=True,buffered=True))
+
+# def close_db(e=None):
+#     db = g.pop('db', None)
+
+#     if db is not None:
+#         db.close()
         
 def get_db_2():
     if 'db' not in g:
