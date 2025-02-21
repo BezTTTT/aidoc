@@ -40,7 +40,7 @@ def map_image_manage_list_data(data):
         else:
             age = None
         image = {
-            "submission_id": row['id'],
+            "submission_id": row['submission_id'],
             "case_id": row['case_id'],
             "file_name": row['fname'],
             "submission_date": du.format_date_to_ddMMyyyy_time(row['created_at']),
@@ -58,7 +58,10 @@ def map_image_manage_list_data(data):
             "age": age,
             "national_id": row['national_id'],
             "sender_job": cm.map_job_position_to_th(row['job_position']),
-            "sender_id": row['sender_id']
+            "sender_id": row['sender_id'],
+            "channel": row['channel'],
+            "followup": row['followup_id'],
+            "retrain": row['retrain_id'],
         }
         image_manage_list.append(image)
 

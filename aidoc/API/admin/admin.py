@@ -1,5 +1,5 @@
 import json
-from . import delete_user_account, get_image_manage, get_user_account_list, get_user_edit_info, update_user_info , check_phone
+from . import delete_user_account, get_user_account_list, get_user_edit_info, update_user_info , check_phone
 from ... import db
 from flask import jsonify, make_response, request
 from decimal import Decimal
