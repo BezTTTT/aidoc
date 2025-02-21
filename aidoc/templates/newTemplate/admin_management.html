@@ -8,7 +8,7 @@
 </div>
 <table id="user_manage" class="dataTable">
   <thead>
-    <tr class="text-dark" >
+    <tr class="text-dark">
       <th>ชื่อ - นามสกุล</th>
       <th>สิทธิ์การเข้าถึงระบบ</th>
       <th>วิชาชีพ</th>
@@ -24,6 +24,7 @@
 <script>
   let fetchedData = []; // Store fetched data globally
   let dataTableInstance = null; // DataTables instance
+  const cachedData = localStorage.getItem("adminUserData");
 
   function fetchAdminPage() {
     fetch(`/admin_page_api/`, {
@@ -40,6 +41,7 @@
       })
       .then((data) => {
         fetchedData = data; // Save fetched data
+        localStorage.setItem("adminUserData", JSON.stringify(data)); // Store in localStorage
         renderTable(fetchedData); // Render the table initially
       })
       .catch((error) => {
@@ -51,26 +53,26 @@
     const tbody = document.querySelector("#user_manage tbody");
     tbody.innerHTML = ""; // Clear existing rows
 
-   
-    data.forEach((user) => {
-  const row = document.createElement("tr");
 
-  const roleIcons = user.role.length
-    ? user.role.map((role) => {
-        switch (role.toLowerCase()) {
-          case "admin":
-            return "🤴";
-          case "osm":
-            return "👨‍🚒";
-          case "specialist":
-            return "⚕️";
-          case "patient":
-            return "👨‍🦽";
-          case "dentist":
-            return "👨‍⚕️";
-        }
-      }).join(" ") // Join icons if multiple roles exist
-    : "❓"; // Default icon when no roles are assigned
+    data.forEach((user) => {
+      const row = document.createElement("tr");
+
+      const roleIcons = user.role.length
+        ? user.role.map((role) => {
+          switch (role.toLowerCase()) {
+            case "admin":
+              return "🤴";
+            case "osm":
+              return "👨‍🚒";
+            case "specialist":
+              return "⚕️";
+            case "patient":
+              return "👨‍🦽";
+            case "dentist":
+              return "👨‍⚕️";
+          }
+        }).join(" ") // Join icons if multiple roles exist
+        : "❓"; // Default icon when no roles are assigned
       row.innerHTML = `
         <td> ${user.name} ${user.surname}</td>
         <td> ${roleIcons}</td>
@@ -108,7 +110,7 @@
       dataTableInstance.destroy(); // Destroy existing instance
     }
     dataTableInstance = $("#user_manage").DataTable({
-      order: [[6, "desc"]],
+      order: [[5, "desc"]],
       pageLength: 10, // Items per page
       language: {
         search: "ค้นหา:",
@@ -121,6 +123,7 @@
           previous: "ก่อนหน้า",
         },
       },
+      stateSave: true,
     });
   }
 
@@ -164,9 +167,12 @@
         alert("เกิดข้อผิดพลาดในการลบผู้ใช้");
       });
   }
-
-
-  fetchAdminPage(); // Fetch data and render table on page load
+  if (cachedData) {
+    fetchedData = JSON.parse(cachedData);
+    renderTable(fetchedData);
+  } else {
+    fetchAdminPage();
+  } // Fetch data and render table on page load
 </script>
 
 {% endblock %}

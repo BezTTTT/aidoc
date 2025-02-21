@@ -8,11 +8,11 @@ from . import get_table_patient_and_osm, get_table_specialist
 from . import get_all_submission , get_province_list
 
 
-def generate_report(province):
-    patient_data = get_table_patient_and_osm.get_table("PATIENT", province)
-    osm_data = get_table_patient_and_osm.get_table("OSM", province)
-    dentist_data = get_table_specialist.get_table(province)
-    total_pic = get_all_submission.get_all_submission(province)
+def generate_report(province, start_date, end_date):
+    patient_data = get_table_patient_and_osm.get_table("PATIENT", province,start_date, end_date)
+    osm_data = get_table_patient_and_osm.get_table("OSM", province,start_date, end_date)
+    dentist_data = get_table_specialist.get_table(province,start_date, end_date)
+    total_pic = get_all_submission.get_all_submission(province,start_date, end_date)
     total_province = get_province_list. generate_province_list()
     total_account = get_total_account.generate_total_account(province)
     
