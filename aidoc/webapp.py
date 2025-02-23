@@ -127,8 +127,9 @@ def diagnosis(role, img_id):
             if dentist_feedback_code=='BAD_IMG':
                 dentist_feedback_comment = request.form.get('BadImgCommentSelectOptions')
             elif dentist_feedback_code=='OPMD' or dentist_feedback_code=='OSCC':
-                dentist_feedback_lesion = request.form.get('LesionTypeSelection')
-                dentist_feedback_location = request.form.get('LesionLocationSelection')
+                # dentist_feedback_lesion = request.form.get('LesionTypeSelection')
+                # dentist_feedback_location = request.form.get('LesionLocationSelection')
+                dentist_feedback_comment = request.form.get('OPMDOSCCCommentSelectOptions')
             elif dentist_feedback_code=='OTHER':
                 dentist_feedback_comment = request.form.get('OtherCommentTextarea', '')
             elif dentist_feedback_code=='BENIGN':
@@ -345,12 +346,17 @@ def diagnosis(role, img_id):
     benign_option = {'NORMAL': 'ปกติ ไม่ใช่รอยโรค',
                     'RECHECK': 'ควรตรวจเพิ่มเติม',  
                     'OBSERVE': 'ติดตามอาการเพิ่มเติม'}
+    
+    oscc_opmd_options = {'URGENT': 'พบแพทย์ด่วน',
+                        'RECHECK': 'ควรตรวจเพิ่มเติม',  
+                        'OBSERVE': 'ติดตามอาการเพิ่มเติม'}
 
 
     maps = {'dentist_diagnosis_map': dentist_diagnosis_map,
             'bad_image_map': bad_image_map,
             'lesion_location_map': lesion_location_map,
             'lesion_type_map': lesion_type_map,
+            'oscc_opmd_options': oscc_opmd_options,
             'benign_option': benign_option}
     return render_template(role+'_diagnosis.html', data=data, maps=maps)
 
