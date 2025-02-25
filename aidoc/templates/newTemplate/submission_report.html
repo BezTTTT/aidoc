@@ -19,7 +19,7 @@
         d="M9 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V5a2 2 0 0 0-.6-1.4L10.5.6a2 2 0 0 0-1.4-.6zm.5 1.5L13 5H9V1.5zM4 1h5v4H4V1zM3 3v10h10V4H3z" />
     </svg>
     <div id="summaryPopup" class="popup-container"
-      style="display: none; position: fixed; top: 10%; left: 10%; width: 80%; height: 80%; background: white; border: 1px solid #ccc; padding: 20px; overflow-y: hidden; z-index: 1000;">
+      style="display: none; position: fixed; top: 10%; left: 10%; width: 80%; height: 80%; background: white; border: 1px solid #ccc; padding: 20px; overflow-y: auto; z-index: 1000;">
       <button onclick="closePopup()" class="btn btn-danger"
         style="position: absolute; top: 10px; right: 10px;">ปิด</button>
       <h3>สรุปการนำส่งรายวัน</h3>
@@ -37,7 +37,7 @@
           style="background: none; border: none; color: inherit; cursor: pointer;">Clear</button>
       </div>
       <br>
-      <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+      <div class="table-responsive" style="max-height: calc(100% - 100px); overflow-y: auto;">
         <table class="table table-bordered">
           <thead>
             <tr>
@@ -50,7 +50,17 @@
         </table>
       </div>
     </div>
-
+    <div class="mt-2">
+      <label for="reportStartDate">วันที่เริ่มต้น:</label>
+      <input type="date" id="reportStartDate">
+      <label for="reportEndDate">วันที่สิ้นสุด:</label>
+      <input type="date" id="reportEndDate">
+      <svg onclick="getReportDateRange()" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
+        class="bi bi-search" viewBox="0 0 16 16" style="cursor: pointer;">
+        <path
+          d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85zm-5.344.656a5 5 0 1 1 0-10 5 5 0 0 1 0 10z" />
+      </svg>
+    </div>
     <div class="card p-3 mt-3" id="xxxcard">
       <h5 class="card-title">ตารางสรุปการนำส่งของประชาชนทั่วไป</h5>
       <br>
@@ -155,39 +165,49 @@
 </div>
 <script>
   let isProvincePopulated = false;
-  getReport("ทั้งประเทศ")
+  getReport("ทั้งประเทศ", null, null);
   // Function to get the report
-  function getReport(province) {
-    const role = 'admin'; // Example role 
+  function getReport(province, startDate, endDate) {
+    const role = 'admin';
     const loadingIndicator = document.getElementById('loadingIndicator');
     const mainContent = document.getElementById('mainContainer');
     mainContent.style.display = 'none';
     loadingIndicator.style.display = 'block';
-    let fetchReport = ""
-    if (province == "ทั้งประเทศ") {
-      fetchReport = fetch(`/report_api/`, {
-        method: 'GET',
-        headers: {
-          'x-role': role, // Custom header with role
-          'Content-Type': 'application/json', // Optional content type
-        },
-      })
-    } else {
-      fetchReport = fetch(`/report_api/?province=${province}`, {
-        method: 'GET',
-        headers: {
-          'x-role': role, // Custom header with role
-          'Content-Type': 'application/json', // Optional content type
-        },
-      })
+
+    // Build the URL with query parameters
+    let url = '/report_api/';
+    let params = [];
+
+    if (province && province !== "ทั้งประเทศ") {
+      params.push(`province=${province}`);
     }
-    fetchReport.then((response) => response.json()) // Assuming the response is JSON
+    if (startDate) {
+      params.push(`start_date=${startDate}`);
+    }
+    if (endDate) {
+      params.push(`end_date=${endDate}`);
+    }
+
+    // Add query parameters to URL if they exist
+    if (params.length > 0) {
+      url += '?' + params.join('&');
+    }
+
+    // Make the API call
+    fetch(url, {
+      method: 'GET',
+      headers: {
+        'x-role': role,
+        'Content-Type': 'application/json',
+      },
+    })
+      .then((response) => response.json())
       .then((data) => {
-        populateProvince(data)
-        populateFirstTable(data)
-        populateSpecialistTable(data)
-        populatePictureCountTable(data)
-        populateCountAcc(data)
+        populateProvince(data);
+        populateFirstTable(data);
+        populateSpecialistTable(data);
+        populatePictureCountTable(data);
+        populateCountAcc(data);
       })
       .catch((error) => {
         console.error('Error:', error);
@@ -201,7 +221,9 @@
 
   function handleProvinceChange() {
     const province = document.getElementById('filterProvince').value;
-    getReport(province);
+    const startDate = document.getElementById('reportStartDate').value;
+    const endDate = document.getElementById('reportEndDate').value;
+    getReport(province, startDate, endDate);
   }
 
 
@@ -470,6 +492,8 @@
       });
   }
 
+
+
   function closePopup() {
     // Hide the popup
     document.getElementById('summaryPopup').style.display = 'none';
@@ -488,6 +512,13 @@
     if (document.getElementById('backgroundFreeze')) {
       document.body.style.overflow = '';  // Allow scrolling again
     }
+  }
+
+  function getReportDateRange() {
+    const startDate = document.getElementById('reportStartDate').value;
+    const endDate = document.getElementById('reportEndDate').value;
+    const province = document.getElementById('filterProvince').value;
+    getReport(province, startDate, endDate);
   }
 
 </script>

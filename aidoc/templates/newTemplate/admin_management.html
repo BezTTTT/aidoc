@@ -3,12 +3,15 @@
 {% block title %} AIDOC | Submission Records {% endblock %}
 
 {% block content %}
-<div class="d-flex">
-  <p class="fs-2">จัดการผู้ใช้งาน</p>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <p class="fs-2 mb-0">จัดการผู้ใช้งาน</p>
+  <button onclick="manualRefresh()" class="btn btn-outline-primary">
+    <i class="fas fa-sync-alt me-1"></i> รีเฟรชข้อมูล
+  </button>
 </div>
 <table id="user_manage" class="dataTable">
   <thead>
-    <tr class="text-dark" >
+    <tr class="text-dark">
       <th>ชื่อ - นามสกุล</th>
       <th>สิทธิ์การเข้าถึงระบบ</th>
       <th>วิชาชีพ</th>
@@ -24,8 +27,35 @@
 <script>
   let fetchedData = []; // Store fetched data globally
   let dataTableInstance = null; // DataTables instance
+  const CACHE_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutes in milliseconds
+  let isLoading = false; // Track loading state
+
+  function initializePage() {
+    // Check if we have cached data and if it's still valid
+    const cachedData = localStorage.getItem("adminUserData");
+    console.log(cachedData)
+    const cacheTimestamp = localStorage.getItem("adminUserDataTimestamp");
+    const currentTime = new Date().getTime();
+
+    if (cachedData && cacheTimestamp &&
+      (currentTime - parseInt(cacheTimestamp)) < CACHE_EXPIRY_TIME) {
+      // Use cached data if it exists and hasn't expired
+      fetchedData = JSON.parse(cachedData);
+      renderTable(fetchedData);
+      console.log("Using cached data");
+    } else {
+      // Fetch fresh data if no cache or cache expired
+      fetchAdminPage();
+      console.log("Fetching fresh data");
+    }
+  }
 
   function fetchAdminPage() {
+    if (isLoading) return; // Prevent multiple simultaneous requests
+
+    isLoading = true;
+    updateRefreshButton(true);
+
     fetch(`/admin_page_api/`, {
       method: "GET",
       headers: {
@@ -40,76 +70,109 @@
       })
       .then((data) => {
         fetchedData = data; // Save fetched data
-        renderTable(fetchedData); // Render the table initially
+
+        // Store data in localStorage with timestamp
+        localStorage.setItem("adminUserData", JSON.stringify(data));
+        localStorage.setItem("adminUserDataTimestamp", new Date().getTime().toString());
+
+        renderTable(fetchedData); // Render the table
+        isLoading = false;
+        updateRefreshButton(false);
       })
       .catch((error) => {
         console.error("Error:", error);
+
+        const cachedData = localStorage.getItem("adminUserData");
+        if (cachedData) {
+          fetchedData = JSON.parse(cachedData);
+          renderTable(fetchedData);
+          console.log("Using cached data as fallback after fetch error");
+        }
+
+        isLoading = false;
+        updateRefreshButton(false);
       });
   }
 
-  function renderTable(data) {
-    const tbody = document.querySelector("#user_manage tbody");
-    tbody.innerHTML = ""; // Clear existing rows
-
-   
-    data.forEach((user) => {
-  const row = document.createElement("tr");
-
-  const roleIcons = user.role.length
-    ? user.role.map((role) => {
-        switch (role.toLowerCase()) {
-          case "admin":
-            return "🤴";
-          case "osm":
-            return "👨‍🚒";
-          case "specialist":
-            return "⚕️";
-          case "patient":
-            return "👨‍🦽";
-          case "dentist":
-            return "👨‍⚕️";
-        }
-      }).join(" ") // Join icons if multiple roles exist
-    : "❓"; // Default icon when no roles are assigned
-      row.innerHTML = `
-        <td> ${user.name} ${user.surname}</td>
-        <td> ${roleIcons}</td>
-        <td> ${user.job_position}</td>
-        <td>${user.province}</td>
-        <td>${user.total_submit}</td>
-        <td>${user.last_login}</td>
-        <td>
-          <div class="d-flex">
-            <form action="/edit?id=${user.id}" class="mx-1">
-              <input name="id" type="hidden" value="${user.id}" />
-              <input
-                class="btn btn-primary"
-                style="width: 100%"
-                type="submit"
-                value="แก้ไข"
-              />
-            </form>
-            <button
-              class="btn btn-danger"
-              style="width: 100%"
-              onclick="confirmAndDelete('${user.id}')"
-            >
-              ลบ
-            </button>
-          </div>
-        </td>
-      `;
-
-      tbody.appendChild(row);
-    });
-
-    // Reinitialize DataTables to ensure proper pagination
-    if (dataTableInstance) {
-      dataTableInstance.destroy(); // Destroy existing instance
+  function updateRefreshButton(loading) {
+    const refreshBtn = document.querySelector('button[onclick="manualRefresh()"]');
+    if (refreshBtn) {
+      if (loading) {
+        refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> กำลังโหลด...';
+        refreshBtn.disabled = true;
+      } else {
+        refreshBtn.innerHTML = '<i class="fas fa-sync-alt me-1"></i> รีเฟรชข้อมูล';
+        refreshBtn.disabled = false;
+      }
     }
+  }
+
+  function renderTable(data) {
+    // ถ้ามี DataTable อยู่แล้ว ให้ทำลายก่อนสร้างใหม่
+    if (dataTableInstance) {
+      dataTableInstance.destroy();
+    }
+
+    // เริ่มสร้าง DataTable ใหม่ด้วยข้อมูลที่ถูกต้อง
     dataTableInstance = $("#user_manage").DataTable({
-      order: [[6, "desc"]],
-      pageLength: 10, // Items per page
+      data: data, // ใช้ข้อมูลที่ได้รับมาโดยตรง
+      columns: [
+        {
+          data: null,
+          render: function (data, type, row) {
+            return `${row.name} ${row.surname}`;
+          }
+        },
+        {
+          data: null,
+          render: function (data, type, row) {
+            const roleIcons = row.role && row.role.length
+              ? row.role.map((role) => {
+                switch (role.toLowerCase()) {
+                  case "admin": return "🤴";
+                  case "osm": return "👨‍🚒";
+                  case "specialist": return "⚕️";
+                  case "patient": return "👨‍🦽";
+                  case "dentist": return "👨‍⚕️";
+                  default: return "❓";
+                }
+              }).join(" ")
+              : "❓";
+            return roleIcons;
+          }
+        },
+        { data: "job_position" },
+        { data: "province" },
+        { data: "total_submit" },
+        { data: "last_login" },
+        {
+          data: null,
+          render: function (data, type, row) {
+            return `
+            <div class="d-flex">
+              <form action="/edit?id=${row.id}" class="mx-1">
+                <input name="id" type="hidden" value="${row.id}" />
+                <input
+                  class="btn btn-primary"
+                  style="width: 100%"
+                  type="submit"
+                  value="แก้ไข"
+                />
+              </form>
+              <button
+                class="btn btn-danger"
+                style="width: 100%"
+                onclick="confirmAndDelete('${row.id}')"
+              >
+                ลบ
+              </button>
+            </div>
+          `;
+          }
+        }
+      ],
+      order: [[5, "desc"]],
+      pageLength: 10,
       language: {
         search: "ค้นหา:",
         lengthMenu: "แสดง _MENU_ รายการต่อหน้า",
@@ -121,43 +184,58 @@
           previous: "ก่อนหน้า",
         },
       },
+      stateSave: true,
+      createdRow: function (row, data) {
+        $(row).attr('data-id', data.id);
+      }
     });
   }
-
-  function filterTable() {
-    const searchValue = document
-      .getElementById("searchInput")
-      .value.toLowerCase();
-
-    // Filter data based on search input
-    const filteredData = fetchedData.filter((user) =>
-      Object.values(user)
-        .join(" ")
-        .toLowerCase()
-        .includes(searchValue)
-    );
-
-    renderTable(filteredData); // Re-render the table with filtered data
+  // Reinitialize DataTables to ensure proper pagination
+  if (dataTableInstance) {
+    dataTableInstance.destroy(); // Destroy existing instance
   }
+  dataTableInstance = $("#user_manage").DataTable({
+    order: [[5, "desc"]],
+    pageLength: 10, // Items per page
+    language: {
+      search: "ค้นหา:",
+      lengthMenu: "แสดง _MENU_ รายการต่อหน้า",
+      info: "แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ",
+      paginate: {
+        first: "หน้าแรก",
+        last: "หน้าสุดท้าย",
+        next: "ถัดไป",
+        previous: "ก่อนหน้า",
+      },
+    },
+    stateSave: true,
+  });
 
   function confirmAndDelete(userId) {
     if (!confirm("คุณต้องการลบผู้ใช้นี้ใช่หรือไม่ ?")) return;
-
-    const formData = { id: userId }; // Construct the payload
 
     fetch(`/delete_user_api/`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(formData), // Pass the ID in the body
+      body: JSON.stringify({ id: userId }),
     })
       .then((response) => {
         if (!response.ok) {
           throw new Error(`Failed to delete user: ${response.statusText}`);
         }
         alert("ผู้ใช้ถูกลบสำเร็จ!");
-        window.location.reload();
+
+        // กรองข้อมูลผู้ใช้ที่ถูกลบออกจากข้อมูลที่มีอยู่
+        fetchedData = fetchedData.filter(user => Number(user.id) !== Number(userId));
+
+        // อัปเดต localStorage
+        localStorage.setItem("adminUserData", JSON.stringify(fetchedData));
+        localStorage.setItem("adminUserDataTimestamp", new Date().getTime().toString());
+
+        // อัปเดตตาราง - เราสามารถใช้ DataTables API โดยตรง
+        dataTableInstance.row(`tr[data-id="${userId}"]`).remove().draw();
       })
       .catch((error) => {
         console.error("Error:", error);
@@ -165,8 +243,14 @@
       });
   }
 
+  function manualRefresh() {
+    localStorage.removeItem("adminUserData");
+    localStorage.removeItem("adminUserDataTimestamp");
+    fetchAdminPage();
+    window.location.reload()
+  }
 
-  fetchAdminPage(); // Fetch data and render table on page load
+  initializePage();
 </script>
 
 {% endblock %}
