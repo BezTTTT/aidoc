@@ -230,7 +230,7 @@ def delete_image(role):
     cursor.execute(sql, val)
     result = cursor.fetchone()
 
-    if result['channel']=='PATIENT':
+    if result and result['channel']=='PATIENT':
         user_id = str(result['patient_id'])
     else:
         user_id = str(result['sender_id'])
@@ -471,74 +471,95 @@ def rotate_temp_image(imagename):
 # region oral_lesion_prediction
 # AI Prediction Engine
 def oral_lesion_prediction(imgPath):
-    
-    #import tensorflow as tf
-    
+    # Ensure TensorFlow is running in Eager mode
+    tf.config.run_functions_eagerly(True)
+
+    # Load and preprocess image
     img = tf.keras.utils.load_img(imgPath, target_size=(342, 512, 3))
-    img = tf.expand_dims(img, axis=0)
+    img = tf.keras.preprocessing.image.img_to_array(img)
+    img = np.expand_dims(img, axis=0)  # Ensure batch dimension
 
     global model
+
+    # Ensure img is a NumPy array before prediction
+    if isinstance(img, tf.Tensor):
+        img = img.numpy()  # Convert Tensor to NumPy array
+
+    # Perform prediction
     pred_mask = model.predict(img)
 
+    # Process prediction mask
     output_mask = tf.math.argmax(pred_mask, axis=-1)
     output_mask = output_mask[..., tf.newaxis]
     output_mask = output_mask[0]
 
+    # Convert to boolean mask
     predictionMask = tf.math.not_equal(output_mask, 0)
-    
-    ### The Connected Component Analysis, requires OpenCV ##########
-    analysis = cv2.connectedComponentsWithStats(predictionMask.numpy().astype(dtype='uint8'), 4, cv2.CV_32S)
+
+    # Ensure predictionMask is a NumPy array for OpenCV
+    predictionMask_np = predictionMask.numpy().astype(np.uint8)
+
+    ### Connected Component Analysis with OpenCV ###
+    analysis = cv2.connectedComponentsWithStats(predictionMask_np, 4, cv2.CV_32S)
     (numLabels, labels, stats, centroid) = analysis
     output = np.zeros((342, 512), dtype="uint8")
     maxArea = 0
+
     for i in range(1, numLabels):
         area = stats[i, cv2.CC_STAT_AREA]
         maxArea = max(maxArea, area)
         if area > 500: 
-            componentMask = (labels == i).astype("uint8")*255
+            componentMask = (labels == i).astype("uint8") * 255
             output = cv2.bitwise_or(output, componentMask) 
+
+    # Convert OpenCV output back to TensorFlow tensor
     predictionMask = tf.convert_to_tensor(output)
     predictionMask = tf.math.equal(predictionMask, 255)
     predictionMask = predictionMask[..., tf.newaxis]
-    ################################################################
 
-    pred_mask = tf.squeeze(pred_mask, axis=0)  # Remove batch dimension
-    backgroundChannel = pred_mask[:,:,0]
-    opmdChannel = pred_mask[:,:,1]
-    osccChannel = pred_mask[:,:,2]
-    
-    #predictionMaskSum = tf.reduce_sum(tf.cast(predictionMask,  tf.int64)) # Count number of pixels in prediction mask
-    predictionIndexer = tf.squeeze(predictionMask, axis=-1) # Remove singleton dimension (last index)
-    if maxArea>500: # Threshold to cut noises are 500 pixels
-        opmdScore = tf.reduce_mean(opmdChannel[predictionIndexer])
-        osccScore = tf.reduce_mean(osccChannel[predictionIndexer])
-        backgroundScore = tf.reduce_mean(backgroundChannel[predictionIndexer])
-        if opmdScore>osccScore:
-            predictClass = 1
-        else:
-            predictClass = 2
+    # Remove batch dimension from pred_mask
+    pred_mask = tf.squeeze(pred_mask, axis=0)
+    backgroundChannel = pred_mask[:, :, 0]
+    opmdChannel = pred_mask[:, :, 1]
+    osccChannel = pred_mask[:, :, 2]
+
+    # Convert predictionMask to NumPy for indexing
+    predictionIndexer = tf.squeeze(predictionMask, axis=-1).numpy()
+
+    if maxArea > 500:  # Threshold to remove noise
+        opmdScore = np.mean(opmdChannel.numpy()[predictionIndexer])
+        osccScore = np.mean(osccChannel.numpy()[predictionIndexer])
+        backgroundScore = np.mean(backgroundChannel.numpy()[predictionIndexer])
+        predictClass = 1 if opmdScore > osccScore else 2
     else:
-        backgroundIndexer = tf.math.logical_not(predictionIndexer)
-        opmdScore = tf.reduce_mean(opmdChannel[backgroundIndexer])
-        osccScore = tf.reduce_mean(osccChannel[backgroundIndexer])
-        backgroundScore = tf.reduce_mean(backgroundChannel[backgroundIndexer])
+        backgroundIndexer = np.logical_not(predictionIndexer)
+        opmdScore = np.mean(opmdChannel.numpy()[backgroundIndexer])
+        osccScore = np.mean(osccChannel.numpy()[backgroundIndexer])
+        backgroundScore = np.mean(backgroundChannel.numpy()[backgroundIndexer])
         predictClass = 0
 
-    # Pillow is used to create the boundary
-    # Pillow has a very strong relationship with tensorflow
+    ### Generate Edge Image for Visualization ###
     output = tf.keras.utils.array_to_img(predictionMask)
     edge_img = output.filter(ImageFilter.FIND_EDGES)
     dilation_img = edge_img.filter(ImageFilter.MaxFilter(3))
 
+    # Load full-size original image
     full_img = Image.open(imgPath)
+
+    # Resize mask and edge image to match original image size
     full_dilation_img = dilation_img.resize(full_img.size, resample=Image.NEAREST)
     mask = output.resize(full_img.size, resample=Image.NEAREST)
 
+    # Create yellow edge overlay
     yellow_edge = Image.merge("RGB", (full_dilation_img, full_dilation_img, Image.new(mode="L", size=full_dilation_img.size)))
+    
+    # Apply yellow edge overlay onto original image
     outlined_img = full_img.copy()
     outlined_img.paste(yellow_edge, full_dilation_img)
-    
-    scores = [backgroundScore.numpy().item(), opmdScore.numpy().item(), osccScore.numpy().item()]
+
+    # Convert scores to Python scalars
+    scores = [float(backgroundScore), float(opmdScore), float(osccScore)]
+
     return outlined_img, predictClass, scores, mask
 
 # region upload_submission_module
@@ -602,12 +623,16 @@ def upload_submission_module(target_user_id):
                 checked_filename_lst.append(checked_filename)
         session['imageNameList'] = checked_filename_lst
 
-        # Try to clear temp folder if #files are more than CLEAR_TEMP_THRESHOLD
-        if len(os.listdir(tempDir)) > current_app.config['CLEAR_TEMP_THRESHOLD']:
-            for filename in os.listdir(tempDir):
-                if os.path.isfile(os.path.join(tempDir, filename)):
-                    os.remove(os.path.join(tempDir, filename))
-
+        # Try to clear half of the temp folder if #files are more than CLEAR_TEMP_THRESHOLD
+        temp_files = [os.path.join(tempDir, f) for f in os.listdir(tempDir) if os.path.isfile(os.path.join(tempDir, f))]
+        if len(temp_files) > current_app.config['CLEAR_TEMP_THRESHOLD']:
+            # Sort files by modification time (oldest first)
+            temp_files.sort(key=os.path.getmtime)
+            # Delete half of the files
+            num_files_to_delete = len(temp_files) // 2
+            for file in temp_files[:num_files_to_delete]:
+                os.remove(file)
+                
         # update database with the submission records
         # data are saved in session['imageNameList']
         update_submission_record(ai_predictions, ai_scores)

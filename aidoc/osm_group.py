@@ -22,15 +22,17 @@ def render_osm_group_record():
     if 'record_filter' not in session:
         session['record_filter'] = {}
     if request.method == 'POST':
+                
+        # Retrive get the parameter from the submitting form, or else get it from the record_filter session, or an empty string
         search_query = request.form.get("search", session['record_filter'].get('search_query', ""))
-        agree = request.form.get("agree", "")   # This is exclusively for dentist system
-        filterStatus = request.form.get("filterStatus", "") 
-        filterPriority = request.form.get("filterPriority", "") 
-        filterProvince = request.form.get("filterProvince", "") 
-        filterSpecialist = request.form.get("filterSpecialist", "")
-        filterFollowup = request.form.get("filterFollowup", "")
-        filterRetrain = request.form.get("filterRetrain", "")
-        filterSender = request.form.get("filterSender", "")
+        agree = request.form.get("agree", session['record_filter'].get('agree', ""))   # This is exclusively for dentist system
+        filterStatus = request.form.get("filterStatus", session['record_filter'].get('filterStatus', "")) 
+        filterPriority = request.form.get("filterPriority", session['record_filter'].get('filterPriority', "")) 
+        filterProvince = request.form.get("filterProvince", session['record_filter'].get('filterProvince', "")) 
+        filterSpecialist = request.form.get("filterSpecialist", session['record_filter'].get('filterSpecialist', ""))
+        filterFollowup = request.form.get("filterFollowup", session['record_filter'].get('filterFollowup', ""))
+        filterRetrain = request.form.get("filterRetrain", session['record_filter'].get('filterRetrain', ""))
+        filterSender = request.form.get("filterSender", session['record_filter'].get('filterSender', ""))
 
         # Save filter parameters to the session 
         session['record_filter']['search_query'] = search_query
@@ -150,6 +152,8 @@ def _(page: int, records_per_page: int):
                 sr.dentist_id,
                 sr.special_request,
                 sr.sender_phone,
+                sr.location_district,
+                sr.location_amphoe,
                 sr.location_province,
                 sr.location_zipcode,
                 sr.dentist_feedback_comment,
@@ -175,6 +179,8 @@ def _(page: int, records_per_page: int):
                     submission_record.dentist_id,
                     submission_record.special_request,
                     submission_record.sender_phone,
+                    submission_record.location_district,
+                    submission_record.location_amphoe,
                     submission_record.location_province,
                     submission_record.location_zipcode,
                     submission_record.dentist_feedback_comment,
@@ -238,6 +244,8 @@ def _(page: int, records_per_page: int):
                 sr.dentist_id,
                 sr.special_request,
                 sr.sender_phone,
+                sr.location_district,
+                sr.location_amphoe,
                 sr.location_province,
                 sr.location_zipcode,
                 sr.dentist_feedback_comment,
@@ -263,6 +271,8 @@ def _(page: int, records_per_page: int):
                     submission_record.dentist_id,
                     submission_record.special_request,
                     submission_record.sender_phone,
+                    submission_record.location_district,
+                    submission_record.location_amphoe,
                     submission_record.location_province,
                     submission_record.location_zipcode,
                     submission_record.dentist_feedback_comment,

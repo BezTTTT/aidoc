@@ -40,7 +40,7 @@
 
 {% block dianosis_cards %}
 {% if data['channel'] == 'DENTIST' %}
-<div class="d-grid diagnosis-grid">
+<div class="d-grid diagnosis-grid dentist-diagnosis-grid">
     <div class="card grid-item-dentist-ai-agreement-panel">
         <div class="card-body px-4">
             <h5 class="card-title text-start mb-3">ท่านเห็นด้วยกับผลการวิเคราะทาง AI ดังที่ปรากฏหรือไม่?</h5>
@@ -107,7 +107,7 @@
     </div>
 </div>
 {% else %}
-<div class="d-grid diagnosis-grid">
+<div class="d-grid diagnosis-grid specialist-diagnosis-grid">
     <div class="card grid-item-image-panel">
         <div class="card-body px-4">
             <h5 class="card-title text-start mb-3">ข้อมูลภาพ</h5>
@@ -152,9 +152,10 @@
             <h5 class="card-title text-start mb-3">ประวัติคำวินิจฉัย</h5>
             <p>ความคิดเห็นของทันตแพทย์: <b>{{maps['dentist_diagnosis_map'][data['dentist_feedback_code']]}}</b></p>
             {% if data['dentist_feedback_code']!= 'NORMAL' %}
-                {% if (data['dentist_feedback_code']== 'OPMD' or data['dentist_feedback_code']== 'OSCC') and data['dentist_feedback_lesion'] is not none %}
-                    <p>ชนิดรอยโรค: <b>{{maps['lesion_type_map'][data['dentist_feedback_lesion']]}} </b></p>
-                    <p>ตำแหน่งที่พบรอยโรค: {{maps['lesion_location_map'][data['dentist_feedback_location']]}}</p>
+                {% if (data['dentist_feedback_code']== 'OPMD' or data['dentist_feedback_code']== 'OSCC') and data['dentist_feedback_comment'] != '' %}
+                    <!-- <p>ชนิดรอยโรค: <b>{{maps['lesion_type_map'][data['dentist_feedback_lesion']]}} </b></p>
+                    <p>ตำแหน่งที่พบรอยโรค: {{maps['lesion_location_map'][data['dentist_feedback_location']]}}</p> -->
+                    <p>ความคิดเห็นเพิ่มเติม: <b>{{maps['oscc_opmd_options'][data['dentist_feedback_comment']]}} </b></p>
                 {% elif data['dentist_feedback_code']== 'BAD_IMG' %}
                     <p>ความคิดเห็นเพิ่มเติม: <b>{{maps['bad_image_map'][data['dentist_feedback_comment']]}} </b></p>
                 {% elif data['dentist_feedback_code']== 'BENIGN' %}
@@ -227,54 +228,69 @@
         <form action="{{url_for('webapp.diagnosis', role='admin', img_id=data['img_id'], specialist_feedback='true', channel=data['channel'])}}" method="post" enctype="multipart/form-data">
             <div class="card-body">
                 <h5 class="card-title">สำหรับทันตแพทย์ที่เข้าร่วมโครงการ ท่านจะวินิจฉัยภาพนี้ให้เข้ากรณีใด</h5>
-                <select class="form-select mb-3" name="dt_comment_option" required>
-                    <option value="" disabled selected>กรุณาเลือกคำวินิจฉัย</option>
+                <div class="mb-3">
                     {% for key, value in maps['dentist_diagnosis_map'].items() %}
-                        <option value="{{key}}">{{value}}</option>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="dt_comment_option" id="dt_comment_option{{loop.index}}" value="{{key}}" required>
+                        <label class="form-check-label" for="dt_comment_option{{loop.index}}">{{value}}</label>
+                    </div>
                     {% endfor %}
-                </select>
+                </div>
+
                 <div id="BadImgCommentSelection" style="display: none">
-                    <h6>ตัวเลือก</h6>
-                    <div >
-                        <select class="form-select" name="BadImgCommentSelectOptions" required>
-                            <option value="" disabled selected>กรุณาเลือกตัวเลือก</option>
-                            {% for key, value in maps['bad_image_map'].items() %}
-                                <option value="{{key}}">{{value}}</option>
-                            {% endfor %}
-                        </select>
+                    <h6>คำแนะนำของทันตแพทย์</h6>
+                    <div class="ms-4">
+                        {% for key, value in maps['bad_image_map'].items() %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="BadImgCommentSelectOptions" id="bad_img_option{{loop.index}}" value="{{key}}">
+                                <label class="form-check-label" for="bad_img_option{{loop.index}}">{{value}}</label>
+                            </div>
+                        {% endfor %}
                     </div>
                 </div>
                 <div id="BenignSelection" style="display: none">
-                    <h6>ตัวเลือก</h6>
-                    <select class="form-select mb-3" name="BenignCommentSelectOptions" required>
-                        <option value="" disabled selected>กรุณาเลือกตำแหน่ง</option>
+                    <h6>คำแนะนำของทันตแพทย์</h6>
+                    <div class="ms-4">
                         {% for key, value in maps['benign_option'].items() %}
-                            <option value="{{key}}">{{value}}</option>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="BenignCommentSelectOptions" id="bad_img_option{{loop.index}}" value="{{key}}">
+                                <label class="form-check-label" for="bad_img_option{{loop.index}}">{{value}}</label>
+                            </div>
                         {% endfor %}
-                    </select>
+                    </div>
                 </div>
                 <div id="OSCCOPMDSelection" style="display: none">
                     <div>
-                        <h6>ตำแหน่งที่ตรวจพบรอยโรค</h6>
-                        <div class="d-flex flex-column">
-                            <select class="form-select mb-3" name="LesionLocationSelection" required>
-                                <option value="" disabled selected>กรุณาเลือกตำแหน่ง</option>
+                        <h6>คำแนะนำของทันตแพทย์</h6>
+                        <div class="ms-4">
+                        {% for key, value in maps['oscc_opmd_options'].items() %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="OPMDOSCCCommentSelectOptions" id="bad_img_option{{loop.index}}" value="{{key}}">
+                                <label class="form-check-label" for="bad_img_option{{loop.index}}">{{value}}</label>
+                            </div>
+                        {%endfor %}
+                        </div>
+                        <!-- <div class="d-flex flex-column">
+                            <div class="ms-4">
                                 {% for key, value in maps['lesion_location_map'].items() %}
-                                    <option value="{{key}}">{{value}}</option>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="LesionLocationSelection" id="lesion_location{{loop.index}}" value="{{key}}">
+                                        <label class="form-check-label" for="lesion_location{{loop.index}}">{{value}}</label>
+                                    </div>
                                 {% endfor %}
-                            </select>
+                            </div>
                         </div>
-                    </div>
-                    <div>
-                        <h6>ชนิดรอยโรค</h6>
-                        <div class="d-flex flex-column">
-                            <select class="form-select mb-3" name="LesionTypeSelection" required>
-                                <option value="" disabled selected>กรุณาเลือกชนิด</option>
+                        <div>
+                            <h6>ชนิดรอยโรค</h6>
+                            <div class="ms-4">
                                 {% for key, value in maps['lesion_type_map'].items() %}
-                                    <option value="{{key}}">{{value}}</option>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="LesionTypeSelection" id="lesion_type{{loop.index}}" value="{{key}}">
+                                        <label class="form-check-label" for="lesion_type{{loop.index}}">{{value}}</label>
+                                    </div>
                                 {% endfor %}
-                            </select>
-                        </div>
+                            </div>
+                        </div> -->
                     </div>
                 </div>
                 <div id="OtherCommentBox" style="display: none">

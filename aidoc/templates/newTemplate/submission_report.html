@@ -19,7 +19,7 @@
         d="M9 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V5a2 2 0 0 0-.6-1.4L10.5.6a2 2 0 0 0-1.4-.6zm.5 1.5L13 5H9V1.5zM4 1h5v4H4V1zM3 3v10h10V4H3z" />
     </svg>
     <div id="summaryPopup" class="popup-container"
-      style="display: none; position: fixed; top: 10%; left: 10%; width: 80%; height: 80%; background: white; border: 1px solid #ccc; padding: 20px; overflow-y: hidden; z-index: 1000;">
+      style="display: none; position: fixed; top: 10%; left: 10%; width: 80%; height: 80%; background: white; border: 1px solid #ccc; padding: 20px; overflow-y: auto; z-index: 1000;">
       <button onclick="closePopup()" class="btn btn-danger"
         style="position: absolute; top: 10px; right: 10px;">ปิด</button>
       <h3>สรุปการนำส่งรายวัน</h3>
@@ -37,7 +37,7 @@
           style="background: none; border: none; color: inherit; cursor: pointer;">Clear</button>
       </div>
       <br>
-      <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+      <div class="table-responsive" style="max-height: calc(100% - 100px); overflow-y: auto;">
         <table class="table table-bordered">
           <thead>
             <tr>
