@@ -84,7 +84,7 @@ def init_db():
         click.echo('Initializing the database: ')
         projectDir = os.path.dirname(current_app.root_path)
         with open(os.path.join(projectDir, 'schema.sql'), encoding="utf8") as f:
-            cursor.execute(f.read(), multi=True)
+            cursor.execute(f.read())
         close_db()
 
         db, cursor = get_db()
