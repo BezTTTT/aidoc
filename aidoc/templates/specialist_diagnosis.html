@@ -248,11 +248,11 @@
                 {% if (data['dentist_feedback_code']== 'OPMD' or data['dentist_feedback_code']== 'OSCC') and data['dentist_feedback_comment'] != '' %}
                     <!-- <p>ชนิดรอยโรค: <b>{{maps['lesion_type_map'][data['dentist_feedback_lesion']]}} </b></p>
                     <p>ตำแหน่งที่พบรอยโรค: {{maps['lesion_location_map'][data['dentist_feedback_location']]}}</p> -->
-                    <p>ความคิดเห็นเพิ่มเติม: <b>{{maps['oscc_opmd_options'][data['dentist_feedback_comment']]}} </b></p>
+                    <p>คำแนะนำของทันตแพทย์: <b>{{maps['oscc_opmd_options'][data['dentist_feedback_comment']]}} </b></p>
                 {% elif data['dentist_feedback_code']== 'BAD_IMG' %}
-                    <p>ความคิดเห็นเพิ่มเติม: <b>{{maps['bad_image_map'][data['dentist_feedback_comment']]}} </b></p>
+                    <p>คำแนะนำของทันตแพทย์: <b>{{maps['bad_image_map'][data['dentist_feedback_comment']]}} </b></p>
                 {% elif data['dentist_feedback_code']== 'BENIGN' %}
-                    <p>บันทึกของทันตแพทย์: {{maps['benign_option'][data['dentist_feedback_comment']]}}</p>
+                    <p>คำแนะนำของทันตแพทย์: {{maps['benign_option'][data['dentist_feedback_comment']]}}</p>
                 {% elif data['dentist_feedback_comment'] != '' %}
                     <p>ความคิดเห็นเพิ่มเติม: <b>{{data['dentist_feedback_comment']}} </b></p>
                 {% endif %}
