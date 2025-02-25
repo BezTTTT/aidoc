@@ -360,11 +360,15 @@ def upload_general_submission_module():
                 checked_filename_lst.append(checked_filename)
         session['imageNameList'] = checked_filename_lst
 
-        # Try to clear temp folder if #files are more than CLEAR_TEMP_THRESHOLD
-        if len(os.listdir(tempDir)) > current_app.config['CLEAR_TEMP_THRESHOLD']:
-            for filename in os.listdir(tempDir):
-                if os.path.isfile(os.path.join(tempDir, filename)):
-                    os.remove(os.path.join(tempDir, filename))
+        # Try to clear half of the temp folder if #files are more than CLEAR_TEMP_THRESHOLD
+        temp_files = [os.path.join(tempDir, f) for f in os.listdir(tempDir) if os.path.isfile(os.path.join(tempDir, f))]
+        if len(temp_files) > current_app.config['CLEAR_TEMP_THRESHOLD']:
+            # Sort files by modification time (oldest first)
+            temp_files.sort(key=os.path.getmtime)
+            # Delete half of the files
+            num_files_to_delete = len(temp_files) // 2
+            for file in temp_files[:num_files_to_delete]:
+                os.remove(file)
 
         # Add the prediction record to the database
         for i, filename in enumerate(session['imageNameList']):
