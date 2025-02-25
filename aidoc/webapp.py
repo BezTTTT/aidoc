@@ -378,14 +378,16 @@ def record(role):
     if 'record_filter' not in session:
         session['record_filter'] = {}
     if request.method == 'POST':
+
+        # Retrive get the parameter from the submitting form, or else get it from the record_filter session, or an empty string
         search_query = request.form.get("search", session['record_filter'].get('search_query', ""))
-        agree = request.form.get("agree", "")   # This is exclusively for dentist system
-        filterStatus = request.form.get("filterStatus", "") 
-        filterPriority = request.form.get("filterPriority", "") 
-        filterProvince = request.form.get("filterProvince", "") 
-        filterSpecialist = request.form.get("filterSpecialist", "")
-        filterFollowup = request.form.get("filterFollowup", "")
-        filterRetrain = request.form.get("filterRetrain", "")
+        agree = request.form.get("agree", session['record_filter'].get('agree', ""))   # This is exclusively for dentist system
+        filterStatus = request.form.get("filterStatus", session['record_filter'].get('filterStatus', "")) 
+        filterPriority = request.form.get("filterPriority", session['record_filter'].get('filterPriority', "")) 
+        filterProvince = request.form.get("filterProvince", session['record_filter'].get('filterProvince', "")) 
+        filterSpecialist = request.form.get("filterSpecialist", session['record_filter'].get('filterSpecialist', ""))
+        filterFollowup = request.form.get("filterFollowup", session['record_filter'].get('filterFollowup', ""))
+        filterRetrain = request.form.get("filterRetrain", session['record_filter'].get('filterRetrain', ""))
 
         # Save filter parameters to the session
         session['record_filter']['search_query'] = search_query
@@ -397,8 +399,6 @@ def record(role):
         session['record_filter']['filterFollowup'] = filterFollowup
         session['record_filter']['filterRetrain'] = filterRetrain
 
-        # If there is a form submission, reset the current page to 1
-        session['current_record_role'] = 1
     else:
         # Load values from session or use an empty string
         search_query = session['record_filter'].get('search_query', "")
