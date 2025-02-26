@@ -471,71 +471,61 @@ def rotate_temp_image(imagename):
 # region oral_lesion_prediction
 # AI Prediction Engine
 def oral_lesion_prediction(imgPath):
-    # Ensure TensorFlow is running in Eager mode
-    tf.config.run_functions_eagerly(True)
 
     # Load and preprocess image
     img = tf.keras.utils.load_img(imgPath, target_size=(342, 512, 3))
     img = tf.keras.preprocessing.image.img_to_array(img)
-    img = np.expand_dims(img, axis=0)  # Ensure batch dimension
+    img = tf.expand_dims(img, axis=0)  # Add batch dimension (TensorFlow expects this)
 
     global model
 
-    # Ensure img is a NumPy array before prediction
-    if isinstance(img, tf.Tensor):
-        img = img.numpy()  # Convert Tensor to NumPy array
-
-    # Perform prediction
+    # Perform prediction (remains a Tensor)
     pred_mask = model.predict(img)
 
     # Process prediction mask
-    output_mask = tf.math.argmax(pred_mask, axis=-1)
-    output_mask = output_mask[..., tf.newaxis]
-    output_mask = output_mask[0]
+    output_mask = tf.math.argmax(pred_mask, axis=-1, output_type=tf.int32)  # Use int32 to avoid casting later
+    output_mask = tf.expand_dims(output_mask[0], axis=-1)  # Remove batch dimension
 
-    # Convert to boolean mask
+    # Boolean mask for lesion areas
     predictionMask = tf.math.not_equal(output_mask, 0)
 
-    # Ensure predictionMask is a NumPy array for OpenCV
-    predictionMask_np = predictionMask.numpy().astype(np.uint8)
+    ### Connected Component Analysis with OpenCV (requires NumPy conversion) ###
+    predictionMask_np = tf.cast(predictionMask, tf.uint8).numpy()  # Convert Tensor to NumPy
 
-    ### Connected Component Analysis with OpenCV ###
     analysis = cv2.connectedComponentsWithStats(predictionMask_np, 4, cv2.CV_32S)
-    (numLabels, labels, stats, centroid) = analysis
+    (numLabels, labels, stats, centroids) = analysis
     output = np.zeros((342, 512), dtype="uint8")
     maxArea = 0
 
     for i in range(1, numLabels):
         area = stats[i, cv2.CC_STAT_AREA]
         maxArea = max(maxArea, area)
-        if area > 500: 
+        if area > 500:  # Remove small noise
             componentMask = (labels == i).astype("uint8") * 255
             output = cv2.bitwise_or(output, componentMask) 
 
     # Convert OpenCV output back to TensorFlow tensor
-    predictionMask = tf.convert_to_tensor(output)
+    predictionMask = tf.convert_to_tensor(output, dtype=tf.uint8)
     predictionMask = tf.math.equal(predictionMask, 255)
-    predictionMask = predictionMask[..., tf.newaxis]
+    predictionMask = tf.expand_dims(predictionMask, axis=-1)  # Add back singleton dimension
 
     # Remove batch dimension from pred_mask
     pred_mask = tf.squeeze(pred_mask, axis=0)
-    backgroundChannel = pred_mask[:, :, 0]
-    opmdChannel = pred_mask[:, :, 1]
-    osccChannel = pred_mask[:, :, 2]
+    backgroundChannel, opmdChannel, osccChannel = tf.unstack(pred_mask, axis=-1)
 
-    # Convert predictionMask to NumPy for indexing
-    predictionIndexer = tf.squeeze(predictionMask, axis=-1).numpy()
+    # Compute lesion classification scores
+    predictionIndexer = tf.squeeze(predictionMask, axis=-1)  # Remove singleton dimension
 
     if maxArea > 500:  # Threshold to remove noise
-        opmdScore = np.mean(opmdChannel.numpy()[predictionIndexer])
-        osccScore = np.mean(osccChannel.numpy()[predictionIndexer])
-        backgroundScore = np.mean(backgroundChannel.numpy()[predictionIndexer])
-        predictClass = 1 if opmdScore > osccScore else 2
+        opmdScore = tf.reduce_mean(tf.boolean_mask(opmdChannel, predictionIndexer))
+        osccScore = tf.reduce_mean(tf.boolean_mask(osccChannel, predictionIndexer))
+        backgroundScore = tf.reduce_mean(tf.boolean_mask(backgroundChannel, predictionIndexer))
+        predictClass = tf.cond(opmdScore > osccScore, lambda: 1, lambda: 2)
     else:
-        backgroundIndexer = np.logical_not(predictionIndexer)
-        opmdScore = np.mean(opmdChannel.numpy()[backgroundIndexer])
-        osccScore = np.mean(osccChannel.numpy()[backgroundIndexer])
-        backgroundScore = np.mean(backgroundChannel.numpy()[backgroundIndexer])
+        backgroundIndexer = tf.math.logical_not(predictionIndexer)
+        opmdScore = tf.reduce_mean(tf.boolean_mask(opmdChannel, backgroundIndexer))
+        osccScore = tf.reduce_mean(tf.boolean_mask(osccChannel, backgroundIndexer))
+        backgroundScore = tf.reduce_mean(tf.boolean_mask(backgroundChannel, backgroundIndexer))
         predictClass = 0
 
     ### Generate Edge Image for Visualization ###
@@ -558,7 +548,7 @@ def oral_lesion_prediction(imgPath):
     outlined_img.paste(yellow_edge, full_dilation_img)
 
     # Convert scores to Python scalars
-    scores = [float(backgroundScore), float(opmdScore), float(osccScore)]
+    scores = [backgroundScore.numpy().item(), opmdScore.numpy().item(), osccScore.numpy().item()]
 
     return outlined_img, predictClass, scores, mask
 
