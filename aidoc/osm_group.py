@@ -34,6 +34,18 @@ def render_osm_group_record():
         filterRetrain = request.form.get("filterRetrain", session['record_filter'].get('filterRetrain', ""))
         filterSender = request.form.get("filterSender", session['record_filter'].get('filterSender', ""))
 
+        # Reset to the current_record_page to 1 if there is a change in filter
+        if request.form.get("search", "") != session['record_filter'].get('search_query', "") or \
+            request.form.get("agree", "") != session['record_filter'].get('agree', "") or \
+            request.form.get("filterStatus", "") != session['record_filter'].get('filterStatus', "") or \
+            request.form.get("filterPriority", "") != session['record_filter'].get('filterPriority', "") or \
+            request.form.get("filterProvince", "") != session['record_filter'].get('filterProvince', "") or \
+            request.form.get("filterSpecialist", "") != session['record_filter'].get('filterSpecialist', "") or \
+            request.form.get("filterFollowup", "") != session['record_filter'].get('filterFollowup', "") or \
+            request.form.get("filterRetrain", "") != session['record_filter'].get('filterRetrain', "") or \
+            request.form.get("filterSender", "") != session['record_filter'].get('filterSender', ""):
+            session['current_record_page'] = 1
+
         # Save filter parameters to the session 
         session['record_filter']['search_query'] = search_query
         session['record_filter']['agree'] = agree

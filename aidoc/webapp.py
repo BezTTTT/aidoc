@@ -389,6 +389,17 @@ def record(role):
         filterFollowup = request.form.get("filterFollowup", session['record_filter'].get('filterFollowup', ""))
         filterRetrain = request.form.get("filterRetrain", session['record_filter'].get('filterRetrain', ""))
 
+        # Reset to the current_record_page to 1 if there is a change in filter
+        if request.form.get("search", "") != session['record_filter'].get('search_query', "") or \
+            request.form.get("agree", "") != session['record_filter'].get('agree', "") or \
+            request.form.get("filterStatus", "") != session['record_filter'].get('filterStatus', "") or \
+            request.form.get("filterPriority", "") != session['record_filter'].get('filterPriority', "") or \
+            request.form.get("filterProvince", "") != session['record_filter'].get('filterProvince', "") or \
+            request.form.get("filterSpecialist", "") != session['record_filter'].get('filterSpecialist', "") or \
+            request.form.get("filterFollowup", "") != session['record_filter'].get('filterFollowup', "") or \
+            request.form.get("filterRetrain", "") != session['record_filter'].get('filterRetrain', ""):
+            session['current_record_page'] = 1
+        
         # Save filter parameters to the session
         session['record_filter']['search_query'] = search_query
         session['record_filter']['agree'] = agree
@@ -872,14 +883,15 @@ def construct_specialist_filter_sql():
 
     if search_query!="":
         search_query_list.append(f"(INSTR(LOWER(fname), '{search_query}'))")
-        search_query_list.append(f"(patient_user.name IS NOT NULL AND (INSTR('{search_query}', patient_user.name) OR INSTR('{search_query}', patient_user.surname)))")
+        search_query_list.append(f"(patient_user.name IS NOT NULL AND (patient_user.name = '{search_query}' OR patient_user.surname = '{search_query}'))")
+        search_query_list.append(f"(sender.name IS NOT NULL AND (sender.name = '{search_query}' OR sender.surname = '{search_query}'))")
         search_query_list.append(f"(case_report IS NOT NULL AND (INSTR(case_report, '{search_query}')))")
         search_query_list.append(f"(dentist_feedback_code IS NOT NULL AND (LOWER(dentist_feedback_code) = '{search_query.lower()}'))")
         if search_query.isdigit():
             search_query_list.append(f"(case_id = {int(search_query)})")
-        search_query_list.append(f"(location_district IS NOT NULL AND (INSTR(location_district, '{search_query}')))")
-        search_query_list.append(f"(location_amphoe IS NOT NULL AND (INSTR(location_amphoe, '{search_query}')))")
-        search_query_list.append(f"(location_province IS NOT NULL AND (INSTR(location_province, '{search_query}')))")
+        search_query_list.append(f"(location_district IS NOT NULL AND (location_district = '{search_query}'))")
+        search_query_list.append(f"(location_amphoe IS NOT NULL AND (location_amphoe = '{search_query}'))")
+        search_query_list.append(f"(location_province IS NOT NULL AND (location_province = '{search_query}'))")
         if search_query.isdigit():
             search_query_list.append(f"(location_zipcode IS NOT NULL AND (location_zipcode = {int(search_query)}))")
 
@@ -1101,14 +1113,11 @@ def record_specialist(admin=False):
                         retrain_request.retrain_request_status,
                         followup_request.followup_request_status
                     FROM submission_record
-                    INNER JOIN patient_case_id 
-                        ON submission_record.id = patient_case_id.id
-                    LEFT JOIN user AS patient_user 
-                        ON submission_record.patient_id = patient_user.id
-                    LEFT JOIN followup_request 
-                        ON submission_record.id = followup_request.submission_id
-                    LEFT JOIN retrain_request 
-                        ON submission_record.id = retrain_request.submission_id
+                    INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
+                    LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
+                    LEFT JOIN user AS sender ON submission_record.sender_id = sender.id
+                    LEFT JOIN followup_request ON submission_record.id = followup_request.submission_id
+                    LEFT JOIN retrain_request ON submission_record.id = retrain_request.submission_id
                     WHERE ''' + filter_query + '''
                     ORDER BY submission_record.created_at DESC
                     LIMIT %s OFFSET %s
@@ -1117,14 +1126,11 @@ def record_specialist(admin=False):
                     SELECT 
                         COUNT(submission_record.id) AS full_count
                     FROM submission_record
-                    INNER JOIN patient_case_id 
-                        ON submission_record.id = patient_case_id.id
-                    LEFT JOIN user AS patient_user 
-                        ON submission_record.patient_id = patient_user.id
-                    LEFT JOIN followup_request 
-                        ON submission_record.id = followup_request.submission_id
-                    LEFT JOIN retrain_request 
-                        ON submission_record.id = retrain_request.submission_id
+                    INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
+                    LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
+                    LEFT JOIN user AS sender ON submission_record.sender_id = sender.id
+                    LEFT JOIN followup_request ON submission_record.id = followup_request.submission_id
+                    LEFT JOIN retrain_request ON submission_record.id = retrain_request.submission_id
                     WHERE ''' + filter_query + '''
                 ) AS c
                 ORDER BY sr.created_at DESC;
@@ -1162,25 +1168,19 @@ def record_specialist(admin=False):
                         submission_record.id, 
                         patient_case_id.case_id
                     FROM submission_record
-                    INNER JOIN patient_case_id 
-                        ON submission_record.id = patient_case_id.id
+                    INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
                     ORDER BY submission_record.created_at DESC
                     LIMIT %s OFFSET %s
                 ) AS submission_record_limited
-                LEFT JOIN submission_record AS sr 
-                    ON submission_record_limited.id = sr.id
-                LEFT JOIN user AS patient_user 
-                    ON sr.patient_id = patient_user.id
-                LEFT JOIN followup_request 
-                    ON sr.id = followup_request.submission_id
-                LEFT JOIN retrain_request 
-                    ON sr.id = retrain_request.submission_id
+                LEFT JOIN submission_record AS sr ON submission_record_limited.id = sr.id
+                LEFT JOIN user AS patient_user ON sr.patient_id = patient_user.id
+                LEFT JOIN followup_request ON sr.id = followup_request.submission_id
+                LEFT JOIN retrain_request ON sr.id = retrain_request.submission_id
                 CROSS JOIN (
                     SELECT 
                         COUNT(submission_record.id) AS full_count
                     FROM submission_record
-                    INNER JOIN patient_case_id 
-                        ON submission_record.id = patient_case_id.id
+                    INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
                 ) AS c
                 ORDER BY sr.created_at DESC;
                 '''
@@ -1248,9 +1248,9 @@ def construct_dentist_filter_sql():
         search_query_list.append(f"(INSTR(LOWER(fname), '{search_query}'))")
         search_query_list.append(f"(dentist_feedback_comment IS NOT NULL AND (INSTR(dentist_feedback_comment, '{search_query}')))")
         search_query_list.append(f"(dentist_feedback_code IS NOT NULL AND (LOWER(dentist_feedback_code) = '{search_query.lower()}'))")
-        search_query_list.append(f"(location_district IS NOT NULL AND (INSTR(location_district, '{search_query}')))")
-        search_query_list.append(f"(location_amphoe IS NOT NULL AND (INSTR(location_amphoe, '{search_query}')))")
-        search_query_list.append(f"(location_province IS NOT NULL AND (INSTR(location_province, '{search_query}')))")
+        search_query_list.append(f"(location_district IS NOT NULL AND (location_district = '{search_query}'))")
+        search_query_list.append(f"(location_amphoe IS NOT NULL AND (location_amphoe = '{search_query}'))")
+        search_query_list.append(f"(location_province IS NOT NULL AND (location_province = '{search_query}'))")
         if search_query.isdigit():
             search_query_list.append(f"(location_zipcode IS NOT NULL AND (location_zipcode = {int(search_query)}))")
 
@@ -1408,9 +1408,9 @@ def construct_osm_filter_sql():
         search_query_list.append(f"(dentist_feedback_code IS NOT NULL AND (LOWER(dentist_feedback_code) = '{search_query.lower()}'))")
         if search_query.isdigit():
             search_query_list.append(f"(case_id = {int(search_query)})")
-        search_query_list.append(f"(location_district IS NOT NULL AND (INSTR(location_district, '{search_query}')))")
-        search_query_list.append(f"(location_amphoe IS NOT NULL AND (INSTR(location_amphoe, '{search_query}')))")
-        search_query_list.append(f"(location_province IS NOT NULL AND (INSTR(location_province, '{search_query}')))")
+        search_query_list.append(f"(location_district IS NOT NULL AND (location_district = '{search_query}'))")
+        search_query_list.append(f"(location_amphoe IS NOT NULL AND (location_amphoe = '{search_query}'))")
+        search_query_list.append(f"(location_province IS NOT NULL AND (location_province = '{search_query}'))")
         if search_query.isdigit():
             search_query_list.append(f"(location_zipcode IS NOT NULL AND (location_zipcode = {int(search_query)}))")
 
