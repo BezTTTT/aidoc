@@ -8,7 +8,7 @@
 <p>ผู้ดูแลระบบ: {{ g.user['name'] }} {{ g.user['surname'] }} (Username: {{ g.user['username'] }}) </p>
 <label for="search_input">ค้นหาผลลัพธ์ตามคำสำคัญ <i>เช่น ชื่อ นามสกุลคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ
         จังหวัด เลขไปรษณีย์) OPMD OSCC คำสำคัญในรายงานผู้ป่วย ชื่อไฟล์ Case ID</i></label>
-<form class="form-inline">
+<form class="form-inline" id="filterForm">
     <div class="row mt-1">
         <div class="input-group">
             <input type="text" class="form-control" name="search" id="search_input"
@@ -19,25 +19,30 @@
     </div>
     <div class="my-3">
         <label for="filterPriority">ระดับความสำคัญ:</label>
-        <select name="filterPriority" id="filterPriority" class="btn btn-light border border-1 mx-1">
+        <select name="filterPriority" id="filterPriority" class="btn btn-light border border-1 mx-1"
+            onchange="fetchImageManageList()">
             <option value="">ทั้งหมด</option>
             <option value="1">พิเศษ</option>
             <option value="0">ปกติ</option>
         </select>
         <label for="filterStatus">สถานะ:</label>
-        <select name="filterStatus" id="filterStatus" class="btn btn-light border border-1 mx-1">
+        <select name="filterStatus" id="filterStatus" class="btn btn-light border border-1 mx-1"
+            onchange="fetchImageManageList()">
             <option value="">ทั้งหมด</option>
             <option value="1">ตรวจแล้ว</option>
             <option value="0">ยังไม่ได้ตรวจ</option>
         </select>
         <label for="filterProvince">จังหวัดที่คัดกรอง:</label>
-        <select name="filterProvince" id="filterProvince" class="btn btn-light border border-1 mx-1">
+        <select name="filterProvince" id="filterProvince" class="btn btn-light border border-1 mx-1"
+            onchange="fetchImageManageList()">
         </select>
         <label for="filterSpecialist">ผู้ตรวจ:</label>
-        <select name="filterSpecialist" id="filterSpecialist" class="btn btn-light border border-1 mx-1">
+        <select name="filterSpecialist" id="filterSpecialist" class="btn btn-light border border-1 mx-1"
+            onchange="fetchImageManageList()">
         </select>
         <label for="filterFollowup">Follow Up Status:</label>
-        <select name="filterFollowup" id="filterFollowup" class="btn btn-light border border-1 mx-1">
+        <select name="filterFollowup" id="filterFollowup" class="btn btn-light border border-1 mx-1"
+            onchange="fetchImageManageList()">
             <option value="">ทั้งหมด</option>
             <option value="Initiated">Initiated</option>
             <option value="On Specialist">On Specialist</option>
@@ -46,7 +51,8 @@
             <option value="Closed">Closed</option>
         </select>
         <label for="filterRetrain">Retrain Request:</label>
-        <select name="filterRetrain" id="filterRetrain" class="btn btn-light border border-1 mx-1">
+        <select name="filterRetrain" id="filterRetrain" class="btn btn-light border border-1 mx-1"
+            onchange="fetchImageManageList()">
             <option value="">ทั้งหมด</option>
             <option value="Requested">Requested</option>
             <option value="Processing">Processing</option>
@@ -64,24 +70,63 @@
 <script>
     let isProvincePopulated = false;
     let isDentistPopulated = false;
-    function fetchImageManageList(page) {
-        const urlParams = new URLSearchParams(window.location.search);
-        fetch(`/image_record_api/?limit=12&page=${page}`, {
+
+    document.getElementById("filterForm").addEventListener("submit", function (event) {
+        event.preventDefault(); // Prevent default form submission
+
+        fetchImageManageList(1);
+    });
+
+    function constructUrl(baseUrl, params) {
+        const searchParams = new URLSearchParams();
+
+        for (const key in params) {
+            if (params[key] !== "" && params[key] !== undefined && params[key] !== null) {
+                searchParams.append(key, params[key]);
+            }
+        }
+
+        return `${baseUrl}?${searchParams.toString()}`;
+    }
+
+    function fetchImageManageList(page = 1) {
+        const baseUrl = "/image_record_api/";
+        const params = {
+            limit: 12,
+            page: page,
+            channel: document.getElementById("filterChannel")?.value || "",
+            priority: document.getElementById("filterPriority").value,
+            dentist_checked: document.getElementById("filterStatus").value,
+            province: document.getElementById("filterProvince").value,
+            dentist_id: document.getElementById("filterSpecialist").value,
+            search_term: document.getElementById("search_input").value,
+            ai_prediction: document.getElementById("filterAiPrediction")?.value || "",
+            dentist_feedback_code: document.getElementById("filterDentistFeedback")?.value || "",
+            start_date: document.getElementById("filterStartDate")?.value || "",
+            end_date: document.getElementById("filterEndDate")?.value || "",
+            job_position: document.getElementById("filterJobPosition")?.value || "",
+            is_followup: document.getElementById("filterFollowup").value,
+            is_retrain: document.getElementById("filterRetrain").value
+        };
+
+        const url = constructUrl(baseUrl, params);
+
+        fetch(url, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
             },
         })
-            .then(response => response.json()) // Parse the JSON from response
+            .then(response => response.json())
             .then(data => {
                 populateProvince(data.province_dropdown_list);
-                populatedDentist(data.dentist_dropdown_list)
-                populatePageComponent(data.pagination)
-                populateCard(data.data)
+                populatedDentist(data.dentist_dropdown_list);
+                populatePageComponent(data.pagination);
+                populateCard(data.data);
             })
             .catch(error => {
                 console.error("Error fetching data:", error);
-            })
+            });
     }
 
     function populateCard(data) {
@@ -161,7 +206,7 @@
             let count = 1;
             data.forEach(dentist => {
                 const option = document.createElement('option');
-                option.value = dentist.dentist_fullname;
+                option.value = dentist.dentist_id;
                 option.textContent = dentist.dentist_fullname;
 
                 dentistDropdown.appendChild(option);

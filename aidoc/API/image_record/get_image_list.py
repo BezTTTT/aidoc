@@ -156,10 +156,10 @@ def build_conditions(data):
 
     # Dentist check filter
     if data.get('dentist_checked') is not None:
-        if data['dentist_checked'].lower() == 'true':
-            conditions.append("sr.dentist_id IS NOT NULL")
+        if data['dentist_checked'].lower() == '1':
+            conditions.append("sr.dentist_feedback_code IS NOT NULL")
         else:
-            conditions.append("sr.dentist_id IS NULL")
+            conditions.append("sr.dentist_feedback_code IS NULL")
 
     # Province filter
     if data.get('province'):
@@ -205,17 +205,16 @@ def build_conditions(data):
         
     #is_followup filter
     if data.get('is_followup'):
-        if data['is_followup'].lower() == 'true':
-            conditions.append("fr.id IS NOT NULL")
-        else:
-            conditions.append("fr.id IS NULL")
+        is_followup = set_input(data['is_followup'])
+        conditions.append("fr.followup_request_status LIKE %s")
+        params.append(is_followup) 
         
     #is_retrain filter
     if data.get('is_retrain'):
-        if data['is_retrain'].lower() == 'true':
-            conditions.append("rr.id IS NOT NULL")
-        else:
-            conditions.append("rr.id IS NULL")
+        if data['is_retrain']:
+            is_retrain = set_input(data['is_retrain'])
+            conditions.append("rr.retrain_request_status LIKE %s")
+            params.append(is_retrain)
     
         # start_date filter
     if data['start_date']:
