@@ -708,7 +708,7 @@ def userManagement():
 
 @bp.route('/admin_record2/')
 def adminRecord2():
-    return render_template("/newTemplate/admin_diagnosis.html")
+    return render_template("/newTemplate/admin_record2.html")
 
 #followup for dentist page
 @bp.route('/followup/admin', methods=('GET','POST'))
