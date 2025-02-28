@@ -291,7 +291,7 @@
                     </form>
                 {% endif %}
             {% else %}
-                <p>ชื่อ-สกุล: {{data['patient_name']}} {{data['patient_surname']}}</p>
+                <p>ชื่อ-สกุล: {{data['patient_name']}} {{data['patient_surname']}} <span id="riskOCA" data-patient-id="{{data['patient_id']}}"></span></p>
                 <p>เพศ: {{data['sex']}}</p>
                 <p>อายุ: {{data['patient_age']}} ปี</p>
                 <p>อาชีพ: {{data['job_position']}}</p>
@@ -593,6 +593,18 @@
             orderInput.value = 'register-patient'
         }
     }
+</script>
+
+<script src="/static/script/riskOCA.js"></script>
+<script>
+    function load() {
+        const riskElement = document.getElementById('riskOCA');
+        const patient_id = riskElement.dataset.patientId;
+        load_risk_oca(riskElement, patient_id);
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        load();
+    });
 </script>
 
 {% endblock %}
