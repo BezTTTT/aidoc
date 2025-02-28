@@ -58,6 +58,31 @@
             <option value="Processing">Processing</option>
             <option value="Done">Done</option>
         </select>
+        <label for="ai_prediction">Ai Prediction: </label>
+        <select name="ai_prediction" id="ai_prediction" class="btn btn-light border border-1 mx-1 my-1"
+            onchange="fetchImageManageList()">
+            <option value="">ทั้งหมด</option>
+            <option value="0">Normal</option>
+            <option value="1">OPMD</option>
+            <option value="2">OSCC</option>
+        </select>
+        <label for="dentist_feedback_code">Dentist Feedback: </label>
+        <select name="dentist_feedback_code" id="dentist_feedback_code" class="btn btn-light border border-1 mx-1 my-1"
+            onchange="fetchImageManageList()">
+            <option value="">ทั้งหมด</option>
+            <option value="Normal">Normal</option>
+            <option value="OPMD">OPMD</option>
+            <option value="OSCC">OSCC</option>
+            <option value="BAD_IMG">BAD_IMG</option>
+        </select>
+        <label for="filterChannel">ช่องทางการส่ง :</label>
+        <select name="filterChannel" id="filterChannel" class="btn btn-light border border-1 mx-1 my-1"
+            onchange="fetchImageManageList()">
+            <option value="">ทั้งหมด</option>
+            <option value="DENTIST">ทันตแพทย์</option>
+            <option value="OSM">ผู้ตรวจคัดกรอง</option>
+            <option value="PATIENT">ผู้ป่วย</option>
+        </select>
     </div>
 </form>
 <div class="mt-2" id=totalCount>
@@ -106,7 +131,9 @@
             end_date: document.getElementById("filterEndDate")?.value || "",
             job_position: document.getElementById("filterJobPosition")?.value || "",
             is_followup: document.getElementById("filterFollowup").value,
-            is_retrain: document.getElementById("filterRetrain").value
+            is_retrain: document.getElementById("filterRetrain").value,
+            ai_prediction: document.getElementById("ai_prediction").value,
+            dentist_feedback_code: document.getElementById("dentist_feedback_code").value
         };
 
         const url = constructUrl(baseUrl, params);
@@ -147,7 +174,7 @@
                     </a>
                 </div>
                     <div class="card-body">
-                        <h6 class="image-name">แหล่งข้อมูล: ${item.sender_job}</h6>
+                        <h6 class="image-name">แหล่งข้อมูล: ${item.channel} </h6>
                         <h6 class="image-name">ชื่อไฟล์: ${item.file_name}</h6>
                         <h6 class="image-name">Case ID: ${item.submission_id} ${item.special_request == 1 ? "[มีคำขอตรวจพิเศษ]" : ""}</h6>
                         <h6 class="image-name">ชื่อผู้ป่วย: ${item.sender_fullname ? `${item.sender_fullname} (${item.age} ปี)` : "<i>ไม่มีข้อมูล</i>"}</h6>

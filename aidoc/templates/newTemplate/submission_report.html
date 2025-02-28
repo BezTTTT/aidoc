@@ -78,13 +78,14 @@
               <th class="text-center align-middle">OSCC</th>
               <th class="text-center align-middle">NORMAL</th>
 
-              <th class="text-center align-middle" style="width: 8.5%;">OPMD</th>
-              <th class="text-center align-middle" style="width: 8.5%;">OSCC</th>
-              <th class="text-center align-middle" style="width: 8.5%;">NORMAL</th>
-              <th class="text-center align-middle" style="width: 8.5%;">ภาพไม่ได้มาตรฐาน</th>
-              <th class="text-center align-middle" style="width: 8.5%;">อื่น ๆ</th>
-              <th class="text-center align-middle" style="width: 8.5%;">ความแม่นยำ (%)</th>
-              <th class="text-center align-middle" style="width: 9%;">ภาพที่ยังไม่ได้ตรวจ</th>
+              <th class="text-center align-middle" style="width: 7.5%;">OPMD</th>
+              <th class="text-center align-middle" style="width: 7.5%;">OSCC</th>
+              <th class="text-center align-middle" style="width: 7.5%;">NORMAL</th>
+              <th class="text-center align-middle" style="width: 7.5%;">ภาพไม่ได้มาตรฐาน</th>
+              <th class="text-center align-middle" style="width: 7.5%;">เนื้องอกธรรมดา</th>
+              <th class="text-center align-middle" style="width: 7.5%;">อื่น ๆ</th>
+              <th class="text-center align-middle" style="width: 7.5%;">ความแม่นยำ (%)</th>
+              <th class="text-center align-middle" style="width: 7.5%;">ภาพที่ยังไม่ได้ตรวจ</th>
             </tr>
           </thead>
           <tbody id=FirstTable>
@@ -321,6 +322,12 @@
             <a href="/record/admin&value=BAD_IMG"
             style="text-decoration: none; color: black; cursor: pointer;">
               ${entry.dentist_diagnose.poor_image}
+            </a>
+        </td>
+        <td class="text-center">
+            <a href="/record/admin?value=others"
+            style="text-decoration: none; color: black; cursor: pointer;">
+              ${entry.dentist_diagnose.benign}
             </a>
         </td>
         <td class="text-center">
