@@ -64,7 +64,8 @@ def retrieve_and_update_risk_oca():
         SELECT national_id, risk_oca_id 
         FROM `user` 
         LEFT JOIN `user_risk_oca` ON `user`.id = `user_risk_oca`.user_id 
-        WHERE `user`.id = %s;
+        WHERE `user`.id = %s
+        LIMIT 1;
         ''', (patient_id,))
     
     patient = cursor.fetchone()
@@ -81,7 +82,7 @@ def retrieve_and_update_risk_oca():
     #     ques = cursor.fetchone()
 
     # if not have new questionnaire data, save it to user_risk_oca aidoc
-    if str(ques['qid']) != str(patient['risk_oca_id']):
+    if str(ques['qid']) != str(patient['risk_oca_id']) or patient['risk_oca_id'] is None:
         save_questionnaire(patient_id, ques)
 
     return jsonify({'risk':ques['risk'], 'latest':ques['latest'], 'qid':ques['qid']}), 200  

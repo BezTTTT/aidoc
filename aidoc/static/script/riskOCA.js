@@ -21,6 +21,11 @@ async function load_risk_oca(element, patient_id) {
     element.style.display = "none";
     return;
   }
+
+  show_risk_oca(element, data);
+}
+
+function show_risk_oca(element, data) { 
   date_string = "";
   if (data.latest) {
     date_string = format_date(data.latest);
@@ -42,7 +47,10 @@ async function load_risk_oca(element, patient_id) {
     element.title = `ไม่มีข้อมูล Risk OCA`;
     element.classList.add("text-danger");
   } else {
-    element.style.display = "none";
+    element.style.display = "inline";
+    element.textContent = `❌`;
+    element.title = `ไม่พบข้อมูล Risk OCA`;
+    element.classList.add("text-danger");
   }
 }
 

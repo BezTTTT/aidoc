@@ -180,12 +180,14 @@ def diagnosis(role, img_id):
                     dentist_id, dentist.name AS dentist_name, dentist.surname AS dentist_surname,
                     dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location, dentist_feedback_date, case_report,
                     location_district, location_amphoe, location_province, location_zipcode,
-                    ai_prediction, ai_scores, lesion_ai_version, quality_ai_prediction, quality_ai_version, ai_updated_at, submission_record.created_at
+                    ai_prediction, ai_scores, lesion_ai_version, quality_ai_prediction, quality_ai_version, ai_updated_at, submission_record.created_at,
+                    user_risk_oca.risk_oca, user_risk_oca.risk_oca_latest
                 FROM submission_record
                 INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
                 LEFT JOIN user AS sender ON submission_record.sender_id = sender.id
                 LEFT JOIN user AS patient ON submission_record.patient_id = patient.id
                 LEFT JOIN user AS dentist ON submission_record.dentist_id = dentist.id
+                LEFT JOIN user_risk_oca ON submission_record.patient_id = user_risk_oca.user_id
                 WHERE submission_record.id=%s
                 LIMIT 1'''
     elif role=='osm':
