@@ -6,7 +6,6 @@ from werkzeug.utils import secure_filename
 import tensorflow as tf
 import oralLesionNet
 # Load the oralLesionNet model to the global variable
-tf.config.run_functions_eagerly(True)
 model = oralLesionNet.load_model()
 
 import imageQualityChecker
@@ -21,7 +20,6 @@ import glob
 import shutil
 import ast
 import zipfile
-import logging
 from datetime import datetime
 from dateutil.parser import parse
 
@@ -486,20 +484,23 @@ def oral_lesion_prediction(imgPath):
 
     # Perform prediction (remains a Tensor)
     try:
+        # Ensure eager execution is enabled
+        tf.config.run_functions_eagerly(True)
         pred_mask = model.predict(img)  # Standard prediction
     except RuntimeError as e: ### 🔹 Handle `model.predict(img)` RuntimeError 🔹 ###
         error_msg = f"⚠️ RuntimeError in model.predict(): {e}"
-        print(error_msg)  # Print to console for debugging
-        logging.error(error_msg)  # Log the error
+        print(error_msg)
+        current_app.logger.error(error_msg)
         print("🔄 Attempting to enable eager execution and retry...")
         try:
-            model = oralLesionNet.load_model()
             tf.config.run_functions_eagerly(True)
+            model = oralLesionNet.load_model()
             pred_mask = model.predict(img)
         except Exception as e:
             error_msg = f"❌ Critical Error: Fallback prediction also failed! Error: {e}"
             print(error_msg)
-            logging.critical(error_msg)  # Log critical error
+            current_app.logger.critical(error_msg)
+            restart_flask_app()
 
     # Process prediction mask
     output_mask = tf.math.argmax(pred_mask, axis=-1, output_type=tf.int32)  # Use int32 to avoid casting later
@@ -508,21 +509,27 @@ def oral_lesion_prediction(imgPath):
     # Boolean mask for lesion areas
     predictionMask = tf.math.not_equal(output_mask, 0)
 
-    ### Connected Component Analysis with OpenCV (requires NumPy conversion) ###
     try:
         predictionMask_np = tf.cast(predictionMask, tf.uint8).numpy()  # Convert Tensor to NumPy
     except AttributeError as e:
         error_msg = f"⚠️ AttributeError: Failed to convert predictionMask to NumPy. Error: {e}"
-        print(error_msg)
-        logging.error(error_msg)
+        current_app.logger.error(error_msg)
         print("🔄 Attempting to evaluate using tf.keras.backend.eval() as fallback...")
         try:
+            tf.config.run_functions_eagerly(True)
+            model = oralLesionNet.load_model() # Reload model
+            pred_mask = model.predict(img) # Re-predict
+            output_mask = tf.math.argmax(pred_mask, axis=-1, output_type=tf.int32)
+            output_mask = tf.expand_dims(output_mask[0], axis=-1)
+            predictionMask = tf.math.not_equal(output_mask, 0)
             predictionMask_np = tf.keras.backend.eval(tf.cast(predictionMask, tf.uint8))  # Alternative conversion
         except Exception as e:
             error_msg = f"❌ Critical Error: Fallback conversion also failed! Error: {e}"
             print(error_msg)
-            logging.critical(error_msg)
-
+            current_app.logger.critical(error_msg)
+            restart_flask_app()
+    
+    ### Connected Component Analysis with OpenCV (requires NumPy conversion) ###
     analysis = cv2.connectedComponentsWithStats(predictionMask_np, 4, cv2.CV_32S)
     (numLabels, labels, stats, centroids) = analysis
     output = np.zeros((342, 512), dtype="uint8")
@@ -723,3 +730,12 @@ def convertMask2Cordinates(maskPath) :
         holesCoordinates.append([{'x': int(x), 'y': int(y)} for x, y in holePath])
 
     return externalCoordinates, holesCoordinates
+
+def restart_flask_app():
+    current_app.logger.critical("Critical error occurred. Restarting Flask app in 3 seconds...")
+    current_app.logger.critical(f"The current user_id is {session['user_id']} ...")
+    # Flush any buffered logs if necessary
+    # os.execl() replaces the current process with a new one.
+    import sys, time
+    time.sleep(3)
+    os.execl(sys.executable, sys.executable, *sys.argv)
