@@ -29,12 +29,18 @@ async function load_risk_oca(element, patient_id) {
   if (data.risk == 0) {
     element.style.display = "inline";
     element.textContent = `✅(${date_string})`;
+    element.title = `ข้อมูล Risk OCA เป็นปัจจุบัน`;
+    element.classList.add("text-success");
   } else if (data.risk == 1) {
     element.style.display = "inline";
     element.textContent = `⚠️(${date_string})`;
+    element.title = `ข้อมูล Risk OCA ไม่เป็นปัจจุบัน (มากกว่า 6 เดือน)`;
+    element.classList.add("text-warning");
   } else if (data.risk == 2) {
     element.style.display = "inline";
     element.textContent = `❌`;
+    element.title = `ไม่มีข้อมูล Risk OCA`;
+    element.classList.add("text-danger");
   } else {
     element.style.display = "none";
   }
