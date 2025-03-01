@@ -195,11 +195,13 @@ def diagnosis(role, img_id):
                     patient.name AS patient_name, patient.surname AS patient_surname, patient_national_id as saved_patient_national_id, patient.national_id AS db_patient_national_id, patient.birthdate,
                     patient.sex, patient.job_position, patient.email, patient.phone AS patient_phone, patient.address, patient.province,
                     location_district, location_amphoe, location_province, location_zipcode,
-                    ai_prediction, ai_scores, lesion_ai_version, quality_ai_prediction, quality_ai_version, ai_updated_at, submission_record.created_at
+                    ai_prediction, ai_scores, lesion_ai_version, quality_ai_prediction, quality_ai_version, ai_updated_at, submission_record.created_at,
+                    user_risk_oca.risk_oca, user_risk_oca.risk_oca_latest
                 FROM submission_record
                 INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id
                 LEFT JOIN user AS sender ON submission_record.sender_phone = sender.phone
                 LEFT JOIN user AS patient ON submission_record.patient_id = patient.id
+                LEFT JOIN user_risk_oca ON submission_record.patient_id = user_risk_oca.user_id
                 WHERE submission_record.id=%s
                 LIMIT 1'''
     elif role=='dentist' or (role=='admin' and request.args.get('channel')=='DENTIST'):

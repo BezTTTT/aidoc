@@ -25,27 +25,28 @@ async function load_risk_oca(element, patient_id) {
   show_risk_oca(element, data);
 }
 
-function show_risk_oca(element, data) { 
+function show_risk_oca(element, data) {
   date_string = "";
   if (data.latest) {
     date_string = format_date(data.latest);
   }
-
-  if (data.risk == 0) {
-    element.style.display = "inline";
-    element.textContent = `✅(${date_string})`;
-    element.title = `ข้อมูล Risk OCA เป็นปัจจุบัน`;
-    element.classList.add("text-success");
-  } else if (data.risk == 1) {
-    element.style.display = "inline";
-    element.textContent = `⚠️(${date_string})`;
-    element.title = `ข้อมูล Risk OCA ไม่เป็นปัจจุบัน (มากกว่า 6 เดือน)`;
-    element.classList.add("text-warning");
-  } else if (data.risk == 2) {
-    element.style.display = "inline";
-    element.textContent = `❌`;
-    element.title = `ไม่มีข้อมูล Risk OCA`;
-    element.classList.add("text-danger");
+  if (data.risk.toString() !== "") {
+    if (data.risk == 0) {
+      element.style.display = "inline";
+      element.textContent = `✅(${date_string})`;
+      element.title = `ข้อมูล Risk OCA เป็นปัจจุบัน`;
+      element.classList.add("text-success");
+    } else if (data.risk == 1) {
+      element.style.display = "inline";
+      element.textContent = `⚠️(${date_string})`;
+      element.title = `ข้อมูล Risk OCA ไม่เป็นปัจจุบัน (มากกว่า 6 เดือน)`;
+      element.classList.add("text-warning");
+    } else if (data.risk == 2) {
+      element.style.display = "inline";
+      element.textContent = `❌`;
+      element.title = `ไม่มีข้อมูล Risk OCA`;
+      element.classList.add("text-danger");
+    }
   } else {
     element.style.display = "inline";
     element.textContent = `❌`;
