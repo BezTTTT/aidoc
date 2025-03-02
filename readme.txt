@@ -36,7 +36,6 @@ The user and submission database can be accessed through the phpmyadmin
 (you may also check the requirements.txt)
 pip install Flask
 pip install mysql-connector-python
-pip install tensorflow (or pip install tensorflow[and-cuda] if you want to use a GPU)
 pip install pillow
 pip install opencv-python
 pip install python-dateutil
@@ -46,6 +45,9 @@ pip install line-bot-sdk
 pip install bcrypt
 pip install pandas
 pip install openpyxl
+pip install 'uvicorn[standard]'
+pip install "fastapi[standard]"
+pip install tensorflow (or pip install tensorflow[and-cuda] if you want to use a GPU)
 
 (you may upgrade the package using this line)
 pip install --upgrade Flask, mysql-connector-python tensorflow pillow opencv-python python-dateutil PyPDF2 reportlab line-bot-sdk bcrypt pandas openpyxl
