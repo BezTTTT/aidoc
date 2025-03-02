@@ -10,7 +10,9 @@ def get_image_manage():
     limit = request.args.get('limit', default=10, type=int)
     page = request.args.get('page', default=1, type=int)
     
-    channel = request.args.get('channel')
+    channel_patient = request.args.get('channel_patient')
+    channel_osm = request.args.get('channel_osm')
+    channel_dentist = request.args.get('channel_dentist')
     
     priority = request.args.get('priority')
     dentist_checked = request.args.get('dentist_checked')
@@ -27,7 +29,9 @@ def get_image_manage():
     is_followup = request.args.get('is_followup')
     is_retrain = request.args.get('is_retrain')
     data = {
-        "channel": channel,
+        "channel_patient": channel_patient,
+        "channel_osm": channel_osm,
+        "channel_dentist": channel_dentist,
         "priority": priority,
         "dentist_checked": dentist_checked,
         "province": province,

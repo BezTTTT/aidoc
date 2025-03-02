@@ -61,7 +61,10 @@ def followup_request(role, img_id):
         sql = "DELETE FROM followup_request WHERE submission_id=%s"
         val = ( img_id, )
         cursor.execute(sql, val)
-    return redirect(url_for('webapp.record', role=role, page=session['current_record_page']))
+    if role == 'admin' and request.args.get('source') == 'admin_record2':
+         return redirect(url_for('webapp.adminRecord2'))
+    else:
+        return redirect(url_for('webapp.record', role=role, page=session['current_record_page']))
 
 # region retrain_request
 @bp.route('/retrain_request/<role>/<int:img_id>', methods=('POST', ))
@@ -706,7 +709,9 @@ def report():
 def userManagement():
     return render_template("/newTemplate/admin_management.html")
 
-@bp.route('/admin_record2/')
+@bp.route('/admin_record2/', methods=('GET','POST'))
+@login_required
+@admin_only
 def adminRecord2():
     return render_template("/newTemplate/admin_record2.html")
 

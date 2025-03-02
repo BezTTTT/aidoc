@@ -52,9 +52,10 @@ def fetch_image_manage_list(cursor, limit, offset, data):
             sr.special_request, sr.location_province, 
             sr.dentist_id, sr.dentist_feedback_comment,
             sr.dentist_feedback_code,
-            u1.national_id, u2.name AS dentist_name, 
-            u2.surname AS dentist_surname, u1.job_position, sr.sender_id,
-            u3.birthdate,fr.id as followup_id,rr.id as retrain_id
+            u1.national_id, u2.name AS dentist_name, u1.hospital,
+            u2.surname AS dentist_surname, u1.job_position, sr.sender_id,rr.retrain_request_status as retrain_request_status,
+            u3.birthdate, u3.name AS patient_name ,u3.surname AS patient_surname ,fr.id as followup_id,rr.id as retrain_id ,
+            fr.followup_request_status as followup_request_status
         FROM submission_record sr
         LEFT JOIN user u1 ON sr.sender_id = u1.id
         LEFT JOIN user u2 ON sr.dentist_id = u2.id
@@ -180,10 +181,22 @@ def build_conditions(data):
         params.append(dentist_feedback_code)
         
     #Channel filter
-    if data.get('channel'):
-        channel = set_input(data['channel'])
-        conditions.append("sr.channel LIKE %s")
-        params.append(channel)
+    if data.get('channel_patient') or data.get('channel_osm') or data.get('channel_dentist'):
+        channel_list = []
+        
+        if data.get('channel_patient'):
+            channel_list.append(data.get('channel_patient'))
+
+        if data.get('channel_osm'):
+            channel_list.append(data.get('channel_osm'))
+
+        if data.get('channel_dentist'):
+            channel_list.append(data.get('channel_dentist'))
+
+        if channel_list:
+            placeholders = ', '.join(['%s'] * len(channel_list))
+            conditions.append(f"sr.channel IN ({placeholders})")
+            params.extend(channel_list)
         
     #job_position sender filter
     if data.get('job_position'):

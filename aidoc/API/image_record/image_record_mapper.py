@@ -62,6 +62,10 @@ def map_image_manage_list_data(data):
             "channel": row['channel'],
             "followup": row['followup_id'],
             "retrain": row['retrain_id'],
+            "patient_fullname":f"{row['patient_name']} {row['patient_surname']}" if row['patient_name'] and row['patient_surname'] else "ไม่มีข้อมูล",
+            "dentist_hospital": f"{row['hospital']}" if row['hospital'] else "ไม่มีข้อมูล",
+            "followup_request_status": row['followup_request_status'],
+            "retrain_request_status": row['retrain_request_status']
         }
         image_manage_list.append(image)
 

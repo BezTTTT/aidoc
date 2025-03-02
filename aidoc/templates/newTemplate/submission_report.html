@@ -235,115 +235,79 @@
     if (data.patient_and_osm) {
       // Extract osm, patient, and total data
       const { osm, patient, total } = data.patient_and_osm;
-
       const createRow = (label, entry) => {
         const row = document.createElement('tr');
         row.innerHTML = `
         <td>${label}</td>
         <td class="text-center">
-        {% set default_data = {'search': ''} %}
-        <form action="/record/admin" method="POST">
-          <input
-            type="text"
-            id="search-input"
-            name="search"
-            value="{{ default_data.search }}"
-            style="display:none"
-        >
-          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;">
-            ${entry.total_pic}
+          <button type="submit" 
+                  style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;"
+                  onclick="storeFilterValue('${label === 'รวมทั้งหมด' ? 'BOTH' : (label === 'ประชาชน' ? 'PATIENT' : 'OSM')}')">
+            ${entry.total_pic} 
           </button>
-        </form>
         </td>
         <td class="text-center">
-        {% set default_data = {'search': 'opmd'} %}
-        <form action="/record/admin" method="POST">
-          <input
-            type="text"
-            id="search-input"
-            name="search"
-            value="{{ default_data.search }}"
-            style="display:none"
-        >
-          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;">
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;"
+          onclick="storeFilterValue('${label === 'รวมทั้งหมด' ? 'BOTH' : (label === 'ประชาชน' ? 'PATIENT' : 'OSM')}', '1')">
             ${entry.ai_predict.opmd}
           </button>
-        </form>
         </td>
         <td class="text-center">
-        {% set default_data = {'search': 'oscc'} %}
-        <form action="/record/admin" method="POST">
-          <input
-            type="text"
-            id="search-input"
-            name="search"
-            value="{{ default_data.search }}"
-            style="display:none"
-        >
-          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;">
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;"
+          onclick="storeFilterValue('${label === 'รวมทั้งหมด' ? 'BOTH' : (label === 'ประชาชน' ? 'PATIENT' : 'OSM')}', '2')">
             ${entry.ai_predict.oscc}
           </button>
-        </form>
         </td>
         <td class="text-center">
-        {% set default_data = {'search': 'normal'} %}
-        <form action="/record/admin" method="POST">
-          <input
-            type="text"
-            id="search-input"
-            name="search"
-            value="{{ default_data.search }}"
-            style="display:none"
-        >
-          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;">
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;"
+          onclick="storeFilterValue('${label === 'รวมทั้งหมด' ? 'BOTH' : (label === 'ประชาชน' ? 'PATIENT' : 'OSM')}', '0')">
             ${entry.ai_predict.normal}
           </button>
-        </form>
         </td>
         <td class="text-center">
-            <a href="/record/admin?value=opmd"
-            style="text-decoration: none; color: black; cursor: pointer;">
-              ${entry.dentist_diagnose.opmd}
-            </a>
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;"
+          onclick="storeFilterValue('${label === 'รวมทั้งหมด' ? 'BOTH' : (label === 'ประชาชน' ? 'PATIENT' : 'OSM')}', null , 'OPMD')">
+            ${entry.dentist_diagnose.opmd}
+          </button>
         </td>
         <td class="text-center">
-            <a href="/record/admin?value=oscc"
-            style="text-decoration: none; color: black; cursor: pointer;">
-              ${entry.dentist_diagnose.oscc}
-            </a>
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;"
+          onclick="storeFilterValue('${label === 'รวมทั้งหมด' ? 'BOTH' : (label === 'ประชาชน' ? 'PATIENT' : 'OSM')}',  null , 'OSCC')">
+            ${entry.dentist_diagnose.oscc}
+          </button>
         </td>
         <td class="text-center">
-            <a href="/record/admin"&value=normal"
-            style="text-decoration: none; color: black; cursor: pointer;">
-              ${entry.dentist_diagnose.normal}
-            </a>
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;"
+          onclick="storeFilterValue('${label === 'รวมทั้งหมด' ? 'BOTH' : (label === 'ประชาชน' ? 'PATIENT' : 'OSM')}', null , 'NORMAL')">
+            ${entry.dentist_diagnose.normal}
+          </button>
         </td>
         <td class="text-center">
-            <a href="/record/admin&value=BAD_IMG"
-            style="text-decoration: none; color: black; cursor: pointer;">
-              ${entry.dentist_diagnose.poor_image}
-            </a>
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;"
+          onclick="storeFilterValue('${label === 'รวมทั้งหมด' ? 'BOTH' : (label === 'ประชาชน' ? 'PATIENT' : 'OSM')}',  null , 'BAD_IMG')">
+            ${entry.dentist_diagnose.poor_image}
+          </button>
         </td>
         <td class="text-center">
-            <a href="/record/admin?value=others"
-            style="text-decoration: none; color: black; cursor: pointer;">
-              ${entry.dentist_diagnose.benign}
-            </a>
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;"
+          onclick="storeFilterValue('${label === 'รวมทั้งหมด' ? 'BOTH' : (label === 'ประชาชน' ? 'PATIENT' : 'OSM')}',  null , 'BENIGN')">
+            ${entry.dentist_diagnose.benign}
+          </button>
         </td>
         <td class="text-center">
-            <a href="/record/admin?value=others"
-            style="text-decoration: none; color: black; cursor: pointer;">
-              ${entry.dentist_diagnose.others}
-            </a>
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;"
+          onclick="storeFilterValue('${label === 'รวมทั้งหมด' ? 'BOTH' : (label === 'ประชาชน' ? 'PATIENT' : 'OSM')}',  null , 'OTHER')">
+            ${entry.dentist_diagnose.others}
+          </button>
         </td>
         <td class="text-center">
               ${entry.accuracy}
         </td>
         <td class="text-center">
-            <a href="/record/admin?value=not_diagnosed"
-            style="text-decoration: none; color: black; cursor: pointer;">
-              ${entry.dentist_diagnose.not_diagnosed}
-            </a>
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;"
+          onclick="storeFilterValue('${label === 'รวมทั้งหมด' ? 'BOTH' : (label === 'ประชาชน' ? 'PATIENT' : 'OSM')}', null, null, '0')">
+            ${entry.dentist_diagnose.not_diagnosed}
+          </button>
         </td>
 
       `;
@@ -526,6 +490,22 @@
     const endDate = document.getElementById('reportEndDate').value;
     const province = document.getElementById('filterProvince').value;
     getReport(province, startDate, endDate);
+  }
+
+  function storeFilterValue(channel, aiPrediction = null, dentistFeedback = null, isChecked = null) {
+    // Store the value in localStorage or sessionStorage
+    localStorage.setItem('selectedChannel', channel);
+    if (aiPrediction) {
+      localStorage.setItem('selectedAiPrediction', aiPrediction);
+    }
+    if (dentistFeedback) {
+      localStorage.setItem('selectedDentistFeedback', dentistFeedback);
+    }
+    if (isChecked !== null) {
+      localStorage.setItem('selectedDentistChecked', isChecked);
+    }
+    // If you want to use sessionStorage instead of localStorage, replace with sessionStorage.setItem
+    window.location.href = '/admin_record2';  // Navigate to the next page
   }
 
 </script>

@@ -62,7 +62,7 @@
         <select name="ai_prediction" id="ai_prediction" class="btn btn-light border border-1 mx-1 my-1"
             onchange="fetchImageManageList()">
             <option value="">ทั้งหมด</option>
-            <option value="0">Normal</option>
+            <option value="0">NORMAL</option>
             <option value="1">OPMD</option>
             <option value="2">OSCC</option>
         </select>
@@ -70,20 +70,36 @@
         <select name="dentist_feedback_code" id="dentist_feedback_code" class="btn btn-light border border-1 mx-1 my-1"
             onchange="fetchImageManageList()">
             <option value="">ทั้งหมด</option>
-            <option value="Normal">Normal</option>
+            <option value="NORMAL">NORMAL</option>
             <option value="OPMD">OPMD</option>
             <option value="OSCC">OSCC</option>
             <option value="BAD_IMG">BAD_IMG</option>
+            <option value="BENIGN">BENIGN</option>
+            <option value="OTHER">OTHER</option>
         </select>
-        <label for="filterChannel">ช่องทางการส่ง :</label>
-        <select name="filterChannel" id="filterChannel" class="btn btn-light border border-1 mx-1 my-1"
-            onchange="fetchImageManageList()">
-            <option value="">ทั้งหมด</option>
-            <option value="DENTIST">ทันตแพทย์</option>
-            <option value="OSM">ผู้ตรวจคัดกรอง</option>
-            <option value="PATIENT">ผู้ป่วย</option>
-        </select>
-    </div>
+        <div class="row g-2 mt-2 align-items-center">
+            <div class="col-auto">
+                <label for="filterChannel2" class="fw-bold mb-0">ช่องทางการส่ง:</label>
+            </div>
+            <div class="col">
+                <div class="d-flex gap-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="PATIENT" id="filterPatient"
+                            onchange="fetchImageManageList()">
+                        <label class="form-check-label" for="filterPatient">ผู้ป่วยนำส่งเอง</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="OSM" id="filterOSM"
+                            onchange="fetchImageManageList()">
+                        <label class="form-check-label" for="filterOSM">ผู้ตรวจคัดกรอง</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="DENTIST" id="filterDentist"
+                            onchange="fetchImageManageList()">
+                        <label class="form-check-label" for="filterDentist">ทันตแพทย์</label>
+                    </div>
+                </div>
+            </div>
 </form>
 <div class="mt-2" id=totalCount>
 </div>
@@ -95,10 +111,10 @@
 <script>
     let isProvincePopulated = false;
     let isDentistPopulated = false;
+    let isCurrentlyFetching = false;  // Flag to prevent concurrent API calls
 
     document.getElementById("filterForm").addEventListener("submit", function (event) {
         event.preventDefault(); // Prevent default form submission
-
         fetchImageManageList(1);
     });
 
@@ -115,11 +131,21 @@
     }
 
     function fetchImageManageList(page = 1) {
+        // Prevent concurrent API calls
+        if (isCurrentlyFetching) {
+            console.log("Already fetching data, request skipped");
+            return;
+        }
+
+        isCurrentlyFetching = true;
+
         const baseUrl = "/image_record_api/";
         const params = {
             limit: 12,
             page: page,
-            channel: document.getElementById("filterChannel")?.value || "",
+            channel_patient: document.getElementById("filterPatient")?.checked ? document.getElementById("filterPatient").value : "",
+            channel_osm: document.getElementById("filterOSM")?.checked ? document.getElementById("filterOSM").value : "",
+            channel_dentist: document.getElementById("filterDentist")?.checked ? document.getElementById("filterDentist").value : "",
             priority: document.getElementById("filterPriority").value,
             dentist_checked: document.getElementById("filterStatus").value,
             province: document.getElementById("filterProvince").value,
@@ -153,52 +179,169 @@
             })
             .catch(error => {
                 console.error("Error fetching data:", error);
+            })
+            .finally(() => {
+                // Reset the fetching flag
+                isCurrentlyFetching = false;
             });
     }
 
     function populateCard(data) {
         const container = document.getElementById("card-container");
         container.innerHTML = "";
+
+        if (data.length === 0) {
+            const noDataDiv = document.createElement("div");
+            noDataDiv.classList.add("col-12", "mt-2");
+            noDataDiv.innerHTML = '<p class="text-center text-danger">ไม่พบข้อมูล</p>';
+            container.appendChild(noDataDiv);
+            return;
+        }
+
         data.forEach(item => {
             const card = document.createElement("div");
             card.classList.add("col-lg-3", "col-md-4", "col-sm-6", "col-xs-12", "mb-3");
 
-            let borderColor = item.is_special_req == 1 ? "border: 3px solid red;" : "";
+            // Set border color for special requests
+            let borderColor = item.is_special_req == 1 ? "border-color: red; border-width: 3px" : "";
 
-            card.innerHTML = `
-            <div class="card h-100 position-relative" style="${borderColor}">
-                <div style="display: flex; align-items: center; justify-content: center;">
-                    <a href="/load_image/upload/${item.sender_id}/${item.file_name}" target="_blank">
-                        <img src="/load_image/outlined_thumbnail/${item.sender_id}/${item.file_name}" 
-                            class="card-img-top mt-2" alt="" style="max-height: 256px"/>
-                    </a>
+            // Convert AI prediction to readable format
+            let aiPredictionText;
+            if (item.ai_prediction == 0) aiPredictionText = "Normal";
+            else if (item.ai_prediction == 1) aiPredictionText = "OPMD";
+            else if (item.ai_prediction == 2) aiPredictionText = "OSCC";
+            else aiPredictionText = item.ai_prediction;
+
+            // Create source text based on channel
+            let sourceText;
+            if (item.channel !== 'DENTIST') {
+                sourceText = item.sender_id !== item.patient_id ? "ผู้ตรวจคัดกรอง" : "ประชาชน";
+            } else {
+                sourceText = "ทันตแพทย์";
+            }
+
+            let cardHTML = `
+        <div class="card h-100 position-relative" style="${borderColor}">
+            <div style="display: flex; align-items: center; justify-content: center;">
+                <a href="/load_image/upload/${item.sender_id}/${item.file_name}" target="_blank">
+                    <img src="/load_image/outlined_thumbnail/${item.sender_id}/${item.file_name}" 
+                        class="card-img-top mt-2" alt="" style="max-height: 256px"/>
+                </a>
+            </div>`;
+
+            // Different card body based on channel
+            if (item.channel !== 'DENTIST') {
+                // Patient or Screening Officer card
+                cardHTML += `
+            <div class="card-body">
+                <h6 class="image-name">แหล่งข้อมูล: ${sourceText}</h6>
+                <h6 class="image-name">ชื่อไฟล์: ${item.file_name}</h6>
+                <h6 class="image-name">Case ID: ${item.case_id} ${item.is_special_req == 1 ? "[มีคำขอตรวจพิเศษ]" : ""}</h6>
+                <h6 class="image-name">ชื่อผู้ป่วย: ${item.patient_fullname}${item.age ? ` (${item.age} ปี)` : ""}</h6>
+                <h6 class="image-name">สถานที่คัดกรอง: จ.${item.province}</h6>
+                <h6 class="image-name">นำส่งวันที่: ${item.submission_date} น.</h6>
+                <h6 class="fs-6 card-subtitle text-muted mb-2">ผลการพยากรณ์ของ AI: ${aiPredictionText}</h6>
+                <h6 class="fs-6 card-subtitle text-muted mb-2">ผลการวินิจฉัยของทันตแพทย์: ${item.dentist_feedback ? item.dentist_feedback : "[ยังไม่ได้ตรวจ]"}</h6>
+                
+                <div class="d-grid gap-2 d-md-block justify-content-md-center">
+                    <form action="/diagnosis/admin/${item.submission_id}?channel=${item.channel}&source=admin_record2"
+                    method="post" id="diagnosis_submit_id${item.submission_id}" style="display:inline;">
+                        <button class="btn btn-outline-primary" type="submit">ตรวจยืนยันผล</button>
+                    </form>
+                    
+                    <form action="/quick_confirm/admin/${item.submission_id}?ai_result=${item.ai_prediction}" method="post" id="quick_submit_id${item.submission_id}" style="display:inline;">
+                        <button class="btn btn-outline-success my-1" type="submit" ${item.dentist_feedback_code ? "disabled" : ""}>Quick AI Confirm</button>
+                    </form>
+                    
+                    <button class="btn btn-outline-danger my-1" type="button" data-bs-toggle="modal" data-bs-target="#submissionDeleteModal${item.submission_id}">ลบข้อมูล</button>
+                    
+                    <form action="/followup_request/admin/${item.submission_id}?source=admin_record2" method="post" id="followup_request_id${item.submission_id}" style="display:inline;">
+                        <button class="btn ${item.followup ? 'btn-warning' : 'btn-outline-warning'} btn-sm my-1" type="submit">
+                            ${item.followup ? 'Cancel Follow Up' : 'Request Follow Up'}
+                        </button>
+                    </form>
+                    
+                    <form action="/retrain_request/admin/${item.submission_id}" method="post" id="retrain_request_id${item.submission_id}" style="display:inline;">
+                        <button class="btn ${item.retrain_request_status ? 'btn-info' : 'btn-outline-info'} btn-sm my-1" type="submit">
+                            ${item.retrain_request_status ? 'Cancel Retrain Req' : 'Request Retrain'}
+                        </button>
+                    </form>
                 </div>
-                    <div class="card-body">
-                        <h6 class="image-name">แหล่งข้อมูล: ${item.channel} </h6>
-                        <h6 class="image-name">ชื่อไฟล์: ${item.file_name}</h6>
-                        <h6 class="image-name">Case ID: ${item.submission_id} ${item.special_request == 1 ? "[มีคำขอตรวจพิเศษ]" : ""}</h6>
-                        <h6 class="image-name">ชื่อผู้ป่วย: ${item.sender_fullname ? `${item.sender_fullname} (${item.age} ปี)` : "<i>ไม่มีข้อมูล</i>"}</h6>
-                        <h6 class="image-name">สถานที่คัดกรอง: จ.${item.province}</h6>
-                        <h6 class="image-name">นำส่งวันที่: ${item.submission_date} น.</h6>
-                        <h6 class="fs-6 card-subtitle text-muted mb-2">ผลการพยากรณ์ของ AI: ${item.ai_prediction}</h6>
-                        <h6 class="fs-6 card-subtitle text-muted mb-2">ผลการวินิจฉัยของทันตแพทย์: ${item.dentist_feedback ? item.dentist_feedback : "[ยังไม่ได้ตรวจ]"}</h6>
-                        <div class="d-grid gap-2 d-md-block justify-content-md-center">
-                            <form action="/diagnosis/admin/${item.id}/${item.channel}" method="post">
-                                <button class="btn btn-outline-primary" type="submit">ตรวจยืนยันผล</button>
+            </div>`;
+            } else {
+                // Dentist card
+                cardHTML += `
+            <div class="card-body">
+                <h6 class="image-name">แหล่งข้อมูล: ทันตแพทย์</h6>
+                <h6 class="image-name">ชื่อไฟล์: ${item.file_name}</h6>
+                <h6 class="image-name">ชื่อทันตแพทย์: ${item.sender_fullname}</h6>
+                <h6 class="image-name">โรงพยาบาลที่สังกัด: ${item.dentist_hospital}</h6>
+                <h6 class="image-name">สถานที่เก็บข้อมูล: จ.${item.province}</h6>
+                <h6 class="image-name">วันที่: ${item.submission_date} น.</h6>
+                <h6 class="fs-6 card-subtitle text-muted mb-2">ผลการพยากรณ์ของ AI: ${aiPredictionText}</h6>
+                <h6 class="fs-6 card-subtitle text-muted mb-2">ความคิดเห็นของทันตแพทย์: ${item.dentist_feedback ? item.dentist_feedback : "[ยังไม่ได้ให้ความคิดเห็น]"}</h6>
+                
+                <div class="d-grid gap-2 d-md-block justify-content-md-center">
+                    <form action="/diagnosis/admin/${item.submission_id}?channel=${item.channel}&source=admin_record2" method="post" id="form_id${item.submission_id}" style="display:inline;">
+                        <button class="btn btn-outline-success" type="submit">ดูผลการวิเคราะห์</button>
+                    </form>
+                    
+                    <button class="btn btn-outline-danger my-1" type="button" data-bs-toggle="modal" data-bs-target="#submissionDeleteModal${item.submission_id}">ลบข้อมูล</button>
+                </div>
+                
+                <form action="/followup_request/admin/${item.submission_id}" method="post" id="followup_request_id${item.submission_id}" style="display:inline;">
+                    <button class="btn ${item.followup ? 'btn-warning' : 'btn-outline-warning'} btn-sm my-1" type="submit">
+                        ${item.followup ? 'Cancel Follow Up' : 'Request Follow Up'}
+                    </button>
+                </form>
+                
+                <form action="/retrain_request/admin/${item.submission_id}" method="post" id="retrain_request_id${item.submission_id}" style="display:inline;">
+                    <button class="btn ${item.retrain_request_status ? 'btn-info' : 'btn-outline-info'} btn-sm my-1" type="submit">
+                        ${item.retrain_request_status ? 'Cancel Retrain Req' : 'Request Retrain'}
+                    </button>
+                </form>
+            </div>`;
+            }
+
+            // Add the delete modal
+            cardHTML += `
+            <!-- Submission Delete Modal -->
+            <div class="modal fade" id="submissionDeleteModal${item.submission_id}" tabindex="-1" aria-labelledby="submissionDeleteModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="submissionDeleteModalLabel">${item.channel !== 'DENTIST' ? 'ลบข้อมูลการนำส่ง' : 'ลบประวัติ'}</h1>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">คุณแน่ใจที่จะลบภาพนี้ ใช่หรือไม่</div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                            <form action="/delete_image/admin" method="post" enctype="multipart/form-data">
+                                <input name="img_id" type="text" value="${item.submission_id}" hidden />
+                                <input class="btn btn-outline-danger" style="width: 100%" type="submit" value="ลบข้อมูล" />
                             </form>
-                            <form action="/quick_confirm/admin/${item.id}/${item.ai_prediction}" method="post">
-                                <button class="btn btn-outline-success my-1" type="submit" ${item.dentist_feedback_code ? "disabled" : ""}>Quick AI Confirm</button>
-                            </form>
-                            <button class="btn btn-outline-danger my-1" type="button" data-bs-toggle="modal" data-bs-target="#submissionDeleteModal${item.id}">ลบข้อมูล</button>
-                            <button class="btn btn-outline-warning btn-sm my-1" type="submit" form="">Request Follow Up</button>
-                            <button class="btn btn-outline-info btn-sm my-1" type="submit" form="">Request Retrain</button>
                         </div>
                     </div>
-            </div>
-        `;
+                </div>
+            </div>`;
+
+            // Add status badges
+            if (item.followup || item.retrain_request_status) {
+                cardHTML += `
+            <span class="position-absolute top-0 end-0 text-end">
+                ${item.followup ?
+                        `<div class="badge bg-warning text-dark my-1">Follow Up: ${item.followup_request_status}</div><br>` : ''}
+                ${item.retrain ?
+                        `<div class="badge bg-info text-dark my-1">Retrain: ${item.retrain_request_status}</div>` : ''}
+            </span>`;
+            }
+
+            cardHTML += `</div>`;
+            card.innerHTML = cardHTML;
             container.appendChild(card);
         });
     }
+
 
     function populateProvince(data) {
         const provinceDropdown = document.getElementById('filterProvince');
@@ -208,14 +351,12 @@
             defaultOption.value = "";
             defaultOption.textContent = "ทั้งหมด";
             provinceDropdown.appendChild(defaultOption);
-            let count = 1;
+
             data.forEach(province => {
                 const option = document.createElement('option');
                 option.value = province;
                 option.textContent = province;
-
                 provinceDropdown.appendChild(option);
-                count++;
             });
 
             isProvincePopulated = true;
@@ -230,14 +371,12 @@
             defaultOption.value = "";
             defaultOption.textContent = "ทั้งหมด";
             dentistDropdown.appendChild(defaultOption);
-            let count = 1;
+
             data.forEach(dentist => {
                 const option = document.createElement('option');
                 option.value = dentist.dentist_id;
                 option.textContent = dentist.dentist_fullname;
-
                 dentistDropdown.appendChild(option);
-                count++;
             });
 
             isDentistPopulated = true;
@@ -248,37 +387,114 @@
         const page = data.page;
         const total_pages = data.total_pages;
         const totalCount = data.total_count;
-        console.log(totalCount)
+
         // Update total count display
         const totalCountElement = document.getElementById('totalCount');
         totalCountElement.textContent = `จำนวนทั้งหมด: ${totalCount} รายการ`;
 
         const paginationContainer = document.getElementById('pagination-container');
-        paginationContainer.innerHTML = '';
+
+        // Check if there are any pages at all
+        if (total_pages <= 0) {
+            // No data found, hide pagination completely
+            paginationContainer.innerHTML = '';
+            return;
+        }
+
+        // Initialize pagination HTML as an empty string
+        let paginationHTML = '';
 
         // First and Previous buttons (show only if not on first page)
         if (page > 1) {
-            paginationContainer.innerHTML += `
-            <button class="btn page-link m-2 text-secondary" onclick="fetchImageManageList(1)">หน้าแรก</button>
-            <button class="btn page-link m-2 text-secondary" onclick="fetchImageManageList(${page - 1})">ก่อนหน้า</button>
-        `;
+            paginationHTML += `
+                <button class="btn page-link m-2 text-secondary pagination-btn" data-page="1">หน้าแรก</button>
+                <button class="btn page-link m-2 text-secondary pagination-btn" data-page="${page - 1}">ก่อนหน้า</button>
+                `;
         }
 
         // Current page indicator
-        paginationContainer.innerHTML += `
-        <span class="current-page page-link m-2 text-secondary">หน้าปัจจุบัน : ${page} จาก ${total_pages}</span>
-    `;
+        paginationHTML += `
+            <span class="current-page page-link m-2 text-secondary">หน้าปัจจุบัน: ${page} จาก ${total_pages}</span>
+            `;
 
         // Next and Last buttons (show only if not on last page)
         if (page < total_pages) {
-            paginationContainer.innerHTML += `
-            <button class="btn page-link m-2 text-secondary" onclick="fetchImageManageList(${page + 1})">ถัดไป</button>
-            <button class="btn page-link m-2 text-secondary" onclick="fetchImageManageList(${total_pages})">หลังสุด</button>
-        `;
+            paginationHTML += `
+                <button class="btn page-link m-2 text-secondary pagination-btn" data-page="${page + 1}">ถัดไป</button>
+                <button class="btn page-link m-2 text-secondary pagination-btn" data-page="${total_pages}">หลังสุด</button>
+                `;
         }
-    }
 
-    document.addEventListener("DOMContentLoaded", fetchImageManageList);
+        // Set pagination container's innerHTML
+        paginationContainer.innerHTML = paginationHTML;
+
+        // Add event listeners to pagination buttons
+        document.querySelectorAll('.pagination-btn').forEach(button => {
+            button.addEventListener('click', function (e) {
+                e.preventDefault();
+                const pageNumber = parseInt(this.getAttribute('data-page'));
+                fetchImageManageList(pageNumber);
+            });
+        });
+    }
+    window.onload = function () {
+        const selectedChannel = localStorage.getItem('selectedChannel');
+        const selectedAiPrediction = localStorage.getItem('selectedAiPrediction');
+        const selectedDentistFeedback = localStorage.getItem('selectedDentistFeedback');
+        const selectedDentistChecked = localStorage.getItem('selectedDentistChecked');
+
+        // Apply channel filter if selected
+        if (selectedChannel) {
+            if (selectedChannel === 'BOTH') {
+                document.getElementById('filterPatient').checked = true;
+                document.getElementById('filterOSM').checked = true;
+            } else if (selectedChannel === 'PATIENT') {
+                document.getElementById('filterPatient').checked = true;
+            } else if (selectedChannel === 'OSM') {
+                document.getElementById('filterOSM').checked = true;
+            }
+            localStorage.removeItem('selectedChannel');
+        }
+
+        // Apply AI prediction filter if selected
+        if (selectedAiPrediction) {
+            document.getElementById('ai_prediction').value = selectedAiPrediction;
+            localStorage.removeItem('selectedAiPrediction');
+        }
+
+        // Apply dentist feedback filter if selected
+        if (selectedDentistFeedback) {
+            document.getElementById('dentist_feedback_code').value = selectedDentistFeedback;
+            localStorage.removeItem('selectedDentistFeedback');
+        }
+
+        // Apply dentist checked status filter if selected
+        if (selectedDentistChecked !== null) {
+            document.getElementById('filterStatus').value = selectedDentistChecked;
+            localStorage.removeItem('selectedDentistChecked');
+        }
+
+        // Fetch data with applied filters
+        if (selectedChannel || selectedAiPrediction || selectedDentistFeedback || selectedDentistChecked !== null) {
+            fetchImageManageList(1);
+        } else {
+            // Initial data load without filters
+            fetchImageManageList();
+        }
+
+        // Add event listeners to all filter controls
+        const filterControls = document.querySelectorAll('select[onchange="fetchImageManageList()"], input[onchange="fetchImageManageList()"]');
+
+        filterControls.forEach(control => {
+            // Remove the inline onchange attribute
+            control.removeAttribute('onchange');
+
+            // Add event listener
+            control.addEventListener('change', function () {
+                fetchImageManageList(1); // Reset to page 1 when filters change
+            });
+        });
+    }
 
 </script>
 {% endblock %}
