@@ -102,7 +102,7 @@ def update_user_risk_oca(data, patient):
             update_count += 1
     return update_count 
 
-@risk_oca_bp.route('/risk_oca', methods=['POST'])
+@risk_oca_bp.route('/sync_risk_oca', methods=['POST'])
 @login_required
 def retrieve_and_update_risk_oca():
     patient = fetch_patients()

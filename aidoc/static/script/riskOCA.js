@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", function () {
 function sync_risk_oca(button) {
   button.disabled = true;
   button.textContent = "กำลังซิงค์ข้อมูล...";
-  fetch(`/risk_oca`, {
+  fetch(`/sync_risk_oca`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -88,7 +88,7 @@ function load_sync_risk_oca_tooltip(button, sync_data) {
   button.setAttribute("data-bs-toggle", "tooltip");
   button.setAttribute(
     "title",
-    `ซิงค์ล่าสุด: ${sync_data.update_date ? format_date(sync_data.update_date, time=true) : 'ไม่มีการซิงค์ข้อมูล'} ${sync_data.update_count != "None" ? `จำนวน: ${sync_data.update_count} รายการ` : ''}`
+    `${sync_data.update_date != "None" ? `ซิงค์ล่าสุด: ${format_date(sync_data.update_date, time=true)}` : 'ไม่มีการซิงค์ข้อมูล'} ${sync_data.update_count != "None" ? `จำนวน: ${sync_data.update_count} รายการ` : ''}`
   );
   let tooltip = new bootstrap.Tooltip(button, {
     html: true,

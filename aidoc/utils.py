@@ -282,7 +282,7 @@ def get_app_metadata(var_name):
         if data_type == 'int':
             return int(var_value)
         elif data_type == 'bool':
-            return bool(var_value)
+            return var_value == '1'
         else:
             return str(var_value)
     except:
