@@ -1,3 +1,4 @@
+import datetime
 from flask import flash , session
 from aidoc.db import get_db
 import re
@@ -249,3 +250,40 @@ def format_thai_datetime(x):
         x.strftime('%M')
     )
     return output_thai_datetime_str
+
+def save_app_metadata(var_name, var_value):
+    data_type = type(var_value).__name__
+    db, cursor = get_db()
+    cursor.execute('''
+        INSERT INTO app_metadata (variable_name, variable_value, data_type)
+        VALUES (%s, %s, %s)
+        ON DUPLICATE KEY UPDATE
+            variable_value = %s,
+            data_type = %s
+    ''', (var_name, var_value, data_type, var_value, data_type))
+    return 0
+
+def get_app_metadata(var_name):
+    db, cursor = get_db()
+    cursor.execute('''
+        SELECT variable_value, data_type
+        FROM app_metadata
+        WHERE variable_name = %s
+    ''', (var_name, ))
+    var = cursor.fetchone()
+
+    if var is None:
+        return None
+    
+    var_value = var['variable_value']
+    data_type = var['data_type']
+
+    try:
+        if data_type == 'int':
+            return int(var_value)
+        elif data_type == 'bool':
+            return bool(var_value)
+        else:
+            return str(var_value)
+    except:
+        return var_value # return default type if not match any of the following

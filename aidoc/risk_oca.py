@@ -1,44 +1,24 @@
 from datetime import datetime
 from flask import Blueprint, jsonify, request
+from aidoc.auth import login_required
 from aidoc.db import get_db, get_db_risk_oca
 import re
 
+from aidoc.utils import get_app_metadata, save_app_metadata
+
 risk_oca_bp = Blueprint('risk_oca', __name__)
 
-
-
-def get_questionnaire(cid):
-    db, cursor = get_db_risk_oca()
-    cursor.execute('''
-        SELECT 
-            id, cid, today
-        FROM `questionnaire` WHERE cid = %s 
-        ORDER BY today DESC, id DESC
-        LIMIT 1;
-        ''', (cid,))
-    questionnaire = cursor.fetchone()
-    if not questionnaire:
-        return {'risk': 2, 'latest': None, 'qid': None} # no risk oca record
-    
-    if questionnaire['today']:
-        # check if within 6 months
+def questionnaire_date_status(questionnaire_date):
+    if questionnaire_date and questionnaire_date != '':
         try:
-            if 'T' in questionnaire['today']:
-                today = datetime.strptime(questionnaire['today'], '%Y-%m-%dT%H:%M:%S.%f')
-            else:
-                today = datetime.strptime(questionnaire['today'], '%Y-%m-%d %H:%M:%S.%f')
-        except:
-            return {'risk': 2, 'latest': None, 'qid': None} # if invalid format assume no record
-        
-        if (datetime.now() - today).days < 180: # within 6 months
-            return {'risk': 0, 'latest': questionnaire['today'], 'qid': questionnaire['id']}
-        else:
-            return {'risk': 1, 'latest': questionnaire['today'], 'qid': questionnaire['id']}
-
-    return {'risk': questionnaire_to_dict(questionnaire), 'latest': questionnaire['today'], 'qid': questionnaire['id']}
-
-def questionnaire_to_dict(questionnaire):
-    return 1 if questionnaire['c09_1'] == 'yes' else 0
+            dt = datetime.strptime(questionnaire_date, '%Y-%m-%dT%H:%M:%S.%f')
+            if (datetime.now() - dt).days < 180:  # within 6 months
+                return 0, questionnaire_date
+            else: return 1, questionnaire_date
+        except ValueError:
+            if re.match(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{6}$', questionnaire_date):
+                return 1, questionnaire_date # format 2020-00-00 00:00:00.000000 is invalid assume outdated data and not save date to db
+    return 2, None
 
 def save_questionnaire(user_id, data):
     db, cursor = get_db()
@@ -51,41 +31,90 @@ def save_questionnaire(user_id, data):
             risk_oca_latest = %s
     ''', (user_id, data['qid'], data['risk'], data['latest'], data['qid'], data['risk'], data['latest']))
 
-@risk_oca_bp.route('/risk_oca', methods=['GET'])
-def retrieve_and_update_risk_oca():
-    patient_id = request.args.get('patient_id')
-    print(patient_id)
-    if not patient_id:
-        return jsonify({'risk': -1, 'latest': '', 'error': 'patient_id is required'}), 400
-
+def fetch_patients():
     db, cursor = get_db()
-
     cursor.execute('''
-        SELECT national_id, risk_oca_id 
-        FROM `user` 
-        LEFT JOIN `user_risk_oca` ON `user`.id = `user_risk_oca`.user_id 
-        WHERE `user`.id = %s
-        LIMIT 1;
-        ''', (patient_id,))
+        SELECT DISTINCT id, national_id, risk_oca_id 
+        FROM user 
+        LEFT JOIN user_risk_oca ON user.id = user_risk_oca.user_id 
+        WHERE user.is_patient = 1 AND user.national_id IS NOT NULL AND user.national_id != "";
+        ''')
+    return cursor.fetchall()
+
+
+def fetch_questionnaires(patient):
+    db_risk, cursor_risk = get_db_risk_oca()
+    patient_ids = set(p['national_id'] for p in patient)
+    cid_where = "cid IN ({})".format(",".join(["%s"] * len(patient_ids)))
+    sql = f'''
+            SELECT id, cid, today
+            FROM questionnaire q1
+            WHERE {cid_where}
+            AND id = (
+                SELECT id
+                FROM questionnaire q2
+                WHERE q2.cid = q1.cid
+                ORDER BY today DESC, id DESC
+                LIMIT 1
+            )
+        '''
+    cursor_risk.execute(sql, tuple(patient_ids))
+    return cursor_risk.fetchall()
+
+def join_questionnaires(patient, questionnaires):
+    questionnaire_dict = {q['cid']: q for q in questionnaires}
+    data = [
+        {
+            'patient_id': p['id'],
+            'qid': q['id'],
+            'latest': q['today'],
+            'risk': None
+        }
+        for p in patient 
+        if p['national_id'] in questionnaire_dict
+        for q in [questionnaire_dict[p['national_id']]]
+    ]
+    return data
+
+def update_user_risk_oca(data, patient):
+    update_count = 0
+    for d in data:
+        stored_qid = next((p['risk_oca_id'] for p in patient if p['id'] == d['patient_id']), None)
+        if stored_qid is None or stored_qid != d['qid']:
+            # Call questionnaire_date_status here to get fresh risk and latest values
+            risk, latest = questionnaire_date_status(d['latest'])
+            d['risk'] = risk
+            d['latest'] = latest
+            save_questionnaire(d['patient_id'], d)
+            update_count += 1
+    return update_count
+
+def update_user_risk_oca(data, patient):
+    update_count = 0
+    for d in data:
+        stored_qid = next((p['risk_oca_id'] for p in patient if p['id'] == d['patient_id']), None)
+        if stored_qid is None or stored_qid != d['qid']:
+            # Call questionnaire_date_status here to get fresh risk and latest values
+            risk, latest = questionnaire_date_status(d['latest'])
+            d['risk'] = risk
+            d['latest'] = latest
+            save_questionnaire(d['patient_id'], d)
+            update_count += 1
+    return update_count 
+
+@risk_oca_bp.route('/risk_oca', methods=['POST'])
+@login_required
+def retrieve_and_update_risk_oca():
+    patient = fetch_patients()
+    questionnaires = fetch_questionnaires(patient)
+
+    data = join_questionnaires(patient, questionnaires)
+        
+    update_count = update_user_risk_oca(data, patient)
+
+    save_app_metadata('last_risk_oca_update', datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f"))
+
+    return jsonify({"update_count" : update_count, "update_date": get_app_metadata('last_risk_oca_update')}), 200
     
-    patient = cursor.fetchone()
-
-    ques = get_questionnaire(patient['national_id'])
-
-    # if questionnaire is not exist in oralcancer, get it from user_risk_oca
-    # if not ques:
-    #     cursor.execute('''
-    #         SELECT risk_oca_id, risk_oca, risk_oca_latest 
-    #         FROM `user_risk_oca` 
-    #         WHERE user_id = %s;
-    #         ''', (patient_id,))
-    #     ques = cursor.fetchone()
-
-    # if not have new questionnaire data, save it to user_risk_oca aidoc
-    if str(ques['qid']) != str(patient['risk_oca_id']) or patient['risk_oca_id'] is None:
-        save_questionnaire(patient_id, ques)
-
-    return jsonify({'risk':ques['risk'], 'latest':ques['latest'], 'qid':ques['qid']}), 200  
-
 
 

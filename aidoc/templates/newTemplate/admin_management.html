@@ -5,9 +5,15 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <p class="fs-2 mb-0">จัดการผู้ใช้งาน</p>
-  <button onclick="manualRefresh()" class="btn btn-outline-primary">
-    <i class="fas fa-sync-alt me-1"></i> รีเฟรชข้อมูล
-  </button>
+  <div>
+    <button onclick="manualRefresh()" class="btn btn-outline-primary">
+      <i class="fas fa-sync-alt me-1"></i> รีเฟรชข้อมูล
+    </button>
+    <button id="sync_risk_oca" onclick="sync_risk_oca(this)" class="btn btn-outline-primary" data-sync-data="{{risk_oca_updates}}">
+      <i class="fas fa-sync-alt me-1"></i> ซิงค์ข้อมูล Risk OCA
+    </button>
+  </div>
+  
 </div>
 <table id="user_manage" class="dataTable">
   <thead>
@@ -252,5 +258,15 @@
 
   initializePage();
 </script>
+
+<script src="/static/script/riskOCA.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const button = document.getElementById("sync_risk_oca");
+    sync_date = button.dataset.syncData;
+    load_sync_risk_oca_tooltip(button, {update_date: sync_date, update_count: "None"});
+  });
+</script>
+
 
 {% endblock %}

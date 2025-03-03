@@ -200,7 +200,9 @@
                     </form>
                 {% endif %}
             {% else %}
-                <p>ชื่อ-สกุล: {{data['patient_name']}} {{data['patient_surname']}} <span id="riskOCA" data-patient-id="{{data['patient_id']}}"></span></p>
+                <p>ชื่อ-สกุล: {{data['patient_name']}} {{data['patient_surname']}} 
+                    <span id="riskOCA" data-risk="{{data['risk_oca']}}" data-latest="{{data['risk_oca_latest']}}"></span>
+                </p>
                 <p>เพศ: {{data['sex']}}</p>
                 <p>อายุ: {{data['patient_age']}} ปี</p>
                 <p>อาชีพ: {{data['job_position']}}</p>

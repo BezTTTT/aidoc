@@ -113,7 +113,7 @@
                     </h6>
                     {% if item['patient_name'] is not none %}
                         <h6 class="image-name">ชื่อผู้ป่วย : {{ item['patient_name'] }} {{ item['patient_surname'] }} ( {{ item["age"] }} ปี ) 
-                            <span id="risk_oca_{{ item['case_id'] }}" data-patient-id="{{ item['patient_id'] }}"></span>
+                            <span id="risk_oca_{{item['patient_id']}}" data-risk="{{item['risk_oca']}}" data-latest="{{item['risk_oca_latest']}}"></span>
                         </h6>
                     {% else %}
                         <h6 class="image-name">ชื่อผู้ป่วย : <i>ไม่มีข้อมูล</i> </h6>
@@ -300,12 +300,11 @@
 <script>
     function load() {
         const risk_oca_elements = document.querySelectorAll("span[id^='risk_oca_']");
-        console.log(risk_oca_elements);
-
         risk_oca_elements.forEach((card) => {
-            const patient_id = card.dataset.patientId;
-             load_risk_oca(card, patient_id);
-             console.log(patient_id);
+            const risk = card.dataset.risk;
+            const latest = card.dataset.latest;
+            console.log(risk, latest);
+            show_risk_oca(card, data={risk: risk, latest: latest});
          });
     }
     document.addEventListener('DOMContentLoaded', function() {
