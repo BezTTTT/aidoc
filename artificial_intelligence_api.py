@@ -235,7 +235,7 @@ async def predict_quality(request: PredictRequest):
     try:
         global quality_checker
         result = quality_checker.predict(image)
-        return result
+        return {'result': result}
     except Exception as e:
         error_msg = f"Error during quality prediction: {e}"
         logging.error(error_msg)
@@ -251,4 +251,4 @@ def restart_fastapi_app(imgPath):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("artificial_intelligence_api:app", host="0.0.0.0", port=8501, reload=True)
+    uvicorn.run("artificial_intelligence_api:app", host="0.0.0.0", port=8401)

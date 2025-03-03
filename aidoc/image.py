@@ -610,7 +610,8 @@ def convertMask2Cordinates(maskPath) :
 def image_quality_checker_api(imgPath):
     payload = {"imgPath": imgPath}
     response = requests.post(f"{current_app.config['FASTAPI_AI_BASE_URL']}/predict_quality", json=payload)
-    return response.json()
+    result = response.json()
+    return result['result']
 
 # region oral_lesion_prediction_api
 # Call FASTAPI AI Prediction Engine
