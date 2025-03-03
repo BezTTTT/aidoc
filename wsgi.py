@@ -4,6 +4,7 @@ monkey.patch_all()
 from gevent.pywsgi import WSGIServer
 from aidoc import create_app
 import logging
+import socket
 
 app = create_app()
 
@@ -21,8 +22,15 @@ class LoggerWriter:
 
 gevent_log_writer = LoggerWriter(app.logger, logging.DEBUG)
 
+# Manually create and configure the server socket.
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+server_socket.bind(("icohold.anamai.moph.go.th", 85))
+server_socket.listen(5)  # 5 is a typical backlog value.
+
+# Pass the preconfigured socket to the WSGIServer.
 http_server = WSGIServer(
-    ("icohold.anamai.moph.go.th", 85),
+    server_socket,
     app,
     keyfile="D:/xampp_New_AI/apache/conf/cert/private.key",
     certfile="D:/xampp_New_AI/apache/conf/cert/star_anamai_moph_go_th.crt",
