@@ -72,6 +72,7 @@ def fetch_image_manage_list(cursor, limit, offset, data):
 
     query += " ORDER BY sr.created_at DESC LIMIT %s OFFSET %s"
     params.extend([limit, offset])
+    print(query)
     cursor.execute(query, tuple(params))
     return cursor.fetchall()
 
@@ -229,7 +230,7 @@ def build_conditions(data):
             conditions.append("rr.retrain_request_status LIKE %s")
             params.append(is_retrain)
     
-        # start_date filter
+    # start_date filter
     if data['start_date']:
         start_date = data['start_date']
         conditions.append("DATE(sr.created_at) >= %s")
@@ -240,19 +241,14 @@ def build_conditions(data):
         end_date = data['end_date']
         conditions.append("DATE(sr.created_at) <= %s")
         params.append(end_date)
-        
-    # # Role filter
-    # if (g.user['is_patient']==1 and session['login_mode']=='patient') or (g.user['is_osm']==1 and session['login_mode']=='osm'):
-    #     conditions.append("sr.patient_id = %s OR sr.sender_id = %s")
-    #     params.append(g.user['id'])
-    #     params.append(g.user()['id'])
-    # elif g.user['is_specialist']==1 and session['login_mode']=='dentist':
-    #     conditions.append("sr.sender_id = %s")
-    #     params.append(g.user()['id'])
-    # elif g.user['is_specialist']==0 and session['login_mode']=='dentist':
-    #     conditions.append("sr.sender_id = %s")
-    #     params.append(g.user()['id'])
 
+    # Role filter
+    if g.user['is_admin']==1 and session['login_mode']=='dentist':
+        # user_id filter for admin
+        if data['user_id']:
+            user_id = data['user_id']
+            conditions.append("sr.sender_id = %s")
+            params.append(user_id)
     return conditions, params
 
 
