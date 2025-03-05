@@ -99,6 +99,7 @@
                     </div>
                 </div>
             </div>
+            <input type="hidden" id="user_id">
 </form>
 <div class="mt-2" id=totalCount>
 </div>
@@ -131,11 +132,13 @@
 
     function fetchImageManageList(page = 1) {
         // Prevent concurrent API calls
+        localStorage.setItem('currentRecordPage', page);
         if (isCurrentlyFetching) {
             console.log("Already fetching data, request skipped");
             return;
         }
 
+        saveFilterState();
         isCurrentlyFetching = true;
 
         const baseUrl = "/image_record_api/";
@@ -158,7 +161,8 @@
             is_followup: document.getElementById("filterFollowup").value,
             is_retrain: document.getElementById("filterRetrain").value,
             ai_prediction: document.getElementById("ai_prediction").value,
-            dentist_feedback_code: document.getElementById("dentist_feedback_code").value
+            dentist_feedback_code: document.getElementById("dentist_feedback_code").value,
+            user_id: document.getElementById("user_id").value
         };
 
         const url = constructUrl(baseUrl, params);
@@ -245,7 +249,8 @@
                 <div class="d-grid gap-2 d-md-block justify-content-md-center">
                     <form action="/diagnosis/admin/${item.submission_id}?channel=${item.channel}&source=admin_record2"
                     method="post" id="diagnosis_submit_id${item.submission_id}" style="display:inline;">
-                        <button class="btn btn-outline-primary" type="submit">ตรวจยืนยันผล</button>
+                    <input type="hidden" name="filtered_user_id" value="${document.getElementById('user_id').value}">
+                    <button class="btn btn-outline-primary" type="submit">ตรวจยืนยันผล</button>
                     </form>
                     
                     <form action="/quick_confirm/admin/${item.submission_id}?ai_result=${item.ai_prediction}" method="post" id="quick_submit_id${item.submission_id}" style="display:inline;">
@@ -281,7 +286,9 @@
                 <h6 class="fs-6 card-subtitle text-muted mb-2">ความคิดเห็นของทันตแพทย์: ${item.dentist_feedback ? item.dentist_feedback : "[ยังไม่ได้ให้ความคิดเห็น]"}</h6>
                 
                 <div class="d-grid gap-2 d-md-block justify-content-md-center">
-                    <form action="/diagnosis/admin/${item.submission_id}?channel=${item.channel}&source=admin_record2" method="post" id="form_id${item.submission_id}" style="display:inline;">
+                    <form action="/diagnosis/admin/${item.submission_id}?channel=${item.channel}&source=admin_record2" 
+                        method="post" id="form_id${item.submission_id}" style="display:inline;">
+                        <input type="hidden" name="filtered_user_id" value="${document.getElementById('user_id').value}">
                         <button class="btn btn-outline-success" type="submit">ดูผลการวิเคราะห์</button>
                     </form>
                     
@@ -386,6 +393,7 @@
         const page = data.page;
         const total_pages = data.total_pages;
         const totalCount = data.total_count;
+        localStorage.setItem('currentRecordPage', page);
 
         // Update total count display
         const totalCountElement = document.getElementById('totalCount');
@@ -410,24 +418,16 @@
                 <button class="btn page-link m-2 text-secondary pagination-btn" data-page="${page - 1}">ก่อนหน้า</button>
                 `;
         }
-
-        // Current page indicator
         paginationHTML += `
             <span class="current-page page-link m-2 text-secondary">หน้าปัจจุบัน: ${page} จาก ${total_pages}</span>
             `;
-
-        // Next and Last buttons (show only if not on last page)
         if (page < total_pages) {
             paginationHTML += `
                 <button class="btn page-link m-2 text-secondary pagination-btn" data-page="${page + 1}">ถัดไป</button>
                 <button class="btn page-link m-2 text-secondary pagination-btn" data-page="${total_pages}">หลังสุด</button>
                 `;
         }
-
-        // Set pagination container's innerHTML
         paginationContainer.innerHTML = paginationHTML;
-
-        // Add event listeners to pagination buttons
         document.querySelectorAll('.pagination-btn').forEach(button => {
             button.addEventListener('click', function (e) {
                 e.preventDefault();
@@ -436,64 +436,89 @@
             });
         });
     }
+
+    function saveFilterState() {
+        const filterState = {
+            priority: document.getElementById("filterPriority").value,
+            status: document.getElementById("filterStatus").value,
+            province: document.getElementById("filterProvince").value,
+            specialist: document.getElementById("filterSpecialist").value,
+            searchTerm: document.getElementById("search_input").value,
+            aiPrediction: document.getElementById("ai_prediction").value,
+            dentistFeedback: document.getElementById("dentist_feedback_code").value,
+            followup: document.getElementById("filterFollowup").value,
+            retrain: document.getElementById("filterRetrain").value,
+            channelPatient: document.getElementById("filterPatient")?.checked,
+            channelOsm: document.getElementById("filterOSM")?.checked,
+            channelDentist: document.getElementById("filterDentist")?.checked,
+            currentPage: localStorage.getItem('currentRecordPage') || 1,
+            userId: document.getElementById("user_id").value
+        };
+
+        localStorage.setItem('recordFilterState', JSON.stringify(filterState));
+    }
+
     window.onload = function () {
-        const selectedChannel = localStorage.getItem('selectedChannel');
-        const selectedAiPrediction = localStorage.getItem('selectedAiPrediction');
-        const selectedDentistFeedback = localStorage.getItem('selectedDentistFeedback');
-        const selectedDentistChecked = localStorage.getItem('selectedDentistChecked');
+        // Check if coming from diagnosis page via back button
+        const comingFromDiagnosis = localStorage.getItem('comingFromDiagnosis');
+        const savedFilterState = localStorage.getItem('recordFilterState');
+        const userId = localStorage.getItem('user_id');
+        const savedPage = localStorage.getItem('currentRecordPage');
 
-        // Apply channel filter if selected
-        if (selectedChannel) {
-            if (selectedChannel === 'BOTH') {
-                document.getElementById('filterPatient').checked = true;
-                document.getElementById('filterOSM').checked = true;
-            } else if (selectedChannel === 'PATIENT') {
-                document.getElementById('filterPatient').checked = true;
-            } else if (selectedChannel === 'OSM') {
-                document.getElementById('filterOSM').checked = true;
+        // If NOT coming from diagnosis, clear all filter states
+        if (!comingFromDiagnosis) {
+            localStorage.removeItem('recordFilterState');
+            localStorage.removeItem('currentRecordPage');
+
+            // Don't clear user_id if it was set from the management page
+            if (!localStorage.getItem('user_id')) {
+                document.getElementById('user_id').value = '';
             }
-            localStorage.removeItem('selectedChannel');
-        }
-
-        // Apply AI prediction filter if selected
-        if (selectedAiPrediction) {
-            document.getElementById('ai_prediction').value = selectedAiPrediction;
-            localStorage.removeItem('selectedAiPrediction');
-        }
-
-        // Apply dentist feedback filter if selected
-        if (selectedDentistFeedback) {
-            document.getElementById('dentist_feedback_code').value = selectedDentistFeedback;
-            localStorage.removeItem('selectedDentistFeedback');
-        }
-
-        // Apply dentist checked status filter if selected
-        if (selectedDentistChecked !== null) {
-            document.getElementById('filterStatus').value = selectedDentistChecked;
-            localStorage.removeItem('selectedDentistChecked');
-        }
-
-        // Fetch data with applied filters
-        if (selectedChannel || selectedAiPrediction || selectedDentistFeedback || selectedDentistChecked !== null) {
-            fetchImageManageList(1);
         } else {
-            // Initial data load without filters
-            fetchImageManageList();
+            // Remove the flag since we've processed it
+            localStorage.removeItem('comingFromDiagnosis');
         }
 
-        // Add event listeners to all filter controls
+        if (savedFilterState) {
+            const filterState = JSON.parse(savedFilterState);
+
+            // Restore all filter values
+            if (filterState.priority) document.getElementById('filterPriority').value = filterState.priority;
+            if (filterState.status) document.getElementById('filterStatus').value = filterState.status;
+            if (filterState.province) document.getElementById('filterProvince').value = filterState.province;
+            if (filterState.specialist) document.getElementById('filterSpecialist').value = filterState.specialist;
+            if (filterState.searchTerm) document.getElementById('search_input').value = filterState.searchTerm;
+            if (filterState.aiPrediction) document.getElementById('ai_prediction').value = filterState.aiPrediction;
+            if (filterState.dentistFeedback) document.getElementById('dentist_feedback_code').value = filterState.dentistFeedback;
+            if (filterState.followup) document.getElementById('filterFollowup').value = filterState.followup;
+            if (filterState.retrain) document.getElementById('filterRetrain').value = filterState.retrain;
+
+            // Restore checkboxes
+            if (filterState.channelPatient !== undefined) document.getElementById('filterPatient').checked = filterState.channelPatient;
+            if (filterState.channelOsm !== undefined) document.getElementById('filterOSM').checked = filterState.channelOsm;
+            if (filterState.channelDentist !== undefined) document.getElementById('filterDentist').checked = filterState.channelDentist;
+
+            // Restore user ID if it exists
+            if (filterState.userId) document.getElementById('user_id').value = filterState.userId;
+        }
+
+        // Check for recently stored userId (higher priority than saved state)
+        if (userId) {
+            document.getElementById('user_id').value = userId;
+            localStorage.removeItem('user_id');
+        }
+
+        // Fetch data with the appropriate page
+        fetchImageManageList(savedPage ? parseInt(savedPage) : 1);
+
+        // Set up event listeners for filter controls
         const filterControls = document.querySelectorAll('select[onchange="fetchImageManageList()"], input[onchange="fetchImageManageList()"]');
-
         filterControls.forEach(control => {
-            // Remove the inline onchange attribute
             control.removeAttribute('onchange');
-
-            // Add event listener
             control.addEventListener('change', function () {
                 fetchImageManageList(1); // Reset to page 1 when filters change
             });
         });
     }
-
 </script>
 {% endblock %}

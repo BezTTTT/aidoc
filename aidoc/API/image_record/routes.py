@@ -9,6 +9,7 @@ image_record_bp = Blueprint('image_record', __name__)
 def get_image_manage():
     limit = request.args.get('limit', default=10, type=int)
     page = request.args.get('page', default=1, type=int)
+    user_id = request.args.get('user_id')
     
     channel_patient = request.args.get('channel_patient')
     channel_osm = request.args.get('channel_osm')
@@ -29,6 +30,7 @@ def get_image_manage():
     is_followup = request.args.get('is_followup')
     is_retrain = request.args.get('is_retrain')
     data = {
+        "user_id": user_id,
         "channel_patient": channel_patient,
         "channel_osm": channel_osm,
         "channel_dentist": channel_dentist,

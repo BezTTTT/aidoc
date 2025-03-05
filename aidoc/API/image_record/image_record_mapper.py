@@ -15,7 +15,7 @@ def map_user_list_data(data):
             "job_position": cm.map_job_position_to_th(row["job_position"]),
             "role": [],
             "total_submit": row["N"],
-            "last_login": du.format_date_to_ddMMyyyy_time(row["last_login"]) if row["last_login"] else "-"
+            "last_login": du.format_date_to_mmddyyyy_time(row["last_login"]) if row["last_login"] else "-"
         }
 
 
@@ -43,7 +43,7 @@ def map_image_manage_list_data(data):
             "submission_id": row['submission_id'],
             "case_id": row['case_id'],
             "file_name": row['fname'],
-            "submission_date": du.format_date_to_ddMMyyyy_time(row['created_at']),
+            "submission_date": du.format_date_to_mmddyyyy_time(row['created_at']),
             "ai_prediction": cm.map_ai_prediction_int(row['ai_prediction']).upper(),
             "sender_fullname": f"{row['user_name']} {row['user_surname']}",
             "sender_name": row['user_name'],

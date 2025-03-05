@@ -12,12 +12,9 @@
         <div class="col text-center">
             {% if request.args.get('source') == 'admin_record2' %}
             <form action="{{url_for('webapp.adminRecord2')}}" method="post" enctype="multipart/form-data">
-                <a class="btn btn-outline-success btn-lg my-1 mx-2"
-                    onclick='this.parentNode.submit(); return false;'>ย้อนกลับ</a>
-            </form>
-            {% else %}
-            <form action="{{url_for('webapp.record', role='admin', page=session['current_record_page'])}}" method="post"
-                enctype="multipart/form-data">
+                {% if request.form.get('filtered_user_id') %}
+                <input type="hidden" name="user_id" value="{{request.form.get('filtered_user_id')}}">
+                {% endif %}
                 <a class="btn btn-outline-success btn-lg my-1 mx-2"
                     onclick='this.parentNode.submit(); return false;'>ย้อนกลับ</a>
             </form>
@@ -385,5 +382,10 @@
     </div>
 </div>
 {% endif %}
+<script>
+    localStorage.setItem('user_id', "{{request.form.get('filtered_user_id')}}");
+    localStorage.setItem('comingFromDiagnosis', 'true');
+</script>
+
 
 {% endblock %}
