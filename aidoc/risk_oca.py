@@ -81,26 +81,12 @@ def update_user_risk_oca(data, patient):
     for d in data:
         stored_qid = next((p['risk_oca_id'] for p in patient if p['id'] == d['patient_id']), None)
         if stored_qid is None or stored_qid != d['qid']:
-            # Call questionnaire_date_status here to get fresh risk and latest values
             risk, latest = questionnaire_date_status(d['latest'])
             d['risk'] = risk
             d['latest'] = latest
             save_questionnaire(d['patient_id'], d)
             update_count += 1
     return update_count
-
-def update_user_risk_oca(data, patient):
-    update_count = 0
-    for d in data:
-        stored_qid = next((p['risk_oca_id'] for p in patient if p['id'] == d['patient_id']), None)
-        if stored_qid is None or stored_qid != d['qid']:
-            # Call questionnaire_date_status here to get fresh risk and latest values
-            risk, latest = questionnaire_date_status(d['latest'])
-            d['risk'] = risk
-            d['latest'] = latest
-            save_questionnaire(d['patient_id'], d)
-            update_count += 1
-    return update_count 
 
 @risk_oca_bp.route('/sync_risk_oca', methods=['POST'])
 @login_required
@@ -115,6 +101,3 @@ def retrieve_and_update_risk_oca():
     save_app_metadata('last_risk_oca_update', datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f"))
 
     return jsonify({"update_count" : update_count, "update_date": get_app_metadata('last_risk_oca_update')}), 200
-    
-
-
