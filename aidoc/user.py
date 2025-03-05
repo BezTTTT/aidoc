@@ -105,9 +105,15 @@ def register(role):
                 val = (session['national_id'], )
                 cursor.execute(sql, val)
                 data = cursor.fetchone()
-                data['dob_day'] = data['birthdate'].day
-                data["dob_month"] = data['birthdate'].month
-                data["dob_year"] = data['birthdate'].year + 543
+                if data['birthdate'] != None:
+                    data['dob_day'] = data['birthdate'].day
+                    data["dob_month"] = data['birthdate'].month
+                    data["dob_year"] = data['birthdate'].year + 543
+                else: # If the birthdate is not defined, set it to the default value
+                    data['dob_day'] = 1
+                    data["dob_month"] = 1
+                    data["dob_year"] = 2500
+                
                 if data['email'] == None:
                     data['email'] = ''
                 if data['phone'] == None:
