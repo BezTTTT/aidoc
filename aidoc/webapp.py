@@ -55,13 +55,16 @@ def followup_request(role, img_id):
     data = cursor.fetchall()
     if not data:
         sql = "INSERT INTO followup_request (submission_id, followup_requester, followup_request_status) VALUES (%s, %s, %s)"
-        val = ( img_id, session["user_id"], 'Initiated')
+        val = ( img_id, session["user_id"], 'On Specialist')
         cursor.execute(sql, val)
     else:
         sql = "DELETE FROM followup_request WHERE submission_id=%s"
         val = ( img_id, )
         cursor.execute(sql, val)
-    return redirect(url_for('webapp.record', role=role, page=session['current_record_page']))
+    if role == 'admin' and request.args.get('source') == 'admin_record2':
+         return redirect(url_for('webapp.adminRecord2'))
+    else:
+        return redirect(url_for('webapp.record', role=role, page=session['current_record_page']))
 
 # region retrain_request
 @bp.route('/retrain_request/<role>/<int:img_id>', methods=('POST', ))
@@ -711,9 +714,11 @@ def userManagement():
     last_risk_oca_update = get_app_metadata('last_risk_oca_update')
     return render_template("/newTemplate/admin_management.html", risk_oca_updates=last_risk_oca_update)
 
-@bp.route('/admin_record2/')
+@bp.route('/admin_record2/', methods=('GET','POST'))
+@login_required
+@admin_only
 def adminRecord2():
-    return render_template("/newTemplate/admin_diagnosis.html")
+    return render_template("/newTemplate/admin_record2.html")
 
 #followup for dentist page
 @bp.route('/followup/admin', methods=('GET','POST'))
@@ -1885,7 +1890,7 @@ def record_followup():
     sql_limit_part = '''
                 ORDER BY 
                     CASE
-                        WHEN fr.followup_request_status = 'initiated' THEN 0
+                        WHEN fr.followup_request_status = 'On Specialist' THEN 0
                         ELSE 1
                     END,
                     sr.id DESC

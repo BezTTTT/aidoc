@@ -69,6 +69,10 @@ def create_app(test_config=None):
 
     from .API import export
     app.register_blueprint(export.export_bp, url_prefix='/export')
+    
+    from .API import image_record
+    app.register_blueprint(image_record.routes.image_record_bp)
+
 
     from . import risk_oca
     app.register_blueprint(risk_oca.risk_oca_bp)
