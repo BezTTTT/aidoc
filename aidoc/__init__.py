@@ -70,6 +70,9 @@ def create_app(test_config=None):
     from .API import export
     app.register_blueprint(export.export_bp, url_prefix='/export')
 
+    from . import risk_oca
+    app.register_blueprint(risk_oca.risk_oca_bp)
+
     # Add special endpoints
     app.add_url_rule('/', endpoint='index')
 
