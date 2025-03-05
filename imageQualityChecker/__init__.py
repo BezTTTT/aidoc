@@ -41,9 +41,9 @@ class ImageQualityChecker:
         # get the output
         output_data = self.model.get_tensor(self.output_details[0]['index'])
         
-        class_id = np.argmax(output_data[0])
+        class_id = int(np.argmax(output_data[0]))
         class_name = ImageQualityChecker.classes[class_id]
-        confident = output_data[0][class_id]
+        confident = float(output_data[0][class_id])
         
         return {
             'Class_ID': class_id,

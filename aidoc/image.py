@@ -1,15 +1,10 @@
 from flask import (
-    Blueprint, flash, redirect, render_template, request, session, url_for, send_from_directory, send_file, current_app, g,
+    Blueprint, flash, redirect, render_template, request, session, url_for, send_from_directory, send_file, current_app, g, request, jsonify
 )
 from werkzeug.utils import secure_filename
-
-import tensorflow as tf
-import oralLesionNet
-# Load the oralLesionNet model to the global variable
-model = oralLesionNet.load_model()
-
-import imageQualityChecker
-qualityChecker = imageQualityChecker.ImageQualityChecker()
+import requests
+import base64
+import io
 
 from PIL import Image, ImageFilter
 import cv2
@@ -21,7 +16,6 @@ import shutil
 import ast
 import zipfile
 from datetime import datetime
-from dateutil.parser import parse
 
 from aidoc.db import get_db
 from aidoc.auth import login_required, role_validation
@@ -61,12 +55,9 @@ def upload_image(role):
                         imageName = "_".join([newFileName, suffix]) + fileExtension 
                     imagePath = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', imageName)
                     imageFile.save(imagePath)
-                    #Create the temp thumbnail
-                    pil_img = Image.open(imagePath).convert('RGB')
 
-                    # Check image quality
-                    global qualityChecker
-                    quality_result = qualityChecker.predict(pil_img)
+                    quality_result = image_quality_checker_api(imagePath)
+                    
                     if quality_result['Class_ID'] == 0:
                         flash(f'ระบบตรวจสอบพบว่าไฟล์ {imageName} ปรากฎศีรษะของคนไข้ไม่ตั้งขึ้น กรุณาหมุนรูปไปทางขวาเพื่อทำให้ศีรษะของคนไข้อยู่ในทิศทางตั้งขึ้น')
                     elif quality_result['Class_ID'] == 1:
@@ -75,11 +66,13 @@ def upload_image(role):
                         flash(f'ระบบตรวจสอบพบว่าไฟล์ {imageName} ไม่ปรากฎช่องปากในภาพ กรุณานำส่งภาพถ่ายที่ได้มุมมองมาตรฐานตามตัวอย่างเท่านั้น')
                     data['imageQuality'] = quality_result['Class_ID']
 
+                    #Create the temp thumbnail
+                    pil_img = Image.open(imagePath).convert('RGB')
                     pil_img = create_thumbnail(pil_img)
                     pil_img.save(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', 'thumb_' + imageName)) 
                     # Save the current filenames on session for the upcoming prediction
                     imageNameList.append(imageName)
-                    quality_ai_predictions.append(quality_result['Class_ID'].item())
+                    quality_ai_predictions.append(quality_result['Class_ID'])
                 else:
                     flash(f'ไฟล์ {imageName} ไม่ใช่ชนิดรูปภาพที่กำหนด ระบบรับข้อมูลเฉพาะที่เป็นชนิดรูปภาพที่กำหนดเท่านั้น')
             if len(imageList)>0:
@@ -368,7 +361,7 @@ def recompute_image(return_page, role, img_id):
     thumbOutlinedImagePath = os.path.join(thumbOutlinedDir, imagename)
     maskPath = os.path.join(maskDir, imagename)
 
-    outlined_img, prediction, scores, mask = oral_lesion_prediction(imagePath)
+    outlined_img, prediction, scores, mask = oral_lesion_prediction_api(imagePath)
     outlined_img.save(outlinedPath)
     mask.save(maskPath)
 
@@ -377,11 +370,10 @@ def recompute_image(return_page, role, img_id):
     pil_img = create_thumbnail(pil_img)
     pil_img.save(thumbOutlinedImagePath) 
 
-    # Recheck image quality
-    global qualityChecker
-    pil_img = Image.open(imagePath)
-    quality_result = qualityChecker.predict(pil_img)
-    quality_ai_prediction = quality_result['Class_ID'].item()
+    # Call image quality checker API to recheck image quality
+    quality_result = image_quality_checker_api(imagePath)
+
+    quality_ai_prediction = quality_result['Class_ID']
 
     db, cursor = get_db()
     sql = '''UPDATE submission_record
@@ -463,132 +455,14 @@ def rotate_temp_image(imagename):
     pil_img = pil_img.rotate(-90, expand=True)
     pil_img.save(imagePath)
 
-    quality_result = qualityChecker.predict(pil_img)
+    # Call image quality checker API to recheck image quality
+    quality_result = image_quality_checker_api(imagePath)
 
     # Create the thumbnails
     pil_img = create_thumbnail(pil_img)
     pil_img.save(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', 'thumb_' + imagename))
 
     return quality_result['Class_ID']
-
-# region oral_lesion_prediction
-# AI Prediction Engine
-def oral_lesion_prediction(imgPath):
-
-    # Load and preprocess image
-    img = tf.keras.utils.load_img(imgPath, target_size=(342, 512, 3))
-    img = tf.keras.preprocessing.image.img_to_array(img)
-    img = tf.expand_dims(img, axis=0)  # Add batch dimension (TensorFlow expects this)
-
-    global model
-
-    # Perform prediction (remains a Tensor)
-    try:
-        # Ensure eager execution is enabled
-        tf.config.run_functions_eagerly(True)
-        pred_mask = model.predict(img)  # Standard prediction
-    except RuntimeError as e: ### 🔹 Handle `model.predict(img)` RuntimeError 🔹 ###
-        error_msg = f"⚠️ RuntimeError in model.predict(): {e}"
-        print(error_msg)
-        current_app.logger.error(error_msg)
-        print("🔄 Attempting to enable eager execution and retry...")
-        try:
-            tf.config.run_functions_eagerly(True)
-            model = oralLesionNet.load_model()
-            pred_mask = model.predict(img)
-        except Exception as e:
-            error_msg = f"❌ Critical Error: Fallback prediction also failed! Error: {e}"
-            print(error_msg)
-            current_app.logger.critical(error_msg)
-            restart_flask_app()
-
-    # Process prediction mask
-    output_mask = tf.math.argmax(pred_mask, axis=-1, output_type=tf.int32)  # Use int32 to avoid casting later
-    output_mask = tf.expand_dims(output_mask[0], axis=-1)  # Remove batch dimension
-
-    # Boolean mask for lesion areas
-    predictionMask = tf.math.not_equal(output_mask, 0)
-
-    try:
-        predictionMask_np = tf.cast(predictionMask, tf.uint8).numpy()  # Convert Tensor to NumPy
-    except AttributeError as e:
-        error_msg = f"⚠️ AttributeError: Failed to convert predictionMask to NumPy. Error: {e}"
-        current_app.logger.error(error_msg)
-        print("🔄 Attempting to evaluate using tf.keras.backend.eval() as fallback...")
-        try:
-            tf.config.run_functions_eagerly(True)
-            model = oralLesionNet.load_model() # Reload model
-            pred_mask = model.predict(img) # Re-predict
-            output_mask = tf.math.argmax(pred_mask, axis=-1, output_type=tf.int32)
-            output_mask = tf.expand_dims(output_mask[0], axis=-1)
-            predictionMask = tf.math.not_equal(output_mask, 0)
-            predictionMask_np = tf.keras.backend.eval(tf.cast(predictionMask, tf.uint8))  # Alternative conversion
-        except Exception as e:
-            error_msg = f"❌ Critical Error: Fallback conversion also failed! Error: {e}"
-            print(error_msg)
-            current_app.logger.critical(error_msg)
-            restart_flask_app()
-    
-    ### Connected Component Analysis with OpenCV (requires NumPy conversion) ###
-    analysis = cv2.connectedComponentsWithStats(predictionMask_np, 4, cv2.CV_32S)
-    (numLabels, labels, stats, centroids) = analysis
-    output = np.zeros((342, 512), dtype="uint8")
-    maxArea = 0
-
-    for i in range(1, numLabels):
-        area = stats[i, cv2.CC_STAT_AREA]
-        maxArea = max(maxArea, area)
-        if area > 500:  # Remove small noise
-            componentMask = (labels == i).astype("uint8") * 255
-            output = cv2.bitwise_or(output, componentMask) 
-
-    # Convert OpenCV output back to TensorFlow tensor
-    predictionMask = tf.convert_to_tensor(output, dtype=tf.uint8)
-    predictionMask = tf.math.equal(predictionMask, 255)
-    predictionMask = tf.expand_dims(predictionMask, axis=-1)  # Add back singleton dimension
-
-    # Remove batch dimension from pred_mask
-    pred_mask = tf.squeeze(pred_mask, axis=0)
-    backgroundChannel, opmdChannel, osccChannel = tf.unstack(pred_mask, axis=-1)
-
-    # Compute lesion classification scores
-    predictionIndexer = tf.squeeze(predictionMask, axis=-1)  # Remove singleton dimension
-
-    if maxArea > 500:  # Threshold to remove noise
-        opmdScore = tf.reduce_mean(tf.boolean_mask(opmdChannel, predictionIndexer))
-        osccScore = tf.reduce_mean(tf.boolean_mask(osccChannel, predictionIndexer))
-        backgroundScore = tf.reduce_mean(tf.boolean_mask(backgroundChannel, predictionIndexer))
-        predictClass = tf.cond(opmdScore > osccScore, lambda: 1, lambda: 2)
-    else:
-        backgroundIndexer = tf.math.logical_not(predictionIndexer)
-        opmdScore = tf.reduce_mean(tf.boolean_mask(opmdChannel, backgroundIndexer))
-        osccScore = tf.reduce_mean(tf.boolean_mask(osccChannel, backgroundIndexer))
-        backgroundScore = tf.reduce_mean(tf.boolean_mask(backgroundChannel, backgroundIndexer))
-        predictClass = 0
-
-    ### Generate Edge Image for Visualization ###
-    output = tf.keras.utils.array_to_img(predictionMask)
-    edge_img = output.filter(ImageFilter.FIND_EDGES)
-    dilation_img = edge_img.filter(ImageFilter.MaxFilter(3))
-
-    # Load full-size original image
-    full_img = Image.open(imgPath)
-
-    # Resize mask and edge image to match original image size
-    full_dilation_img = dilation_img.resize(full_img.size, resample=Image.NEAREST)
-    mask = output.resize(full_img.size, resample=Image.NEAREST)
-
-    # Create yellow edge overlay
-    yellow_edge = Image.merge("RGB", (full_dilation_img, full_dilation_img, Image.new(mode="L", size=full_dilation_img.size)))
-    
-    # Apply yellow edge overlay onto original image
-    outlined_img = full_img.copy()
-    outlined_img.paste(yellow_edge, full_dilation_img)
-
-    # Convert scores to Python scalars
-    scores = [backgroundScore.numpy().item(), opmdScore.numpy().item(), osccScore.numpy().item()]
-
-    return outlined_img, predictClass, scores, mask
 
 # region upload_submission_module
 # Upload Submission Module
@@ -602,7 +476,7 @@ def upload_submission_module(target_user_id):
         ai_scores = []
         for i, filename in enumerate(session['imageNameList']):
             imgPath = os.path.join(tempDir, filename)
-            outlined_img, prediction, scores, mask = oral_lesion_prediction(imgPath)
+            outlined_img, prediction, scores, mask = oral_lesion_prediction_api(imgPath)
 
             outlined_img.save(os.path.join(tempDir, 'outlined_'+filename))
             mask.save(os.path.join(tempDir, 'mask_'+filename))
@@ -731,11 +605,41 @@ def convertMask2Cordinates(maskPath) :
 
     return externalCoordinates, holesCoordinates
 
-def restart_flask_app():
-    current_app.logger.critical("Critical error occurred. Restarting Flask app in 3 seconds...")
-    current_app.logger.critical(f"The current user_id is {session['user_id']} ...")
-    # Flush any buffered logs if necessary
-    # os.execl() replaces the current process with a new one.
-    import sys, time
-    time.sleep(3)
-    os.execl(sys.executable, sys.executable, *sys.argv)
+# region image_quality_checker_api
+# Call FASTAPI Image Quality Checker API
+def image_quality_checker_api(imgPath):
+    payload = {"imgPath": imgPath}
+    response = requests.post(f"{current_app.config['FASTAPI_AI_BASE_URL']}/predict_quality", json=payload)
+    result = response.json()
+    return result['result']
+
+# region oral_lesion_prediction_api
+# Call FASTAPI AI Prediction Engine
+def oral_lesion_prediction_api(imgPath):
+    payload = {"imgPath": imgPath}
+    response = requests.post(f"{current_app.config['FASTAPI_AI_BASE_URL']}/predict", json=payload)
+    result = response.json()
+
+    # The response contains:
+    # - "outlined_img": base64 encoded string of the outlined image
+    # - "predictClass": predicted class (an integer)
+    # - "scores": a list of score values
+    # - "mask": base64 encoded string of the mask image
+
+    # To convert the base64 string back to a Pillow image:
+    outlined_img_b64 = result.get("outlined_img")
+    mask_b64 = result.get("mask")
+    
+    # Decode the outlined image:
+    outlined_img_bytes = base64.b64decode(outlined_img_b64)
+    outlined_img = Image.open(io.BytesIO(outlined_img_bytes))
+    
+    # Decode the mask image:
+    mask_bytes = base64.b64decode(mask_b64)
+    mask = Image.open(io.BytesIO(mask_bytes))
+    
+    # Print additional info:
+    predictClass = result.get("predictClass")
+    scores = result.get("scores")
+
+    return outlined_img, predictClass, scores, mask

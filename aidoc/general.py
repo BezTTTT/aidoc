@@ -12,10 +12,8 @@ import re
 
 from aidoc.db import get_db
 from aidoc.auth import login_required
-from aidoc.image import rotate_temp_image, allowed_file, create_thumbnail, oral_lesion_prediction, rename_if_duplicated, convertMask2Cordinates
-
-import imageQualityChecker
-qualityChecker = imageQualityChecker.ImageQualityChecker()
+from aidoc.image import rotate_temp_image, allowed_file, create_thumbnail, rename_if_duplicated, convertMask2Cordinates
+from aidoc.image import oral_lesion_prediction_api, image_quality_checker_api
 
 bp = Blueprint('general', __name__)
 
@@ -114,12 +112,9 @@ def general_upload():
                         imageName = "_".join([newFileName, suffix]) + fileExtension 
                     imagePath = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', imageName)
                     imageFile.save(imagePath)
-                    #Create the temp thumbnail
-                    pil_img = Image.open(imagePath).convert('RGB')
 
                     # Check image quality
-                    global qualityChecker
-                    qualityResults = qualityChecker.predict(pil_img)
+                    qualityResults = image_quality_checker_api(imagePath)
                     if qualityResults['Class_ID'] == 0:
                         flash('System detects that the patient head is not in the upright position. Please rotate the image to the right')
                     elif qualityResults['Class_ID'] == 1:
@@ -128,6 +123,8 @@ def general_upload():
                         flash('System detects that the picture may not contain a mouth. Please follow the guidelines below for taking the oral images')
                     data['imageQuality'] = qualityResults['Class_ID']
 
+                    #Create the temp thumbnail
+                    pil_img = Image.open(imagePath).convert('RGB')
                     pil_img = create_thumbnail(pil_img)
                     pil_img.save(os.path.join(current_app.config['IMAGE_DATA_DIR'], 'temp', 'thumb_' + imageName)) 
                     # Save the current filenames on session for the upcoming prediction
@@ -288,7 +285,7 @@ def recompute_general_image(img_id):
     thumbOutlinedImagePath = os.path.join(thumbOutlinedDir, imagename)
     maskPath = os.path.join(maskDir, imagename)
 
-    outlined_img, prediction, scores, mask = oral_lesion_prediction(imagePath)
+    outlined_img, prediction, scores, mask = oral_lesion_prediction_api(imagePath)
     outlined_img.save(outlinedPath)
     mask.save(maskPath)
 
@@ -315,7 +312,7 @@ def upload_general_submission_module():
         ai_scores = []
         for i, filename in enumerate(session['imageNameList']):
             imgPath = os.path.join(tempDir, filename)
-            outlined_img, prediction, scores, mask = oral_lesion_prediction(imgPath)
+            outlined_img, prediction, scores, mask = oral_lesion_prediction_api(imgPath)
 
             outlined_img.save(os.path.join(tempDir, 'outlined_'+filename))
             mask.save(os.path.join(tempDir, 'mask_'+filename))
