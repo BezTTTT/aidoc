@@ -55,7 +55,7 @@ def followup_request(role, img_id):
     data = cursor.fetchall()
     if not data:
         sql = "INSERT INTO followup_request (submission_id, followup_requester, followup_request_status) VALUES (%s, %s, %s)"
-        val = ( img_id, session["user_id"], 'Initiated')
+        val = ( img_id, session["user_id"], 'On Specialist')
         cursor.execute(sql, val)
     else:
         sql = "DELETE FROM followup_request WHERE submission_id=%s"
@@ -1853,7 +1853,7 @@ def record_followup():
     sql_limit_part = '''
                 ORDER BY 
                     CASE
-                        WHEN fr.followup_request_status = 'initiated' THEN 0
+                        WHEN fr.followup_request_status = 'On Specialist' THEN 0
                         ELSE 1
                     END,
                     sr.id DESC
