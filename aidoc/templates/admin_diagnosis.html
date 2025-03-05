@@ -199,36 +199,36 @@
         <div class="card-body">
             <h5 class="card-title text-start mb-4">เวชระเบียนผู้ป่วย</h5>
             {% if data['patient_id'] is none or data['db_patient_national_id'] is none %}
-            {% if data['saved_patient_national_id'] is not none %}
-            <p>เลขประจำตัวประชาชน: {{data['saved_patient_national_id']}}</p>
-            <p>ผู้ป่วยยังไม่ถูกลงทะเบียนในระบบ</p>
-            <form id="newPatientForm" action="{{ url_for('user.register', role='admin') }}" method="post">
-                <input name="order" type="hidden" value="register-patient">
-                <input name="return_page" type="hidden" value="diagnosis">
-                <input name="login_mode" type="hidden" value="dentist">
-                <input name="img_id" type="hidden" value="{{data['img_id']}}">
-                <input name="saved_patient_national_id" type="hidden" value="{{data['saved_patient_national_id']}}">
-                <button id="submitbtn" class="btn btn-success mb-2" type="submit">คลิกเพื่อลงทะเบียนข้อมูลคนไข้</button>
-            </form>
+                {% if data['saved_patient_national_id'] is not none %}
+                    <p>เลขประจำตัวประชาชน: {{data['saved_patient_national_id']}}</p>
+                    <p>ผู้ป่วยยังไม่ถูกลงทะเบียนในระบบ</p>
+                    <form id="newPatientForm" action="{{ url_for('user.register', role='admin') }}" method="post" >
+                        <input name="order" type="hidden" value="register-patient">
+                        <input name="return_page" type="hidden" value="diagnosis">
+                        <input name="login_mode" type="hidden" value="dentist">
+                        <input name="img_id" type="hidden" value="{{data['img_id']}}">
+                        <input name="saved_patient_national_id" type="hidden" value="{{data['saved_patient_national_id']}}">
+                        <button id="submitbtn" class="btn btn-success mb-2" type="submit">คลิกเพื่อลงทะเบียนข้อมูลคนไข้</button>
+                    </form>
+                {% else %}
+                    <p>ไม่มีข้อมูลผู้ป่วย</p>
+                    <form id="newPatientForm" action="{{ url_for('user.register', role='admin') }}" method="post" >
+                        <input id='register_order' name="order" type="hidden" value="register-patient">
+                        <input name="return_page" type="hidden" value="diagnosis">
+                        <input name="login_mode" type="hidden" value="dentist">
+                        <input name="img_id" type="hidden" value="{{data['img_id']}}">
+                        <div id="patientIDContainer" class="col-6" style="display: block;">
+                            <input id="patientIDInput" class="form-control" placeholder="เลขประจำตัว ปชช. ผู้ป่วย 13 หลัก (ถ้าทราบ) " maxlength="13" type="text" name="patient_national_id"> 
+                        </div>
+                        <button id="submitbtn" class="btn btn-outline-success my-2" type="submit">เชื่อมโยงข้อมูลคนไข้</button>
+                        <input id="patient_id" name="patient_id" type="hidden">
+                        <div id="patientInfoContainer" class="mt-3 d-flex"></div>
+                    </form>
+                {% endif %}
             {% else %}
-            <p>ไม่มีข้อมูลผู้ป่วย</p>
-            <form id="newPatientForm" action="{{ url_for('user.register', role='admin') }}" method="post">
-                <input id='register_order' name="order" type="hidden" value="register-patient">
-                <input name="return_page" type="hidden" value="diagnosis">
-                <input name="login_mode" type="hidden" value="dentist">
-                <input name="img_id" type="hidden" value="{{data['img_id']}}">
-                <div id="patientIDContainer" class="col-6" style="display: block;">
-                    <input id="patientIDInput" class="form-control"
-                        placeholder="เลขประจำตัว ปชช. ผู้ป่วย 13 หลัก (ถ้าทราบ) " maxlength="13" type="text"
-                        name="patient_national_id">
-                </div>
-                <button id="submitbtn" class="btn btn-outline-success my-2" type="submit">เชื่อมโยงข้อมูลคนไข้</button>
-                <input id="patient_id" name="patient_id" type="hidden">
-                <div id="patientInfoContainer" class="mt-3 d-flex"></div>
-            </form>
-            {% endif %}
-            {% else %}
-            <p>ชื่อ-สกุล: {{data['patient_name']}} {{data['patient_surname']}}</p>
+            <p>ชื่อ-สกุล: {{data['patient_name']}} {{data['patient_surname']}} 
+                    <span id="riskOCA" data-risk="{{data['risk_oca']}}" data-latest="{{data['risk_oca_latest']}}"></span>
+                </p>
             <p>เพศ: {{data['sex']}}</p>
             <p>อายุ: {{data['patient_age']}} ปี</p>
             <p>อาชีพ: {{data['job_position']}}</p>

@@ -74,6 +74,9 @@ def create_app(test_config=None):
     app.register_blueprint(image_record.routes.image_record_bp)
 
 
+    from . import risk_oca
+    app.register_blueprint(risk_oca.risk_oca_bp)
+
     # Add special endpoints
     app.add_url_rule('/', endpoint='index')
 

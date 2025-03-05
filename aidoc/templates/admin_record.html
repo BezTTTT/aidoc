@@ -122,7 +122,9 @@
                         {% endif %}
                     </h6>
                     {% if item['patient_name'] is not none %}
-                        <h6 class="image-name">ชื่อผู้ป่วย : {{ item['patient_name'] }} {{ item['patient_surname'] }} ( {{ item["age"] }} ปี )</h6>
+                        <h6 class="image-name">ชื่อผู้ป่วย : {{ item['patient_name'] }} {{ item['patient_surname'] }} ( {{ item["age"] }} ปี )
+                            <span id="risk_oca_{{item['patient_id']}}" data-risk="{{item['risk_oca']}}" data-latest="{{item['risk_oca_latest']}}"></span>
+                        </h6>
                     {% else %}
                         <h6 class="image-name">ชื่อผู้ป่วย : <i>ไม่มีข้อมูล</i> </h6>
                     {% endif%}
@@ -335,5 +337,19 @@
         filterRetrain.value = filterRetrainValue
     }
         
+</script>
+<script src="/static/script/riskOCA.js"></script>
+<script>
+    function load() {
+        const risk_oca_elements = document.querySelectorAll("span[id^='risk_oca_']");
+        risk_oca_elements.forEach((card) => {
+            const risk = card.dataset.risk;
+            const latest = card.dataset.latest;
+            show_risk_oca(card, data={risk: risk, latest: latest});
+         });
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        load();
+    });
 </script>
 {% endblock %}

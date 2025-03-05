@@ -170,7 +170,9 @@
                     </form>
                 {% endif %}
             {% else %}
-                <p>ชื่อ-สกุล: {{data['patient_name']}} {{data['patient_surname']}}</p>
+                <p>ชื่อ-สกุล: {{data['patient_name']}} {{data['patient_surname']}} 
+                    <span id="riskOCA" data-risk="{{data['risk_oca']}}" data-latest="{{data['risk_oca_latest']}}"></span>
+                </p>
                 <p>เพศ: {{data['sex']}}</p>
                 <p>อายุ: {{data['patient_age']}} ปี</p>
                 <p>อาชีพ: {{data['job_position']}}</p>
@@ -285,5 +287,18 @@
             orderInput.value = 'register-patient'
         }
     }
+</script>
+
+<script src="/static/script/riskOCA.js"></script>
+<script>
+    function load() {
+        const riskElement = document.getElementById('riskOCA');
+        const risk = riskElement.dataset.risk;
+        const latest = riskElement.dataset.latest;
+        show_risk_oca(riskElement, {risk: risk, latest: latest});
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        load();
+    });
 </script>
 {% endblock %}
