@@ -232,8 +232,10 @@
     fetchAdminPage();
     window.location.reload()
   }
+
   function viewUserUploads(userId) {
     localStorage.setItem('user_id', userId);
+    localStorage.setItem('currentRecordPage', 1);
     window.location.href = '/admin_record2';
   }
 
