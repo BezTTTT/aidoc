@@ -13,7 +13,7 @@ def map_ai_prediction_int(prediction):
 
 def map_dentist_diagnosis(diagnoses):
     diagnosis_mapping = {
-        "OSCC": "oscc", "OPMD": "opmd", "Normal": "normal",
+        "OSCC": "oscc", "OPMD": "opmd", "Normal": "normal", "BENIGN":"benign" ,
         "BAD_IMG": "poor_image", "OTHER": "others", "Not_diagnosed": "not_diagnosed"
     }
     return {diagnosis_mapping.get(diag['dentist_feedback_code'], "unknown"): int(diag['N']) for diag in diagnoses}

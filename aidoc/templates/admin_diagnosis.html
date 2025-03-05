@@ -1,7 +1,7 @@
 {% if data['channel'] == 'DENTIST' %}
-    {% extends "dentist_diagnosis.html" %}
+{% extends "dentist_diagnosis.html" %}
 {% else %}
-    {% extends "specialist_diagnosis.html" %}   
+{% extends "specialist_diagnosis.html" %}
 {% endif %}
 
 {% block title %} AIDOC | Administrator Diagnosis {% endblock %}
@@ -10,28 +10,43 @@
 <div class="row d-flex justify-content-center my-2">
     <div class="row d-flex justify-content-center my-2">
         <div class="col text-center">
-            <form action="{{url_for('webapp.record', role='admin', page=session['current_record_page'])}}" method="post" enctype="multipart/form-data">
-                <a class="btn btn-outline-success btn-lg my-1 mx-2" onclick='this.parentNode.submit(); return false;'>ย้อนกลับ</a>
+            {% if request.args.get('source') == 'admin_record2' %}
+            <form action="{{url_for('webapp.adminRecord2')}}" method="post" enctype="multipart/form-data">
+                {% if request.form.get('filtered_user_id') %}
+                <input type="hidden" name="user_id" value="{{request.form.get('filtered_user_id')}}">
+                {% endif %}
+                <a class="btn btn-outline-success btn-lg my-1 mx-2"
+                    onclick='this.parentNode.submit(); return false;'>ย้อนกลับ</a>
             </form>
+            {% endif %}
 
-            <a class="btn btn-outline-success btn-lg my-1 mx-2" href="/download_image/{{data['owner_id']}}/{{data['fname']}}" download>Download</a>
+            <a class="btn btn-outline-success btn-lg my-1 mx-2"
+                href="/download_image/{{data['owner_id']}}/{{data['fname']}}" download>Download</a>
 
-            <form action="{{url_for('image.rotate_image', return_page='diagnosis', role='admin', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
+            <form
+                action="{{url_for('image.rotate_image', return_page='diagnosis', role='admin', img_id=data['img_id'])}}"
+                method="post" enctype="multipart/form-data">
                 <input name="user_id" type="hidden" value="{{data['owner_id']}}">
                 <input name="imagename" type="hidden" value="{{data['fname']}}">
-                <a class="btn btn-outline-success btn-lg my-1 mx-2" onclick='this.parentNode.submit(); return false;'>หมุนรูปไปทางขวา</a>
+                <a class="btn btn-outline-success btn-lg my-1 mx-2"
+                    onclick='this.parentNode.submit(); return false;'>หมุนรูปไปทางขวา</a>
             </form>
 
-            <form action="{{url_for('image.recompute_image', return_page='diagnosis', role='admin', img_id=data['img_id'], channel=data['channel'])}}" method="post" enctype="multipart/form-data">
+            <form
+                action="{{url_for('image.recompute_image', return_page='diagnosis', role='admin', img_id=data['img_id'], channel=data['channel'])}}"
+                method="post" enctype="multipart/form-data">
                 <input name="user_id" type="hidden" value="{{data['owner_id']}}">
                 <input name="imagename" type="hidden" value="{{data['fname']}}">
-                <a class="btn btn-outline-success btn-lg my-1 mx-2" onclick='this.parentNode.submit(); return false;'>Recompute</a>
+                <a class="btn btn-outline-success btn-lg my-1 mx-2"
+                    onclick='this.parentNode.submit(); return false;'>Recompute</a>
             </form>
 
-            <form action="{{url_for('image.mask_editor', role='admin', img_id=data['img_id'])}}" method="post" enctype="multipart/form-data">
+            <form action="{{url_for('image.mask_editor', role='admin', img_id=data['img_id'])}}" method="post"
+                enctype="multipart/form-data">
                 <input name="user_id" type="hidden" value="{{data['owner_id']}}">
                 <input name="imagename" type="hidden" value="{{data['fname']}}">
-                <a class="btn btn-outline-success btn-lg my-1 mx-2" onclick='this.parentNode.submit(); return false;'>แก้ไขผลลัพธ์</a>
+                <a class="btn btn-outline-success btn-lg my-1 mx-2"
+                    onclick='this.parentNode.submit(); return false;'>แก้ไขผลลัพธ์</a>
             </form>
         </div>
     </div>
@@ -44,11 +59,13 @@
     <div class="card grid-item-dentist-ai-agreement-panel">
         <div class="card-body px-4">
             <h5 class="card-title text-start mb-3">ท่านเห็นด้วยกับผลการวิเคราะทาง AI ดังที่ปรากฏหรือไม่?</h5>
-            <form action="{{ url_for('webapp.diagnosis', role='admin', img_id=data['img_id'], channel=data['channel']) }}" method="post" enctype="multipart/form-data">
+            <form
+                action="{{ url_for('webapp.diagnosis', role='admin', img_id=data['img_id'], channel=data['channel']) }}"
+                method="post" enctype="multipart/form-data">
                 <input type="hidden" name="dentist_action" value="ai_agreement">
                 <div class="form-check">
-                    <input class="form-check-input" type="radio" name="agree_option" id="agree_option1" value="AGREE"
-                        {% if data['dentist_feedback_code']=='AGREE' %} checked {% endif %}/>
+                    <input class="form-check-input" type="radio" name="agree_option" id="agree_option1" value="AGREE" {%
+                        if data['dentist_feedback_code']=='AGREE' %} checked {% endif %} />
                     <label class="form-check-label" for="agree_option1"> เห็นด้วย </label>
                 </div>
                 <div class="form-check">
@@ -63,28 +80,32 @@
     <div class="card grid-item-dentist-additional-feedback-panel">
         <div class="card-body px-4">
             <h5 class="card-title text-start mb-3">คำวินิจฉัยเพิ่มเติม</h5>
-            <form action="{{ url_for('webapp.diagnosis', role='admin', img_id=data['img_id'], channel=data['channel']) }}" method="post" enctype="multipart/form-data">
+            <form
+                action="{{ url_for('webapp.diagnosis', role='admin', img_id=data['img_id'], channel=data['channel']) }}"
+                method="post" enctype="multipart/form-data">
                 <input type="hidden" name="dentist_action" value="additional_feedback">
                 <div id="inner-container" class="d-flex justify-content-lg-start my-3">
                     <div id="lesion-location-container">
                         <label class="mb-1">ตำแหน่งที่ตรวจพบรอยโรค</label>
                         {% for key, value in maps['lesion_location_map'].items() %}
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="lesion_location" id="lesion_location{{loop.index}}" value="{{key}}"
-                                    {% if data['dentist_feedback_location']==loop.index %}checked{% endif %} />
-                                <label class="form-check-label" for="lesion_location{{loop.index}}">{{value}}</label>
-                            </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="lesion_location"
+                                id="lesion_location{{loop.index}}" value="{{key}}" {% if
+                                data['dentist_feedback_location']==loop.index %}checked{% endif %} />
+                            <label class="form-check-label" for="lesion_location{{loop.index}}">{{value}}</label>
+                        </div>
                         {% endfor %}
                     </div>
 
                     <div id="lesion-type-container">
                         <label class="mb-1">ชนิดรอยโรค</label>
                         {% for key, value in maps['lesion_type_map'].items() %}
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="lesion_type" id="lesion_type{{loop.index}}" value="{{key}}"
-                                    {% if data['dentist_feedback_lesion']==loop.index %}checked{% endif %} />
-                                <label class="form-check-label" for="lesion_type{{loop.index}}">{{value}}</label>
-                            </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="lesion_type"
+                                id="lesion_type{{loop.index}}" value="{{key}}" {% if
+                                data['dentist_feedback_lesion']==loop.index %}checked{% endif %} />
+                            <label class="form-check-label" for="lesion_type{{loop.index}}">{{value}}</label>
+                        </div>
                         {% endfor %}
                     </div>
                 </div>
@@ -96,10 +117,13 @@
         <div class="card-body px-4">
             <h5 class="card-title text-start mb-3">ความคิดเห็น</h5>
             <p><i>ข้อความในช่องความคิดเห็นนี้ จะสามารถค้นหาได้ในกล่องค้นหาคำสำคัญ</i></p>
-            <form action="{{ url_for('webapp.diagnosis', role='admin', img_id=data['img_id'], channel=data['channel'])}}" method="post" enctype="multipart/form-data">
+            <form
+                action="{{ url_for('webapp.diagnosis', role='admin', img_id=data['img_id'], channel=data['channel'])}}"
+                method="post" enctype="multipart/form-data">
                 <input type="hidden" name="dentist_action" value="comment">
                 <div id="dentist-comment-container" class="my-3">
-                    <textarea class="form-control" rows="3" name="dentist_comment">{{data['dentist_feedback_comment']}}</textarea> 
+                    <textarea class="form-control" rows="3"
+                        name="dentist_comment">{{data['dentist_feedback_comment']}}</textarea>
                 </div>
                 <input class="btn btn-outline-success my-2" type="submit" value="บันทึกความคิดเห็น">
             </form>
@@ -114,35 +138,36 @@
             <p>Case ID: {{data['case_id']}}</p>
             <p>ชื่อไฟล์: {{data['fname']}}</p>
             <p>
-            {% if data['quality_ai_prediction'] is not none %}
+                {% if data['quality_ai_prediction'] is not none %}
                 {% if data['quality_ai_prediction']==0 %}
-                    ตรวจคุณภาพรูป: <span style="color: red;">ไม่ผ่านมาตรฐาน (ศีรษะคนไข้ไม่ตั้งตรง)</span>
+                ตรวจคุณภาพรูป: <span style="color: red;">ไม่ผ่านมาตรฐาน (ศีรษะคนไข้ไม่ตั้งตรง)</span>
                 {% elif data['quality_ai_prediction']==1 %}
-                    ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ผลลัพธ์อาจผิดพลาด)</b></span>
+                ตรวจคุณภาพรูป: <span style="color: red;"><b>ไม่ผ่านมาตรฐาน (ผลลัพธ์อาจผิดพลาด)</b></span>
                 {% elif data['quality_ai_prediction']==2 %}
-                    ตรวจคุณภาพรูป: <span style="color: red;">ไม่พบช่องปาก (ภาพอาจไม่เกี่ยวข้อง)</span>
+                ตรวจคุณภาพรูป: <span style="color: red;">ไม่พบช่องปาก (ภาพอาจไม่เกี่ยวข้อง)</span>
                 {% elif data['quality_ai_prediction']==3 %}
-                    ตรวจคุณภาพรูป: <span style="color: green;">ผ่านมาตรฐาน</span>
+                ตรวจคุณภาพรูป: <span style="color: green;">ผ่านมาตรฐาน</span>
                 {% endif %}
-            {% else %}
+                {% else %}
                 ตรวจคุณภาพรูป: ไม่มีผลลัพธ์ (กด Recompute ใหม่)
-            {% endif %}
+                {% endif %}
             </p>
             <p>วันที่นำส่ง: {{data['thai_datetime']}}</p>
             <p>สถานที่คัดกรอง: {{data['location_text']}}</p>
             <p>ผู้นำส่งรูป: {{data['sender_description']}}</p>
             {% if data['sender_hospital'] is not none%}
-                <p>โรงพยาบาลที่สังกัด: {{data['sender_hospital']}} จ.{{data['sender_province']}}</p>
+            <p>โรงพยาบาลที่สังกัด: {{data['sender_hospital']}} จ.{{data['sender_province']}}</p>
             {% endif %}
             {% if data['sender_name'] is none %}
-                <form id="newOSMForm" action="{{ url_for('user.register', role='admin') }}" method="post" >
-                    <input name="order" type="hidden" value="register-osm">
-                    <input name="return_page" type="hidden" value="diagnosis">
-                    <input name="login_mode" type="hidden" value="dentist">
-                    <input name="img_id" type="hidden" value="{{data['img_id']}}">
-                    <input name="sender_phone" type="hidden" value="{{data['sender_phone']}}">
-                    <button id="submitbtn" class="btn btn-outline-success my-2" type="submit">คลิกเพื่อลงทะเบียนผู้นำส่งข้อมูล</button>
-                </form>
+            <form id="newOSMForm" action="{{ url_for('user.register', role='admin') }}" method="post">
+                <input name="order" type="hidden" value="register-osm">
+                <input name="return_page" type="hidden" value="diagnosis">
+                <input name="login_mode" type="hidden" value="dentist">
+                <input name="img_id" type="hidden" value="{{data['img_id']}}">
+                <input name="sender_phone" type="hidden" value="{{data['sender_phone']}}">
+                <button id="submitbtn" class="btn btn-outline-success my-2"
+                    type="submit">คลิกเพื่อลงทะเบียนผู้นำส่งข้อมูล</button>
+            </form>
             {% endif %}
         </div>
     </div>
@@ -152,17 +177,18 @@
             <h5 class="card-title text-start mb-3">ประวัติคำวินิจฉัย</h5>
             <p>ความคิดเห็นของทันตแพทย์: <b>{{maps['dentist_diagnosis_map'][data['dentist_feedback_code']]}}</b></p>
             {% if data['dentist_feedback_code']!= 'NORMAL' %}
-                {% if (data['dentist_feedback_code']== 'OPMD' or data['dentist_feedback_code']== 'OSCC') and data['dentist_feedback_comment'] != '' %}
-                    <!-- <p>ชนิดรอยโรค: <b>{{maps['lesion_type_map'][data['dentist_feedback_lesion']]}} </b></p>
+            {% if (data['dentist_feedback_code']== 'OPMD' or data['dentist_feedback_code']== 'OSCC') and
+            data['dentist_feedback_comment'] != '' %}
+            <!-- <p>ชนิดรอยโรค: <b>{{maps['lesion_type_map'][data['dentist_feedback_lesion']]}} </b></p>
                     <p>ตำแหน่งที่พบรอยโรค: {{maps['lesion_location_map'][data['dentist_feedback_location']]}}</p> -->
-                    <p>ความคิดเห็นเพิ่มเติม: <b>{{maps['oscc_opmd_options'][data['dentist_feedback_comment']]}} </b></p>
-                {% elif data['dentist_feedback_code']== 'BAD_IMG' %}
-                    <p>ความคิดเห็นเพิ่มเติม: <b>{{maps['bad_image_map'][data['dentist_feedback_comment']]}} </b></p>
-                {% elif data['dentist_feedback_code']== 'BENIGN' %}
-                    <p>บันทึกของทันตแพทย์: {{maps['benign_option'][data['dentist_feedback_comment']]}}</p>
-                {% elif data['dentist_feedback_comment'] != '' %}
-                    <p>ความคิดเห็นเพิ่มเติม: <b>{{data['dentist_feedback_comment']}} </b></p>
-                {% endif %}
+            <p>ความคิดเห็นเพิ่มเติม: <b>{{maps['oscc_opmd_options'][data['dentist_feedback_comment']]}} </b></p>
+            {% elif data['dentist_feedback_code']== 'BAD_IMG' %}
+            <p>ความคิดเห็นเพิ่มเติม: <b>{{maps['bad_image_map'][data['dentist_feedback_comment']]}} </b></p>
+            {% elif data['dentist_feedback_code']== 'BENIGN' %}
+            <p>บันทึกของทันตแพทย์: {{maps['benign_option'][data['dentist_feedback_comment']]}}</p>
+            {% elif data['dentist_feedback_comment'] != '' %}
+            <p>ความคิดเห็นเพิ่มเติม: <b>{{data['dentist_feedback_comment']}} </b></p>
+            {% endif %}
             {% endif %}
             <p>ทันตแพทย์ผู้ตรวจ: {{data['dentist_name']}} {{data['dentist_surname']}} </p>
             <p>วันที่: {{data['dentist_feedback_date']}} </p>
@@ -200,40 +226,44 @@
                     </form>
                 {% endif %}
             {% else %}
-                <p>ชื่อ-สกุล: {{data['patient_name']}} {{data['patient_surname']}} 
+            <p>ชื่อ-สกุล: {{data['patient_name']}} {{data['patient_surname']}} 
                     <span id="riskOCA" data-risk="{{data['risk_oca']}}" data-latest="{{data['risk_oca_latest']}}"></span>
                 </p>
-                <p>เพศ: {{data['sex']}}</p>
-                <p>อายุ: {{data['patient_age']}} ปี</p>
-                <p>อาชีพ: {{data['job_position']}}</p>
-                <p>เลขประจำตัวประชาชน: {{data['db_patient_national_id']}}</p>
-                {% if data['email'] is not none %}
-                    <p>อีเมล: {{data['email']}}</p>
-                {% endif %}
-                {% if data['patient_phone'] is not none %}
-                    <p>เบอร์โทรศัพท์: {{data['patient_phone']}}</p>
-                {% endif %}
-                <p>ที่อยู่ (ที่พักปัจจุบัน): {{data['address']}}</p>
-                <p>จังหวัด (ที่พักปัจจุบัน): {{data['province']}}</p>
-                <form id="editPatientForm" action="{{ url_for('user.register', role='admin') }}" method="post" >
-                    <input name="order" type="hidden" value="edit-patient">
-                    <input name="return_page" type="hidden" value="diagnosis">
-                    <input name="login_mode" type="hidden" value="dentist">
-                    <input name="img_id" type="hidden" value="{{data['img_id']}}">
-                    <input name="patient_national_id" type="hidden" value="{{data['db_patient_national_id']}}">
-                    <button id="submitbtn" class="btn btn-outline-success mb-2" type="submit">คลิกเพื่อแก้ไขข้อมูลคนไข้</button>
-                </form>
+            <p>เพศ: {{data['sex']}}</p>
+            <p>อายุ: {{data['patient_age']}} ปี</p>
+            <p>อาชีพ: {{data['job_position']}}</p>
+            <p>เลขประจำตัวประชาชน: {{data['db_patient_national_id']}}</p>
+            {% if data['email'] is not none %}
+            <p>อีเมล: {{data['email']}}</p>
+            {% endif %}
+            {% if data['patient_phone'] is not none %}
+            <p>เบอร์โทรศัพท์: {{data['patient_phone']}}</p>
+            {% endif %}
+            <p>ที่อยู่ (ที่พักปัจจุบัน): {{data['address']}}</p>
+            <p>จังหวัด (ที่พักปัจจุบัน): {{data['province']}}</p>
+            <form id="editPatientForm" action="{{ url_for('user.register', role='admin') }}" method="post">
+                <input name="order" type="hidden" value="edit-patient">
+                <input name="return_page" type="hidden" value="diagnosis">
+                <input name="login_mode" type="hidden" value="dentist">
+                <input name="img_id" type="hidden" value="{{data['img_id']}}">
+                <input name="patient_national_id" type="hidden" value="{{data['db_patient_national_id']}}">
+                <button id="submitbtn" class="btn btn-outline-success mb-2"
+                    type="submit">คลิกเพื่อแก้ไขข้อมูลคนไข้</button>
+            </form>
             {% endif %}
         </div>
     </div>
     <div class="card grid-item-dentist-feedback-panel">
-        <form action="{{url_for('webapp.diagnosis', role='admin', img_id=data['img_id'], specialist_feedback='true', channel=data['channel'])}}" method="post" enctype="multipart/form-data">
+        <form
+            action="{{url_for('webapp.diagnosis', role='admin', img_id=data['img_id'], specialist_feedback='true', channel=data['channel'])}}"
+            method="post" enctype="multipart/form-data">
             <div class="card-body">
                 <h5 class="card-title">สำหรับทันตแพทย์ที่เข้าร่วมโครงการ ท่านจะวินิจฉัยภาพนี้ให้เข้ากรณีใด</h5>
                 <div class="mb-3">
                     {% for key, value in maps['dentist_diagnosis_map'].items() %}
                     <div class="form-check">
-                        <input class="form-check-input" type="radio" name="dt_comment_option" id="dt_comment_option{{loop.index}}" value="{{key}}" required>
+                        <input class="form-check-input" type="radio" name="dt_comment_option"
+                            id="dt_comment_option{{loop.index}}" value="{{key}}" required>
                         <label class="form-check-label" for="dt_comment_option{{loop.index}}">{{value}}</label>
                     </div>
                     {% endfor %}
@@ -243,10 +273,11 @@
                     <h6>คำแนะนำของทันตแพทย์</h6>
                     <div class="ms-4">
                         {% for key, value in maps['bad_image_map'].items() %}
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="BadImgCommentSelectOptions" id="bad_img_option{{loop.index}}" value="{{key}}">
-                                <label class="form-check-label" for="bad_img_option{{loop.index}}">{{value}}</label>
-                            </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="BadImgCommentSelectOptions"
+                                id="bad_img_option{{loop.index}}" value="{{key}}">
+                            <label class="form-check-label" for="bad_img_option{{loop.index}}">{{value}}</label>
+                        </div>
                         {% endfor %}
                     </div>
                 </div>
@@ -254,10 +285,11 @@
                     <h6>คำแนะนำของทันตแพทย์</h6>
                     <div class="ms-4">
                         {% for key, value in maps['benign_option'].items() %}
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="BenignCommentSelectOptions" id="bad_img_option{{loop.index}}" value="{{key}}">
-                                <label class="form-check-label" for="bad_img_option{{loop.index}}">{{value}}</label>
-                            </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="BenignCommentSelectOptions"
+                                id="bad_img_option{{loop.index}}" value="{{key}}">
+                            <label class="form-check-label" for="bad_img_option{{loop.index}}">{{value}}</label>
+                        </div>
                         {% endfor %}
                     </div>
                 </div>
@@ -265,12 +297,13 @@
                     <div>
                         <h6>คำแนะนำของทันตแพทย์</h6>
                         <div class="ms-4">
-                        {% for key, value in maps['oscc_opmd_options'].items() %}
+                            {% for key, value in maps['oscc_opmd_options'].items() %}
                             <div class="form-check">
-                                <input class="form-check-input" type="radio" name="OPMDOSCCCommentSelectOptions" id="bad_img_option{{loop.index}}" value="{{key}}">
+                                <input class="form-check-input" type="radio" name="OPMDOSCCCommentSelectOptions"
+                                    id="bad_img_option{{loop.index}}" value="{{key}}">
                                 <label class="form-check-label" for="bad_img_option{{loop.index}}">{{value}}</label>
                             </div>
-                        {%endfor %}
+                            {%endfor %}
                         </div>
                         <!-- <div class="d-flex flex-column">
                             <div class="ms-4">
@@ -296,25 +329,33 @@
                     </div>
                 </div>
                 <div id="OtherCommentBox" style="display: none">
-                    <label for="OtherCommentTextarea" class="form-label" style="font-weight: bold">กรุณาพิมพ์ความคิดเห็นในช่องด้านล่าง (ไม่เกิน 255 ตัวอักษร)</label>
-                    <textarea class="form-control" id="OtherCommentTextarea" rows="3" maxlength="255" name="OtherCommentTextarea" required></textarea>
+                    <label for="OtherCommentTextarea" class="form-label"
+                        style="font-weight: bold">กรุณาพิมพ์ความคิดเห็นในช่องด้านล่าง (ไม่เกิน 255 ตัวอักษร)</label>
+                    <textarea class="form-control" id="OtherCommentTextarea" rows="3" maxlength="255"
+                        name="OtherCommentTextarea" required></textarea>
                 </div>
 
                 <input class="btn btn-outline-primary mt-3" type="submit" value="บันทึกคำวินิจฉัย">
-                <div class="mt-2"><i>คำวินิจฉัยของทันตแพทย์นี้ ผู้ป่วยจะสามารถมองเห็นได้ (หากวินิจฉัยว่ามีรอยโรค ผู้ป่วยจะทราบเพียงว่ามีรอยโรคหรือไม่)</i></div>
+                <div class="mt-2"><i>คำวินิจฉัยของทันตแพทย์นี้ ผู้ป่วยจะสามารถมองเห็นได้ (หากวินิจฉัยว่ามีรอยโรค
+                        ผู้ป่วยจะทราบเพียงว่ามีรอยโรคหรือไม่)</i></div>
             </div>
         </form>
     </div>
     <div class="card grid-item-case-report-panel">
         <div class="card-body">
             <h5 class="card-title text-start mb-3">รายงานผู้ป่วย (Case Report)</h5>
-            <form action="{{url_for('webapp.diagnosis', role='admin', img_id=data['img_id'], case_report='true', channel=data['channel'])}}" method="post" enctype="multipart/form-data">                    
+            <form
+                action="{{url_for('webapp.diagnosis', role='admin', img_id=data['img_id'], case_report='true', channel=data['channel'])}}"
+                method="post" enctype="multipart/form-data">
                 <div id="CaseReportBox">
-                    <label for="CaseReportTextarea" class="form-label mt-2">สร้างรายงานผู้ป่วย หรือ ความคิดเห็น หรือ คำวินิจฉัยอื่น ๆ ที่ต้องการบันทึกเป็นประวัติไว้ หรือ รายงานต่อทันตแพทย์ผู้เชี่ยวชาญ</label>
-                    <textarea class="form-control" id="CaseReportTextarea" rows="3" name="case_report">{{data['case_report']}}</textarea>
+                    <label for="CaseReportTextarea" class="form-label mt-2">สร้างรายงานผู้ป่วย หรือ ความคิดเห็น หรือ
+                        คำวินิจฉัยอื่น ๆ ที่ต้องการบันทึกเป็นประวัติไว้ หรือ รายงานต่อทันตแพทย์ผู้เชี่ยวชาญ</label>
+                    <textarea class="form-control" id="CaseReportTextarea" rows="3"
+                        name="case_report">{{data['case_report']}}</textarea>
                 </div>
                 <input class="btn btn-outline-primary mt-3" type="submit" value="บันทึกรายงานผู้ป่วย">
-                <div class="mt-2"><i>รายงานผู้ป่วยนี้ ผู้ป่วยจะมองไม่เห็น เป็นข้อมูลสำหรับการสื่อสารระหว่างทันตแพทย์เท่านั้น</i></div>
+                <div class="mt-2"><i>รายงานผู้ป่วยนี้ ผู้ป่วยจะมองไม่เห็น
+                        เป็นข้อมูลสำหรับการสื่อสารระหว่างทันตแพทย์เท่านั้น</i></div>
             </form>
         </div>
     </div>
@@ -327,10 +368,12 @@
                         <input id="file-upload" type="file" name="biopsy_file" required disabled>
                     </div>
                 </div>
-                
+
                 <div id="BiopsyCommentBox">
-                    <label for="BiopsyCommentTextarea" class="form-label mt-2">กรุณาพิมพ์ความคิดเห็นต่อผลการตรวจชิ้นเนื้อ</label>
-                    <textarea class="form-control" id="BiopsyCommentTextarea" rows="3" name="biopsy_comment" disabled></textarea>
+                    <label for="BiopsyCommentTextarea"
+                        class="form-label mt-2">กรุณาพิมพ์ความคิดเห็นต่อผลการตรวจชิ้นเนื้อ</label>
+                    <textarea class="form-control" id="BiopsyCommentTextarea" rows="3" name="biopsy_comment"
+                        disabled></textarea>
                 </div>
 
                 <input class="btn btn-outline-success mt-3" type="submit" value="บันทึกผลการตรวจชิ้นเนื้อ" disabled>
@@ -339,5 +382,9 @@
     </div>
 </div>
 {% endif %}
+<script>
+    localStorage.setItem('user_id', "{{request.form.get('filtered_user_id')}}");
+</script>
+
 
 {% endblock %}
