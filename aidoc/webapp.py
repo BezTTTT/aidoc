@@ -4,10 +4,10 @@ from flask import (
 import io
 import pandas as pd
 import json, os
+from datetime import datetime
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
-from datetime import datetime
 from aidoc.utils import *
 from aidoc.db import get_db
 from aidoc.auth import login_required, admin_only, specialist_only, role_validation, reload_user_profile

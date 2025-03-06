@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 import cv2
 import os
-import datetime
+from datetime import datetime
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from PIL import Image, ImageFilter
@@ -14,7 +14,7 @@ from logging.handlers import RotatingFileHandler
 
 # Logging configuration
 os.makedirs('aidoc_logs/ai', exist_ok=True)
-current_time_str = datetime.datetime.now().strftime("%d-%b-%Y_%H-%M")
+current_time_str = datetime.now().strftime("%d-%b-%Y_%H-%M")
 log_file = os.path.join('aidoc_logs', 'ai', f'aidoc_ai_{current_time_str}.log')
 file_handler = RotatingFileHandler(log_file, maxBytes=10*2**20, backupCount=10)
 file_handler.setLevel(logging.INFO)
@@ -95,11 +95,9 @@ async def predict(request: PredictRequest):
         img = tf.keras.preprocessing.image.img_to_array(img)
         img = tf.expand_dims(img, axis=0)  # Add batch dimension
 
-        global model
-        pred_mask = model.predict(img)
-
         # Perform prediction (remains a Tensor)
         try:
+            global model
             # Ensure eager execution is enabled
             tf.config.run_functions_eagerly(True)
             pred_mask = model.predict(img)  # Standard prediction

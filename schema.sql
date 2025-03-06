@@ -145,19 +145,33 @@ CREATE TABLE `user_compliance` (
   `informed_consent_datetime` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-CREATE TABLE osm_group_member (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    group_id INT not NULL,
-    osm_id INT not NULL,
-    group_provinces VARCHAR(255) DEFAULT NULL
+CREATE TABLE `osm_group_member` (
+  `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `group_id` INT not NULL,
+  `osm_id` INT not NULL,
+  `group_provinces` VARCHAR(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-CREATE TABLE osm_group (
-    group_id INT AUTO_INCREMENT PRIMARY KEY,
-    osm_supervisor_id INT NOT NULL,
-    group_name  varchar(255) DEFAULT NULL
+CREATE TABLE `osm_group` (
+  `group_id` INT AUTO_INCREMENT PRIMARY KEY,
+  `osm_supervisor_id` INT NOT NULL,
+  `group_name`  varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+CREATE TABLE `user_risk_oca` (
+  `user_id` INT NOT NULL PRIMARY KEY,
+  `risk_oca_id` INT,
+  `risk_oca` INT,
+  `risk_oca_latest` VARCHAR(30)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `app_metadata` (
+  `id` SERIAL PRIMARY KEY,
+  `variable_name` VARCHAR(255) NOT NULL UNIQUE,
+  `variable_value` TEXT,
+  `data_type` VARCHAR(50),
+  `last_updated` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 /*
   Query Optimization
