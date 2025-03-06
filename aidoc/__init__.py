@@ -88,9 +88,9 @@ def create_app(test_config=None):
     # Create log file for each application run
     import logging
     from logging.handlers import RotatingFileHandler
-    import datetime
+    from datetime import datetime
     os.makedirs('aidoc_logs/web', exist_ok=True)
-    current_time = datetime.datetime.now()
+    current_time = datetime.now()
     current_time_str = current_time.strftime("%d-%b-%Y_%H-%M")
     file_handler = RotatingFileHandler(os.path.join('aidoc_logs', 'web', f'aidoc_web_{current_time_str}.log'), maxBytes=10*2**20, backupCount=10)
     file_handler.setLevel(logging.DEBUG)

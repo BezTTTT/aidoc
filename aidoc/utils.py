@@ -1,10 +1,8 @@
-import datetime
-from flask import flash , session
+from flask import flash, session
 from aidoc.db import get_db
 import re
 from dateutil.parser import parse
 from datetime import date
-
 
 # These helper functions are mostly for register systems
 

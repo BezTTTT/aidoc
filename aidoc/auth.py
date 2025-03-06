@@ -5,7 +5,7 @@ from werkzeug.security import check_password_hash
 
 import bcrypt
 import functools
-import datetime
+from datetime import datetime, date
 
 from aidoc.db import get_db
 
@@ -183,7 +183,7 @@ def login(role):
             flash(error_msg)
 
             data = {} # a data container to store submitted values from the form
-            data['current_year'] = datetime.date.today().year # set the current Thai Year to the global variable
+            data['current_year'] = date.today().year # set the current Thai Year to the global variable
             data["valid_national_id"] = True
             data["valid_phone"] = True
             data["name"] = user["name"]
