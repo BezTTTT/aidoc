@@ -48,6 +48,7 @@ pip install openpyxl
 pip install uvicorn[standard]
 pip install fastapi[standard]
 pip install tensorflow (or pip install tensorflow[and-cuda] if you want to use a GPU)
+pip install cachetools
 
 (you may upgrade the package using this line)
 pip install --upgrade Flask, mysql-connector-python tensorflow pillow opencv-python python-dateutil PyPDF2 reportlab line-bot-sdk bcrypt pandas openpyxl

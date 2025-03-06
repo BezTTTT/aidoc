@@ -11,8 +11,12 @@ from PIL import Image, ImageFilter
 from contextlib import asynccontextmanager
 import logging
 from logging.handlers import RotatingFileHandler
+from cachetools import TTLCache
+import hashlib
 
-# Logging configuration
+# ----------------------
+# Logging Configuration
+# ----------------------
 os.makedirs('aidoc_logs/ai', exist_ok=True)
 current_time_str = datetime.now().strftime("%d-%b-%Y_%H-%M")
 log_file = os.path.join('aidoc_logs', 'ai', f'aidoc_ai_{current_time_str}.log')
@@ -24,14 +28,12 @@ console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
 console_handler.setFormatter(formatter)
 
-# Configure the root logger.
 root_logger = logging.getLogger()
-root_logger.handlers.clear()  # Clear any existing handlers.
+root_logger.handlers.clear()
 root_logger.setLevel(logging.INFO)
 root_logger.addHandler(file_handler)
 root_logger.addHandler(console_handler)
 
-# Also, configure uvicorn's loggers so that they use the same handlers.
 uvicorn_error_logger = logging.getLogger("uvicorn.error")
 uvicorn_error_logger.handlers.clear()
 uvicorn_error_logger.setLevel(logging.INFO)
@@ -44,25 +46,43 @@ uvicorn_access_logger.setLevel(logging.INFO)
 uvicorn_access_logger.addHandler(file_handler)
 uvicorn_access_logger.addHandler(console_handler)
 
-# Request model that contains the image file path.
+# ----------------------
+# Global Cache & Helper Function
+# ----------------------
+# Create a TTLCache: max 100 entries, expire entries after 60 seconds.
+predict_cache = TTLCache(maxsize=100, ttl=60)
+
+def compute_file_hash(file_path: str) -> str:
+    """Compute the SHA256 hash of the file's contents."""
+    hash_sha256 = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_sha256.update(chunk)
+    return hash_sha256.hexdigest()
+
+# ----------------------
+# Request Model
+# ----------------------
 class PredictRequest(BaseModel):
     imgPath: str
 
-# Global variables for our models
+# ----------------------
+# Global Model Variables
+# ----------------------
 model = None           # For oral lesion prediction
 quality_checker = None # For image quality checking
 
-# Lifespan event: load both models at startup.
+# ----------------------
+# Lifespan Event: Load Models at Startup
+# ----------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global model, quality_checker
     try:
-        # Load oral lesion prediction model.
         import oralLesionNet
         model = oralLesionNet.load_model()
         logging.info("Oral lesion prediction model loaded successfully.")
-
-        # Load image quality checker.
+        
         import imageQualityChecker
         quality_checker = imageQualityChecker.ImageQualityChecker()
         logging.info("Image quality checker loaded successfully.")
@@ -70,7 +90,7 @@ async def lifespan(app: FastAPI):
         logging.critical(f"Error loading models: {e}")
         raise e
     yield
-    # Optional: add any cleanup code here.
+    # Optional cleanup code
 
 app = FastAPI(lifespan=lifespan)
 
@@ -80,6 +100,9 @@ def pil_to_base64(img: Image.Image) -> str:
     img.save(buffered, format="PNG")
     return base64.b64encode(buffered.getvalue()).decode("utf-8")
 
+# ----------------------
+# Predict Endpoint with Caching (using file hash)
+# ----------------------
 @app.post("/predict")
 async def predict(request: PredictRequest):
     """
@@ -89,21 +112,32 @@ async def predict(request: PredictRequest):
     scores, and a mask (base64-encoded).
     """
     imgPath = request.imgPath
+
+    # Compute the file hash from the image contents.
+    try:
+        file_hash = compute_file_hash(imgPath)
+    except Exception as e:
+        error_msg = f"Error computing file hash for {imgPath}: {e}"
+        logging.error(error_msg)
+        raise HTTPException(status_code=500, detail=error_msg)
+    
+    # If the image contents (hash) are already cached, return cached result.
+    if file_hash in predict_cache:
+        logging.info(f"Cache hit for file hash: {file_hash}")
+        return predict_cache[file_hash]
+
     try:
         # Load and preprocess image for lesion prediction.
         img = tf.keras.utils.load_img(imgPath, target_size=(342, 512, 3))
         img = tf.keras.preprocessing.image.img_to_array(img)
         img = tf.expand_dims(img, axis=0)  # Add batch dimension
 
-        # Perform prediction (remains a Tensor)
+        global model
         try:
-            global model
-            # Ensure eager execution is enabled
             tf.config.run_functions_eagerly(True)
-            pred_mask = model.predict(img)  # Standard prediction
-        except RuntimeError as e: ### 🔹 Handle `model.predict(img)` RuntimeError 🔹 ###
+            pred_mask = model.predict(img)
+        except RuntimeError as e:
             error_msg = f"⚠️ RuntimeError in model.predict(): {e}"
-            print(error_msg)
             logging.error(error_msg)
             print("🔄 Attempting to enable eager execution and retry...")
             try:
@@ -113,9 +147,8 @@ async def predict(request: PredictRequest):
                 pred_mask = model.predict(img)
             except Exception as e:
                 error_msg = f"❌ Critical Error: Fallback prediction also failed! Error: {e}"
-                print(error_msg)
                 logging.critical(error_msg)
-                restart_fastapi_app()
+                restart_fastapi_app(imgPath)
 
         try:
             # Process prediction mask.
@@ -129,17 +162,16 @@ async def predict(request: PredictRequest):
             print("🔄 Attempting to evaluate using tf.keras.backend.eval() as fallback...")
             try:
                 tf.config.run_functions_eagerly(True)
-                model = oralLesionNet.load_model() # Reload model
-                pred_mask = model.predict(img) # Re-predict
+                model = oralLesionNet.load_model()  # Reload model
+                pred_mask = model.predict(img)      # Re-predict
                 output_mask = tf.math.argmax(pred_mask, axis=-1, output_type=tf.int32)
                 output_mask = tf.expand_dims(output_mask[0], axis=-1)
                 predictionMask = tf.math.not_equal(output_mask, 0)
-                predictionMask_np = tf.keras.backend.eval(tf.cast(predictionMask, tf.uint8))  # Alternative conversion
+                predictionMask_np = tf.keras.backend.eval(tf.cast(predictionMask, tf.uint8))
             except Exception as e:
                 error_msg = f"❌ Critical Error: Fallback conversion also failed! Error: {e}"
-                print(error_msg)
                 logging.critical(error_msg)
-                restart_fastapi_app()
+                restart_fastapi_app(imgPath)
 
         # Connected Component Analysis with OpenCV.
         analysis = cv2.connectedComponentsWithStats(predictionMask_np, 4, cv2.CV_32S)
@@ -176,23 +208,8 @@ async def predict(request: PredictRequest):
             backgroundScore = tf.reduce_mean(tf.boolean_mask(backgroundChannel, backgroundIndexer))
             predictClass = 0
 
-        # Generate edge image for visualization.
+        # Convert TensorFlow tensors to PIL binary images.
         output_img = tf.keras.utils.array_to_img(predictionMask)
-        edge_img = output_img.filter(ImageFilter.FIND_EDGES)
-        dilation_img = edge_img.filter(ImageFilter.MaxFilter(3))
-
-        # Load full-size original image.
-        full_img = Image.open(imgPath)
-        full_dilation_img = dilation_img.resize(full_img.size, resample=Image.NEAREST)
-        mask_img = output_img.resize(full_img.size, resample=Image.NEAREST)
-
-        yellow_edge = Image.merge("RGB", (
-            full_dilation_img,
-            full_dilation_img,
-            Image.new(mode="L", size=full_dilation_img.size)
-        ))
-        outlined_img = full_img.copy()
-        outlined_img.paste(yellow_edge, full_dilation_img)
 
         scores = [
             backgroundScore.numpy().item(),
@@ -204,12 +221,17 @@ async def predict(request: PredictRequest):
         else:
             predictClass = int(predictClass)
 
-        return {
-            "outlined_img": pil_to_base64(outlined_img),
+        result = {
             "predictClass": predictClass,
             "scores": scores,
-            "mask": pil_to_base64(mask_img)
+            "output_img": pil_to_base64(output_img)
         }
+        
+        # Store result in cache using file hash as key.
+        predict_cache[file_hash] = result
+        
+        return result
+
     except Exception as e:
         logging.error(f"Prediction error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
