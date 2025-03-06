@@ -241,11 +241,50 @@ def delete_image(role):
     os.makedirs(recycleDir, exist_ok=True)
 
     filename = result['fname']
-    shutil.move(os.path.join(uploadDir, filename), os.path.join(recycleDir, filename))
-    os.remove(os.path.join(thumbUploadDir, filename))
-    os.remove(os.path.join(outlinedDir, filename))
-    os.remove(os.path.join(thumbOutlinedDir, filename))
-    os.remove(os.path.join(maskDir, filename))
+    
+    # Build full paths
+    upload_file        = os.path.join(uploadDir, filename)
+    recycle_file       = os.path.join(recycleDir, filename)
+    thumb_upload_file  = os.path.join(thumbUploadDir, filename)
+    outlined_file      = os.path.join(outlinedDir, filename)
+    thumb_outlined_file= os.path.join(thumbOutlinedDir, filename)
+    mask_file          = os.path.join(maskDir, filename)
+
+    # Move the file if it exists in the upload directory
+    if os.path.exists(upload_file):
+        shutil.move(upload_file, recycle_file)
+    else:
+        current_app.logger.warning("File %s does not exist; skipping move.", upload_file)
+
+    # Remove the file from thumb upload directory if it exists
+    if os.path.exists(thumb_upload_file):
+        os.remove(thumb_upload_file)
+    else:
+        current_app.logger.warning("File %s does not exist; skipping removal.", thumb_upload_file)
+
+    # Remove the file from outlined directory if it exists
+    if os.path.exists(outlined_file):
+        os.remove(outlined_file)
+    else:
+        current_app.logger.warning("File %s does not exist; skipping removal.", outlined_file)
+
+    # Remove the file from thumb outlined directory if it exists
+    if os.path.exists(thumb_outlined_file):
+        os.remove(thumb_outlined_file)
+    else:
+        current_app.logger.warning("File %s does not exist; skipping removal.", thumb_outlined_file)
+
+    # Remove the file from mask directory if it exists
+    if os.path.exists(mask_file):
+        os.remove(mask_file)
+    else:
+        current_app.logger.warning("File %s does not exist; skipping removal.", mask_file)
+
+    # Remove the file from mask directory if it exists
+    if os.path.exists(mask_file):
+        os.remove(mask_file)
+    else:
+        print(f"File {mask_file} does not exist; skipping removal.")
 
     sql = "DELETE FROM submission_record WHERE id = %s"
     val = (img_id,)
@@ -276,20 +315,20 @@ def rotate_image(return_page, role, img_id):
     maskPath = os.path.join(maskDir, imagename)
 
     pil_img = Image.open(imagePath) 
-    pil_img = pil_img.rotate(-90, expand=True)
-    pil_img.save(imagePath)
+    pil_img = pil_img.transpose(Image.ROTATE_270)
+    pil_img.save(imagePath, quality=100, subsampling=0)
     thumb_img = create_thumbnail(pil_img)
     thumb_img.save(thumbPath)
 
     pil_img = Image.open(outlinedPath) 
-    pil_img = pil_img.rotate(-90, expand=True)
-    pil_img.save(outlinedPath)
+    pil_img = pil_img.transpose(Image.ROTATE_270)
+    pil_img.save(outlinedPath, quality=100, subsampling=0)
     thumb_img = create_thumbnail(pil_img)
     thumb_img.save(thumbOutlinedImagePath)
     
     pil_img = Image.open(maskPath) 
-    pil_img = pil_img.rotate(-90, expand=True)
-    pil_img.save(maskPath)
+    pil_img = pil_img.transpose(Image.ROTATE_270)
+    pil_img.save(maskPath, quality=100, subsampling=0)
 
     if return_page=='diagnosis':
         return redirect(url_for('webapp.diagnosis', role=role, img_id=img_id))
@@ -621,25 +660,40 @@ def oral_lesion_prediction_api(imgPath):
     result = response.json()
 
     # The response contains:
-    # - "outlined_img": base64 encoded string of the outlined image
     # - "predictClass": predicted class (an integer)
     # - "scores": a list of score values
-    # - "mask": base64 encoded string of the mask image
+    # - "output_img": base64 encoded string of the low resolution output img (model's output)
 
-    # To convert the base64 string back to a Pillow image:
-    outlined_img_b64 = result.get("outlined_img")
-    mask_b64 = result.get("mask")
-    
-    # Decode the outlined image:
-    outlined_img_bytes = base64.b64decode(outlined_img_b64)
-    outlined_img = Image.open(io.BytesIO(outlined_img_bytes))
-    
-    # Decode the mask image:
-    mask_bytes = base64.b64decode(mask_b64)
-    mask = Image.open(io.BytesIO(mask_bytes))
-    
-    # Print additional info:
+    # Get additional info:
     predictClass = result.get("predictClass")
     scores = result.get("scores")
 
+    # To convert the base64 string back to a Pillow image:
+    output_img_b64 = result.get("output_img")
+    output_img_data = base64.b64decode(output_img_b64)
+    output_img = Image.open(io.BytesIO(output_img_data))
+
+    # Use an augment function to create full resolution outlined image and mask image
+    outlined_img, mask = create_mask_and_outline_images(imgPath, output_img)
+    
     return outlined_img, predictClass, scores, mask
+
+# Augment function to create full resolution outlined image and mask image
+def create_mask_and_outline_images(imgPath, output_img):
+    edge_img = output_img.filter(ImageFilter.FIND_EDGES)
+    dilation_img = edge_img.filter(ImageFilter.MaxFilter(3))
+
+    # Load full-size original image.
+    full_img = Image.open(imgPath)
+    full_dilation_img = dilation_img.resize(full_img.size, resample=Image.NEAREST)
+    mask = output_img.resize(full_img.size, resample=Image.NEAREST)
+
+    yellow_edge = Image.merge("RGB", (
+        full_dilation_img,
+        full_dilation_img,
+        Image.new(mode="L", size=full_dilation_img.size)
+    ))
+    outlined_img = full_img.copy()
+    outlined_img.paste(yellow_edge, full_dilation_img)
+
+    return outlined_img, mask

@@ -201,20 +201,20 @@ def rotate_general_image(img_id):
     maskPath = os.path.join(maskDir, imagename)
 
     pil_img = Image.open(imagePath) 
-    pil_img = pil_img.rotate(-90, expand=True)
-    pil_img.save(imagePath)
+    pil_img = pil_img.transpose(Image.ROTATE_270)
+    pil_img.save(imagePath, quality=100, subsampling=0)
     thumb_img = create_thumbnail(pil_img)
     thumb_img.save(thumbPath)
 
     pil_img = Image.open(outlinedPath) 
-    pil_img = pil_img.rotate(-90, expand=True)
-    pil_img.save(outlinedPath)
+    pil_img = pil_img.transpose(Image.ROTATE_270)
+    pil_img.save(outlinedPath, quality=100, subsampling=0)
     thumb_img = create_thumbnail(pil_img)
     thumb_img.save(thumbOutlinedImagePath)
     
     pil_img = Image.open(maskPath) 
-    pil_img = pil_img.rotate(-90, expand=True)
-    pil_img.save(maskPath)
+    pil_img = pil_img.transpose(Image.ROTATE_270)
+    pil_img.save(maskPath, quality=100, subsampling=0)
 
     return redirect(url_for('general.general_diagnosis', img_id=img_id))
 
