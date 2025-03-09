@@ -7,6 +7,8 @@ import json, os
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
+from openpyxl.drawing.image import Image as ExcelImage
+from PIL import Image as PILImage
 from datetime import datetime
 from aidoc.utils import *
 from aidoc.db import get_db
@@ -55,7 +57,7 @@ def followup_request(role, img_id):
     data = cursor.fetchall()
     if not data:
         sql = "INSERT INTO followup_request (submission_id, followup_requester, followup_request_status) VALUES (%s, %s, %s)"
-        val = ( img_id, session["user_id"], 'Initiated')
+        val = ( img_id, session["user_id"], 'On Specialist')
         cursor.execute(sql, val)
     else:
         sql = "DELETE FROM followup_request WHERE submission_id=%s"
@@ -748,7 +750,7 @@ def confirmFeedback(submission_id):
                 followup_feedback = %s
             WHERE submission_id = %s;
         '''
-        values = ("On contact", note, feedback, submission_id)
+        values = ("On Contact", note, feedback, submission_id)
         cursor.execute(sql, values)
         
         # Fetch updated data for frontend update
@@ -790,8 +792,8 @@ def export_followup_records():
     df["Image Link"] = "https://icohold.anamai.moph.go.th:85/load_image/upload/" + df["senderId"].astype(str) + "/" + df["imageName"].astype(str) 
 
     df.insert(0, "No.", range(1, len(df) + 1))
-    df["Specialist Feedback"] = None  # or you can use an empty string `""`
-    df["Note"] = None  # or you can use an empty string `""`
+    df["Specialist Feedback"] = None  # or you can use an empty string ""
+    df["Note"] = None  # or you can use an empty string ""
     df = df[["No.", "Case ID", "Image Link", "Specialist Feedback", "Note"]]
 
     # Start creating Excel file
@@ -838,6 +840,174 @@ def export_followup_records():
         output,
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=followup_records.xlsx"}
+    )
+
+@bp.route('/followup/export_contact', methods=['GET'])
+@login_required
+def export_followup_records_for_contact():
+    db, cursor = get_db()
+    
+    # Fetch raw data from database
+    sql_query = '''
+        SELECT 
+            sr.id,
+            sr.sender_id AS "senderId", 
+            pcid.case_id AS "Case ID",
+            sr.fname AS "imageName",
+            sr.location_province AS "province",
+            fr.followup_feedback AS "Specialist_Feedback",
+            fr.followup_note AS "Note",
+            u.name AS "Sender Name",
+            u.surname AS "Sender Surname",
+            u.phone AS "Sender Phone",
+            u2.name AS "Patient Name",
+            u2.surname AS "Patient Surname",
+            u2.phone AS "Patient Phone"
+        FROM submission_record AS sr 
+        INNER JOIN followup_request AS fr ON sr.id = fr.submission_id
+        LEFT JOIN patient_case_id AS pcid ON pcid.id = fr.submission_id
+        LEFT JOIN user AS u ON sr.sender_id = u.id
+        LEFT JOIN user AS u2 ON sr.patient_id = u2.id
+        ORDER BY pcid.case_id ASC
+    '''
+    cursor.execute(sql_query)
+    records = cursor.fetchall()
+
+    if not records:
+        return "No data available", 204
+
+    # Convert to DataFrame for processing
+    df = pd.DataFrame(records)
+
+    # Add Image URL Column
+    df["Image Link"] = "https://icohold.anamai.moph.go.th:85/load_image/upload/" + df["senderId"].astype(str) + "/" + df["imageName"].astype(str)
+
+    df.insert(0, "No.", range(1, len(df) + 1))
+    df["Specialist Feedback"] = df["Specialist_Feedback"].astype(str)
+    df["Note"] = df["Note"].astype(str)
+
+    # Define Headers
+    headers = ["No.", "Case ID", "Image", "Specialist Feedback", "Note", "Patient Name", "Patient Phone", "Sender Name", "Sender Phone"]
+    
+    # Define column widths
+    column_widths = {
+        "No.": 10,
+        "Case ID": 10,
+        "Image": 80,
+        "Specialist Feedback": 15,
+        "Note": 20,
+        "Patient Name": 15,
+        "Patient Phone": 15,
+        "Sender Name": 15,
+        "Sender Phone": 15
+    }
+
+    # Define row height for image rows
+    row_height = 150
+
+    # Create Excel file
+    output = io.BytesIO()
+    wb = Workbook()
+    
+    # Remove default sheet
+    default_ws = wb.active
+    wb.remove(default_ws)
+
+    # Import openpyxl drawing module for image handling
+    from openpyxl.drawing.image import Image as XLImage
+    from openpyxl.styles import Alignment
+    
+    # Split DataFrame by province
+    provinces = df["province"].dropna().unique()
+
+    for province in provinces:
+        ws = wb.create_sheet(title=province[:31])  # Excel sheet names must be <= 31 characters
+        province_df = df[df["province"] == province]
+
+        # Add Title Header that spans across all columns
+        title = f"รายงานผลการวินิจฉัยจากทันตแพทย์ประจำจังหวัด {province}"
+        ws.append([title])  # Add the title text to the first cell
+        ws.merge_cells(f'A1:{get_column_letter(len(headers))}1')  # Merge cells across all columns
+        
+        # Style the title
+        title_cell = ws['A1']
+        title_cell.font = Font(bold=True, size=14)
+        title_cell.alignment = Alignment(horizontal='center', vertical='center')
+        title_cell.fill = PatternFill(start_color="B8CCE4", end_color="B8CCE4", fill_type="solid")  # Light blue background
+        
+        # Set row height for title
+        ws.row_dimensions[1].height = 30
+
+        # Add Headers (now in row 2)
+        header_fill = PatternFill(start_color="D9D9D9", end_color="D9D9D9", fill_type="solid")
+        bold_font = Font(bold=True)
+
+        ws.append(headers)
+
+        for col_num, header in enumerate(headers, 1):
+            col_letter = get_column_letter(col_num)
+            ws[f"{col_letter}2"].fill = header_fill
+            ws[f"{col_letter}2"].font = bold_font
+            ws.column_dimensions[col_letter].width = column_widths.get(header, 25)
+
+        # Add Data Rows (starting from row 3 now)
+        for idx, (_, row) in enumerate(province_df.iterrows(), 3):  # Start from row 3 (after title and header)
+            sender_id = row["senderId"]
+            image_name = row["imageName"]
+            case_id = row["Case ID"]
+            sender_name = (row["Sender Name"] if row["Sender Name"] else "") + " " + (row["Sender Surname"] if row["Sender Surname"] else "")
+            sender_phone = row["Sender Phone"] if row["Sender Phone"] else "-"
+
+            patient_name = (row["Patient Name"] if row["Patient Name"] else "") + " " + (row["Patient Surname"] if row["Patient Surname"] else "")
+            patient_phone = row["Patient Phone"] if row["Patient Phone"] else "-"
+            # Append row data
+            ws.append([
+                row["No."],
+                case_id,
+                row["Image Link"],
+                row["Specialist Feedback"],
+                row["Note"],
+                patient_name,
+                patient_phone,
+                sender_name,
+                sender_phone
+            ])
+            
+            # Set row height for better image display
+            ws.row_dimensions[idx].height = row_height
+            
+            # Add image to the cell
+            try:
+                # Construct image path
+                image_path = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', str(sender_id), image_name)
+                
+                # Check if file exists
+                if os.path.exists(image_path):
+                    # Load the image
+                    img = XLImage(image_path)
+                    
+                    # Resize image to fit in cell
+                    img.width = 180  # Width in pixels
+                    img.height = 135  # Height in pixels
+                    
+                    # Add image to cell
+                    cell_reference = f"C{idx}"
+                    ws.add_image(img, cell_reference)
+                else:
+                    ws[f"C{idx}"] = "Image not found"
+            except Exception as e:
+                # If image insertion fails, just use the text
+                ws[f"C{idx}"] = f"Error: {str(e)}"
+
+    # Save to buffer
+    output.seek(0)
+    wb.save(output)
+    output.seek(0)
+
+    return Response(
+        output,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=contact_records.xlsx"}
     )
 
 # region edit
@@ -1848,7 +2018,7 @@ def record_followup():
     sql_limit_part = '''
                 ORDER BY 
                     CASE
-                        WHEN fr.followup_request_status = 'initiated' THEN 0
+                        WHEN fr.followup_request_status = 'On Specialist' THEN 0
                         ELSE 1
                     END,
                     sr.id DESC
@@ -1873,8 +2043,7 @@ def record_followup():
         else:
             item['owner_id'] = item['sender_id']
     return paginated_data,dataCount
-
-
+    
 @bp.route('/about')
 def about():
     return render_template("about.html")

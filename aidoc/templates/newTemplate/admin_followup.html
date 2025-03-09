@@ -15,20 +15,106 @@
     <p class="text-center text-danger">ไม่พบข้อมูล</p>
 </div>
 {% else %}
-<div class="d-flex gap-2">
+<div class="d-flex flex-wrap gap-2">
     <div class="mt-2">
         จำนวนรายการรอคำวินิจฉัยทั้งหมด {{dataCount}} รายการ
     </div>
-    <a href="{{ url_for('webapp.export_followup_records') }}" class="btn btn-primary mb-3">
-        Export to Excel
+    <a href="{{ url_for('webapp.export_followup_records') }}" class="btn btn-warning mb-3">
+        Specialist Export
+    </a>
+    <a href="{{ url_for('webapp.export_followup_records_for_contact') }}" class="btn btn-primary mb-3">
+        Contact Export
     </a>
 </div>
-{% endif %}
-<!-- Loop through paginated data -->
-<div class="row mt-4">
-    {% for item in data %}
 
-    <div class="col-lg-3 col-md-4 col-sm-6 col-xs-12 mb-3">
+<!-- Filter controls -->
+<div class="card mb-3">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">ตัวกรองข้อมูล</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <!-- Status filter checkboxes -->
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">กรองตามสถานะ:</label>
+                <div class="d-flex flex-wrap gap-2">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input status-checkbox filter-checkbox" type="checkbox" id="filter-all" value="all" checked>
+                        <label class="form-check-label" for="filter-all">ทั้งหมด</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input status-checkbox filter-checkbox" type="checkbox" id="filter-specialist" value="On Specialist">
+                        <label class="form-check-label" for="filter-specialist">
+                            <span class="badge bg-warning text-dark">On Specialist</span>
+                        </label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input status-checkbox filter-checkbox" type="checkbox" id="filter-contact" value="On Contact">
+                        <label class="form-check-label" for="filter-contact">
+                            <span class="badge bg-primary">On Contact</span>
+                        </label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input status-checkbox filter-checkbox" type="checkbox" id="filter-treatment" value="On Treatment">
+                        <label class="form-check-label" for="filter-treatment">
+                            <span class="badge bg-success">On Treatment</span>
+                        </label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input status-checkbox filter-checkbox" type="checkbox" id="filter-closed" value="Closed">
+                        <label class="form-check-label" for="filter-closed">
+                            <span class="badge bg-secondary">Closed</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- AI Prediction filter -->
+            <div class="col-md-6 mb-3">
+                <label class="form-label fw-bold">กรองตามผลการพยากรณ์ของ AI:</label>
+                <div class="d-flex flex-wrap gap-2">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input prediction-checkbox filter-checkbox" type="checkbox" id="filter-all-predictions" value="all" checked>
+                        <label class="form-check-label" for="filter-all-predictions">ทั้งหมด</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input prediction-checkbox filter-checkbox" type="checkbox" id="filter-normal" value="0">
+                        <label class="form-check-label" for="filter-normal">
+                            <span class="badge bg-light text-dark border">Normal</span>
+                        </label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input prediction-checkbox filter-checkbox" type="checkbox" id="filter-opmd" value="1">
+                        <label class="form-check-label" for="filter-opmd">
+                            <span class="badge bg-warning text-dark">OPMD</span>
+                        </label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input prediction-checkbox filter-checkbox" type="checkbox" id="filter-oscc" value="2">
+                        <label class="form-check-label" for="filter-oscc">
+                            <span class="badge bg-danger">OSCC</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Reset filters button -->
+        <div class="d-flex justify-content-end">
+            <button id="reset-filters" class="btn btn-outline-secondary">รีเซ็ตตัวกรอง</button>
+        </div>
+    </div>
+</div>
+
+{% endif %}
+
+<!-- Loop through paginated data -->
+<div class="row mt-4" id="cards-container">
+    {% for item in data %}
+    <div class="col-lg-3 col-md-4 col-sm-6 col-xs-12 mb-3 card-item" 
+         data-status="{{ item['followup_request_status'] }}"
+         data-prediction="{{ item['ai_prediction'] }}"
+         data-date="{{ item['created_at']|default('') }}">
         <div class="card h-100">
             <div class="d-flex justify-content-center align-items-center p-2">
                 <a href="{{ url_for('image.load_image', folder='upload', user_id=item['owner_id'], imagename=item['fname']) }}"
@@ -39,6 +125,14 @@
                 </a>
             </div>
             <div class="card-body text-center d-flex flex-column" style="flex: 1;">
+                <div class="badge position-absolute top-0 end-0 m-2 
+                    {% if item['followup_request_status'] == 'On Specialist' %} bg-warning text-dark 
+                    {% elif item['followup_request_status'] == 'On Contact' %} bg-primary 
+                    {% elif item['followup_request_status'] == 'On Treatment' %} bg-success 
+                    {% elif item['followup_request_status'] == 'Closed' %} bg-secondary 
+                    {% endif %}">
+                    {{ item['followup_request_status'] }}
+                </div>
                 <h6 class="fs-6 fw-bold text-primary">
                     ผลการพยากรณ์ของ AI:
                     {% if item['ai_prediction'] == 0 %}
@@ -50,40 +144,33 @@
                     {% endif %}
                     </span>
                 </h6>
+                {% if item['created_at'] %}
+                <p class="text-muted small mb-2">วันที่: {{ item['created_at']|default('ไม่ระบุวันที่') }}</p>
+                {% endif %}
+                
+                <!-- Add new diagnosis button -->
+                <a href="/diagnosis/specialist/{{ item['id'] }}" class="btn btn-info btn-sm mb-3">ดูรายละเอียด</a>
+                
                 <form action="{{url_for('webapp.confirmFeedback' , submission_id=item['id']) }}" method="POST">
                     <div class="d-flex gap-2">
-                        <select class="form-select form-select-sm" id="feedback" name="feedback" required>
-                            <option selected disabled hidden>Feedback</option>
-                            <option value="OPMD" {% if item.followup_feedback=='OPMD' %}selected{% endif %}>OPMD
-                            </option>
-                            <option value="OSCC" {% if item.followup_feedback=='OSCC' %}selected{% endif %}>OSCC
-                            </option>
-                            <option value="Benign" {% if item.followup_feedback=='Benign' %}selected{% endif %}>Benign
-                            </option>
-                            <option value="Others" {% if item.followup_feedback=='Others' %}selected{% endif %}>Others
-                            </option>
-                            <option value="Normal" {% if item.followup_feedback=='Normal' %}selected{% endif %}>Normal
-                            </option>
-                            <option value="BAD_IMG" {% if item.followup_feedback=='BAD_IMG' %}selected{% endif %}>
-                                ภาพไม่ได้มาตรฐาน</option>
+                        <select class="form-select form-select-sm feedback-select" name="feedback" data-item-id="{{ item['id'] }}" required>
+                            <option value="" selected disabled>Feedback</option>
+                            <option value="OPMD" {% if item.followup_feedback=='OPMD' %}selected{% endif %}>OPMD</option>
+                            <option value="OSCC" {% if item.followup_feedback=='OSCC' %}selected{% endif %}>OSCC</option>
+                            <option value="Benign" {% if item.followup_feedback=='Benign' %}selected{% endif %}>Benign</option>
+                            <option value="Others" {% if item.followup_feedback=='Others' %}selected{% endif %}>Others</option>
+                            <option value="Normal" {% if item.followup_feedback=='Normal' %}selected{% endif %}>Normal</option>
+                            <option value="BAD_IMG" {% if item.followup_feedback=='BAD_IMG' %}selected{% endif %}>ภาพไม่ได้มาตรฐาน</option>
                         </select>
-                        <select class="form-select form-select-sm" id="note" name="note" required>
-                            <option selected disabled hidden>Note</option>
-                            <option value="พบแพทย์ด่วน" {% if item.followup_note=='พบแพทย์ด่วน' %}selected{% endif %}>
-                                พบแพทย์ด่วน</option>
-                            <option value="ตรวจเพิ่มเติม" {% if item.followup_note=='ตรวจเพิ่มเติม' %}selected{% endif
-                                %}>ตรวจเพิ่มเติม</option>
-                            <option value="รอดูอาการ" {% if item.followup_note=='รอดูอาการ' %}selected{% endif %}>
-                                รอดูอาการ </option>
-                            <option value="ปกติ" {% if item.followup_note=='ปกติ' %}selected{% endif %}>ปกติ</option>
-                            <option value="ภาพเบลอ" {% if item.followup_note=='ภาพเบลอ' %}selected{% endif %}>ภาพเบลอ
-                            </option>
-                            <option value="ถ่ายใหม่" {% if item.followup_note=='ถ่ายใหม่' %}selected{% endif %}>ถ่ายใหม่
-                            </option>
+                        <select class="form-select form-select-sm note-select" name="note" 
+                            data-item-id="{{ item['id'] }}" 
+                            data-selected="{{ item.followup_note if item.followup_note else '' }}"
+                            {% if item.followup_note %} {% else %}disabled{% endif %}>
+                            <option value="" selected disabled>Note</option>
                         </select>
                     </div>
                     <div class="text-center mt-3">
-                        <button class="btn btn-success" type="submit">Confirm</button>
+                        <button class="btn btn-secondary confirm-btn" type="submit" data-item-id="{{ item['id'] }}" disabled>Confirm</button>
                     </div>
                 </form>
             </div>
@@ -114,58 +201,278 @@
 {% block script %}
 <script>
     document.addEventListener("DOMContentLoaded", function () {
+        // Form functionality
+        document.querySelectorAll(".feedback-select").forEach(select => {
+            var itemId = select.dataset.itemId;
+            updateNoteOptions(itemId, true); // Load existing selections
+            storeInitialValues(itemId);
+            checkFormCompletion(itemId); // Initialize button state
+    
+            select.addEventListener("change", function () {
+                updateNoteOptions(itemId, false);
+                checkFormCompletion(itemId);
+            });
+        });
+    
+        document.querySelectorAll(".note-select").forEach(select => {
+            select.addEventListener("change", function () {
+                var itemId = select.dataset.itemId;
+                checkFormCompletion(itemId);
+            });
+        });
+    
         document.querySelectorAll("form").forEach(form => {
-            // Skip the logout form
-            if (form.action.includes('logout')) {
-                return;
-            }
             form.addEventListener("submit", function (event) {
-                event.preventDefault();  // Prevent default form submission
-
+                event.preventDefault();
                 let formData = new FormData(this);
-
+                let submitBtn = this.querySelector(".confirm-btn");
+                submitBtn.disabled = true;
+    
                 fetch(this.action, {
                     method: "POST",
                     body: formData
                 })
-                    .then(response => {
-                        if (response.redirected) {
-                            // Handle redirects by following them
-                            window.location.href = response.url;
-                            return null; // Skip the next then
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "success") {
+    
+                        let card = this.closest(".col-lg-3");
+                        if (card) {
+                            card.style.opacity = "0";
+                            setTimeout(() => {
+                                card.remove();
+                                updateFilteredCount(); // Update count after removing item
+                            }, 500);
                         }
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (!data) return; // Skip if we got redirected
-
-                        if (data.status === "success") {
-                            let card = this.closest(".col-lg-3");
-                            if (card) {
-                                let parentContainer = card.parentElement;
-                                parentContainer.appendChild(card); // Move card to bottom
-                            }
-
-                            Toastify({
-                                text: data.message,
-                                duration: 3000,
-                                gravity: "top",
-                                position: "right",
-                                backgroundColor: "green",
-                            }).showToast();
-                        } else {
-                            Toastify({
-                                text: data.message,
-                                duration: 3000,
-                                gravity: "top",
-                                position: "right",
-                                backgroundColor: "red",
-                            }).showToast();
-                        }
-                    })
-                    .catch(error => console.error("Error:", error));
+                    } else {
+                    }
+                })
+                .catch(error => console.error("Error:", error))
+                .finally(() => {
+                    submitBtn.disabled = false;
+                });
             });
         });
+        
+        // Filter functionality
+        setupFilters();
     });
+    
+    // Set up all filter functionality
+    function setupFilters() {
+        // Status filter setup
+        const allStatusCheckbox = document.getElementById('filter-all');
+        const statusCheckboxes = document.querySelectorAll('.status-checkbox:not(#filter-all)');
+        
+        // AI Prediction filter setup
+        const allPredictionCheckbox = document.getElementById('filter-all-predictions');
+        const predictionCheckboxes = document.querySelectorAll('.prediction-checkbox:not(#filter-all-predictions)');
+        
+        // Auto-filter when any checkbox changes
+        document.querySelectorAll('.filter-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                // First handle the checkbox logic
+                if (this.id === 'filter-all' && this.checked) {
+                    statusCheckboxes.forEach(cb => {
+                        cb.checked = false;
+                    });
+                } else if (this.id === 'filter-all-predictions' && this.checked) {
+                    predictionCheckboxes.forEach(cb => {
+                        cb.checked = false;
+                    });
+                } else if (this.classList.contains('status-checkbox') && this.checked) {
+                    allStatusCheckbox.checked = false;
+                } else if (this.classList.contains('prediction-checkbox') && this.checked) {
+                    allPredictionCheckbox.checked = false;
+                }
+                
+                // Ensure at least one filter option is selected
+                const anyStatusChecked = Array.from(statusCheckboxes).some(cb => cb.checked);
+                if (!anyStatusChecked && !allStatusCheckbox.checked) {
+                    allStatusCheckbox.checked = true;
+                }
+                
+                const anyPredictionChecked = Array.from(predictionCheckboxes).some(cb => cb.checked);
+                if (!anyPredictionChecked && !allPredictionCheckbox.checked) {
+                    allPredictionCheckbox.checked = true;
+                }
+                
+                // Then apply filters automatically
+                applyAllFilters();
+            });
+        });
+        
+        // Reset filters button
+        document.getElementById('reset-filters').addEventListener('click', function() {
+            // Reset status filter
+            allStatusCheckbox.checked = true;
+            statusCheckboxes.forEach(cb => {
+                cb.checked = false;
+            });
+            
+            // Reset prediction filter
+            allPredictionCheckbox.checked = true;
+            predictionCheckboxes.forEach(cb => {
+                cb.checked = false;
+            });
+            
+            // Show all cards
+            applyAllFilters();
+        });
+        
+        // Apply filters immediately on page load
+        applyAllFilters();
+    }
+    
+    // Apply all filters and update count display
+    function applyAllFilters() {
+        const cards = document.querySelectorAll('.card-item');
+        let visibleCount = 0;
+        
+        // Get status filter values
+        const allStatusChecked = document.getElementById('filter-all').checked;
+        const selectedStatuses = allStatusChecked ? 'all' : Array.from(
+            document.querySelectorAll('.status-checkbox:not(#filter-all):checked')
+        ).map(cb => cb.value);
+        
+        // Get prediction filter values
+        const allPredictionsChecked = document.getElementById('filter-all-predictions').checked;
+        const selectedPredictions = allPredictionsChecked ? 'all' : Array.from(
+            document.querySelectorAll('.prediction-checkbox:not(#filter-all-predictions):checked')
+        ).map(cb => cb.value);
+        
+        // Filter each card
+        cards.forEach(card => {
+            const cardStatus = card.getAttribute('data-status');
+            const cardPrediction = card.getAttribute('data-prediction');
+            
+            // Status check
+            const statusMatch = selectedStatuses === 'all' || selectedStatuses.includes(cardStatus);
+            
+            // Prediction check
+            const predictionMatch = selectedPredictions === 'all' || selectedPredictions.includes(cardPrediction);
+            
+            // Apply combined filters
+            if (statusMatch && predictionMatch) {
+                card.style.display = 'block';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+        
+        // Update the count display
+        updateFilteredCount(visibleCount);
+    }
+    
+    // Update the count display with filtered count
+    function updateFilteredCount(visibleCount = null) {
+        // If no count provided, calculate from visible cards
+        if (visibleCount === null) {
+            visibleCount = document.querySelectorAll('.card-item[style="display: block;"]').length;
+        }
+        
+        // Get the total count display element
+        const countDisplay = document.querySelector('.mt-2');
+        if (countDisplay) {
+            // Get original total from the dataCount variable
+            const originalTotal = parseInt(countDisplay.textContent.match(/\d+/)[0]);
+            
+            // Update text with filtered count
+            if (visibleCount === originalTotal) {
+                countDisplay.textContent = `จำนวนรายการรอคำวินิจฉัยทั้งหมด ${originalTotal} รายการ`;
+            } else {
+                countDisplay.textContent = `จำนวนรายการรอคำวินิจฉัยทั้งหมด ${visibleCount} รายการ`;
+            }
+        }
+    }
+    
+    // Store initial values for detecting changes
+    function storeInitialValues(itemId) {
+        var feedback = document.querySelector(`.feedback-select[data-item-id='${itemId}']`);
+        var note = document.querySelector(`.note-select[data-item-id='${itemId}']`);
+    
+        feedback.setAttribute("data-initial", feedback.value || "");
+        note.setAttribute("data-initial", note.value || "");
+    }
+    
+    // Update note options dynamically when feedback changes
+    function updateNoteOptions(itemId, isPageLoad = false) {
+        var feedback = document.querySelector(`.feedback-select[data-item-id='${itemId}']`).value;
+        var note = document.querySelector(`.note-select[data-item-id='${itemId}']`);
+        var selectedNote = note.getAttribute("data-selected"); // Get pre-selected value
+    
+        var optionsMap = {
+            "Normal": ["ปกติ"],
+            "Benign": ["ปกติ", "ตรวจเพิ่มเติม"],
+            "OPMD": ["พบแพทย์ด่วน", "ตรวจเพิ่มเติม"],
+            "OSCC": ["พบแพทย์ด่วน", "ตรวจเพิ่มเติม"],
+            "BAD_IMG": ["ภาพเบลอ", "ถ่ายใหม่"],
+            "Others": ["พบแพทย์ด่วน", "ตรวจเพิ่มเติม", "รอดูอาการ", "ปกติ", "ภาพเบลอ", "ถ่ายใหม่"]
+        };
+    
+        // Reset note dropdown with placeholder
+        note.innerHTML = '<option value="" selected disabled>Note</option>';
+    
+        if (!feedback) {
+            note.disabled = true;
+            checkFormCompletion(itemId);
+            return;
+        }
+    
+        var selectedOptions = optionsMap[feedback] || [];
+    
+        selectedOptions.forEach(function (optionText) {
+            var option = document.createElement("option");
+            option.value = optionText;
+            option.textContent = optionText;
+    
+            // Set the pre-selected note if it's a page load
+            if (isPageLoad && optionText === selectedNote) {
+                option.selected = true;
+            }
+    
+            note.appendChild(option);
+        });
+    
+        // Enable dropdown only if there are options
+        note.disabled = selectedOptions.length === 0;
+    
+        checkFormCompletion(itemId);
+    }
+    
+    // Enable/disable confirm button based on selection and changes
+    function checkFormCompletion(itemId) {
+        var feedback = document.querySelector(`.feedback-select[data-item-id='${itemId}']`);
+        var note = document.querySelector(`.note-select[data-item-id='${itemId}']`);
+        var confirmBtn = document.querySelector(`.confirm-btn[data-item-id='${itemId}']`);
+    
+        var feedbackValue = feedback.value;
+        var noteValue = note.value;
+        var noteRequired = !note.disabled;
+    
+        var initialFeedback = feedback.getAttribute("data-initial");
+        var initialNote = note.getAttribute("data-initial");
+    
+        var hasChanged = (feedbackValue !== initialFeedback) || (noteValue !== initialNote);
+    
+        // Enable button only if:
+        // 1. Feedback has a valid selection (not the default)
+        // 2. If note dropdown is enabled, it must have a selection
+        // 3. Some change from initial values is detected
+        var isValid = feedbackValue && feedbackValue !== "Feedback" && 
+                     (!noteRequired || (noteRequired && noteValue && noteValue !== "Note")) && 
+                     hasChanged;
+    
+        if (isValid) {
+            confirmBtn.disabled = false;
+            confirmBtn.classList.remove("btn-secondary");
+            confirmBtn.classList.add("btn-success");
+        } else {
+            confirmBtn.disabled = true;
+            confirmBtn.classList.remove("btn-success");
+            confirmBtn.classList.add("btn-secondary");
+        }
+    }
 </script>
 {% endblock %}

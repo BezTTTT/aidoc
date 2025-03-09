@@ -314,7 +314,11 @@ def check_current_password(password, user_password):
 def log_last_user_login(user_id):
     # Log last_login to the user
     db, cursor = get_db()
-    sql = "UPDATE user SET last_login = NOW() WHERE id = %s"
+    sql = """UPDATE user 
+            SET last_login = NOW(), 
+                login_count = login_count + 1 
+            WHERE id = %s;
+            """
     cursor.execute(sql, (user_id,))
 
 @bp.route('/logout')
