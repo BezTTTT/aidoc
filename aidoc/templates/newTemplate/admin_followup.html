@@ -7,17 +7,45 @@
 <h2>ระบบการให้คำวินิจฉัยของทันตแพทย์ผู้เชี่ยวชาญ</h2>
 <p>ผู้เชี่ยวชาญ: {{ g.user['name'] }} {{ g.user['surname'] }} ({{ g.user['job_position_th'] }}) </p>
 
+<!-- Add Filter Controls -->
+<div class="card mb-4">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">ตัวกรองข้อมูล</h5>
+    </div>
+    <div class="card-body">
+        <form id="filter-form" method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">สถานะการติดตาม:</label>
+                <select class="form-select" id="status-filter" name="status">
+                    <option value="">ทั้งหมด</option>
+                    <option value="On Specialist" {% if selected_status == 'On Specialist' %}selected{% endif %}>On Specialist</option>
+                    <option value="On Contact" {% if selected_status == 'On Contact' %}selected{% endif %}>On Contact</option>
+                    <option value="On Treatment" {% if selected_status == 'On Treatment' %}selected{% endif %}>On Treatment</option>
+                    <option value="Closed" {% if selected_status == 'Closed' %}selected{% endif %}>Closed</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">ผลการพยากรณ์ของ AI:</label>
+                <select class="form-select" id="prediction-filter" name="prediction">
+                    <option value="">ทั้งหมด</option>
+                    <option value="0" {% if selected_prediction == '0' %}selected{% endif %}>Normal</option>
+                    <option value="1" {% if selected_prediction == '1' %}selected{% endif %}>OPMD</option>
+                    <option value="2" {% if selected_prediction == '2' %}selected{% endif %}>OSCC</option>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">กรองข้อมูล</button>
+                <a href="{{ url_for('webapp.followupManage') }}" class="btn btn-outline-secondary">รีเซ็ต</a>
+            </div>
+        </form>
+    </div>
+</div>
+
 {% if data|length == 0 %}
 <div class="col-12 mt-2">
     <p class="text-center text-danger">ไม่พบข้อมูล</p>
 </div>
-<div class="col-12 mt-2">
-    <p class="text-center text-danger">ไม่พบข้อมูล</p>
-</div>
 {% else %}
-<div class="mt-2">
-    จำนวนรายการทั้งหมด: {{ dataCount }} รายการ
-</div>
 <div class="d-flex flex-wrap gap-2">
     <a href="{{ url_for('webapp.export_followup_records') }}" class="btn btn-warning mb-3">
         Specialist Export
@@ -27,6 +55,42 @@
     </a>
 </div>
 {% endif %}
+
+<!-- Status Summary -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-warning bg-opacity-25">
+            <div class="card-body text-center">
+                <h5>On Specialist</h5>
+                <h3>{{ status_counts.on_specialist|default(0) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-primary bg-opacity-25">
+            <div class="card-body text-center">
+                <h5>On Contact</h5>
+                <h3>{{ status_counts.on_contact|default(0) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success bg-opacity-25">
+            <div class="card-body text-center">
+                <h5>On Treatment</h5>
+                <h3>{{ status_counts.on_treatment|default(0) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-secondary bg-opacity-25">
+            <div class="card-body text-center">
+                <h5>Closed</h5>
+                <h3>{{ status_counts.closed|default(0) }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Loop through paginated data -->
 <div class="row mt-4" id="cards-container">
@@ -99,12 +163,11 @@
     {% endfor %}
 </div>
 
-
-<!-- Pagination links -->
+<!-- Pagination links with filter parameters preserved -->
 <div class="pagination d-flex justify-content-center align-items-center">
     {% if current_page > 1 %}
-    <a href="?page=1" class="btn page-link m-2 text-secondary">&laquo; หน้าแรก</a>
-    <a href="?page={{ current_page - 1 }}" class="btn page-link m-2 text-secondary">&lsaquo; ก่อนหน้า</a>
+    <a href="?page=1{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_prediction %}&prediction={{ selected_prediction }}{% endif %}" class="btn page-link m-2 text-secondary">&laquo; หน้าแรก</a>
+    <a href="?page={{ current_page - 1 }}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_prediction %}&prediction={{ selected_prediction }}{% endif %}" class="btn page-link m-2 text-secondary">&lsaquo; ก่อนหน้า</a>
     {% endif %}
     {% for page_num in range(1, total_pages + 1) %}
     {% if page_num == current_page %}
@@ -112,8 +175,8 @@
     {% endif %}
     {% endfor %}
     {% if current_page < total_pages %}
-    <a href="?page={{ current_page + 1 }}" class="btn page-link m-2 text-secondary">ถัดไป &rsaquo;</a>
-    <a href="?page={{ total_pages }}" class="btn page-link m-2 text-secondary">หลังสุด &raquo;</a>
+    <a href="?page={{ current_page + 1 }}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_prediction %}&prediction={{ selected_prediction }}{% endif %}" class="btn page-link m-2 text-secondary">ถัดไป &rsaquo;</a>
+    <a href="?page={{ total_pages }}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_prediction %}&prediction={{ selected_prediction }}{% endif %}" class="btn page-link m-2 text-secondary">หลังสุด &raquo;</a>
     {% endif %}
 </div>
 {% endblock %}
@@ -142,33 +205,35 @@
         });
     
         document.querySelectorAll("form").forEach(form => {
-            form.addEventListener("submit", function (event) {
-                event.preventDefault();
-                let formData = new FormData(this);
-                let submitBtn = this.querySelector(".confirm-btn");
-                submitBtn.disabled = true;
-    
-                fetch(this.action, {
-                    method: "POST",
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === "success") {
-                        let card = this.closest(".col-lg-3");
-                        if (card) {
-                            card.style.opacity = "0";
-                            setTimeout(() => {
-                                card.remove();
-                            }, 500);
+            if (!form.id || form.id !== "filter-form") { // Skip the filter form
+                form.addEventListener("submit", function (event) {
+                    event.preventDefault();
+                    let formData = new FormData(this);
+                    let submitBtn = this.querySelector(".confirm-btn");
+                    submitBtn.disabled = true;
+        
+                    fetch(this.action, {
+                        method: "POST",
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === "success") {
+                            let card = this.closest(".col-lg-3");
+                            if (card) {
+                                card.style.opacity = "0";
+                                setTimeout(() => {
+                                    card.remove();
+                                }, 500);
+                            }
                         }
-                    }
-                })
-                .catch(error => console.error("Error:", error))
-                .finally(() => {
-                    submitBtn.disabled = false;
+                    })
+                    .catch(error => console.error("Error:", error))
+                    .finally(() => {
+                        submitBtn.disabled = false;
+                    });
                 });
-            });
+            }
         });
     });
     

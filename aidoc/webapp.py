@@ -723,15 +723,24 @@ def userManagement():
 def adminRecord2():
     return render_template("/newTemplate/admin_record2.html")
 
-#followup for dentist page
 @bp.route('/followup/admin', methods=('GET','POST'))
 @login_required
 @admin_only
 def followupManage():
+    # Get filter parameters from request
+    status_filter = request.args.get("status", "")
+    prediction_filter = request.args.get("prediction", "")
+    
+    # Get pagination parameters
     page = request.args.get("page", session.get('current_record_page', 1), type=int)
     session['current_record_page'] = page
     session['records_per_page'] = 12
-    paginated_data, dataCount = record_followup() 
+    
+    # Get filtered data and counts
+    paginated_data, dataCount, status_counts = record_followup(
+        status_filter=status_filter, 
+        prediction_filter=prediction_filter
+    )
 
     if dataCount is not None:
         dataCount = dataCount['total_records']
@@ -739,11 +748,122 @@ def followupManage():
         dataCount = 0
     total_pages = (dataCount - 1) // session['records_per_page'] + 1
 
-    return render_template("/newTemplate/admin_followup.html",dataCount=dataCount,
+    return render_template("/newTemplate/admin_followup.html", 
+                dataCount=dataCount,
                 current_page=page,
                 total_pages=total_pages,
-                data=paginated_data
+                data=paginated_data,
+                selected_status=status_filter,
+                selected_prediction=prediction_filter,
+                status_counts=status_counts
                 )
+
+def record_followup(status_filter="", prediction_filter=""):
+    
+    page = session['current_record_page']
+    records_per_page = session['records_per_page']
+    offset = (page-1)*records_per_page
+    db, cursor = get_db()
+    
+    # Base SQL parts
+    sql_select_part = '''
+                SELECT 
+                sr.id, 
+                sr.ai_prediction,
+                sr.channel,
+                sr.sender_id,
+                sr.patient_id,
+                sr.fname,
+                sr.created_at,
+                pcid.case_id,
+                fr.followup_request_status,
+                fr.followup_note,
+                fr.followup_feedback
+            '''
+    sql_join_part = '''
+                FROM submission_record as sr 
+                INNER JOIN followup_request as fr ON sr.id = fr.submission_id
+                LEFT JOIN patient_case_id as pcid ON pcid.id=fr.submission_id
+                '''
+    
+    # Build WHERE clause for filters
+    where_clauses = []
+    filter_values = []
+    
+    if status_filter:
+        where_clauses.append("fr.followup_request_status = %s")
+        filter_values.append(status_filter)
+    
+    if prediction_filter:
+        where_clauses.append("sr.ai_prediction = %s")
+        filter_values.append(int(prediction_filter))
+    
+    # Add WHERE clause if any filters applied
+    if where_clauses:
+        sql_where_part = " WHERE " + " AND ".join(where_clauses)
+    else:
+        sql_where_part = ""
+    
+    # Order and pagination
+    sql_limit_part = '''
+                ORDER BY 
+                    CASE
+                        WHEN fr.followup_request_status = 'On Specialist' THEN 0
+                        ELSE 1
+                    END,
+                    sr.id DESC
+                LIMIT %s
+                OFFSET %s
+            '''
+    
+    # Count query
+    sql_count = 'SELECT Count(*) AS total_records '
+    
+    # Status counts query
+    sql_status_counts = '''
+        SELECT 
+            SUM(CASE WHEN fr.followup_request_status = 'On Specialist' THEN 1 ELSE 0 END) as on_specialist,
+            SUM(CASE WHEN fr.followup_request_status = 'On Contact' THEN 1 ELSE 0 END) as on_contact,
+            SUM(CASE WHEN fr.followup_request_status = 'On Treatment' THEN 1 ELSE 0 END) as on_treatment,
+            SUM(CASE WHEN fr.followup_request_status = 'Closed' THEN 1 ELSE 0 END) as closed
+        FROM submission_record as sr 
+        INNER JOIN followup_request as fr ON sr.id = fr.submission_id
+    '''
+    
+    # Execute count query
+    sql1 = sql_count + sql_join_part + sql_where_part
+    
+    if filter_values:
+        cursor.execute(sql1, filter_values)
+    else:
+        cursor.execute(sql1)
+    
+    dataCount = cursor.fetchone()
+    
+    # Execute status counts query
+    cursor.execute(sql_status_counts)
+    status_counts = cursor.fetchone()
+    
+    # Execute main data query
+    sql2 = sql_select_part + sql_join_part + sql_where_part + sql_limit_part
+    
+    val = filter_values + [records_per_page, offset]
+    
+    if filter_values:
+        cursor.execute(sql2, val)
+    else:
+        cursor.execute(sql2, (records_per_page, offset))
+    
+    paginated_data = cursor.fetchall()
+
+    # Process the results to set owner_id
+    for item in paginated_data:
+        if item['channel'] == 'PATIENT':
+            item['owner_id'] = item['patient_id']
+        else:
+            item['owner_id'] = item['sender_id']
+    
+    return paginated_data, dataCount, status_counts
 
 @bp.route('/followup/confirm/<int:submission_id>', methods=['POST'])
 @login_required
@@ -2039,59 +2159,6 @@ def update_submission_record(ai_predictions, ai_scores):
             val = (row['LAST_INSERT_ID()'],)
             cursor.execute(sql, val)
 
-def record_followup():
-    
-    page = session['current_record_page']
-    records_per_page = session['records_per_page']
-    offset = (page-1)*records_per_page
-    db, cursor = get_db()
-    sql_select_part = '''
-                SELECT 
-                sr.id, 
-                sr.ai_prediction,
-                sr.channel,
-                sr.sender_id,
-                sr.patient_id,
-                sr.fname,
-                pcid.case_id,
-                fr.followup_request_status,
-                fr.followup_note,
-                fr.followup_feedback
-            '''
-    sql_join_part = '''
-                FROM submission_record as sr 
-                INNER JOIN followup_request as fr ON sr.id = fr.submission_id
-                LEFT JOIN patient_case_id as pcid ON pcid.id=fr.submission_id
-                '''
-    sql_limit_part = '''
-                ORDER BY 
-                    CASE
-                        WHEN fr.followup_request_status = 'On Specialist' THEN 0
-                        ELSE 1
-                    END,
-                    sr.id DESC
-                LIMIT %s
-                OFFSET %s
-            '''
-    sql_count = 'SELECT Count(*) AS total_records'
-                
-    sql1 = sql_count + sql_join_part
-    sql2 = sql_select_part + sql_join_part + sql_limit_part
-
-    val = (records_per_page,offset)
-    cursor.execute(sql1)
-    dataCount = cursor.fetchone()
-
-    cursor.execute(sql2,val)
-    paginated_data = cursor.fetchall()
-
-    for item in paginated_data:
-        if item['channel']=='PATIENT':
-            item['owner_id'] = item['patient_id']
-        else:
-            item['owner_id'] = item['sender_id']
-    return paginated_data,dataCount
-    
 @bp.route('/about')
 def about():
     return render_template("about.html")
