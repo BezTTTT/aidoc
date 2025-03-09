@@ -788,6 +788,7 @@ def export_followup_records():
         FROM submission_record AS sr 
         INNER JOIN followup_request AS fr ON sr.id = fr.submission_id
         LEFT JOIN patient_case_id AS pcid ON pcid.id = fr.submission_id
+        WHERE fr.followup_request_status = 'On Specialist'
         ORDER BY pcid.case_id ASC
     '''
     cursor.execute(sql_query)
@@ -868,6 +869,7 @@ def export_followup_records_for_contact():
             sr.location_province AS "province",
             fr.followup_feedback AS "Specialist_Feedback",
             fr.followup_note AS "Note",
+            fr.followup_request_status AS "Status",
             u.name AS "Sender Name",
             u.surname AS "Sender Surname",
             u.phone AS "Sender Phone",
@@ -879,7 +881,10 @@ def export_followup_records_for_contact():
         LEFT JOIN patient_case_id AS pcid ON pcid.id = fr.submission_id
         LEFT JOIN user AS u ON sr.sender_id = u.id
         LEFT JOIN user AS u2 ON sr.patient_id = u2.id
-        ORDER BY pcid.case_id ASC
+        WHERE fr.followup_feedback IS NOT NULL 
+        AND fr.followup_note IS NOT NULL
+        AND fr.followup_request_status = 'On Contact'
+        ORDER BY pcid.case_id ASC;
     '''
     cursor.execute(sql_query)
     records = cursor.fetchall()

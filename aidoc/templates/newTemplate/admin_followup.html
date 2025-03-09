@@ -15,10 +15,10 @@
     <p class="text-center text-danger">ไม่พบข้อมูล</p>
 </div>
 {% else %}
+<div class="mt-2">
+    จำนวนรายการทั้งหมด: {{ dataCount }} รายการ
+</div>
 <div class="d-flex flex-wrap gap-2">
-    <div class="mt-2">
-        จำนวนรายการรอคำวินิจฉัยทั้งหมด {{dataCount}} รายการ
-    </div>
     <a href="{{ url_for('webapp.export_followup_records') }}" class="btn btn-warning mb-3">
         Specialist Export
     </a>
@@ -26,86 +26,6 @@
         Contact Export
     </a>
 </div>
-
-<!-- Filter controls -->
-<div class="card mb-3">
-    <div class="card-header bg-light">
-        <h5 class="mb-0">ตัวกรองข้อมูล</h5>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <!-- Status filter checkboxes -->
-            <div class="col-md-6 mb-3">
-                <label class="form-label fw-bold">กรองตามสถานะ:</label>
-                <div class="d-flex flex-wrap gap-2">
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input status-checkbox filter-checkbox" type="checkbox" id="filter-all" value="all" checked>
-                        <label class="form-check-label" for="filter-all">ทั้งหมด</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input status-checkbox filter-checkbox" type="checkbox" id="filter-specialist" value="On Specialist">
-                        <label class="form-check-label" for="filter-specialist">
-                            <span class="badge bg-warning text-dark">On Specialist</span>
-                        </label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input status-checkbox filter-checkbox" type="checkbox" id="filter-contact" value="On Contact">
-                        <label class="form-check-label" for="filter-contact">
-                            <span class="badge bg-primary">On Contact</span>
-                        </label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input status-checkbox filter-checkbox" type="checkbox" id="filter-treatment" value="On Treatment">
-                        <label class="form-check-label" for="filter-treatment">
-                            <span class="badge bg-success">On Treatment</span>
-                        </label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input status-checkbox filter-checkbox" type="checkbox" id="filter-closed" value="Closed">
-                        <label class="form-check-label" for="filter-closed">
-                            <span class="badge bg-secondary">Closed</span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- AI Prediction filter -->
-            <div class="col-md-6 mb-3">
-                <label class="form-label fw-bold">กรองตามผลการพยากรณ์ของ AI:</label>
-                <div class="d-flex flex-wrap gap-2">
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input prediction-checkbox filter-checkbox" type="checkbox" id="filter-all-predictions" value="all" checked>
-                        <label class="form-check-label" for="filter-all-predictions">ทั้งหมด</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input prediction-checkbox filter-checkbox" type="checkbox" id="filter-normal" value="0">
-                        <label class="form-check-label" for="filter-normal">
-                            <span class="badge bg-light text-dark border">Normal</span>
-                        </label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input prediction-checkbox filter-checkbox" type="checkbox" id="filter-opmd" value="1">
-                        <label class="form-check-label" for="filter-opmd">
-                            <span class="badge bg-warning text-dark">OPMD</span>
-                        </label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input prediction-checkbox filter-checkbox" type="checkbox" id="filter-oscc" value="2">
-                        <label class="form-check-label" for="filter-oscc">
-                            <span class="badge bg-danger">OSCC</span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Reset filters button -->
-        <div class="d-flex justify-content-end">
-            <button id="reset-filters" class="btn btn-outline-secondary">รีเซ็ตตัวกรอง</button>
-        </div>
-    </div>
-</div>
-
 {% endif %}
 
 <!-- Loop through paginated data -->
@@ -235,16 +155,13 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.status === "success") {
-    
                         let card = this.closest(".col-lg-3");
                         if (card) {
                             card.style.opacity = "0";
                             setTimeout(() => {
                                 card.remove();
-                                updateFilteredCount(); // Update count after removing item
                             }, 500);
                         }
-                    } else {
                     }
                 })
                 .catch(error => console.error("Error:", error))
@@ -253,139 +170,7 @@
                 });
             });
         });
-        
-        // Filter functionality
-        setupFilters();
     });
-    
-    // Set up all filter functionality
-    function setupFilters() {
-        // Status filter setup
-        const allStatusCheckbox = document.getElementById('filter-all');
-        const statusCheckboxes = document.querySelectorAll('.status-checkbox:not(#filter-all)');
-        
-        // AI Prediction filter setup
-        const allPredictionCheckbox = document.getElementById('filter-all-predictions');
-        const predictionCheckboxes = document.querySelectorAll('.prediction-checkbox:not(#filter-all-predictions)');
-        
-        // Auto-filter when any checkbox changes
-        document.querySelectorAll('.filter-checkbox').forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                // First handle the checkbox logic
-                if (this.id === 'filter-all' && this.checked) {
-                    statusCheckboxes.forEach(cb => {
-                        cb.checked = false;
-                    });
-                } else if (this.id === 'filter-all-predictions' && this.checked) {
-                    predictionCheckboxes.forEach(cb => {
-                        cb.checked = false;
-                    });
-                } else if (this.classList.contains('status-checkbox') && this.checked) {
-                    allStatusCheckbox.checked = false;
-                } else if (this.classList.contains('prediction-checkbox') && this.checked) {
-                    allPredictionCheckbox.checked = false;
-                }
-                
-                // Ensure at least one filter option is selected
-                const anyStatusChecked = Array.from(statusCheckboxes).some(cb => cb.checked);
-                if (!anyStatusChecked && !allStatusCheckbox.checked) {
-                    allStatusCheckbox.checked = true;
-                }
-                
-                const anyPredictionChecked = Array.from(predictionCheckboxes).some(cb => cb.checked);
-                if (!anyPredictionChecked && !allPredictionCheckbox.checked) {
-                    allPredictionCheckbox.checked = true;
-                }
-                
-                // Then apply filters automatically
-                applyAllFilters();
-            });
-        });
-        
-        // Reset filters button
-        document.getElementById('reset-filters').addEventListener('click', function() {
-            // Reset status filter
-            allStatusCheckbox.checked = true;
-            statusCheckboxes.forEach(cb => {
-                cb.checked = false;
-            });
-            
-            // Reset prediction filter
-            allPredictionCheckbox.checked = true;
-            predictionCheckboxes.forEach(cb => {
-                cb.checked = false;
-            });
-            
-            // Show all cards
-            applyAllFilters();
-        });
-        
-        // Apply filters immediately on page load
-        applyAllFilters();
-    }
-    
-    // Apply all filters and update count display
-    function applyAllFilters() {
-        const cards = document.querySelectorAll('.card-item');
-        let visibleCount = 0;
-        
-        // Get status filter values
-        const allStatusChecked = document.getElementById('filter-all').checked;
-        const selectedStatuses = allStatusChecked ? 'all' : Array.from(
-            document.querySelectorAll('.status-checkbox:not(#filter-all):checked')
-        ).map(cb => cb.value);
-        
-        // Get prediction filter values
-        const allPredictionsChecked = document.getElementById('filter-all-predictions').checked;
-        const selectedPredictions = allPredictionsChecked ? 'all' : Array.from(
-            document.querySelectorAll('.prediction-checkbox:not(#filter-all-predictions):checked')
-        ).map(cb => cb.value);
-        
-        // Filter each card
-        cards.forEach(card => {
-            const cardStatus = card.getAttribute('data-status');
-            const cardPrediction = card.getAttribute('data-prediction');
-            
-            // Status check
-            const statusMatch = selectedStatuses === 'all' || selectedStatuses.includes(cardStatus);
-            
-            // Prediction check
-            const predictionMatch = selectedPredictions === 'all' || selectedPredictions.includes(cardPrediction);
-            
-            // Apply combined filters
-            if (statusMatch && predictionMatch) {
-                card.style.display = 'block';
-                visibleCount++;
-            } else {
-                card.style.display = 'none';
-            }
-        });
-        
-        // Update the count display
-        updateFilteredCount(visibleCount);
-    }
-    
-    // Update the count display with filtered count
-    function updateFilteredCount(visibleCount = null) {
-        // If no count provided, calculate from visible cards
-        if (visibleCount === null) {
-            visibleCount = document.querySelectorAll('.card-item[style="display: block;"]').length;
-        }
-        
-        // Get the total count display element
-        const countDisplay = document.querySelector('.mt-2');
-        if (countDisplay) {
-            // Get original total from the dataCount variable
-            const originalTotal = parseInt(countDisplay.textContent.match(/\d+/)[0]);
-            
-            // Update text with filtered count
-            if (visibleCount === originalTotal) {
-                countDisplay.textContent = `จำนวนรายการรอคำวินิจฉัยทั้งหมด ${originalTotal} รายการ`;
-            } else {
-                countDisplay.textContent = `จำนวนรายการรอคำวินิจฉัยทั้งหมด ${visibleCount} รายการ`;
-            }
-        }
-    }
     
     // Store initial values for detecting changes
     function storeInitialValues(itemId) {
