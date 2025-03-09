@@ -8,7 +8,7 @@ from reportlab.pdfgen import canvas
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
 from reportlab.lib.pagesizes import A4
-import datetime
+from datetime import datetime, date
 import io
 import os
 from aidoc.utils import *
@@ -105,19 +105,25 @@ def register(role):
                 val = (session['national_id'], )
                 cursor.execute(sql, val)
                 data = cursor.fetchone()
-                data['dob_day'] = data['birthdate'].day
-                data["dob_month"] = data['birthdate'].month
-                data["dob_year"] = data['birthdate'].year + 543
+                if data['birthdate'] != None:
+                    data['dob_day'] = data['birthdate'].day
+                    data["dob_month"] = data['birthdate'].month
+                    data["dob_year"] = data['birthdate'].year + 543
+                else: # If the birthdate is not defined, set it to the default value
+                    data['dob_day'] = 1
+                    data["dob_month"] = 1
+                    data["dob_year"] = 2500
+                
                 if data['email'] == None:
                     data['email'] = ''
                 if data['phone'] == None:
                     data['phone'] = ''
-            data['current_year'] = datetime.date.today().year # set the current Thai Year to the global variable
+            data['current_year'] = date.today().year # set the current Thai Year to the global variable
             return render_template("patient_register.html", data=data)
     
     if role=='patient':
         target_template = "patient_register.html"
-        data['current_year'] = datetime.date.today().year # set the current Thai Year to the global variable
+        data['current_year'] = date.today().year # set the current Thai Year to the global variable
         if request.method == 'POST':
             # This section extract the submitted form to 
             data["name"] = remove_prefix(request.form["name"])
@@ -161,7 +167,7 @@ def register(role):
             data['dob_year'] = str(int(data['dob_year']) - 543)
             #Save Date of Birth
             dob = data['dob_year'] + "-" + data['dob_month'] + "-" + data['dob_day']
-            dob_obj = datetime.datetime.strptime(dob, "%Y-%m-%d")
+            dob_obj = datetime.strptime(dob, "%Y-%m-%d")
 
             if data["email"]=='':
                 data["email"] = None
@@ -193,7 +199,7 @@ def register(role):
                     cursor.execute(sql, val)
             elif ('register_later' in session and session['register_later']['order']=='edit-patient'):
                 sql = "UPDATE user SET name=%s, surname=%s, email=%s, phone=%s, sex=%s, birthdate=%s, job_position=%s, province=%s, address=%s, updated_at=%s WHERE national_id=%s"
-                val = (data["name"], data["surname"], data["email"], data["phone"], data["sex"], dob_obj, data["job_position"], data["province"], data['address'], datetime.datetime.now(), data["national_id"])
+                val = (data["name"], data["surname"], data["email"], data["phone"], data["sex"], dob_obj, data["job_position"], data["province"], data['address'], datetime.now(), data["national_id"])
                 cursor.execute(sql, val)
             elif ('register_later' in session and session['register_later']['order']=='link-patient'): # Linking data does not update the patient info
                 sql = "UPDATE submission_record SET patient_id=%s, patient_national_id=%s WHERE id=%s"
@@ -609,7 +615,7 @@ def set_user_compliance(user_id):
     sql = '''INSERT INTO user_compliance
         (user_id, user_agreement_version, user_agreement_datetime, informed_consent_version, informed_consent_datetime)
         VALUES (%s, %s, %s, %s, %s)'''
-    val = (user_id, agreementVer, datetime.datetime.now(), consentVer, datetime.datetime.now())
+    val = (user_id, agreementVer, datetime.now(), consentVer, datetime.now())
     db, cursor = get_db()
     cursor.execute(sql, val)
 
@@ -644,7 +650,7 @@ def generate_legal_drafts(user_id):
 
     # Generate PDFs
     pdfmetrics.registerFont(TTFont('THSarabunNew-Bold', os.path.join(legalDir, 'templates', 'THSarabunNew Bold.ttf')))
-    current_time = format_thai_datetime(datetime.datetime.now())
+    current_time = format_thai_datetime(datetime.now())
 
     for i in range(2):
         packet = io.BytesIO()

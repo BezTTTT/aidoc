@@ -5,9 +5,15 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <p class="fs-2 mb-0">จัดการผู้ใช้งาน</p>
-  <button onclick="manualRefresh()" class="btn btn-outline-primary">
-    <i class="fas fa-sync-alt me-1"></i> รีเฟรชข้อมูล
-  </button>
+  <div>
+    <button onclick="manualRefresh()" class="btn btn-outline-primary">
+      <i class="fas fa-sync-alt me-1"></i> รีเฟรชข้อมูล
+    </button>
+    <button id="sync_risk_oca" onclick="sync_risk_oca(this)" class="btn btn-outline-primary" data-sync-data="{{risk_oca_updates}}">
+      <i class="fas fa-sync-alt me-1"></i> ซิงค์ข้อมูล Risk OCA
+    </button>
+  </div>
+  
 </div>
 <table id="user_manage" class="dataTable">
   <thead>
@@ -33,7 +39,6 @@
   function initializePage() {
     // Check if we have cached data and if it's still valid
     const cachedData = localStorage.getItem("adminUserData");
-    console.log(cachedData)
     const cacheTimestamp = localStorage.getItem("adminUserDataTimestamp");
     const currentTime = new Date().getTime();
 
@@ -42,11 +47,9 @@
       // Use cached data if it exists and hasn't expired
       fetchedData = JSON.parse(cachedData);
       renderTable(fetchedData);
-      console.log("Using cached data");
     } else {
       // Fetch fresh data if no cache or cache expired
       fetchAdminPage();
-      console.log("Fetching fresh data");
     }
   }
 
@@ -108,11 +111,9 @@
   }
 
   function renderTable(data) {
-    // ถ้ามี DataTable อยู่แล้ว ให้ทำลายก่อนสร้างใหม่
     if (dataTableInstance) {
       dataTableInstance.destroy();
     }
-
     // เริ่มสร้าง DataTable ใหม่ด้วยข้อมูลที่ถูกต้อง
     dataTableInstance = $("#user_manage").DataTable({
       data: data, // ใช้ข้อมูลที่ได้รับมาโดยตรง
@@ -143,7 +144,15 @@
         },
         { data: "job_position" },
         { data: "province" },
-        { data: "total_submit" },
+        {
+          data: "total_submit",
+          render: function (data, type, row) {
+            return `<button type="submit" style="text-decoration: none;  color: none; background: none; border: none; cursor: pointer;"
+                  onclick="viewUserUploads('${row.id}')">
+                    ${data}
+                  </button>`;
+          }
+        },
         { data: "last_login" },
         {
           data: null,
@@ -190,26 +199,6 @@
       }
     });
   }
-  // Reinitialize DataTables to ensure proper pagination
-  if (dataTableInstance) {
-    dataTableInstance.destroy(); // Destroy existing instance
-  }
-  dataTableInstance = $("#user_manage").DataTable({
-    order: [[5, "desc"]],
-    pageLength: 10, // Items per page
-    language: {
-      search: "ค้นหา:",
-      lengthMenu: "แสดง _MENU_ รายการต่อหน้า",
-      info: "แสดง _START_ ถึง _END_ จาก _TOTAL_ รายการ",
-      paginate: {
-        first: "หน้าแรก",
-        last: "หน้าสุดท้าย",
-        next: "ถัดไป",
-        previous: "ก่อนหน้า",
-      },
-    },
-    stateSave: true,
-  });
 
   function confirmAndDelete(userId) {
     if (!confirm("คุณต้องการลบผู้ใช้นี้ใช่หรือไม่ ?")) return;
@@ -250,7 +239,23 @@
     window.location.reload()
   }
 
+  function viewUserUploads(userId) {
+    localStorage.setItem('user_id', userId);
+    localStorage.setItem('currentRecordPage', 1);
+    window.location.href = '/admin_record2';
+  }
+
   initializePage();
 </script>
+
+<script src="/static/script/riskOCA.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const button = document.getElementById("sync_risk_oca");
+    sync_date = button.dataset.syncData;
+    load_sync_risk_oca_tooltip(button, {update_date: sync_date, update_count: "None"});
+  });
+</script>
+
 
 {% endblock %}

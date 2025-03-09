@@ -175,7 +175,9 @@ def _(page: int, records_per_page: int):
                 sr.sender_name,
                 sr.sender_surname,
                 sr.osm_phone,
-                c.full_count
+                c.full_count,
+                sr.risk_oca,
+                sr.risk_oca_latest
             FROM (
                 SELECT 
                     submission_record.id,
@@ -201,7 +203,9 @@ def _(page: int, records_per_page: int):
                     submission_record.created_at,
                     osm_user.name as sender_name,
                     osm_user.surname as sender_surname,
-                    osm_user.phone as osm_phone
+                    osm_user.phone as osm_phone,
+                    user_risk_oca.risk_oca,
+                    user_risk_oca.risk_oca_latest    
                 FROM (
                     SELECT id
                     FROM submission_record
@@ -215,6 +219,7 @@ def _(page: int, records_per_page: int):
                     ON submission_record.patient_id = patient_user.id
                 LEFT JOIN user AS osm_user
                     ON submission_record.sender_id = osm_user.id
+                LEFT JOIN user_risk_oca ON submission_record.patient_id = user_risk_oca.user_id
                 WHERE ''' + filter_query + '''
                 ORDER BY submission_record.created_at DESC
                 LIMIT %s OFFSET %s
@@ -267,7 +272,9 @@ def _(page: int, records_per_page: int):
                 sr.sender_name,
                 sr.sender_surname,
                 sr.osm_phone,
-                c.full_count
+                c.full_count,
+                sr.risk_oca,
+                sr.risk_oca_latest
             FROM (
                 SELECT 
                     submission_record.id,
@@ -293,7 +300,9 @@ def _(page: int, records_per_page: int):
                     submission_record.created_at,
                     osm_user.name as sender_name,
                     osm_user.surname as sender_surname,
-                    osm_user.phone as osm_phone
+                    osm_user.phone as osm_phone,
+                    user_risk_oca.risk_oca,
+                    user_risk_oca.risk_oca_latest 
                 FROM (
                     SELECT id
                     FROM submission_record
@@ -309,6 +318,7 @@ def _(page: int, records_per_page: int):
                     ON submission_record.patient_id = patient_user.id
                 LEFT JOIN user AS osm_user
                     ON submission_record.sender_id = osm_user.id
+                LEFT JOIN user_risk_oca ON submission_record.patient_id = user_risk_oca.user_id
             ) AS sr
             CROSS JOIN (
                 SELECT 

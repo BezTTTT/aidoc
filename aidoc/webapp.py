@@ -4,6 +4,7 @@ from flask import (
 import io
 import pandas as pd
 import json, os
+from datetime import datetime
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
@@ -63,7 +64,10 @@ def followup_request(role, img_id):
         sql = "DELETE FROM followup_request WHERE submission_id=%s"
         val = ( img_id, )
         cursor.execute(sql, val)
-    return redirect(url_for('webapp.record', role=role, page=session['current_record_page']))
+    if role == 'admin' and request.args.get('source') == 'admin_record2':
+         return redirect(url_for('webapp.adminRecord2'))
+    else:
+        return redirect(url_for('webapp.record', role=role, page=session['current_record_page']))
 
 # region retrain_request
 @bp.route('/retrain_request/<role>/<int:img_id>', methods=('POST', ))
@@ -182,12 +186,14 @@ def diagnosis(role, img_id):
                     dentist_id, dentist.name AS dentist_name, dentist.surname AS dentist_surname,
                     dentist_feedback_code, dentist_feedback_comment, dentist_feedback_lesion, dentist_feedback_location, dentist_feedback_date, case_report,
                     location_district, location_amphoe, location_province, location_zipcode,
-                    ai_prediction, ai_scores, lesion_ai_version, quality_ai_prediction, quality_ai_version, ai_updated_at, submission_record.created_at
+                    ai_prediction, ai_scores, lesion_ai_version, quality_ai_prediction, quality_ai_version, ai_updated_at, submission_record.created_at,
+                    user_risk_oca.risk_oca, user_risk_oca.risk_oca_latest
                 FROM submission_record
                 INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
                 LEFT JOIN user AS sender ON submission_record.sender_id = sender.id
                 LEFT JOIN user AS patient ON submission_record.patient_id = patient.id
                 LEFT JOIN user AS dentist ON submission_record.dentist_id = dentist.id
+                LEFT JOIN user_risk_oca ON submission_record.patient_id = user_risk_oca.user_id
                 WHERE submission_record.id=%s
                 LIMIT 1'''
     elif role=='osm':
@@ -195,11 +201,13 @@ def diagnosis(role, img_id):
                     patient.name AS patient_name, patient.surname AS patient_surname, patient_national_id as saved_patient_national_id, patient.national_id AS db_patient_national_id, patient.birthdate,
                     patient.sex, patient.job_position, patient.email, patient.phone AS patient_phone, patient.address, patient.province,
                     location_district, location_amphoe, location_province, location_zipcode,
-                    ai_prediction, ai_scores, lesion_ai_version, quality_ai_prediction, quality_ai_version, ai_updated_at, submission_record.created_at
+                    ai_prediction, ai_scores, lesion_ai_version, quality_ai_prediction, quality_ai_version, ai_updated_at, submission_record.created_at,
+                    user_risk_oca.risk_oca, user_risk_oca.risk_oca_latest
                 FROM submission_record
                 INNER JOIN patient_case_id ON submission_record.id=patient_case_id.id
                 LEFT JOIN user AS sender ON submission_record.sender_phone = sender.phone
                 LEFT JOIN user AS patient ON submission_record.patient_id = patient.id
+                LEFT JOIN user_risk_oca ON submission_record.patient_id = user_risk_oca.user_id
                 WHERE submission_record.id=%s
                 LIMIT 1'''
     elif role=='dentist' or (role=='admin' and request.args.get('channel')=='DENTIST'):
@@ -373,8 +381,8 @@ def record(role):
 
     # There is no pagination for patient's record page (a special case)
     if role=='patient':
-        data = record_patient()
-        return render_template("patient_record.html", data=data)
+        data, riskOCA = record_patient()
+        return render_template("patient_record.html", data=data, risk_oca=riskOCA)
 
     # Filter Preparation
     if 'record_filter' not in session:
@@ -706,11 +714,14 @@ def report():
 @login_required
 @admin_only
 def userManagement():
-    return render_template("/newTemplate/admin_management.html")
+    last_risk_oca_update = get_app_metadata('last_risk_oca_update')
+    return render_template("/newTemplate/admin_management.html", risk_oca_updates=last_risk_oca_update)
 
-@bp.route('/admin_record2/')
+@bp.route('/admin_record2/', methods=('GET','POST'))
+@login_required
+@admin_only
 def adminRecord2():
-    return render_template("/newTemplate/admin_diagnosis.html")
+    return render_template("/newTemplate/admin_record2.html")
 
 #followup for dentist page
 @bp.route('/followup/admin', methods=('GET','POST'))
@@ -1131,7 +1142,9 @@ def record_specialist(admin=False):
                 sr.created_at,
                 sr.retrain_request_status,
                 sr.followup_request_status,
-                c.full_count
+                c.full_count,
+                sr.risk_oca,
+                sr.risk_oca_latest
             FROM (
                 SELECT
                     submission_record.id,
@@ -1160,13 +1173,16 @@ def record_specialist(admin=False):
                     submission_record.ai_prediction,
                     submission_record.created_at,
                     retrain_request.retrain_request_status,
-                    followup_request.followup_request_status
+                    followup_request.followup_request_status,
+                    user_risk_oca.risk_oca,
+                    user_risk_oca.risk_oca_latest                   
                 FROM submission_record
                 LEFT JOIN patient_case_id ON submission_record.id = patient_case_id.id
                 LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
                 LEFT JOIN user AS sender ON submission_record.sender_id = sender.id
                 LEFT JOIN followup_request ON submission_record.id = followup_request.submission_id
                 LEFT JOIN retrain_request ON submission_record.id = retrain_request.submission_id
+                LEFT JOIN user_risk_oca ON submission_record.patient_id = user_risk_oca.user_id
                 WHERE ''' + filter_query + '''
                 ORDER BY submission_record.created_at DESC
                 LIMIT %s OFFSET %s
@@ -1213,7 +1229,9 @@ def record_specialist(admin=False):
                     sr.created_at,
                     retrain_request.retrain_request_status,
                     followup_request.followup_request_status,
-                    (SELECT COUNT(*) FROM submission_record) AS full_count
+                    (SELECT COUNT(*) FROM submission_record) AS full_count,
+                    user_risk_oca.risk_oca,
+                    user_risk_oca.risk_oca_latest
                 FROM (
                     SELECT submission_record.id
                     FROM submission_record
@@ -1226,6 +1244,7 @@ def record_specialist(admin=False):
                 LEFT JOIN user AS sender ON sr.sender_id = sender.id
                 LEFT JOIN followup_request ON sr.id = followup_request.submission_id
                 LEFT JOIN retrain_request ON sr.id = retrain_request.submission_id
+                LEFT JOIN user_risk_oca ON sr.patient_id = user_risk_oca.user_id
                 ORDER BY sr.created_at DESC;
                 '''
             val = (records_per_page, offset)
@@ -1256,7 +1275,9 @@ def record_specialist(admin=False):
                     sr.created_at, 
                     sr.retrain_request_status, 
                     sr.followup_request_status,
-                    c.full_count
+                    c.full_count,
+                    sr.risk_oca,
+                    sr.risk_oca_latest
                 FROM (
                     SELECT
                         submission_record.id,
@@ -1281,13 +1302,16 @@ def record_specialist(admin=False):
                         submission_record.ai_prediction,
                         submission_record.created_at,
                         retrain_request.retrain_request_status,
-                        followup_request.followup_request_status
+                        followup_request.followup_request_status,
+                        user_risk_oca.risk_oca,
+                        user_risk_oca.risk_oca_latest
                     FROM submission_record
                     INNER JOIN patient_case_id ON submission_record.id = patient_case_id.id
                     LEFT JOIN user AS patient_user ON submission_record.patient_id = patient_user.id
                     LEFT JOIN user AS sender ON submission_record.sender_id = sender.id
                     LEFT JOIN followup_request ON submission_record.id = followup_request.submission_id
                     LEFT JOIN retrain_request ON submission_record.id = retrain_request.submission_id
+                    LEFT JOIN user_risk_oca ON submission_record.patient_id = user_risk_oca.user_id
                     WHERE ''' + filter_query + '''
                     ORDER BY submission_record.created_at DESC
                     LIMIT %s OFFSET %s
@@ -1332,7 +1356,9 @@ def record_specialist(admin=False):
                     sr.created_at, 
                     retrain_request.retrain_request_status, 
                     followup_request.followup_request_status,
-                    c.full_count
+                    c.full_count,
+                    user_risk_oca.risk_oca,
+                    user_risk_oca.risk_oca_latest
                 FROM (
                     SELECT 
                         submission_record.id, 
@@ -1346,6 +1372,7 @@ def record_specialist(admin=False):
                 LEFT JOIN user AS patient_user ON sr.patient_id = patient_user.id
                 LEFT JOIN followup_request ON sr.id = followup_request.submission_id
                 LEFT JOIN retrain_request ON sr.id = retrain_request.submission_id
+                LEFT JOIN user_risk_oca ON sr.patient_id = user_risk_oca.user_id
                 CROSS JOIN (
                     SELECT 
                         COUNT(submission_record.id) AS full_count
@@ -1636,7 +1663,9 @@ def record_osm():
                 sr.dentist_feedback_code,
                 sr.ai_prediction,
                 sr.created_at,
-                c.full_count
+                c.full_count,
+                sr.risk_oca,
+                sr.risk_oca_latest
             FROM (
                 SELECT 
                     submission_record.id,
@@ -1657,7 +1686,9 @@ def record_osm():
                     submission_record.dentist_feedback_comment,
                     submission_record.dentist_feedback_code,
                     submission_record.ai_prediction,
-                    submission_record.created_at
+                    submission_record.created_at,
+                    user_risk_oca.risk_oca,
+                    user_risk_oca.risk_oca_latest     
                 FROM (
                     SELECT id
                     FROM submission_record
@@ -1674,6 +1705,7 @@ def record_osm():
                     ON submission_record.patient_id = patient_user.id
                 LEFT JOIN user AS sender_user
                     ON submission_record.sender_phone = sender_user.phone
+                LEFT JOIN user_risk_oca ON submission_record.patient_id = user_risk_oca.user_id
                 WHERE ''' + filter_query + '''
                 ORDER BY submission_record.created_at DESC
                 LIMIT %s OFFSET %s
@@ -1724,7 +1756,9 @@ def record_osm():
                 sr.dentist_feedback_code,
                 sr.ai_prediction,
                 sr.created_at,
-                c.full_count
+                c.full_count,
+                sr.risk_oca,
+                sr.risk_oca_latest
             FROM (
                 SELECT 
                     submission_record.id,
@@ -1745,7 +1779,9 @@ def record_osm():
                     submission_record.dentist_feedback_comment,
                     submission_record.dentist_feedback_code,
                     submission_record.ai_prediction,
-                    submission_record.created_at
+                    submission_record.created_at,
+                    user_risk_oca.risk_oca,
+                    user_risk_oca.risk_oca_latest    
                 FROM (
                     SELECT id
                     FROM submission_record
@@ -1764,6 +1800,7 @@ def record_osm():
                     ON submission_record.patient_id = patient_user.id
                 LEFT JOIN user AS sender_user
                     ON submission_record.sender_phone = sender_user.phone
+                LEFT JOIN user_risk_oca ON submission_record.patient_id = user_risk_oca.user_id
             ) AS sr
             CROSS JOIN (
                 SELECT 
@@ -1835,7 +1872,13 @@ def record_patient():
                 item['dentistComment'] = 'ภาพช่องปากมืดเกินไป ขอเปิดแฟลชด้วย'
             elif item['dentist_feedback_comment'] == 'SMALL':
                 item['dentistComment'] = 'ช่องปากเล็กเกินไป ขอนำกล้องเข้าใกล้ปากมากกว่านี้'
-    return data
+
+    cursor.execute("SELECT risk_oca, risk_oca_latest FROM user_risk_oca WHERE user_id=%s", (session['user_id'],))
+    risk_oca = cursor.fetchone()
+
+    if risk_oca is not None:
+        return data, risk_oca
+    return data, None
 
 # region update_submission_record
 # This function will be called by image.upload_submission_module

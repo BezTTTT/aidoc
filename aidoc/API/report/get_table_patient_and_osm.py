@@ -94,7 +94,8 @@ def fetch_dentist_feedback(cursor, channel, province,start_date, end_date):
           UNION ALL SELECT 'OPMD' 
           UNION ALL SELECT 'Normal' 
           UNION ALL SELECT 'BAD_IMG' 
-          UNION ALL SELECT 'OTHER' 
+          UNION ALL SELECT 'OTHER'
+          UNION ALL SELECT 'BENIGN'
           UNION ALL SELECT 'Not_diagnosed') AS dentist_feedback_code_mapping
     LEFT JOIN (SELECT dentist_feedback_code, COUNT(*) as N
                FROM submission_record sr 

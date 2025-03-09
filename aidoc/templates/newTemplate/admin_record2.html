@@ -1,0 +1,526 @@
+{% extends "./base.html" %}
+
+{% block title %} AIDOC | Edit User {% endblock %}
+
+{% block content %}
+
+<h2>ระบบการบริหารจัดการภาพของผู้ดูแลระบบ</h2>
+<p>ผู้ดูแลระบบ: {{ g.user['name'] }} {{ g.user['surname'] }} (Username: {{ g.user['username'] }}) </p>
+<label for="search_input">ค้นหาผลลัพธ์ตามคำสำคัญ <i>เช่น ชื่อ นามสกุลคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ
+        จังหวัด เลขไปรษณีย์) OPMD OSCC คำสำคัญในรายงานผู้ป่วย ชื่อไฟล์ Case ID</i></label>
+<form class="form-inline" id="filterForm">
+    <div class="row mt-1">
+        <div class="input-group">
+            <input type="text" class="form-control" name="search" id="search_input"
+                placeholder="ชื่อ นามสกุลคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC คำสำคัญในรายงานผู้ป่วย ชื่อไฟล์ Case ID"
+                value="" />
+            <button class="btn btn-outline-primary" type="submit" value=""> Search </button>
+        </div>
+    </div>
+    <div class="my-3">
+        <label for="filterPriority">ระดับความสำคัญ:</label>
+        <select name="filterPriority" id="filterPriority" class="btn btn-light border border-1 mx-1"
+            onchange="fetchImageManageList()">
+            <option value="">ทั้งหมด</option>
+            <option value="1">พิเศษ</option>
+            <option value="0">ปกติ</option>
+        </select>
+        <label for="filterStatus">สถานะ:</label>
+        <select name="filterStatus" id="filterStatus" class="btn btn-light border border-1 mx-1"
+            onchange="fetchImageManageList()">
+            <option value="">ทั้งหมด</option>
+            <option value="1">ตรวจแล้ว</option>
+            <option value="0">ยังไม่ได้ตรวจ</option>
+        </select>
+        <label for="filterProvince">จังหวัดที่คัดกรอง:</label>
+        <select name="filterProvince" id="filterProvince" class="btn btn-light border border-1 mx-1"
+            onchange="fetchImageManageList()">
+        </select>
+        <label for="filterSpecialist">ผู้ตรวจ:</label>
+        <select name="filterSpecialist" id="filterSpecialist" class="btn btn-light border border-1 mx-1"
+            onchange="fetchImageManageList()">
+        </select>
+        <label for="filterFollowup">Follow Up Status:</label>
+        <select name="filterFollowup" id="filterFollowup" class="btn btn-light border border-1 mx-1"
+            onchange="fetchImageManageList()">
+            <option value="">ทั้งหมด</option>
+            <option value="On Specialist">On Specialist</option>
+            <option value="On Contact">On Contact</option>
+            <option value="On Treatment">On Treatment</option>
+            <option value="Closed">Closed</option>
+        </select>
+        <label for="filterRetrain">Retrain Request:</label>
+        <select name="filterRetrain" id="filterRetrain" class="btn btn-light border border-1 mx-1"
+            onchange="fetchImageManageList()">
+            <option value="">ทั้งหมด</option>
+            <option value="Requested">Requested</option>
+            <option value="Processing">Processing</option>
+            <option value="Done">Done</option>
+        </select>
+        <label for="ai_prediction">Ai Prediction: </label>
+        <select name="ai_prediction" id="ai_prediction" class="btn btn-light border border-1 mx-1 my-1"
+            onchange="fetchImageManageList()">
+            <option value="">ทั้งหมด</option>
+            <option value="0">NORMAL</option>
+            <option value="1">OPMD</option>
+            <option value="2">OSCC</option>
+        </select>
+        <label for="dentist_feedback_code">Dentist Feedback: </label>
+        <select name="dentist_feedback_code" id="dentist_feedback_code" class="btn btn-light border border-1 mx-1 my-1"
+            onchange="fetchImageManageList()">
+            <option value="">ทั้งหมด</option>
+            <option value="NORMAL">NORMAL</option>
+            <option value="OPMD">OPMD</option>
+            <option value="OSCC">OSCC</option>
+            <option value="BAD_IMG">BAD_IMG</option>
+            <option value="BENIGN">BENIGN</option>
+            <option value="OTHER">OTHER</option>
+        </select>
+        <div class="row g-2 mt-2 align-items-center">
+            <div class="col-auto">
+                <label for="filterChannel2" class="fw-bold mb-0">ช่องทางการส่ง:</label>
+            </div>
+            <div class="col">
+                <div class="d-flex gap-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="PATIENT" id="filterPatient"
+                            onchange="fetchImageManageList()">
+                        <label class="form-check-label" for="filterPatient">ผู้ป่วยนำส่งเอง</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="OSM" id="filterOSM"
+                            onchange="fetchImageManageList()">
+                        <label class="form-check-label" for="filterOSM">ผู้ตรวจคัดกรอง</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="DENTIST" id="filterDentist"
+                            onchange="fetchImageManageList()">
+                        <label class="form-check-label" for="filterDentist">ทันตแพทย์</label>
+                    </div>
+                </div>
+            </div>
+            <input type="hidden" id="user_id">
+</form>
+<div class="mt-2" id=totalCount>
+</div>
+<div class="row mt-4" id="card-container">
+</div>
+<div id="pagination-container" class="pagination d-flex justify-content-center align-items-center">
+</div>
+
+<script>
+    let isProvincePopulated = false;
+    let isDentistPopulated = false;
+    let isCurrentlyFetching = false;
+
+    document.getElementById("filterForm").addEventListener("submit", function (event) {
+        event.preventDefault(); // Prevent default form submission
+        fetchImageManageList(1);
+    });
+
+    function constructUrl(baseUrl, params) {
+        const searchParams = new URLSearchParams();
+
+        for (const key in params) {
+            if (params[key] !== "" && params[key] !== undefined && params[key] !== null) {
+                searchParams.append(key, params[key]);
+            }
+        }
+
+        return `${baseUrl}?${searchParams.toString()}`;
+    }
+
+    function fetchImageManageList(page = 1) {
+        localStorage.setItem('currentRecordPage', page);
+        if (isCurrentlyFetching) {
+            console.log("Already fetching data, request skipped");
+            return;
+        }
+
+        saveFilterState();
+        isCurrentlyFetching = true;
+
+        const baseUrl = "/image_record_api/";
+        const params = {
+            limit: 12,
+            page: page,
+            channel_patient: document.getElementById("filterPatient")?.checked ? document.getElementById("filterPatient").value : "",
+            channel_osm: document.getElementById("filterOSM")?.checked ? document.getElementById("filterOSM").value : "",
+            channel_dentist: document.getElementById("filterDentist")?.checked ? document.getElementById("filterDentist").value : "",
+            priority: document.getElementById("filterPriority").value,
+            dentist_checked: document.getElementById("filterStatus").value,
+            province: document.getElementById("filterProvince").value,
+            dentist_id: document.getElementById("filterSpecialist").value,
+            search_term: document.getElementById("search_input").value,
+            ai_prediction: document.getElementById("filterAiPrediction")?.value || "",
+            dentist_feedback_code: document.getElementById("filterDentistFeedback")?.value || "",
+            start_date: document.getElementById("filterStartDate")?.value || "",
+            end_date: document.getElementById("filterEndDate")?.value || "",
+            job_position: document.getElementById("filterJobPosition")?.value || "",
+            is_followup: document.getElementById("filterFollowup").value,
+            is_retrain: document.getElementById("filterRetrain").value,
+            ai_prediction: document.getElementById("ai_prediction").value,
+            dentist_feedback_code: document.getElementById("dentist_feedback_code").value,
+            user_id: document.getElementById("user_id").value
+        };
+
+        const url = constructUrl(baseUrl, params);
+
+        fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+            .then(response => response.json())
+            .then(data => {
+                populateProvince(data.province_dropdown_list);
+                populatedDentist(data.dentist_dropdown_list);
+                populatePageComponent(data.pagination);
+                populateCard(data.data);
+            })
+            .catch(error => {
+                console.error("Error fetching data:", error);
+            })
+            .finally(() => {
+                isCurrentlyFetching = false;
+            });
+    }
+
+    function populateCard(data) {
+        const container = document.getElementById("card-container");
+        container.innerHTML = "";
+
+        if (data.length === 0) {
+            const noDataDiv = document.createElement("div");
+            noDataDiv.classList.add("col-12", "mt-2");
+            noDataDiv.innerHTML = '<p class="text-center text-danger">ไม่พบข้อมูล</p>';
+            container.appendChild(noDataDiv);
+            return;
+        }
+
+        data.forEach(item => {
+            const card = document.createElement("div");
+            card.classList.add("col-lg-3", "col-md-4", "col-sm-6", "col-xs-12", "mb-3");
+
+            let borderColor = item.is_special_req == 1 ? "border-color: red; border-width: 3px" : "";
+
+            let aiPredictionText;
+            if (item.ai_prediction == 0) aiPredictionText = "Normal";
+            else if (item.ai_prediction == 1) aiPredictionText = "OPMD";
+            else if (item.ai_prediction == 2) aiPredictionText = "OSCC";
+            else aiPredictionText = item.ai_prediction;
+
+            let sourceText;
+            if (item.channel !== 'DENTIST') {
+                sourceText = item.sender_id !== item.patient_id ? "ผู้ตรวจคัดกรอง" : "ประชาชน";
+            } else {
+                sourceText = "ทันตแพทย์";
+            }
+
+            let cardHTML = `
+        <div class="card h-100 position-relative" style="${borderColor}">
+            <div style="display: flex; align-items: center; justify-content: center;">
+                <a href="/load_image/upload/${item.sender_id}/${item.file_name}" target="_blank">
+                    <img src="/load_image/outlined_thumbnail/${item.sender_id}/${item.file_name}" 
+                        class="card-img-top mt-2" alt="" style="max-height: 256px"/>
+                </a>
+            </div>`;
+
+            if (item.channel !== 'DENTIST') {
+                cardHTML += `
+            <div class="card-body">
+                <h6 class="image-name">แหล่งข้อมูล: ${sourceText}</h6>
+                <h6 class="image-name">ชื่อไฟล์: ${item.file_name}</h6>
+                <h6 class="image-name">Case ID: ${item.case_id} ${item.is_special_req == 1 ? "[มีคำขอตรวจพิเศษ]" : ""}</h6>
+                <h6 class="image-name">ชื่อผู้ป่วย: ${item.patient_fullname}${item.age ? ` (${item.age} ปี)` : ""}</h6>
+                <h6 class="image-name">สถานที่คัดกรอง: จ.${item.province}</h6>
+                <h6 class="image-name">นำส่งวันที่: ${item.submission_date} น.</h6>
+                <h6 class="fs-6 card-subtitle text-muted mb-2">ผลการพยากรณ์ของ AI: ${aiPredictionText}</h6>
+                <h6 class="fs-6 card-subtitle text-muted mb-2">ผลการวินิจฉัยของทันตแพทย์: ${item.dentist_feedback ? item.dentist_feedback : "[ยังไม่ได้ตรวจ]"}</h6>
+                
+                <div class="d-grid gap-2 d-md-block justify-content-md-center">
+                    <form action="/diagnosis/admin/${item.submission_id}?channel=${item.channel}&source=admin_record2"
+                    method="post" id="diagnosis_submit_id${item.submission_id}" style="display:inline;">
+                    <input type="hidden" name="filtered_user_id" value="${document.getElementById('user_id').value}">
+                    <button class="btn btn-outline-primary" type="submit">ตรวจยืนยันผล</button>
+                    </form>
+                    
+                    <form action="/quick_confirm/admin/${item.submission_id}?ai_result=${item.ai_prediction}" method="post" id="quick_submit_id${item.submission_id}" style="display:inline;">
+                        <button class="btn btn-outline-success my-1" type="submit" ${item.dentist_feedback_code ? "disabled" : ""}>Quick AI Confirm</button>
+                    </form>
+                    
+                    <button class="btn btn-outline-danger my-1" type="button" data-bs-toggle="modal" data-bs-target="#submissionDeleteModal${item.submission_id}">ลบข้อมูล</button>
+                    
+                    <form action="/followup_request/admin/${item.submission_id}?source=admin_record2" method="post" id="followup_request_id${item.submission_id}" style="display:inline;">
+                        <button class="btn ${item.followup ? 'btn-warning' : 'btn-outline-warning'} btn-sm my-1" type="submit">
+                            ${item.followup ? 'Cancel Follow Up' : 'Request Follow Up'}
+                        </button>
+                    </form>
+                    
+                    <form action="/retrain_request/admin/${item.submission_id}" method="post" id="retrain_request_id${item.submission_id}" style="display:inline;">
+                        <button class="btn ${item.retrain_request_status ? 'btn-info' : 'btn-outline-info'} btn-sm my-1" type="submit">
+                            ${item.retrain_request_status ? 'Cancel Retrain Req' : 'Request Retrain'}
+                        </button>
+                    </form>
+                </div>
+            </div>`;
+            } else {
+                cardHTML += `
+            <div class="card-body">
+                <h6 class="image-name">แหล่งข้อมูล: ทันตแพทย์</h6>
+                <h6 class="image-name">ชื่อไฟล์: ${item.file_name}</h6>
+                <h6 class="image-name">ชื่อทันตแพทย์: ${item.sender_fullname}</h6>
+                <h6 class="image-name">โรงพยาบาลที่สังกัด: ${item.dentist_hospital}</h6>
+                <h6 class="image-name">สถานที่เก็บข้อมูล: จ.${item.province}</h6>
+                <h6 class="image-name">วันที่: ${item.submission_date} น.</h6>
+                <h6 class="fs-6 card-subtitle text-muted mb-2">ผลการพยากรณ์ของ AI: ${aiPredictionText}</h6>
+                <h6 class="fs-6 card-subtitle text-muted mb-2">ความคิดเห็นของทันตแพทย์: ${item.dentist_feedback ? item.dentist_feedback : "[ยังไม่ได้ให้ความคิดเห็น]"}</h6>
+                
+                <div class="d-grid gap-2 d-md-block justify-content-md-center">
+                    <form action="/diagnosis/admin/${item.submission_id}?channel=${item.channel}&source=admin_record2" 
+                        method="post" id="form_id${item.submission_id}" style="display:inline;">
+                        <input type="hidden" name="filtered_user_id" value="${document.getElementById('user_id').value}">
+                        <button class="btn btn-outline-success" type="submit">ดูผลการวิเคราะห์</button>
+                    </form>
+                    
+                    <button class="btn btn-outline-danger my-1" type="button" data-bs-toggle="modal" data-bs-target="#submissionDeleteModal${item.submission_id}">ลบข้อมูล</button>
+                </div>
+                
+                <form action="/followup_request/admin/${item.submission_id}" method="post" id="followup_request_id${item.submission_id}" style="display:inline;">
+                    <button class="btn ${item.followup ? 'btn-warning' : 'btn-outline-warning'} btn-sm my-1" type="submit">
+                        ${item.followup ? 'Cancel Follow Up' : 'Request Follow Up'}
+                    </button>
+                </form>
+                
+                <form action="/retrain_request/admin/${item.submission_id}" method="post" id="retrain_request_id${item.submission_id}" style="display:inline;">
+                    <button class="btn ${item.retrain_request_status ? 'btn-info' : 'btn-outline-info'} btn-sm my-1" type="submit">
+                        ${item.retrain_request_status ? 'Cancel Retrain Req' : 'Request Retrain'}
+                    </button>
+                </form>
+            </div>`;
+            }
+            cardHTML += `
+            <!-- Submission Delete Modal -->
+            <div class="modal fade" id="submissionDeleteModal${item.submission_id}" tabindex="-1" aria-labelledby="submissionDeleteModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="submissionDeleteModalLabel">${item.channel !== 'DENTIST' ? 'ลบข้อมูลการนำส่ง' : 'ลบประวัติ'}</h1>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">คุณแน่ใจที่จะลบภาพนี้ ใช่หรือไม่</div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                            <form action="/delete_image/admin" method="post" enctype="multipart/form-data">
+                                <input name="img_id" type="text" value="${item.submission_id}" hidden />
+                                <input class="btn btn-outline-danger" style="width: 100%" type="submit" value="ลบข้อมูล" />
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+            if (item.followup || item.retrain_request_status) {
+                cardHTML += `
+            <span class="position-absolute top-0 end-0 text-end">
+                ${item.followup ?
+                        `<div class="badge bg-warning text-dark my-1">Follow Up: ${item.followup_request_status}</div><br>` : ''}
+                ${item.retrain ?
+                        `<div class="badge bg-info text-dark my-1">Retrain: ${item.retrain_request_status}</div>` : ''}
+            </span>`;
+            }
+
+            cardHTML += `</div>`;
+            card.innerHTML = cardHTML;
+            container.appendChild(card);
+        });
+    }
+
+
+    function populateProvince(data) {
+        const provinceDropdown = document.getElementById('filterProvince');
+
+        if (!isProvincePopulated && provinceDropdown.options.length <= 1) {
+            const defaultOption = document.createElement('option');
+            defaultOption.value = "";
+            defaultOption.textContent = "ทั้งหมด";
+            provinceDropdown.appendChild(defaultOption);
+
+            data.forEach(province => {
+                const option = document.createElement('option');
+                option.value = province;
+                option.textContent = province;
+                provinceDropdown.appendChild(option);
+            });
+
+            isProvincePopulated = true;
+        }
+    }
+
+    function populatedDentist(data) {
+        const dentistDropdown = document.getElementById('filterSpecialist');
+
+        if (!isDentistPopulated && dentistDropdown.length <= 1) {
+            const defaultOption = document.createElement('option');
+            defaultOption.value = "";
+            defaultOption.textContent = "ทั้งหมด";
+            dentistDropdown.appendChild(defaultOption);
+
+            data.forEach(dentist => {
+                const option = document.createElement('option');
+                option.value = dentist.dentist_id;
+                option.textContent = dentist.dentist_fullname;
+                dentistDropdown.appendChild(option);
+            });
+
+            isDentistPopulated = true;
+        }
+    }
+
+    function populatePageComponent(data) {
+        const page = data.page;
+        const total_pages = data.total_pages;
+        const totalCount = data.total_count;
+        localStorage.setItem('currentRecordPage', page);
+        const totalCountElement = document.getElementById('totalCount');
+        totalCountElement.textContent = `จำนวนทั้งหมด: ${totalCount} รายการ`;
+
+        const paginationContainer = document.getElementById('pagination-container');
+        if (total_pages <= 0) {
+            paginationContainer.innerHTML = '';
+            return;
+        }
+        let paginationHTML = '';
+        if (page > 1) {
+            paginationHTML += `
+                <button class="btn page-link m-2 text-secondary pagination-btn" data-page="1">หน้าแรก</button>
+                <button class="btn page-link m-2 text-secondary pagination-btn" data-page="${page - 1}">ก่อนหน้า</button>
+                `;
+        }
+        paginationHTML += `
+            <span class="current-page page-link m-2 text-secondary">หน้าปัจจุบัน: ${page} จาก ${total_pages}</span>
+            `;
+        if (page < total_pages) {
+            paginationHTML += `
+                <button class="btn page-link m-2 text-secondary pagination-btn" data-page="${page + 1}">ถัดไป</button>
+                <button class="btn page-link m-2 text-secondary pagination-btn" data-page="${total_pages}">หลังสุด</button>
+                `;
+        }
+        paginationContainer.innerHTML = paginationHTML;
+        document.querySelectorAll('.pagination-btn').forEach(button => {
+            button.addEventListener('click', function (e) {
+                e.preventDefault();
+                const pageNumber = parseInt(this.getAttribute('data-page'));
+                fetchImageManageList(pageNumber);
+            });
+        });
+    }
+
+    function saveFilterState() {
+        const filterState = {
+            priority: document.getElementById("filterPriority").value,
+            status: document.getElementById("filterStatus").value,
+            province: document.getElementById("filterProvince").value,
+            specialist: document.getElementById("filterSpecialist").value,
+            searchTerm: document.getElementById("search_input").value,
+            aiPrediction: document.getElementById("ai_prediction").value,
+            dentistFeedback: document.getElementById("dentist_feedback_code").value,
+            followup: document.getElementById("filterFollowup").value,
+            retrain: document.getElementById("filterRetrain").value,
+            channelPatient: document.getElementById("filterPatient")?.checked,
+            channelOsm: document.getElementById("filterOSM")?.checked,
+            channelDentist: document.getElementById("filterDentist")?.checked,
+            currentPage: localStorage.getItem('currentRecordPage') || 1,
+            userId: document.getElementById("user_id").value
+        };
+
+        localStorage.setItem('recordFilterState', JSON.stringify(filterState));
+    }
+
+    window.onload = function () {
+        const selectedChannel = localStorage.getItem('selectedChannel');
+        const selectedAiPrediction = localStorage.getItem('selectedAiPrediction');
+        const selectedDentistFeedback = localStorage.getItem('selectedDentistFeedback');
+        const selectedDentistChecked = localStorage.getItem('selectedDentistChecked');
+
+        const comingFromDiagnosis = localStorage.getItem('comingFromDiagnosis');
+        const savedFilterState = localStorage.getItem('recordFilterState');
+        const userId = localStorage.getItem('user_id');
+        const savedPage = localStorage.getItem('currentRecordPage');
+
+        const comingFromReport = selectedChannel || selectedAiPrediction || selectedDentistFeedback || (selectedDentistChecked !== null);
+
+        if (comingFromReport && !comingFromDiagnosis) {
+            localStorage.setItem('comingFromDiagnosis', 'true');
+            document.getElementById('user_id').value = '';
+        }
+        if (!comingFromDiagnosis && !comingFromReport) {
+            localStorage.removeItem('recordFilterState');
+            localStorage.removeItem('currentRecordPage');
+        } else {
+            localStorage.removeItem('comingFromDiagnosis');
+        }
+        if (savedFilterState) {
+            const filterState = JSON.parse(savedFilterState);
+
+            if (filterState.priority) document.getElementById('filterPriority').value = filterState.priority;
+            if (filterState.status) document.getElementById('filterStatus').value = filterState.status;
+            if (filterState.province) document.getElementById('filterProvince').value = filterState.province;
+            if (filterState.specialist) document.getElementById('filterSpecialist').value = filterState.specialist;
+            if (filterState.searchTerm) document.getElementById('search_input').value = filterState.searchTerm;
+            if (filterState.aiPrediction) document.getElementById('ai_prediction').value = filterState.aiPrediction;
+            if (filterState.dentistFeedback) document.getElementById('dentist_feedback_code').value = filterState.dentistFeedback;
+            if (filterState.followup) document.getElementById('filterFollowup').value = filterState.followup;
+            if (filterState.retrain) document.getElementById('filterRetrain').value = filterState.retrain;
+            if (filterState.channelPatient !== undefined) document.getElementById('filterPatient').checked = filterState.channelPatient;
+            if (filterState.channelOsm !== undefined) document.getElementById('filterOSM').checked = filterState.channelOsm;
+            if (filterState.channelDentist !== undefined) document.getElementById('filterDentist').checked = filterState.channelDentist;
+            if (filterState.userId && !comingFromReport) {
+                document.getElementById('user_id').value = filterState.userId;
+            }
+        }
+        if (selectedChannel) {
+            if (selectedChannel === 'BOTH') {
+                document.getElementById('filterPatient').checked = true;
+                document.getElementById('filterOSM').checked = true;
+            } else if (selectedChannel === 'PATIENT') {
+                document.getElementById('filterPatient').checked = true;
+                document.getElementById('filterOSM').checked = false;
+            } else if (selectedChannel === 'OSM') {
+                document.getElementById('filterPatient').checked = false;
+                document.getElementById('filterOSM').checked = true;
+            }
+            localStorage.removeItem('selectedChannel');
+        }
+
+        if (selectedAiPrediction) {
+            document.getElementById('ai_prediction').value = selectedAiPrediction;
+            localStorage.removeItem('selectedAiPrediction');
+        }
+
+        if (selectedDentistFeedback) {
+            document.getElementById('dentist_feedback_code').value = selectedDentistFeedback;
+            localStorage.removeItem('selectedDentistFeedback');
+        }
+
+        if (selectedDentistChecked !== null) {
+            document.getElementById('filterStatus').value = selectedDentistChecked;
+            localStorage.removeItem('selectedDentistChecked');
+        }
+        if (userId && !comingFromReport) {
+            document.getElementById('user_id').value = userId;
+            localStorage.removeItem('user_id');
+        }
+        fetchImageManageList(savedPage ? parseInt(savedPage) : 1);
+        const filterControls = document.querySelectorAll('select[onchange="fetchImageManageList()"], input[onchange="fetchImageManageList()"]');
+        filterControls.forEach(control => {
+            control.removeAttribute('onchange');
+            control.addEventListener('change', function () {
+                fetchImageManageList(1);
+            });
+        });
+
+        saveFilterState();
+    }
+</script>
+{% endblock %}

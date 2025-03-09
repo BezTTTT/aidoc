@@ -78,13 +78,14 @@
               <th class="text-center align-middle">OSCC</th>
               <th class="text-center align-middle">NORMAL</th>
 
-              <th class="text-center align-middle" style="width: 8.5%;">OPMD</th>
-              <th class="text-center align-middle" style="width: 8.5%;">OSCC</th>
-              <th class="text-center align-middle" style="width: 8.5%;">NORMAL</th>
-              <th class="text-center align-middle" style="width: 8.5%;">ภาพไม่ได้มาตรฐาน</th>
-              <th class="text-center align-middle" style="width: 8.5%;">อื่น ๆ</th>
-              <th class="text-center align-middle" style="width: 8.5%;">ความแม่นยำ (%)</th>
-              <th class="text-center align-middle" style="width: 9%;">ภาพที่ยังไม่ได้ตรวจ</th>
+              <th class="text-center align-middle" style="width: 7.5%;">OPMD</th>
+              <th class="text-center align-middle" style="width: 7.5%;">OSCC</th>
+              <th class="text-center align-middle" style="width: 7.5%;">NORMAL</th>
+              <th class="text-center align-middle" style="width: 7.5%;">ภาพไม่ได้มาตรฐาน</th>
+              <th class="text-center align-middle" style="width: 7.5%;">เนื้องอกธรรมดา</th>
+              <th class="text-center align-middle" style="width: 7.5%;">อื่น ๆ</th>
+              <th class="text-center align-middle" style="width: 7.5%;">ความแม่นยำ (%)</th>
+              <th class="text-center align-middle" style="width: 7.5%;">ภาพที่ยังไม่ได้ตรวจ</th>
             </tr>
           </thead>
           <tbody id=FirstTable>
@@ -166,15 +167,12 @@
 <script>
   let isProvincePopulated = false;
   getReport("ทั้งประเทศ", null, null);
-  // Function to get the report
   function getReport(province, startDate, endDate) {
     const role = 'admin';
     const loadingIndicator = document.getElementById('loadingIndicator');
     const mainContent = document.getElementById('mainContainer');
     mainContent.style.display = 'none';
     loadingIndicator.style.display = 'block';
-
-    // Build the URL with query parameters
     let url = '/report_api/';
     let params = [];
 
@@ -188,12 +186,10 @@
       params.push(`end_date=${endDate}`);
     }
 
-    // Add query parameters to URL if they exist
     if (params.length > 0) {
       url += '?' + params.join('&');
     }
 
-    // Make the API call
     fetch(url, {
       method: 'GET',
       headers: {
@@ -229,121 +225,88 @@
 
   function populateFirstTable(data) {
     const firstTable = document.getElementById('FirstTable');
-    firstTable.innerHTML = ''; // Clear existing rows if any
+    firstTable.innerHTML = '';
 
     if (data.patient_and_osm) {
-      // Extract osm, patient, and total data
       const { osm, patient, total } = data.patient_and_osm;
-
       const createRow = (label, entry) => {
         const row = document.createElement('tr');
         row.innerHTML = `
         <td>${label}</td>
         <td class="text-center">
-        {% set default_data = {'search': ''} %}
-        <form action="/record/admin" method="POST">
-          <input
-            type="text"
-            id="search-input"
-            name="search"
-            value="{{ default_data.search }}"
-            style="display:none"
-        >
-          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;">
-            ${entry.total_pic}
+          <button type="submit" 
+                  style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;"
+                  onclick="storeFilterValue('${label === 'รวมทั้งหมด' ? 'BOTH' : (label === 'ประชาชน' ? 'PATIENT' : 'OSM')}')">
+            ${entry.total_pic} 
           </button>
-        </form>
         </td>
         <td class="text-center">
-        {% set default_data = {'search': 'opmd'} %}
-        <form action="/record/admin" method="POST">
-          <input
-            type="text"
-            id="search-input"
-            name="search"
-            value="{{ default_data.search }}"
-            style="display:none"
-        >
-          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;">
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;"
+          onclick="storeFilterValue('${label === 'รวมทั้งหมด' ? 'BOTH' : (label === 'ประชาชน' ? 'PATIENT' : 'OSM')}', '1')">
             ${entry.ai_predict.opmd}
           </button>
-        </form>
         </td>
         <td class="text-center">
-        {% set default_data = {'search': 'oscc'} %}
-        <form action="/record/admin" method="POST">
-          <input
-            type="text"
-            id="search-input"
-            name="search"
-            value="{{ default_data.search }}"
-            style="display:none"
-        >
-          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;">
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;"
+          onclick="storeFilterValue('${label === 'รวมทั้งหมด' ? 'BOTH' : (label === 'ประชาชน' ? 'PATIENT' : 'OSM')}', '2')">
             ${entry.ai_predict.oscc}
           </button>
-        </form>
         </td>
         <td class="text-center">
-        {% set default_data = {'search': 'normal'} %}
-        <form action="/record/admin" method="POST">
-          <input
-            type="text"
-            id="search-input"
-            name="search"
-            value="{{ default_data.search }}"
-            style="display:none"
-        >
-          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;">
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;"
+          onclick="storeFilterValue('${label === 'รวมทั้งหมด' ? 'BOTH' : (label === 'ประชาชน' ? 'PATIENT' : 'OSM')}', '0')">
             ${entry.ai_predict.normal}
           </button>
-        </form>
         </td>
         <td class="text-center">
-            <a href="/record/admin?value=opmd"
-            style="text-decoration: none; color: black; cursor: pointer;">
-              ${entry.dentist_diagnose.opmd}
-            </a>
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;"
+          onclick="storeFilterValue('${label === 'รวมทั้งหมด' ? 'BOTH' : (label === 'ประชาชน' ? 'PATIENT' : 'OSM')}', null , 'OPMD')">
+            ${entry.dentist_diagnose.opmd}
+          </button>
         </td>
         <td class="text-center">
-            <a href="/record/admin?value=oscc"
-            style="text-decoration: none; color: black; cursor: pointer;">
-              ${entry.dentist_diagnose.oscc}
-            </a>
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;"
+          onclick="storeFilterValue('${label === 'รวมทั้งหมด' ? 'BOTH' : (label === 'ประชาชน' ? 'PATIENT' : 'OSM')}',  null , 'OSCC')">
+            ${entry.dentist_diagnose.oscc}
+          </button>
         </td>
         <td class="text-center">
-            <a href="/record/admin"&value=normal"
-            style="text-decoration: none; color: black; cursor: pointer;">
-              ${entry.dentist_diagnose.normal}
-            </a>
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;"
+          onclick="storeFilterValue('${label === 'รวมทั้งหมด' ? 'BOTH' : (label === 'ประชาชน' ? 'PATIENT' : 'OSM')}', null , 'NORMAL')">
+            ${entry.dentist_diagnose.normal}
+          </button>
         </td>
         <td class="text-center">
-            <a href="/record/admin&value=BAD_IMG"
-            style="text-decoration: none; color: black; cursor: pointer;">
-              ${entry.dentist_diagnose.poor_image}
-            </a>
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;"
+          onclick="storeFilterValue('${label === 'รวมทั้งหมด' ? 'BOTH' : (label === 'ประชาชน' ? 'PATIENT' : 'OSM')}',  null , 'BAD_IMG')">
+            ${entry.dentist_diagnose.poor_image}
+          </button>
         </td>
         <td class="text-center">
-            <a href="/record/admin?value=others"
-            style="text-decoration: none; color: black; cursor: pointer;">
-              ${entry.dentist_diagnose.others}
-            </a>
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;"
+          onclick="storeFilterValue('${label === 'รวมทั้งหมด' ? 'BOTH' : (label === 'ประชาชน' ? 'PATIENT' : 'OSM')}',  null , 'BENIGN')">
+            ${entry.dentist_diagnose.benign}
+          </button>
+        </td>
+        <td class="text-center">
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;"
+          onclick="storeFilterValue('${label === 'รวมทั้งหมด' ? 'BOTH' : (label === 'ประชาชน' ? 'PATIENT' : 'OSM')}',  null , 'OTHER')">
+            ${entry.dentist_diagnose.others}
+          </button>
         </td>
         <td class="text-center">
               ${entry.accuracy}
         </td>
         <td class="text-center">
-            <a href="/record/admin?value=not_diagnosed"
-            style="text-decoration: none; color: black; cursor: pointer;">
-              ${entry.dentist_diagnose.not_diagnosed}
-            </a>
+          <button type="submit" style="text-decoration: none; color: black; background: none; border: none; cursor: pointer;"
+          onclick="storeFilterValue('${label === 'รวมทั้งหมด' ? 'BOTH' : (label === 'ประชาชน' ? 'PATIENT' : 'OSM')}', null, null, '0')">
+            ${entry.dentist_diagnose.not_diagnosed}
+          </button>
         </td>
 
       `;
         firstTable.appendChild(row);
       };
-
-      // Add rows for osm, patient, and total
       createRow('ประชาชน', patient);
       createRow('อสม.', osm);
       createRow('รวมทั้งหมด', total);
@@ -351,14 +314,13 @@
   }
   function populateSpecialistTable(data) {
     const specialistTable = document.getElementById('specialistTable');
-    specialistTable.innerHTML = ''; // Clear existing rows if any
+    specialistTable.innerHTML = '';
 
     if (data.specialist && Array.isArray(data.specialist)) {
       data.specialist.forEach((specialist, index) => {
         const isLastSpecialist = index === data.specialist.length - 1
         const row = document.createElement('tr');
 
-        // Populate cells for the current specialist
         row.innerHTML = `
         <td>${isLastSpecialist ? 'รวมทั้งหมด' : specialist.job}</td>
         <td class="text-center">${specialist.total_pic}</td>
@@ -404,8 +366,6 @@
       data.total_province.forEach(province => {
         const option = document.createElement('option');
         option.value = province;
-
-        // Add medal emoji for the first three provinces
         if (count === 1) {
           option.textContent = "🥇 " + province;
         } else if (count === 2) {
@@ -464,14 +424,13 @@
       url += '?' + params.join('&');
     }
 
-    document.body.style.overflow = 'hidden';  // Prevent scrolling
+    document.body.style.overflow = 'hidden';
     const backgroundFreeze = document.getElementById('backgroundFreeze');
     backgroundFreeze.style.display = 'block';
 
-    // Show the popup
     const summaryPopup = document.getElementById('summaryPopup');
     summaryPopup.style.display = 'block';
-    summaryPopup.style.zIndex = '9999';  // Ensure popup is above the background freeze
+    summaryPopup.style.zIndex = '9999';
 
     fetch(url)
       .then(response => response.json())
@@ -495,22 +454,18 @@
 
 
   function closePopup() {
-    // Hide the popup
     document.getElementById('summaryPopup').style.display = 'none';
 
-    // Restore background and scrolling
-    document.body.style.overflow = '';  // Allow scrolling again
+    document.body.style.overflow = '';
     document.getElementById('backgroundFreeze').style.display = 'none';
   }
 
   function resetDates() {
-    // Reset the date fields
     document.getElementById('startDate').value = '';
     document.getElementById('endDate').value = '';
 
-    // Optionally, reset the background freeze in case it's still active
     if (document.getElementById('backgroundFreeze')) {
-      document.body.style.overflow = '';  // Allow scrolling again
+      document.body.style.overflow = '';
     }
   }
 
@@ -521,5 +476,20 @@
     getReport(province, startDate, endDate);
   }
 
+  function storeFilterValue(channel, aiPrediction = null, dentistFeedback = null, isChecked = null) {
+    localStorage.setItem('userId', '')
+    localStorage.setItem('selectedChannel', channel);
+    if (aiPrediction) {
+      localStorage.setItem('selectedAiPrediction', aiPrediction);
+    }
+    if (dentistFeedback) {
+      localStorage.setItem('selectedDentistFeedback', dentistFeedback);
+    }
+    if (isChecked !== null) {
+      localStorage.setItem('selectedDentistChecked', isChecked);
+    }
+
+    window.location.href = '/admin_record2';
+  }
 </script>
 {% endblock %}
