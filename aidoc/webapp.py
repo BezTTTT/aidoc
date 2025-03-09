@@ -728,8 +728,15 @@ def adminRecord2():
 @admin_only
 def followupManage():
     # Get filter parameters from request
-    status_filter = request.args.get("status", "")
-    prediction_filter = request.args.get("prediction", "")
+    status_filters = request.args.getlist("status[]")
+    prediction_filters = request.args.getlist("prediction[]")
+    
+    # If status_all or prediction_all is checked, ignore other filters
+    if 'all' in request.args.getlist("status_all") or not status_filters:
+        status_filters = []
+    
+    if 'all' in request.args.getlist("prediction_all") or not prediction_filters:
+        prediction_filters = []
     
     # Get pagination parameters
     page = request.args.get("page", session.get('current_record_page', 1), type=int)
@@ -738,8 +745,8 @@ def followupManage():
     
     # Get filtered data and counts
     paginated_data, dataCount, status_counts = record_followup(
-        status_filter=status_filter, 
-        prediction_filter=prediction_filter
+        status_filters=status_filters, 
+        prediction_filters=prediction_filters
     )
 
     if dataCount is not None:
@@ -753,12 +760,16 @@ def followupManage():
                 current_page=page,
                 total_pages=total_pages,
                 data=paginated_data,
-                selected_status=status_filter,
-                selected_prediction=prediction_filter,
+                selected_status=status_filters,
+                selected_prediction=prediction_filters,
                 status_counts=status_counts
                 )
 
-def record_followup(status_filter="", prediction_filter=""):
+def record_followup(status_filters=None, prediction_filters=None):
+    if status_filters is None:
+        status_filters = []
+    if prediction_filters is None:
+        prediction_filters = []
     
     page = session['current_record_page']
     records_per_page = session['records_per_page']
@@ -790,13 +801,17 @@ def record_followup(status_filter="", prediction_filter=""):
     where_clauses = []
     filter_values = []
     
-    if status_filter:
-        where_clauses.append("fr.followup_request_status = %s")
-        filter_values.append(status_filter)
+    if status_filters:
+        placeholders = ', '.join(['%s'] * len(status_filters))
+        where_clauses.append(f"fr.followup_request_status IN ({placeholders})")
+        filter_values.extend(status_filters)
     
-    if prediction_filter:
-        where_clauses.append("sr.ai_prediction = %s")
-        filter_values.append(int(prediction_filter))
+    if prediction_filters:
+        # Convert string prediction values to integers
+        prediction_filters_int = [int(p) for p in prediction_filters]
+        placeholders = ', '.join(['%s'] * len(prediction_filters_int))
+        where_clauses.append(f"sr.ai_prediction IN ({placeholders})")
+        filter_values.extend(prediction_filters_int)
     
     # Add WHERE clause if any filters applied
     if where_clauses:
