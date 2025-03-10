@@ -165,6 +165,7 @@
                     {% endif %}">
                     {{ item['followup_request_status'] }}
                 </div>
+                <p class="mb-2 fw-bold">Case ID: {{ item['case_id'] }}</p>
                 <h6 class="fs-6 fw-bold">
                     ผลการพยากรณ์ของ AI:
                     {% if item['ai_prediction'] == 0 %}
@@ -503,5 +504,14 @@
             confirmBtn.classList.add("btn-secondary");
         }
     }
+    document.addEventListener("DOMContentLoaded", function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasOnlyPageParam = urlParams.has('page') && urlParams.size === 1;
+    const hasNoParams = urlParams.size === 0;
+    
+    if ((hasOnlyPageParam || hasNoParams) && urlParams.get('page') !== '1' && !hasNoParams) {
+        window.location.href = window.location.pathname + '?page=1';
+    }
+});
 </script>
 {% endblock %}
