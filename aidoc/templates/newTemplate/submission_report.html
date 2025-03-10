@@ -37,7 +37,12 @@
           style="background: none; border: none; color: inherit; cursor: pointer;">Clear</button>
       </div>
       <br>
-      <div class="table-responsive" style="max-height: calc(100% - 100px); overflow-y: auto;">
+      <!-- Chart Container - Updated title -->
+      <div id="summaryChartContainer" style="width:100%; height:300px; margin-bottom:20px;">
+        <h4 style="text-align:center; margin-top:10px;">จำนวนภาพตามวันที่</h4>
+        <canvas id="summaryChart"></canvas>
+      </div>
+      <div class="table-responsive" style="max-height: calc(100% - 400px); overflow-y: auto;">
         <table class="table table-bordered">
           <thead>
             <tr>
@@ -164,9 +169,15 @@
     </div>
   </div>
 </div>
+
+<!-- Add Chart.js library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+
 <script>
   let isProvincePopulated = false;
+  let summaryBarChart = null; // Store chart instance globally
   getReport("ทั้งประเทศ", null, null);
+  
   function getReport(province, startDate, endDate) {
     const role = 'admin';
     const loadingIndicator = document.getElementById('loadingIndicator');
@@ -312,6 +323,7 @@
       createRow('รวมทั้งหมด', total);
     }
   }
+  
   function populateSpecialistTable(data) {
     const specialistTable = document.getElementById('specialistTable');
     specialistTable.innerHTML = '';
@@ -402,64 +414,212 @@
     }
   }
 
-
-  function fetchSummariesByDay() {
-    const province = document.getElementById('filterProvince').value;
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
-    let url = '/summaries_by_day/';
-    let params = [];
-
-    if (province !== 'ทั้งประเทศ') {
-      params.push(`province=${province}`);
+// Modified: Process data for the chart - Group by date instead of province
+function processDataForChart(data) {
+  // Group by date and count images
+  const dateData = {};
+  
+  data.forEach(entry => {
+    // Format the date to be more readable
+    const formattedDate = new Date(entry.date).toLocaleDateString();
+    if (!dateData[formattedDate]) {
+      dateData[formattedDate] = 0;
     }
-    if (startDate) {
-      params.push(`start_date=${startDate}`);
+    dateData[formattedDate] += entry.count;
+  });
+  
+  // Convert to array format for chart
+  return Object.keys(dateData).map(date => ({
+    date: date,
+    count: dateData[date]
+  }));
+}
+
+// Modified: Create bar chart using Chart.js with improved date handling and layout
+function createBarChart(data) {
+  // Get the canvas context
+  const ctx = document.getElementById('summaryChart').getContext('2d');
+  
+  // Check if there's an existing chart and destroy it
+  if (summaryBarChart) {
+    summaryBarChart.destroy();
+  }
+  
+  // Sort data by date in chronological order
+  data.sort((a, b) => new Date(a.date) - new Date(b.date));
+  
+  // Create new chart
+  summaryBarChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.map(item => item.date),
+      datasets: [{
+        label: 'จำนวนภาพ',
+        data: data.map(item => item.count),
+        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: {
+        padding: {
+          bottom: 30 // Add padding at the bottom of the chart
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'จำนวนภาพ'
+          }
+        },
+        x: {
+          display: false, // Hide x-axis completely (since we'll show the range separately)
+          title: {
+            display: false
+          }
+        }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            title: function(context) {
+              return context[0].label;
+            },
+            label: function(context) {
+              return `จำนวน: ${context.raw.toLocaleString()} ภาพ`;
+            }
+          }
+        },
+        legend: {
+          display: false
+        }
+      }
     }
-    if (endDate) {
-      params.push(`end_date=${endDate}`);
+  });
+  
+  // Add range label at the bottom of the chart if data exists
+  if (data.length > 0) {
+    const firstDate = new Date(data[0].date).toLocaleDateString();
+    const lastDate = new Date(data[data.length - 1].date).toLocaleDateString();
+    const dateRangeElement = document.getElementById('dateRangeLabel');
+    
+    if (!dateRangeElement) {
+      const rangeLabel = document.createElement('div');
+      rangeLabel.id = 'dateRangeLabel';
+      rangeLabel.style.textAlign = 'center';
+      rangeLabel.style.marginTop = '5px';
+      rangeLabel.style.marginBottom = '25px'; // Add space after the range label
+      rangeLabel.innerHTML = `<strong>ช่วงวันที่:</strong> ${firstDate} - ${lastDate}`;
+      document.getElementById('summaryChartContainer').appendChild(rangeLabel);
+    } else {
+      dateRangeElement.innerHTML = `<strong>ช่วงวันที่:</strong> ${firstDate} - ${lastDate}`;
     }
+  }
+}
 
-    if (params.length) {
-      url += '?' + params.join('&');
-    }
+// Update fetchSummariesByDay with improved layout adjustments
+function fetchSummariesByDay() {
+  const province = document.getElementById('filterProvince').value;
+  const startDate = document.getElementById('startDate').value;
+  const endDate = document.getElementById('endDate').value;
+  let url = '/summaries_by_day/';
+  let params = [];
 
-    document.body.style.overflow = 'hidden';
-    const backgroundFreeze = document.getElementById('backgroundFreeze');
-    backgroundFreeze.style.display = 'block';
-
-    const summaryPopup = document.getElementById('summaryPopup');
-    summaryPopup.style.display = 'block';
-    summaryPopup.style.zIndex = '9999';
-
-    fetch(url)
-      .then(response => response.json())
-      .then(data => {
-        const tableBody = document.getElementById('summaryTableBody');
-        tableBody.innerHTML = '';
-        data.forEach(entry => {
-          const row = document.createElement('tr');
-          row.innerHTML = `<td>${new Date(entry.date).toLocaleDateString()}</td>
-      <td>${entry.province}</td>
-      <td>${entry.count}</td>`;
-          tableBody.appendChild(row);
-        });
-      })
-      .catch(error => {
-        console.error('Error fetching summaries:', error);
-        alert('เกิดข้อผิดพลาดขณะโหลดข้อมูล');
-      });
+  if (province !== 'ทั้งประเทศ') {
+    params.push(`province=${province}`);
+  }
+  if (startDate) {
+    params.push(`start_date=${startDate}`);
+  }
+  if (endDate) {
+    params.push(`end_date=${endDate}`);
   }
 
+  if (params.length) {
+    url += '?' + params.join('&');
+  }
 
+  document.body.style.overflow = 'hidden';
+  const backgroundFreeze = document.getElementById('backgroundFreeze');
+  backgroundFreeze.style.display = 'block';
 
+  const summaryPopup = document.getElementById('summaryPopup');
+  summaryPopup.style.display = 'block';
+  summaryPopup.style.zIndex = '9999';
+
+  fetch(url)
+    .then(response => response.json())
+    .then(data => {
+      // Update chart container layout
+      const chartContainer = document.getElementById('summaryChartContainer');
+      chartContainer.style.marginBottom = '40px'; // Increase space after chart container
+      chartContainer.style.height = '320px'; // Set a fixed height to prevent layout shifts
+      
+      // Add a divider element if it doesn't exist
+      if (!document.getElementById('chartDivider')) {
+        const divider = document.createElement('hr');
+        divider.id = 'chartDivider';
+        divider.style.margin = '30px 0';
+        summaryPopup.insertBefore(divider, document.querySelector('.table-responsive'));
+      }
+      
+      const tableBody = document.getElementById('summaryTableBody');
+      tableBody.innerHTML = '';
+      
+      // Update chart title to reflect date range if selected
+      const chartTitle = document.querySelector('#summaryChartContainer h4');
+      if (startDate && endDate) {
+        const formattedStartDate = new Date(startDate).toLocaleDateString('th-TH');
+        const formattedEndDate = new Date(endDate).toLocaleDateString('th-TH');
+        chartTitle.textContent = `จำนวนภาพระหว่างวันที่ ${formattedStartDate} ถึง ${formattedEndDate}`;
+      } else {
+        chartTitle.textContent = 'จำนวนภาพตามวันที่';
+      }
+      
+      // Process data for the chart
+      const chartData = processDataForChart(data);
+      
+      // Render the data in the table
+      data.forEach(entry => {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${new Date(entry.date).toLocaleDateString()}</td>
+        <td>${entry.province}</td>
+        <td>${entry.count}</td>`;
+        tableBody.appendChild(row);
+      });
+      
+      // Create the bar chart
+      createBarChart(chartData);
+    })
+    .catch(error => {
+      console.error('Error fetching summaries:', error);
+      alert('เกิดข้อผิดพลาดขณะโหลดข้อมูล');
+    });
+  }
+
+// Make sure to also update the HTML structure for better spacing
   function closePopup() {
     document.getElementById('summaryPopup').style.display = 'none';
-
     document.body.style.overflow = '';
     document.getElementById('backgroundFreeze').style.display = 'none';
+    
+    // Destroy the chart to prevent memory leaks
+    if (summaryBarChart) {
+      summaryBarChart.destroy();
+      summaryBarChart = null;
+    }
+    
+    // Remove divider if it exists
+    const divider = document.getElementById('chartDivider');
+    if (divider) {
+      divider.remove();
+    }
   }
-
   function resetDates() {
     document.getElementById('startDate').value = '';
     document.getElementById('endDate').value = '';
