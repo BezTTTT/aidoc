@@ -8,6 +8,9 @@ from datetime import datetime
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
+from openpyxl.drawing.image import Image as ExcelImage
+from PIL import Image as PILImage
+from datetime import datetime
 from aidoc.utils import *
 from aidoc.db import get_db
 from aidoc.auth import login_required, admin_only, specialist_only, role_validation, reload_user_profile
@@ -720,15 +723,31 @@ def userManagement():
 def adminRecord2():
     return render_template("/newTemplate/admin_record2.html")
 
-#followup for dentist page
 @bp.route('/followup/admin', methods=('GET','POST'))
 @login_required
 @admin_only
 def followupManage():
+    # Get filter parameters from request
+    status_filters = request.args.getlist("status[]")
+    prediction_filters = request.args.getlist("prediction[]")
+    
+    # If status_all or prediction_all is checked, ignore other filters
+    if 'all' in request.args.getlist("status_all") or not status_filters:
+        status_filters = []
+    
+    if 'all' in request.args.getlist("prediction_all") or not prediction_filters:
+        prediction_filters = []
+    
+    # Get pagination parameters
     page = request.args.get("page", session.get('current_record_page', 1), type=int)
     session['current_record_page'] = page
     session['records_per_page'] = 12
-    paginated_data, dataCount = record_followup() 
+    
+    # Get filtered data and counts
+    paginated_data, dataCount, status_counts = record_followup(
+        status_filters=status_filters, 
+        prediction_filters=prediction_filters
+    )
 
     if dataCount is not None:
         dataCount = dataCount['total_records']
@@ -736,11 +755,130 @@ def followupManage():
         dataCount = 0
     total_pages = (dataCount - 1) // session['records_per_page'] + 1
 
-    return render_template("/newTemplate/admin_followup.html",dataCount=dataCount,
+    return render_template("/newTemplate/admin_followup.html", 
+                dataCount=dataCount,
                 current_page=page,
                 total_pages=total_pages,
-                data=paginated_data
+                data=paginated_data,
+                selected_status=status_filters,
+                selected_prediction=prediction_filters,
+                status_counts=status_counts
                 )
+
+def record_followup(status_filters=None, prediction_filters=None):
+    if status_filters is None:
+        status_filters = []
+    if prediction_filters is None:
+        prediction_filters = []
+    
+    page = session['current_record_page']
+    records_per_page = session['records_per_page']
+    offset = (page-1)*records_per_page
+    db, cursor = get_db()
+    
+    # Base SQL parts
+    sql_select_part = '''
+                SELECT 
+                sr.id, 
+                sr.ai_prediction,
+                sr.channel,
+                sr.sender_id,
+                sr.patient_id,
+                sr.fname,
+                sr.created_at,
+                pcid.case_id,
+                fr.followup_request_status,
+                fr.followup_note,
+                fr.followup_feedback
+            '''
+    sql_join_part = '''
+                FROM submission_record as sr 
+                INNER JOIN followup_request as fr ON sr.id = fr.submission_id
+                LEFT JOIN patient_case_id as pcid ON pcid.id=fr.submission_id
+                '''
+    
+    # Build WHERE clause for filters
+    where_clauses = []
+    filter_values = []
+    
+    if status_filters:
+        placeholders = ', '.join(['%s'] * len(status_filters))
+        where_clauses.append(f"fr.followup_request_status IN ({placeholders})")
+        filter_values.extend(status_filters)
+    
+    if prediction_filters:
+        # Convert string prediction values to integers
+        prediction_filters_int = [int(p) for p in prediction_filters]
+        placeholders = ', '.join(['%s'] * len(prediction_filters_int))
+        where_clauses.append(f"sr.ai_prediction IN ({placeholders})")
+        filter_values.extend(prediction_filters_int)
+    
+    # Add WHERE clause if any filters applied
+    if where_clauses:
+        sql_where_part = " WHERE " + " AND ".join(where_clauses)
+    else:
+        sql_where_part = ""
+    
+    # Order and pagination
+    sql_limit_part = '''
+                ORDER BY 
+                    CASE
+                        WHEN fr.followup_request_status = 'On Specialist' THEN 0
+                        ELSE 1
+                    END,
+                    sr.id DESC
+                LIMIT %s
+                OFFSET %s
+            '''
+    
+    # Count query
+    sql_count = 'SELECT Count(*) AS total_records '
+    
+    # Status counts query
+    sql_status_counts = '''
+        SELECT 
+            SUM(CASE WHEN fr.followup_request_status = 'On Specialist' THEN 1 ELSE 0 END) as on_specialist,
+            SUM(CASE WHEN fr.followup_request_status = 'On Contact' THEN 1 ELSE 0 END) as on_contact,
+            SUM(CASE WHEN fr.followup_request_status = 'On Treatment' THEN 1 ELSE 0 END) as on_treatment,
+            SUM(CASE WHEN fr.followup_request_status = 'Closed' THEN 1 ELSE 0 END) as closed
+        FROM submission_record as sr 
+        INNER JOIN followup_request as fr ON sr.id = fr.submission_id
+    '''
+    
+    # Execute count query
+    sql1 = sql_count + sql_join_part + sql_where_part
+    
+    if filter_values:
+        cursor.execute(sql1, filter_values)
+    else:
+        cursor.execute(sql1)
+    
+    dataCount = cursor.fetchone()
+    
+    # Execute status counts query
+    cursor.execute(sql_status_counts)
+    status_counts = cursor.fetchone()
+    
+    # Execute main data query
+    sql2 = sql_select_part + sql_join_part + sql_where_part + sql_limit_part
+    
+    val = filter_values + [records_per_page, offset]
+    
+    if filter_values:
+        cursor.execute(sql2, val)
+    else:
+        cursor.execute(sql2, (records_per_page, offset))
+    
+    paginated_data = cursor.fetchall()
+
+    # Process the results to set owner_id
+    for item in paginated_data:
+        if item['channel'] == 'PATIENT':
+            item['owner_id'] = item['patient_id']
+        else:
+            item['owner_id'] = item['sender_id']
+    
+    return paginated_data, dataCount, status_counts
 
 @bp.route('/followup/confirm/<int:submission_id>', methods=['POST'])
 @login_required
@@ -758,7 +896,7 @@ def confirmFeedback(submission_id):
                 followup_feedback = %s
             WHERE submission_id = %s;
         '''
-        values = ("On contact", note, feedback, submission_id)
+        values = ("On Contact", note, feedback, submission_id)
         cursor.execute(sql, values)
         
         # Fetch updated data for frontend update
@@ -785,6 +923,7 @@ def export_followup_records():
         FROM submission_record AS sr 
         INNER JOIN followup_request AS fr ON sr.id = fr.submission_id
         LEFT JOIN patient_case_id AS pcid ON pcid.id = fr.submission_id
+        WHERE fr.followup_request_status = 'On Specialist'
         ORDER BY pcid.case_id ASC
     '''
     cursor.execute(sql_query)
@@ -800,8 +939,8 @@ def export_followup_records():
     df["Image Link"] = "https://icohold.anamai.moph.go.th:85/load_image/upload/" + df["senderId"].astype(str) + "/" + df["imageName"].astype(str) 
 
     df.insert(0, "No.", range(1, len(df) + 1))
-    df["Specialist Feedback"] = None  # or you can use an empty string `""`
-    df["Note"] = None  # or you can use an empty string `""`
+    df["Specialist Feedback"] = None  # or you can use an empty string ""
+    df["Note"] = None  # or you can use an empty string ""
     df = df[["No.", "Case ID", "Image Link", "Specialist Feedback", "Note"]]
 
     # Start creating Excel file
@@ -848,6 +987,178 @@ def export_followup_records():
         output,
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=followup_records.xlsx"}
+    )
+
+@bp.route('/followup/export_contact', methods=['GET'])
+@login_required
+def export_followup_records_for_contact():
+    db, cursor = get_db()
+    
+    # Fetch raw data from database
+    sql_query = '''
+        SELECT 
+            sr.id,
+            sr.sender_id AS "senderId", 
+            pcid.case_id AS "Case ID",
+            sr.fname AS "imageName",
+            sr.location_province AS "province",
+            fr.followup_feedback AS "Specialist_Feedback",
+            fr.followup_note AS "Note",
+            fr.followup_request_status AS "Status",
+            u.name AS "Sender Name",
+            u.surname AS "Sender Surname",
+            u.phone AS "Sender Phone",
+            u2.name AS "Patient Name",
+            u2.surname AS "Patient Surname",
+            u2.phone AS "Patient Phone"
+        FROM submission_record AS sr 
+        INNER JOIN followup_request AS fr ON sr.id = fr.submission_id
+        LEFT JOIN patient_case_id AS pcid ON pcid.id = fr.submission_id
+        LEFT JOIN user AS u ON sr.sender_id = u.id
+        LEFT JOIN user AS u2 ON sr.patient_id = u2.id
+        WHERE fr.followup_feedback IS NOT NULL 
+        AND fr.followup_note IS NOT NULL
+        AND fr.followup_request_status = 'On Contact'
+        ORDER BY pcid.case_id ASC;
+    '''
+    cursor.execute(sql_query)
+    records = cursor.fetchall()
+
+    if not records:
+        return "No data available", 204
+
+    # Convert to DataFrame for processing
+    df = pd.DataFrame(records)
+
+    # Add Image URL Column
+    df["Image Link"] = "https://icohold.anamai.moph.go.th:85/load_image/upload/" + df["senderId"].astype(str) + "/" + df["imageName"].astype(str)
+
+    df.insert(0, "No.", range(1, len(df) + 1))
+    df["Specialist Feedback"] = df["Specialist_Feedback"].astype(str)
+    df["Note"] = df["Note"].astype(str)
+
+    # Define Headers
+    headers = ["No.", "Case ID", "Image", "Specialist Feedback", "Note", "Patient Name", "Patient Phone", "Sender Name", "Sender Phone"]
+    
+    # Define column widths
+    column_widths = {
+        "No.": 10,
+        "Case ID": 10,
+        "Image": 80,
+        "Specialist Feedback": 15,
+        "Note": 20,
+        "Patient Name": 15,
+        "Patient Phone": 15,
+        "Sender Name": 15,
+        "Sender Phone": 15
+    }
+
+    # Define row height for image rows
+    row_height = 150
+
+    # Create Excel file
+    output = io.BytesIO()
+    wb = Workbook()
+    
+    # Remove default sheet
+    default_ws = wb.active
+    wb.remove(default_ws)
+
+    # Import openpyxl drawing module for image handling
+    from openpyxl.drawing.image import Image as XLImage
+    from openpyxl.styles import Alignment
+    
+    # Split DataFrame by province
+    provinces = df["province"].dropna().unique()
+
+    for province in provinces:
+        ws = wb.create_sheet(title=province[:31])  # Excel sheet names must be <= 31 characters
+        province_df = df[df["province"] == province]
+
+        # Add Title Header that spans across all columns
+        title = f"รายงานผลการวินิจฉัยจากทันตแพทย์ประจำจังหวัด {province}"
+        ws.append([title])  # Add the title text to the first cell
+        ws.merge_cells(f'A1:{get_column_letter(len(headers))}1')  # Merge cells across all columns
+        
+        # Style the title
+        title_cell = ws['A1']
+        title_cell.font = Font(bold=True, size=14)
+        title_cell.alignment = Alignment(horizontal='center', vertical='center')
+        title_cell.fill = PatternFill(start_color="B8CCE4", end_color="B8CCE4", fill_type="solid")  # Light blue background
+        
+        # Set row height for title
+        ws.row_dimensions[1].height = 30
+
+        # Add Headers (now in row 2)
+        header_fill = PatternFill(start_color="D9D9D9", end_color="D9D9D9", fill_type="solid")
+        bold_font = Font(bold=True)
+
+        ws.append(headers)
+
+        for col_num, header in enumerate(headers, 1):
+            col_letter = get_column_letter(col_num)
+            ws[f"{col_letter}2"].fill = header_fill
+            ws[f"{col_letter}2"].font = bold_font
+            ws.column_dimensions[col_letter].width = column_widths.get(header, 25)
+
+        # Add Data Rows (starting from row 3 now)
+        for idx, (_, row) in enumerate(province_df.iterrows(), 3):  # Start from row 3 (after title and header)
+            sender_id = row["senderId"]
+            image_name = row["imageName"]
+            case_id = row["Case ID"]
+            sender_name = (row["Sender Name"] if row["Sender Name"] else "") + " " + (row["Sender Surname"] if row["Sender Surname"] else "")
+            sender_phone = row["Sender Phone"] if row["Sender Phone"] else "-"
+
+            patient_name = (row["Patient Name"] if row["Patient Name"] else "") + " " + (row["Patient Surname"] if row["Patient Surname"] else "")
+            patient_phone = row["Patient Phone"] if row["Patient Phone"] else "-"
+            # Append row data
+            ws.append([
+                row["No."],
+                case_id,
+                row["Image Link"],
+                row["Specialist Feedback"],
+                row["Note"],
+                patient_name,
+                patient_phone,
+                sender_name,
+                sender_phone
+            ])
+            
+            # Set row height for better image display
+            ws.row_dimensions[idx].height = row_height
+            
+            # Add image to the cell
+            try:
+                # Construct image path
+                image_path = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'upload', str(sender_id), image_name)
+                
+                # Check if file exists
+                if os.path.exists(image_path):
+                    # Load the image
+                    img = XLImage(image_path)
+                    
+                    # Resize image to fit in cell
+                    img.width = 180  # Width in pixels
+                    img.height = 135  # Height in pixels
+                    
+                    # Add image to cell
+                    cell_reference = f"C{idx}"
+                    ws.add_image(img, cell_reference)
+                else:
+                    ws[f"C{idx}"] = "Image not found"
+            except Exception as e:
+                # If image insertion fails, just use the text
+                ws[f"C{idx}"] = f"Error: {str(e)}"
+
+    # Save to buffer
+    output.seek(0)
+    wb.save(output)
+    output.seek(0)
+
+    return Response(
+        output,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=contact_records.xlsx"}
     )
 
 # region edit
@@ -1862,60 +2173,6 @@ def update_submission_record(ai_predictions, ai_scores):
             sql = "INSERT INTO patient_case_id (id) VALUES (%s)"
             val = (row['LAST_INSERT_ID()'],)
             cursor.execute(sql, val)
-
-def record_followup():
-    
-    page = session['current_record_page']
-    records_per_page = session['records_per_page']
-    offset = (page-1)*records_per_page
-    db, cursor = get_db()
-    sql_select_part = '''
-                SELECT 
-                sr.id, 
-                sr.ai_prediction,
-                sr.channel,
-                sr.sender_id,
-                sr.patient_id,
-                sr.fname,
-                pcid.case_id,
-                fr.followup_request_status,
-                fr.followup_note,
-                fr.followup_feedback
-            '''
-    sql_join_part = '''
-                FROM submission_record as sr 
-                INNER JOIN followup_request as fr ON sr.id = fr.submission_id
-                LEFT JOIN patient_case_id as pcid ON pcid.id=fr.submission_id
-                '''
-    sql_limit_part = '''
-                ORDER BY 
-                    CASE
-                        WHEN fr.followup_request_status = 'On Specialist' THEN 0
-                        ELSE 1
-                    END,
-                    sr.id DESC
-                LIMIT %s
-                OFFSET %s
-            '''
-    sql_count = 'SELECT Count(*) AS total_records'
-                
-    sql1 = sql_count + sql_join_part
-    sql2 = sql_select_part + sql_join_part + sql_limit_part
-
-    val = (records_per_page,offset)
-    cursor.execute(sql1)
-    dataCount = cursor.fetchone()
-
-    cursor.execute(sql2,val)
-    paginated_data = cursor.fetchall()
-
-    for item in paginated_data:
-        if item['channel']=='PATIENT':
-            item['owner_id'] = item['patient_id']
-        else:
-            item['owner_id'] = item['sender_id']
-    return paginated_data,dataCount
-
 
 @bp.route('/about')
 def about():

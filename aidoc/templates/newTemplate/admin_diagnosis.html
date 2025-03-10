@@ -1,0 +1,151 @@
+{% extends "./base.html" %}
+
+{% block title %} AIDOC | Edit User {% endblock %}
+
+{% block content %}
+
+<h2>ระบบการบริหารจัดการภาพของผู้ดูแลระบบ</h2>
+<p>ผู้ดูแลระบบ: {{ g.user['name'] }} {{ g.user['surname'] }} (Username: {{ g.user['username'] }}) </p>
+<label for="search_input">ค้นหาผลลัพธ์ตามคำสำคัญ <i>เช่น ชื่อ นามสกุลคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC คำสำคัญในรายงานผู้ป่วย ชื่อไฟล์ Case ID</i></label>
+<form class="form-inline">
+    <div class="row mt-1">
+        <div class="input-group">
+            <input type="text" class="form-control" name="search" id="search_input"
+                placeholder="ชื่อ นามสกุลคนไข้ เลขบัตรประชาชนคนไข้ สถานที่คัดกรอง(ตำบล อำเภอ จังหวัด เลขไปรษณีย์) OPMD OSCC คำสำคัญในรายงานผู้ป่วย ชื่อไฟล์ Case ID"
+                value="" />
+            <button class="btn btn-outline-primary" type="submit" value=""> Search </button>
+        </div>
+    </div>
+    <div class="my-3">
+        <label for="filterPriority">ระดับความสำคัญ:</label>
+        <select name="filterPriority" id="filterPriority" class="btn btn-light border border-1 mx-1">
+            <option value="">ทั้งหมด</option>
+            <option value="1">พิเศษ</option>
+            <option value="0">ปกติ</option>
+        </select>
+        <label for="filterStatus">สถานะ:</label>
+            <select name="filterStatus" id="filterStatus" class="btn btn-light border border-1 mx-1">
+                <option value="">ทั้งหมด</option>
+                <option value="1">ตรวจแล้ว</option>
+                <option value="0">ยังไม่ได้ตรวจ</option>
+            </select>
+        <label for="filterProvince">จังหวัดที่คัดกรอง:</label>
+            <select name="filterProvince" id="filterProvince" class="btn btn-light border border-1 mx-1">
+                <option value="">ทั้งหมด</option>
+            </select>
+        <label for="filterSpecialist">ผู้ตรวจ:</label>
+            <select name="filterSpecialist" id="filterSpecialist" class="btn btn-light border border-1 mx-1">
+                <option value="">ทั้งหมด</option>
+            </select>
+        <label for="filterFollowup">Follow Up Status:</label>
+            <select name="filterFollowup" id="filterFollowup" class="btn btn-light border border-1 mx-1">
+                <option value="">ทั้งหมด</option>
+                <option value="On Specialist">On Specialist</option>
+                <option value="On Contact">On Contact</option>
+                <option value="On Treatment">On Treatment</option>
+                <option value="Closed">Closed</option>
+            </select>
+        <label for="filterRetrain">Retrain Request:</label>
+            <select name="filterRetrain" id="filterRetrain" class="btn btn-light border border-1 mx-1">
+                <option value="">ทั้งหมด</option>
+                <option value="Requested">Requested</option>
+                <option value="Processing">Processing</option>
+                <option value="Done">Done</option>
+            </select>
+    </div>
+</form>
+<div class="mt-2" id = totalCount>
+</div>
+    <div class="row mt-4" id="card-container">
+</div>
+<div id="pagination-container">
+</div>
+
+<script>
+function fetchImageManageList() {
+    let page=1
+    const urlParams = new URLSearchParams(window.location.search);
+    fetch(`/image_manage_api/?limit=12&page=${page}`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json()) // Parse the JSON from response
+    .then(data => {
+        populateCard(data.data)
+        totalCount(data.pagination)
+    })
+    .catch(error => {
+        console.error("Error fetching data:", error);
+    })
+}
+
+function populateCard(data){
+    const container = document.getElementById("card-container");
+    container.innerHTML = "";
+    const paginationContainer = document.getElementById("pagination-container");
+    paginationContainer.innerHTML="";
+    data.forEach(item => {
+        const card = document.createElement("div");
+        card.classList.add("col-lg-3", "col-md-4", "col-sm-6", "col-xs-12", "mb-3");
+        
+        let borderColor = item.is_special_req == 1 ? "border: 3px solid red;" : "";
+
+        card.innerHTML = `
+            <div class="card h-100 position-relative" style="${borderColor}">
+                <div style="display: flex; align-items: center; justify-content: center;">
+                    <a href="/load_image/upload/${item.sender_id}/${item.file_name}" target="_blank">
+                        <img src="/load_image/outlined_thumbnail/${item.sender_id}/${item.file_name}" 
+                            class="card-img-top mt-2" alt="" style="max-height: 256px"/>
+                    </a>
+                </div>
+                    <div class="card-body">
+                        <h6 class="image-name">แหล่งข้อมูล: ${item.sender_job}</h6>
+                        <h6 class="image-name">ชื่อไฟล์: ${item.file_name}</h6>
+                        <h6 class="image-name">Case ID: ${item.submission_id} ${item.special_request == 1 ? "[มีคำขอตรวจพิเศษ]" : ""}</h6>
+                        <h6 class="image-name">ชื่อผู้ป่วย: ${item.sender_fullname ? `${item.sender_fullname} (${item.age} ปี)` : "<i>ไม่มีข้อมูล</i>"}</h6>
+                        <h6 class="image-name">สถานที่คัดกรอง: จ.${item.province}</h6>
+                        <h6 class="image-name">นำส่งวันที่: ${item.submission_date} น.</h6>
+                        <h6 class="fs-6 card-subtitle text-muted mb-2">ผลการพยากรณ์ของ AI: ${item.ai_prediction}</h6>
+                        <h6 class="fs-6 card-subtitle text-muted mb-2">ผลการวินิจฉัยของทันตแพทย์: ${item.dentist_feedback ? item.dentist_feedback : "[ยังไม่ได้ตรวจ]"}</h6>
+                        <div class="d-grid gap-2 d-md-block justify-content-md-center">
+                            <form action="/diagnosis/admin/${item.id}/${item.channel}" method="post">
+                                <button class="btn btn-outline-primary" type="submit">ตรวจยืนยันผล</button>
+                            </form>
+                            <form action="/quick_confirm/admin/${item.id}/${item.ai_prediction}" method="post">
+                                <button class="btn btn-outline-success my-1" type="submit" ${item.dentist_feedback_code ? "disabled" : ""}>Quick AI Confirm</button>
+                            </form>
+                            <button class="btn btn-outline-danger my-1" type="button" data-bs-toggle="modal" data-bs-target="#submissionDeleteModal${item.id}">ลบข้อมูล</button>
+                            <button class="btn btn-outline-warning btn-sm my-1" type="submit" form="">Request Follow Up</button>
+                            <button class="btn btn-outline-info btn-sm my-1" type="submit" form="">Request Retrain</button>
+                        </div>
+                    </div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+        const pagination = document.createElement("div");
+        pagination.classList.add("pagination", "d-flex", "justify-content-center", "align-items-center");
+        pagination.innerHTML = `
+            <button id="firstPage" class="btn page-link m-2 text-secondary">&laquo; หน้าแรก</button>
+            <button id="prevPage" class="btn page-link m-2 text-secondary">&lsaquo; ก่อนหน้า</button>
+            <span id="currentPageDisplay" class="current-page page-link m-2 text-secondary"></span>
+            <button id="nextPage" class="btn page-link m-2 text-secondary">ถัดไป &rsaquo;</button>
+            <button id="lastPage" class="btn page-link m-2 text-secondary">หลังสุด &raquo;</button>
+        `;
+        paginationContainer.appendChild(pagination);
+}
+
+function totalCount(data){
+    const container = document.getElementById('totalCount')
+    container.innerHTML =`
+        จำนวนรายการทั้งหมด ${data.total_count} รายการ
+    `
+}
+
+
+document.addEventListener("DOMContentLoaded", fetchImageManageList);
+
+</script>
+{% endblock %}
