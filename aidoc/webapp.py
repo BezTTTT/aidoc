@@ -727,13 +727,10 @@ def adminRecord2():
 @login_required
 @admin_only
 def followupManage():
-    # Always set current page to 1 when first accessing the route
-    # Only use the page parameter from request if explicitly provided
-    if request.args.get("page"):
-        page = request.args.get("page", 1, type=int)
-    else:
-        page = 1  # Default to page 1 when first accessing the page
+    # Simplify page parameter handling - always get the page with a default of 1
+    page = request.args.get("page", 1, type=int)
     
+    # Store page and records per page in session
     session['current_record_page'] = page
     session['records_per_page'] = 12
     
