@@ -15,7 +15,7 @@
     <div class="card-body">
         <form id="filter-form" method="GET" class="row g-3">
             <!-- Hidden input to always set page to 1 when filtering -->
-            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="page" value="{% if request.args.get('page') and not filter_changed %}{{ request.args.get('page') }}{% else %}1{% endif %}">
             
             <div class="col-md-6">
                 <label class="form-label">สถานะการติดตาม:</label>
@@ -505,13 +505,9 @@
         }
     }
     document.addEventListener("DOMContentLoaded", function() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const hasOnlyPageParam = urlParams.has('page') && urlParams.size === 1;
-    const hasNoParams = urlParams.size === 0;
-    
-    if ((hasOnlyPageParam || hasNoParams) && urlParams.get('page') !== '1' && !hasNoParams) {
-        window.location.href = window.location.pathname + '?page=1';
-    }
-});
+        document.getElementById("current-url").textContent = window.location.href;
+        const urlParams = new URLSearchParams(window.location.search);
+        document.getElementById("page-param").textContent = urlParams.get('page') || 'Not set';
+    });
 </script>
 {% endblock %}
