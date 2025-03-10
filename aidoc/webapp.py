@@ -727,6 +727,16 @@ def adminRecord2():
 @login_required
 @admin_only
 def followupManage():
+    # Always set current page to 1 when first accessing the route
+    # Only use the page parameter from request if explicitly provided
+    if request.args.get("page"):
+        page = request.args.get("page", 1, type=int)
+    else:
+        page = 1  # Default to page 1 when first accessing the page
+    
+    session['current_record_page'] = page
+    session['records_per_page'] = 12
+    
     # Get filter parameters from request
     status_filters = request.args.getlist("status[]")
     prediction_filters = request.args.getlist("prediction[]")
@@ -737,11 +747,6 @@ def followupManage():
     
     if 'all' in request.args.getlist("prediction_all") or not prediction_filters:
         prediction_filters = []
-    
-    # Get pagination parameters
-    page = request.args.get("page", session.get('current_record_page', 1), type=int)
-    session['current_record_page'] = page
-    session['records_per_page'] = 12
     
     # Get filtered data and counts
     paginated_data, dataCount, status_counts = record_followup(
@@ -789,7 +794,8 @@ def record_followup(status_filters=None, prediction_filters=None):
                 pcid.case_id,
                 fr.followup_request_status,
                 fr.followup_note,
-                fr.followup_feedback
+                fr.followup_feedback,
+                pcid.case_id
             '''
     sql_join_part = '''
                 FROM submission_record as sr 
@@ -822,11 +828,14 @@ def record_followup(status_filters=None, prediction_filters=None):
     # Order and pagination
     sql_limit_part = '''
                 ORDER BY 
-                    CASE
+                    CASE 
                         WHEN fr.followup_request_status = 'On Specialist' THEN 0
-                        ELSE 1
+                        WHEN fr.followup_request_status = 'On Contact' THEN 1
+                        WHEN fr.followup_request_status = 'On Treatment' THEN 2
+                        WHEN fr.followup_request_status = 'Closed' THEN 3
+                        ELSE 4
                     END,
-                    sr.id DESC
+                    fr.id ASC
                 LIMIT %s
                 OFFSET %s
             '''
