@@ -240,51 +240,52 @@ def delete_image(role):
     recycleDir = os.path.join(current_app.config['IMAGE_DATA_DIR'], 'recycle', user_id)
     os.makedirs(recycleDir, exist_ok=True)
 
-    filename = result['fname']
-    
-    # Build full paths
-    upload_file        = os.path.join(uploadDir, filename)
-    recycle_file       = os.path.join(recycleDir, filename)
-    thumb_upload_file  = os.path.join(thumbUploadDir, filename)
-    outlined_file      = os.path.join(outlinedDir, filename)
-    thumb_outlined_file= os.path.join(thumbOutlinedDir, filename)
-    mask_file          = os.path.join(maskDir, filename)
+    if result:
+        filename = result['fname']
+        
+        # Build full paths
+        upload_file        = os.path.join(uploadDir, filename)
+        recycle_file       = os.path.join(recycleDir, filename)
+        thumb_upload_file  = os.path.join(thumbUploadDir, filename)
+        outlined_file      = os.path.join(outlinedDir, filename)
+        thumb_outlined_file= os.path.join(thumbOutlinedDir, filename)
+        mask_file          = os.path.join(maskDir, filename)
 
-    # Move the file if it exists in the upload directory
-    if os.path.exists(upload_file):
-        shutil.move(upload_file, recycle_file)
-    else:
-        current_app.logger.warning("File %s does not exist; skipping move.", upload_file)
+        # Move the file if it exists in the upload directory
+        if os.path.exists(upload_file):
+            shutil.move(upload_file, recycle_file)
+        else:
+            current_app.logger.warning("File %s does not exist; skipping move.", upload_file)
 
-    # Remove the file from thumb upload directory if it exists
-    if os.path.exists(thumb_upload_file):
-        os.remove(thumb_upload_file)
-    else:
-        current_app.logger.warning("File %s does not exist; skipping removal.", thumb_upload_file)
+        # Remove the file from thumb upload directory if it exists
+        if os.path.exists(thumb_upload_file):
+            os.remove(thumb_upload_file)
+        else:
+            current_app.logger.warning("File %s does not exist; skipping removal.", thumb_upload_file)
 
-    # Remove the file from outlined directory if it exists
-    if os.path.exists(outlined_file):
-        os.remove(outlined_file)
-    else:
-        current_app.logger.warning("File %s does not exist; skipping removal.", outlined_file)
+        # Remove the file from outlined directory if it exists
+        if os.path.exists(outlined_file):
+            os.remove(outlined_file)
+        else:
+            current_app.logger.warning("File %s does not exist; skipping removal.", outlined_file)
 
-    # Remove the file from thumb outlined directory if it exists
-    if os.path.exists(thumb_outlined_file):
-        os.remove(thumb_outlined_file)
-    else:
-        current_app.logger.warning("File %s does not exist; skipping removal.", thumb_outlined_file)
+        # Remove the file from thumb outlined directory if it exists
+        if os.path.exists(thumb_outlined_file):
+            os.remove(thumb_outlined_file)
+        else:
+            current_app.logger.warning("File %s does not exist; skipping removal.", thumb_outlined_file)
 
-    # Remove the file from mask directory if it exists
-    if os.path.exists(mask_file):
-        os.remove(mask_file)
-    else:
-        current_app.logger.warning("File %s does not exist; skipping removal.", mask_file)
+        # Remove the file from mask directory if it exists
+        if os.path.exists(mask_file):
+            os.remove(mask_file)
+        else:
+            current_app.logger.warning("File %s does not exist; skipping removal.", mask_file)
 
-    # Remove the file from mask directory if it exists
-    if os.path.exists(mask_file):
-        os.remove(mask_file)
-    else:
-        print(f"File {mask_file} does not exist; skipping removal.")
+        # Remove the file from mask directory if it exists
+        if os.path.exists(mask_file):
+            os.remove(mask_file)
+        else:
+            print(f"File {mask_file} does not exist; skipping removal.")
 
     sql = "DELETE FROM submission_record WHERE id = %s"
     val = (img_id,)
@@ -328,6 +329,8 @@ def rotate_image(return_page, role, img_id):
     
     pil_img = Image.open(maskPath) 
     pil_img = pil_img.transpose(Image.ROTATE_270)
+    if pil_img.mode == "RGBA":
+        pil_img = pil_img.convert("RGB")
     pil_img.save(maskPath, quality=100, subsampling=0)
 
     if return_page=='diagnosis':

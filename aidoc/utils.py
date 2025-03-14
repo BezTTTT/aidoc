@@ -23,14 +23,17 @@ def validate_national_id(args):
     # National ID Checksum
     # Define national id pattern
     digit13_pattern = r'^\d{13}$'
-    # Convert the ID string to a list of integers
-    digits = [int(digit) for digit in data["national_id"]]
-    last_digit = digits[-1]
-    # Calculate the weighted sum using list comprehension
-    weighted_sum = sum(digit * (13 - i) for i, digit in enumerate(digits[:-1]))
-    check_digit = (11- (weighted_sum%11))%10
-    check_sum = (check_digit == last_digit)
-    national_id_checksum_flag = (re.match(digit13_pattern, data["national_id"]) is not None) and check_sum
+    national_id_isdigit = (re.match(digit13_pattern, data["national_id"]) is not None)
+    if not national_id_isdigit:
+        # Convert the ID string to a list of integers
+        digits = [int(digit) for digit in data["national_id"]]
+        last_digit = digits[-1]
+        # Calculate the weighted sum using list comprehension
+        weighted_sum = sum(digit * (13 - i) for i, digit in enumerate(digits[:-1]))
+        check_digit = (11- (weighted_sum%11))%10
+        national_id_checksum_flag = (check_digit == last_digit)
+    else:
+        national_id_checksum_flag = False
     
     if "cfnational_id" in form:
         if not (national_id_checksum_flag and data["national_id"]==form["cfnational_id"]):

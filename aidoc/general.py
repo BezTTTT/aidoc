@@ -214,6 +214,8 @@ def rotate_general_image(img_id):
     
     pil_img = Image.open(maskPath) 
     pil_img = pil_img.transpose(Image.ROTATE_270)
+    if pil_img.mode == "RGBA":
+        pil_img = pil_img.convert("RGB")
     pil_img.save(maskPath, quality=100, subsampling=0)
 
     return redirect(url_for('general.general_diagnosis', img_id=img_id))

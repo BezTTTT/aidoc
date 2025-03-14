@@ -39,7 +39,7 @@ pip install mysql-connector-python
 pip install pillow
 pip install opencv-python
 pip install python-dateutil
-pip install PyPDF2
+pip install pypdf
 pip install reportlab
 pip install line-bot-sdk
 pip install bcrypt
@@ -51,7 +51,7 @@ pip install tensorflow (or pip install tensorflow[and-cuda] if you want to use a
 pip install cachetools
 
 (you may upgrade the package using this line)
-pip install --upgrade Flask, mysql-connector-python tensorflow pillow opencv-python python-dateutil PyPDF2 reportlab line-bot-sdk bcrypt pandas openpyxl
+pip install --upgrade Flask, mysql-connector-python tensorflow pillow opencv-python python-dateutil pypdf reportlab line-bot-sdk bcrypt pandas openpyxl
 pip install --upgrade tensorflow (or tensorflow[and-cuda])
 pip install --upgrade uvicorn[standard] fastapi[standard]
 
