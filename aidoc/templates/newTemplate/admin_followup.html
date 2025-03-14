@@ -7,39 +7,166 @@
 <h2>ระบบการให้คำวินิจฉัยของทันตแพทย์ผู้เชี่ยวชาญ</h2>
 <p>ผู้เชี่ยวชาญ: {{ g.user['name'] }} {{ g.user['surname'] }} ({{ g.user['job_position_th'] }}) </p>
 
-{% if data|length == 0 %}
-<div class="col-12 mt-2">
-    <p class="text-center text-danger">ไม่พบข้อมูล</p>
+<!-- Modified Filter Controls with Checkboxes -->
+<div class="card mb-4 shadow-sm">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">ตัวกรองข้อมูล</h5>
+    </div>
+    <div class="card-body">
+        <form id="filter-form" method="GET" class="row g-3">
+            <!-- Hidden input to always set page to 1 when filtering -->
+            <input type="hidden" name="page" value="{% if request.args.get('page') and not filter_changed %}{{ request.args.get('page') }}{% else %}1{% endif %}">
+            
+            <div class="col-md-6">
+                <label class="form-label">สถานะการติดตาม:</label>
+                <div class="d-flex flex-wrap gap-2">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="status-all" name="status_all" 
+                               {% if not selected_status %}checked{% endif %} value="all">
+                        <label class="form-check-label" for="status-all">ทั้งหมด</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input status-checkbox" type="checkbox" id="status-specialist" name="status[]" 
+                               {% if 'On Specialist' in selected_status %}checked{% endif %} value="On Specialist">
+                        <label class="form-check-label bg-warning bg-opacity-25 px-2 rounded" for="status-specialist">On Specialist</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input status-checkbox" type="checkbox" id="status-contact" name="status[]" 
+                               {% if 'On Contact' in selected_status %}checked{% endif %} value="On Contact">
+                        <label class="form-check-label bg-primary bg-opacity-25 px-2 rounded" for="status-contact">On Contact</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input status-checkbox" type="checkbox" id="status-treatment" name="status[]" 
+                               {% if 'On Treatment' in selected_status %}checked{% endif %} value="On Treatment">
+                        <label class="form-check-label bg-success bg-opacity-25 px-2 rounded" for="status-treatment">On Treatment</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input status-checkbox" type="checkbox" id="status-closed" name="status[]" 
+                               {% if 'Closed' in selected_status %}checked{% endif %} value="Closed">
+                        <label class="form-check-label bg-secondary bg-opacity-25 px-2 rounded" for="status-closed">Closed</label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">ผลการพยากรณ์ของ AI:</label>
+                <div class="d-flex flex-wrap gap-2">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="prediction-all" name="prediction_all" 
+                               {% if not selected_prediction %}checked{% endif %} value="all">
+                        <label class="form-check-label" for="prediction-all">ทั้งหมด</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input prediction-checkbox" type="checkbox" id="prediction-normal" name="prediction[]" 
+                               {% if '0' in selected_prediction %}checked{% endif %} value="0">
+                        <label class="form-check-label text-dark bg-light px-2 rounded border" for="prediction-normal">Normal</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input prediction-checkbox" type="checkbox" id="prediction-opmd" name="prediction[]" 
+                               {% if '1' in selected_prediction %}checked{% endif %} value="1">
+                        <label class="form-check-label text-warning bg-warning bg-opacity-10 px-2 rounded border border-warning" for="prediction-opmd">OPMD</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input prediction-checkbox" type="checkbox" id="prediction-oscc" name="prediction[]" 
+                               {% if '2' in selected_prediction %}checked{% endif %} value="2">
+                        <label class="form-check-label text-danger bg-danger bg-opacity-10 px-2 rounded border border-danger" for="prediction-oscc">OSCC</label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 d-flex justify-content-end mt-3">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-funnel"></i> กรองข้อมูล
+                </button>
+                <a href="{{ url_for('webapp.followupManage') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-repeat"></i> รีเซ็ต
+                </a>
+            </div>
+        </form>
+    </div>
 </div>
-<div class="col-12 mt-2">
-    <p class="text-center text-danger">ไม่พบข้อมูล</p>
+
+<!-- Status Summary with improved visuals -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-warning bg-opacity-25 shadow-sm h-100">
+            <div class="card-body text-center">
+                <h5>On Specialist</h5>
+                <h3 class="mb-0">{{ status_counts.on_specialist|default(0) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-primary bg-opacity-25 shadow-sm h-100">
+            <div class="card-body text-center">
+                <h5>On Contact</h5>
+                <h3 class="mb-0">{{ status_counts.on_contact|default(0) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success bg-opacity-25 shadow-sm h-100">
+            <div class="card-body text-center">
+                <h5>On Treatment</h5>
+                <h3 class="mb-0">{{ status_counts.on_treatment|default(0) }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-secondary bg-opacity-25 shadow-sm h-100">
+            <div class="card-body text-center">
+                <h5>Closed</h5>
+                <h3 class="mb-0">{{ status_counts.closed|default(0) }}</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if data|length == 0 %}
+<div class="alert alert-warning mt-4">
+    <i class="bi bi-exclamation-triangle"></i> ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา
 </div>
 {% else %}
-<div class="d-flex gap-2">
-    <div class="mt-2">
-        จำนวนรายการรอคำวินิจฉัยทั้งหมด {{dataCount}} รายการ
-    </div>
-    <a href="{{ url_for('webapp.export_followup_records') }}" class="btn btn-primary mb-3">
-        Export to Excel
+<div class="d-flex flex-wrap gap-2 mb-3">
+    <a href="{{ url_for('webapp.export_followup_records') }}" class="btn btn-warning">
+        <i class="bi bi-file-earmark-excel"></i> Specialist Export
+    </a>
+    <a href="{{ url_for('webapp.export_followup_records_for_contact') }}" class="btn btn-primary">
+        <i class="bi bi-file-earmark-excel"></i> Contact Export
     </a>
 </div>
 {% endif %}
-<!-- Loop through paginated data -->
-<div class="row mt-4">
-    {% for item in data %}
 
-    <div class="col-lg-3 col-md-4 col-sm-6 col-xs-12 mb-3">
-        <div class="card h-100">
+<!-- Loop through paginated data with improved card design -->
+<div class="row mt-4" id="cards-container">
+    {% for item in data %}
+    <div class="col-lg-3 col-md-4 col-sm-6 col-xs-12 mb-3 card-item" 
+         data-status="{{ item['followup_request_status'] }}"
+         data-prediction="{{ item['ai_prediction'] }}"
+         data-date="{{ item['created_at']|default('') }}">
+        <div class="card h-100 shadow-sm border
+            {% if item['followup_request_status'] == 'On Specialist' %} border-warning 
+            {% elif item['followup_request_status'] == 'On Contact' %} border-primary 
+            {% elif item['followup_request_status'] == 'On Treatment' %} border-success 
+            {% elif item['followup_request_status'] == 'Closed' %} border-secondary 
+            {% endif %}">
             <div class="d-flex justify-content-center align-items-center p-2">
                 <a href="{{ url_for('image.load_image', folder='upload', user_id=item['owner_id'], imagename=item['fname']) }}"
                     target="_blank">
                     <img src="{{ url_for('image.load_image', folder='upload_thumbnail', user_id=item['owner_id'], imagename=item['fname']) }}"
                         class="card-img-top rounded" alt="Image Preview"
-                        style="object-fit: contain; width: 100%; height:100%; max-height:250px;" />
+                        style="object-fit: contain; width: 100%; height:100%; max-height:200px;" />
                 </a>
             </div>
             <div class="card-body text-center d-flex flex-column" style="flex: 1;">
-                <h6 class="fs-6 fw-bold text-primary">
+                <div class="badge position-absolute top-0 end-0 m-2 
+                    {% if item['followup_request_status'] == 'On Specialist' %} bg-warning text-dark 
+                    {% elif item['followup_request_status'] == 'On Contact' %} bg-primary 
+                    {% elif item['followup_request_status'] == 'On Treatment' %} bg-success 
+                    {% elif item['followup_request_status'] == 'Closed' %} bg-secondary 
+                    {% endif %}">
+                    {{ item['followup_request_status'] }}
+                </div>
+                <p class="mb-2 fw-bold">Case ID: {{ item['case_id'] }}</p>
+                <h6 class="fs-6 fw-bold">
                     ผลการพยากรณ์ของ AI:
                     {% if item['ai_prediction'] == 0 %}
                     <span class="text-dark">Normal</span>
@@ -50,40 +177,39 @@
                     {% endif %}
                     </span>
                 </h6>
+                {% if item['created_at'] %}
+                <p class="text-muted small mb-2">วันที่: {{ item['created_at']|default('ไม่ระบุวันที่') }}</p>
+                {% endif %}
+                
+                <!-- Add new diagnosis button -->
+                <a href="/diagnosis/specialist/{{ item['id'] }}" class="btn btn-info btn-sm mb-3">
+                    <i class="bi bi-search"></i> ดูรายละเอียด
+                </a>
+                
                 <form action="{{url_for('webapp.confirmFeedback' , submission_id=item['id']) }}" method="POST">
-                    <div class="d-flex gap-2">
-                        <select class="form-select form-select-sm" id="feedback" name="feedback" required>
-                            <option selected disabled hidden>Feedback</option>
-                            <option value="OPMD" {% if item.followup_feedback=='OPMD' %}selected{% endif %}>OPMD
-                            </option>
-                            <option value="OSCC" {% if item.followup_feedback=='OSCC' %}selected{% endif %}>OSCC
-                            </option>
-                            <option value="Benign" {% if item.followup_feedback=='Benign' %}selected{% endif %}>Benign
-                            </option>
-                            <option value="Others" {% if item.followup_feedback=='Others' %}selected{% endif %}>Others
-                            </option>
-                            <option value="Normal" {% if item.followup_feedback=='Normal' %}selected{% endif %}>Normal
-                            </option>
-                            <option value="BAD_IMG" {% if item.followup_feedback=='BAD_IMG' %}selected{% endif %}>
-                                ภาพไม่ได้มาตรฐาน</option>
-                        </select>
-                        <select class="form-select form-select-sm" id="note" name="note" required>
-                            <option selected disabled hidden>Note</option>
-                            <option value="พบแพทย์ด่วน" {% if item.followup_note=='พบแพทย์ด่วน' %}selected{% endif %}>
-                                พบแพทย์ด่วน</option>
-                            <option value="ตรวจเพิ่มเติม" {% if item.followup_note=='ตรวจเพิ่มเติม' %}selected{% endif
-                                %}>ตรวจเพิ่มเติม</option>
-                            <option value="รอดูอาการ" {% if item.followup_note=='รอดูอาการ' %}selected{% endif %}>
-                                รอดูอาการ </option>
-                            <option value="ปกติ" {% if item.followup_note=='ปกติ' %}selected{% endif %}>ปกติ</option>
-                            <option value="ภาพเบลอ" {% if item.followup_note=='ภาพเบลอ' %}selected{% endif %}>ภาพเบลอ
-                            </option>
-                            <option value="ถ่ายใหม่" {% if item.followup_note=='ถ่ายใหม่' %}selected{% endif %}>ถ่ายใหม่
-                            </option>
+                    <div class="d-flex gap-2 mb-2">
+                        <select class="form-select form-select-sm feedback-select" name="feedback" data-item-id="{{ item['id'] }}" required>
+                            <option value="" selected disabled>โปรดเลือก Feedback</option>
+                            <option value="OPMD" {% if item.followup_feedback=='OPMD' %}selected{% endif %}>OPMD</option>
+                            <option value="OSCC" {% if item.followup_feedback=='OSCC' %}selected{% endif %}>OSCC</option>
+                            <option value="Benign" {% if item.followup_feedback=='Benign' %}selected{% endif %}>Benign</option>
+                            <option value="Others" {% if item.followup_feedback=='Others' %}selected{% endif %}>Others</option>
+                            <option value="Normal" {% if item.followup_feedback=='Normal' %}selected{% endif %}>Normal</option>
+                            <option value="BAD_IMG" {% if item.followup_feedback=='BAD_IMG' %}selected{% endif %}>ภาพไม่ได้มาตรฐาน</option>
                         </select>
                     </div>
-                    <div class="text-center mt-3">
-                        <button class="btn btn-success" type="submit">Confirm</button>
+                    <div class="mb-3">
+                        <select class="form-select form-select-sm note-select" name="note" 
+                            data-item-id="{{ item['id'] }}" 
+                            data-selected="{{ item.followup_note if item.followup_note else '' }}"
+                            {% if item.followup_note %} {% else %}disabled{% endif %}>
+                            <option value="" selected disabled>โปรดเลือก Note</option>
+                        </select>
+                    </div>
+                    <div class="text-center">
+                        <button class="btn btn-sm btn-secondary confirm-btn" type="submit" data-item-id="{{ item['id'] }}" disabled>
+                            <i class="bi bi-check-circle"></i> ยืนยัน
+                        </button>
                     </div>
                 </form>
             </div>
@@ -92,80 +218,296 @@
     {% endfor %}
 </div>
 
-
-<!-- Pagination links -->
-<div class="pagination d-flex justify-content-center align-items-center">
-    {% if current_page > 1 %}
-    <a href="?page=1" class="btn page-link m-2 text-secondary">&laquo; หน้าแรก</a>
-    <a href="?page={{ current_page - 1 }}" class="btn page-link m-2 text-secondary">&lsaquo; ก่อนหน้า</a>
-    {% endif %}
-    {% for page_num in range(1, total_pages + 1) %}
-    {% if page_num == current_page %}
-    <span class="current-page page-link m-2 text-secondary">หน้าปัจจุบัน : {{ page_num }} จาก {{ total_pages }}</span>
-    {% endif %}
-    {% endfor %}
-    {% if current_page < total_pages %}
-    <a href="?page={{ current_page + 1 }}" class="btn page-link m-2 text-secondary">ถัดไป &rsaquo;</a>
-    <a href="?page={{ total_pages }}" class="btn page-link m-2 text-secondary">หลังสุด &raquo;</a>
-    {% endif %}
-</div>
+<!-- Pagination links with filter parameters preserved - always include page 1 param -->
+<nav aria-label="Page navigation" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if current_page > 1 %}
+        <li class="page-item">
+            <a href="?page=1{% for status in selected_status %}&status[]={{ status }}{% endfor %}{% for prediction in selected_prediction %}&prediction[]={{ prediction }}{% endfor %}" class="page-link">&laquo; หน้าแรก</a>
+        </li>
+        <li class="page-item">
+            <a href="?page={{ current_page - 1 }}{% for status in selected_status %}&status[]={{ status }}{% endfor %}{% for prediction in selected_prediction %}&prediction[]={{ prediction }}{% endfor %}" class="page-link">&lsaquo; ก่อนหน้า</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link">&laquo; หน้าแรก</span>
+        </li>
+        <li class="page-item disabled">
+            <span class="page-link">&lsaquo; ก่อนหน้า</span>
+        </li>
+        {% endif %}
+        
+        <li class="page-item active">
+            <span class="page-link">หน้า {{ current_page }} จาก {{ total_pages }}</span>
+        </li>
+        
+        {% if current_page < total_pages %}
+        <li class="page-item">
+            <a href="?page={{ current_page + 1 }}{% for status in selected_status %}&status[]={{ status }}{% endfor %}{% for prediction in selected_prediction %}&prediction[]={{ prediction }}{% endfor %}" class="page-link">ถัดไป &rsaquo;</a>
+        </li>
+        <li class="page-item">
+            <a href="?page={{ total_pages }}{% for status in selected_status %}&status[]={{ status }}{% endfor %}{% for prediction in selected_prediction %}&prediction[]={{ prediction }}{% endfor %}" class="page-link">หลังสุด &raquo;</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link">ถัดไป &rsaquo;</span>
+        </li>
+        <li class="page-item disabled">
+            <span class="page-link">หลังสุด &raquo;</span>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
 {% endblock %}
 
 {% block script %}
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        document.querySelectorAll("form").forEach(form => {
-            // Skip the logout form
-            if (form.action.includes('logout')) {
-                return;
+        // Checkbox filter functionality
+        const statusAllCheckbox = document.getElementById("status-all");
+        const statusCheckboxes = document.querySelectorAll(".status-checkbox");
+        const predictionAllCheckbox = document.getElementById("prediction-all");
+        const predictionCheckboxes = document.querySelectorAll(".prediction-checkbox");
+        
+        // Status filter logic
+        statusAllCheckbox.addEventListener("change", function() {
+            if (this.checked) {
+                statusCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                    checkbox.disabled = true;
+                });
+            } else {
+                statusCheckboxes.forEach(checkbox => {
+                    checkbox.disabled = false;
+                });
             }
-            form.addEventListener("submit", function (event) {
-                event.preventDefault();  // Prevent default form submission
+        });
+        
+        statusCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener("change", function() {
+                const anyStatusChecked = Array.from(statusCheckboxes).some(cb => cb.checked);
+                statusAllCheckbox.checked = !anyStatusChecked;
+                
+                if (anyStatusChecked) {
+                    statusAllCheckbox.disabled = true;
+                } else {
+                    statusAllCheckbox.disabled = false;
+                    statusAllCheckbox.checked = true;
+                }
+            });
+        });
+        
+        // Prediction filter logic
+        predictionAllCheckbox.addEventListener("change", function() {
+            if (this.checked) {
+                predictionCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                    checkbox.disabled = true;
+                });
+            } else {
+                predictionCheckboxes.forEach(checkbox => {
+                    checkbox.disabled = false;
+                });
+            }
+        });
+        
+        predictionCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener("change", function() {
+                const anyPredictionChecked = Array.from(predictionCheckboxes).some(cb => cb.checked);
+                predictionAllCheckbox.checked = !anyPredictionChecked;
+                
+                if (anyPredictionChecked) {
+                    predictionAllCheckbox.disabled = true;
+                } else {
+                    predictionAllCheckbox.disabled = false;
+                    predictionAllCheckbox.checked = true;
+                }
+            });
+        });
+        
+        // Initialize checkboxes state
+        if (statusAllCheckbox.checked) {
+            statusCheckboxes.forEach(checkbox => {
+                checkbox.disabled = true;
+            });
+        } else if (Array.from(statusCheckboxes).some(cb => cb.checked)) {
+            statusAllCheckbox.disabled = true;
+        }
+        
+        if (predictionAllCheckbox.checked) {
+            predictionCheckboxes.forEach(checkbox => {
+                checkbox.disabled = true;
+            });
+        } else if (Array.from(predictionCheckboxes).some(cb => cb.checked)) {
+            predictionAllCheckbox.disabled = true;
+        }
 
-                let formData = new FormData(this);
-
-                fetch(this.action, {
-                    method: "POST",
-                    body: formData
-                })
-                    .then(response => {
-                        if (response.redirected) {
-                            // Handle redirects by following them
-                            window.location.href = response.url;
-                            return null; // Skip the next then
-                        }
-                        return response.json();
+        // Form functionality 
+        document.querySelectorAll(".feedback-select").forEach(select => {
+            var itemId = select.dataset.itemId;
+            updateNoteOptions(itemId, true); // Load existing selections
+            storeInitialValues(itemId);
+            checkFormCompletion(itemId); // Initialize button state
+    
+            select.addEventListener("change", function () {
+                updateNoteOptions(itemId, false);
+                checkFormCompletion(itemId);
+            });
+        });
+    
+        document.querySelectorAll(".note-select").forEach(select => {
+            select.addEventListener("change", function () {
+                var itemId = select.dataset.itemId;
+                checkFormCompletion(itemId);
+            });
+        });
+    
+        // Form submission with fade-out animation
+        document.querySelectorAll("form").forEach(form => {
+            if (!form.id || form.id !== "filter-form") { // Skip the filter form
+                form.addEventListener("submit", function (event) {
+                    event.preventDefault();
+                    let formData = new FormData(this);
+                    let submitBtn = this.querySelector(".confirm-btn");
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> กำลังบันทึก...';
+        
+                    fetch(this.action, {
+                        method: "POST",
+                        body: formData
                     })
+                    .then(response => response.json())
                     .then(data => {
-                        if (!data) return; // Skip if we got redirected
-
                         if (data.status === "success") {
                             let card = this.closest(".col-lg-3");
                             if (card) {
-                                let parentContainer = card.parentElement;
-                                parentContainer.appendChild(card); // Move card to bottom
+                                card.style.transition = "opacity 0.5s, transform 0.5s";
+                                card.style.opacity = "0";
+                                card.style.transform = "scale(0.8)";
+                                setTimeout(() => {
+                                    card.remove();
+                                    
+                                    // Update status count display
+                                    // This assumes you have a way to know which status changed
+                                    // You might need to modify this based on your data structure
+                                    updateStatusCounts();
+                                }, 500);
                             }
-
-                            Toastify({
-                                text: data.message,
-                                duration: 3000,
-                                gravity: "top",
-                                position: "right",
-                                backgroundColor: "green",
-                            }).showToast();
                         } else {
-                            Toastify({
-                                text: data.message,
-                                duration: 3000,
-                                gravity: "top",
-                                position: "right",
-                                backgroundColor: "red",
-                            }).showToast();
+                            alert("เกิดข้อผิดพลาด: " + (data.message || "ไม่สามารถบันทึกข้อมูลได้"));
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> ยืนยัน';
                         }
                     })
-                    .catch(error => console.error("Error:", error));
-            });
+                    .catch(error => {
+                        console.error("Error:", error);
+                        alert("เกิดข้อผิดพลาดในการเชื่อมต่อ");
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = '<i class="bi bi-check-circle"></i> ยืนยัน';
+                    });
+                });
+            }
         });
+    });
+    
+    // Update status counts (you would need to implement this with your backend)
+    function updateStatusCounts() {
+        // This is a placeholder function - ideally you'd make an AJAX call to get updated counts
+        // Or update the counts based on the card that was removed
+        console.log("Status counts should be updated here");
+    }
+    
+    // Store initial values for detecting changes
+    function storeInitialValues(itemId) {
+        var feedback = document.querySelector(`.feedback-select[data-item-id='${itemId}']`);
+        var note = document.querySelector(`.note-select[data-item-id='${itemId}']`);
+    
+        feedback.setAttribute("data-initial", feedback.value || "");
+        note.setAttribute("data-initial", note.value || "");
+    }
+    
+    // Update note options dynamically when feedback changes
+    function updateNoteOptions(itemId, isPageLoad = false) {
+        var feedback = document.querySelector(`.feedback-select[data-item-id='${itemId}']`).value;
+        var note = document.querySelector(`.note-select[data-item-id='${itemId}']`);
+        var selectedNote = note.getAttribute("data-selected"); // Get pre-selected value
+    
+        var optionsMap = {
+            "Normal": ["ปกติ"],
+            "Benign": ["ปกติ", "ตรวจเพิ่มเติม"],
+            "OPMD": ["พบแพทย์ด่วน", "ตรวจเพิ่มเติม"],
+            "OSCC": ["พบแพทย์ด่วน", "ตรวจเพิ่มเติม"],
+            "BAD_IMG": ["ภาพเบลอ", "ถ่ายใหม่"],
+            "Others": ["พบแพทย์ด่วน", "ตรวจเพิ่มเติม", "รอดูอาการ", "ปกติ", "ภาพเบลอ", "ถ่ายใหม่"]
+        };
+    
+        // Reset note dropdown with placeholder
+        note.innerHTML = '<option value="" selected disabled>โปรดเลือก Note</option>';
+    
+        if (!feedback) {
+            note.disabled = true;
+            checkFormCompletion(itemId);
+            return;
+        }
+    
+        var selectedOptions = optionsMap[feedback] || [];
+    
+        selectedOptions.forEach(function (optionText) {
+            var option = document.createElement("option");
+            option.value = optionText;
+            option.textContent = optionText;
+    
+            // Set the pre-selected note if it's a page load
+            if (isPageLoad && optionText === selectedNote) {
+                option.selected = true;
+            }
+    
+            note.appendChild(option);
+        });
+    
+        // Enable dropdown only if there are options
+        note.disabled = selectedOptions.length === 0;
+    
+        checkFormCompletion(itemId);
+    }
+    
+    // Enable/disable confirm button based on selection and changes
+    function checkFormCompletion(itemId) {
+        var feedback = document.querySelector(`.feedback-select[data-item-id='${itemId}']`);
+        var note = document.querySelector(`.note-select[data-item-id='${itemId}']`);
+        var confirmBtn = document.querySelector(`.confirm-btn[data-item-id='${itemId}']`);
+    
+        var feedbackValue = feedback.value;
+        var noteValue = note.value;
+        var noteRequired = !note.disabled;
+    
+        var initialFeedback = feedback.getAttribute("data-initial");
+        var initialNote = note.getAttribute("data-initial");
+    
+        var hasChanged = (feedbackValue !== initialFeedback) || (noteValue !== initialNote);
+    
+        // Enable button only if:
+        // 1. Feedback has a valid selection (not the default)
+        // 2. If note dropdown is enabled, it must have a selection
+        // 3. Some change from initial values is detected
+        var isValid = feedbackValue && feedbackValue !== "Feedback" && 
+                     (!noteRequired || (noteRequired && noteValue && noteValue !== "โปรดเลือก Note")) && 
+                     hasChanged;
+    
+        if (isValid) {
+            confirmBtn.disabled = false;
+            confirmBtn.classList.remove("btn-secondary");
+            confirmBtn.classList.add("btn-success");
+        } else {
+            confirmBtn.disabled = true;
+            confirmBtn.classList.remove("btn-success");
+            confirmBtn.classList.add("btn-secondary");
+        }
+    }
+    document.addEventListener("DOMContentLoaded", function() {
+        document.getElementById("current-url").textContent = window.location.href;
+        const urlParams = new URLSearchParams(window.location.search);
+        document.getElementById("page-param").textContent = urlParams.get('page') || 'Not set';
     });
 </script>
 {% endblock %}
