@@ -72,7 +72,7 @@ def fetch_image_manage_list(cursor, limit, offset, data):
 
     query += " ORDER BY sr.created_at DESC LIMIT %s OFFSET %s"
     params.extend([limit, offset])
-    print(query)
+    #print(query)
     cursor.execute(query, tuple(params))
     return cursor.fetchall()
 
@@ -95,7 +95,7 @@ def fetch_total_count(cursor, data):
         query += " WHERE " + " AND ".join(conditions)
 
     cursor.execute(query, tuple(params))
-    print(query)
+    #print(query)
     total_count = cursor.fetchone()
     return total_count['N']
 

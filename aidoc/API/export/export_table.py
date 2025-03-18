@@ -74,7 +74,7 @@ def db_query(table_name,ref, columns):
                     for i, d in enumerate(data): # add image url to data
                         img_url = f"{request.host_url}load_image/upload/{d['sender_id']}/{d['fname']}"
                         data[i]["fname"] = f'=HYPERLINK("{img_url}","{data[i]["fname"]}")' # construct image url for excel
-                        print(data[i]["fname"])
+                        #print(data[i]["fname"])
                 
         else: pass # for future use
 

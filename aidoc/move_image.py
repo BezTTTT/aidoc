@@ -11,12 +11,12 @@ def move_files(src_folder, dest_folder):
             dst_file = os.path.join(dest_folder, file_name)
 
             shutil.move(src_file, dst_file)
-            print(f"Moved: {src_file} → {dst_file}")
+            #print(f"Moved: {src_file} → {dst_file}")
 
         # Remove empty source folder
         if not os.listdir(src_folder):
             os.rmdir(src_folder)
-            print(f"Removed empty folder: {src_folder}")
+            #print(f"Removed empty folder: {src_folder}")
 
 def move_images(parent_directory, folder_mapping):
     """
@@ -61,6 +61,6 @@ if __name__ == "__main__":
 
     if os.path.exists(parent_directory) and os.path.isdir(parent_directory):
         move_images(parent_directory, folder_mapping)
-        print("File moving process completed successfully!")
+        #print("File moving process completed successfully!")
     else:
-        print("Invalid directory. Please check the path and try again.")
+        #print("Invalid directory. Please check the path and try again.")

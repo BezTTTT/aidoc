@@ -26,7 +26,7 @@ def validate_national_id(args):
     national_id_isdigit = (re.match(digit13_pattern, data["national_id"]) is not None)
     if not national_id_isdigit:
         # Convert the ID string to a list of integers
-        digits = [int(digit) for digit in data["national_id"]]
+        digits = [int(digit) for digit in data["national_id"] if digit.isdigit()]
         last_digit = digits[-1]
         # Calculate the weighted sum using list comprehension
         weighted_sum = sum(digit * (13 - i) for i, digit in enumerate(digits[:-1]))
