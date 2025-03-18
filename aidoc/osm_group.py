@@ -505,7 +505,7 @@ def get_osm_for_search():
     # Get the current user's province
     cursor.execute("SELECT group_provinces FROM osm_group WHERE osm_supervisor_id = %s", (user_id,))
     provinces = cursor.fetchone()["group_provinces"]
-    print("asdasdjnsadhasdhusauhd",provinces)
+    #print("asdasdjnsadhasdhusauhd",provinces)
     if not provinces:
         return jsonify({'osm_list': []})
     

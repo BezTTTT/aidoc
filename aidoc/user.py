@@ -625,9 +625,9 @@ def set_user_compliance(user_id):
     draft2 = os.path.join(legalDir, str(user_id), "draft_consent_v" + consentVer + ".pdf")
     final2 = os.path.join(legalDir, str(user_id), "consent_v" + consentVer + ".pdf")
     if os.path.isfile(draft1):
-        os.rename(draft1, final1)
+        os.replace(draft1, final1)
     if os.path.isfile(draft2):
-        os.rename(draft2, final2)
+        os.replace(draft2, final2)
 
 # region generate_legal_drafts
 # Generate user_agreement and informed_consent pdfs
