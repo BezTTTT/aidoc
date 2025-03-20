@@ -1,9 +1,3 @@
 *.pyc
-instance/*
-oralLesionNet/*
 imageData/*
-imageQualityChecker/*
 aidoc_logs/*
-aidoc/static/legal/*
-legal/*
-aidoc/API/export/tmp
